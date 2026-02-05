@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { 
-  signInWithPopup, 
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged 
 } from 'firebase/auth';
@@ -21,6 +23,8 @@ interface UserStore {
   loading: boolean;
   setUser: (user: User | null) => void;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
   initAuth: () => void;
   toggleFavorite: (spotId: string) => Promise<void>;
@@ -67,6 +71,65 @@ export const useUserStore = create<UserStore>()(
           set({ user: userData, loading: false });
         } catch (error) {
           console.error('Error signing in with Google:', error);
+          set({ loading: false });
+          throw error;
+        }
+      },
+
+      signInWithEmail: async (email: string, password: string) => {
+        try {
+          const result = await signInWithEmailAndPassword(auth, email, password);
+          const firebaseUser = result.user;
+          
+          // Get user document from Firestore
+          const userRef = doc(db, 'users', firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (userSnap.exists()) {
+            const userData: User = {
+              uid: firebaseUser.uid,
+              name: userSnap.data().name || 'User',
+              email: firebaseUser.email || '',
+              photoURL: userSnap.data().photoURL || '',
+              savedSpots: userSnap.data().savedSpots || [],
+            };
+            set({ user: userData, loading: false });
+          }
+        } catch (error) {
+          console.error('Error signing in with email:', error);
+          set({ loading: false });
+          throw error;
+        }
+      },
+
+      signUpWithEmail: async (email: string, password: string, name: string) => {
+        try {
+          const result = await createUserWithEmailAndPassword(auth, email, password);
+          const firebaseUser = result.user;
+          
+          // Create user document in Firestore
+          const userRef = doc(db, 'users', firebaseUser.uid);
+          await setDoc(userRef, {
+            uid: firebaseUser.uid,
+            name: name || 'User',
+            email: firebaseUser.email || '',
+            photoURL: '',
+            savedSpots: [],
+            createdAt: serverTimestamp(),
+          });
+          
+          // Set user in store
+          const userData: User = {
+            uid: firebaseUser.uid,
+            name: name || 'User',
+            email: firebaseUser.email || '',
+            photoURL: '',
+            savedSpots: [],
+          };
+          
+          set({ user: userData, loading: false });
+        } catch (error) {
+          console.error('Error signing up with email:', error);
           set({ loading: false });
           throw error;
         }
