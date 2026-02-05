@@ -5,7 +5,7 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged 
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
 
 interface User {
@@ -23,6 +23,7 @@ interface UserStore {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   initAuth: () => void;
+  toggleFavorite: (spotId: string) => Promise<void>;
 }
 
 export const useUserStore = create<UserStore>()(
@@ -107,6 +108,43 @@ export const useUserStore = create<UserStore>()(
         });
         
         return unsubscribe;
+      },
+
+      toggleFavorite: async (spotId: string) => {
+        const { user } = useUserStore.getState();
+        if (!user) return;
+
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const isFavorite = user.savedSpots.includes(spotId);
+
+          if (isFavorite) {
+            // Remove from favorites
+            await updateDoc(userRef, {
+              savedSpots: arrayRemove(spotId),
+            });
+            set({
+              user: {
+                ...user,
+                savedSpots: user.savedSpots.filter((id) => id !== spotId),
+              },
+            });
+          } else {
+            // Add to favorites
+            await updateDoc(userRef, {
+              savedSpots: arrayUnion(spotId),
+            });
+            set({
+              user: {
+                ...user,
+                savedSpots: [...user.savedSpots, spotId],
+              },
+            });
+          }
+        } catch (error) {
+          console.error('Error toggling favorite:', error);
+          throw error;
+        }
       },
     }),
     {

@@ -1,14 +1,16 @@
 'use client';
 
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import { useEffect, useState, useCallback } from 'react';
 import type { Spot } from '@/store/useSpotStore';
+import SpotInfoWindow from './SpotInfoWindow';
 
 interface MapViewProps {
   isAddingSpot?: boolean;
   onLocationSelect?: (location: { lat: number; lng: number }) => void;
   tempMarker?: { lat: number; lng: number } | null;
   spots?: Spot[];
+  onSpotDetailsOpen?: (spot: Spot) => void;
 }
 
 // Clean/Simple map style - removes POIs and unnecessary labels
@@ -44,10 +46,12 @@ export default function MapView({
   isAddingSpot = false, 
   onLocationSelect, 
   tempMarker,
-  spots = []
+  spots = [],
+  onSpotDetailsOpen
 }: Readonly<MapViewProps>) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const defaultCenter = { lat: 47.4979, lng: 19.0402 }; // Budapest, Hungary
 
   // Load Google Maps API
@@ -174,11 +178,31 @@ export default function MapView({
             key={spot.id}
             position={spot.location}
             title={spot.name}
-            onClick={() => {
-              console.log('Clicked spot:', spot);
-            }}
+            onClick={() => setSelectedSpot(spot)}
           />
         ))}
+
+        {/* InfoWindow for selected spot */}
+        {selectedSpot && (
+          <InfoWindow
+            position={selectedSpot.location}
+            onCloseClick={() => setSelectedSpot(null)}
+            options={{
+              pixelOffset: new google.maps.Size(0, -40),
+            }}
+          >
+            <div>
+              <SpotInfoWindow
+                spot={selectedSpot}
+                onClose={() => setSelectedSpot(null)}
+                onViewDetails={() => {
+                  onSpotDetailsOpen?.(selectedSpot);
+                  setSelectedSpot(null);
+                }}
+              />
+            </div>
+          </InfoWindow>
+        )}
       </GoogleMap>
     </div>
   );

@@ -6,8 +6,13 @@ import BottomNavigation from '@/components/BottomNavigation';
 import LanguageSelector from '@/components/LanguageSelector';
 import AuthModal from '@/components/AuthModal';
 import AddSpotModal from '@/components/AddSpotModal';
+import SpotDetailsPanel from '@/components/SpotDetailsPanel';
+import ProfilePanel from '@/components/ProfilePanel';
+import Toast from '@/components/Toast';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
+import { useToastStore } from '@/store/useToastStore';
+import type { Spot } from '@/store/useSpotStore';
 
 // Dynamic import to avoid SSR issues with Leaflet
 const MapView = dynamic(
@@ -30,10 +35,13 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [addSpotModalOpen, setAddSpotModalOpen] = useState(false);
+  const [profilePanelOpen, setProfilePanelOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   
   const { user, initAuth } = useUserStore();
   const { spots, fetchSpots } = useSpotStore();
+  const { toasts, removeToast } = useToastStore();
 
   useEffect(() => {
     setIsClient(true);
@@ -53,8 +61,7 @@ export default function Home() {
 
   const handleProfileClick = () => {
     if (user) {
-      // Open profile panel in Phase 3
-      console.log('Open profile for:', user.name);
+      setProfilePanelOpen(true);
     } else {
       setAuthModalOpen(true);
     }
@@ -87,6 +94,18 @@ export default function Home() {
         onClose={handleAddSpotClose}
         selectedLocation={selectedLocation}
       />
+
+      {/* Spot Details Panel */}
+      <SpotDetailsPanel 
+        spot={selectedSpot}
+        onClose={() => setSelectedSpot(null)}
+      />
+
+      {/* Profile Panel */}
+      <ProfilePanel 
+        isOpen={profilePanelOpen}
+        onClose={() => setProfilePanelOpen(false)}
+      />
       
       {/* Full-screen map background */}
       <MapView 
@@ -94,6 +113,7 @@ export default function Home() {
         onLocationSelect={handleLocationSelect}
         tempMarker={selectedLocation}
         spots={spots}
+        onSpotDetailsOpen={setSelectedSpot}
       />
       
       {/* Empty state message */}
@@ -111,6 +131,16 @@ export default function Home() {
         onAddSpotClick={handleAddSpotClick}
         onProfileClick={handleProfileClick}
       />
+
+      {/* Toast Notifications */}
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => removeToast(toast.id)}
+        />
+      ))}
     </main>
   );
 }

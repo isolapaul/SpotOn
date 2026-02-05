@@ -1,0 +1,221 @@
+'use client';
+
+import { X, Heart, Star, MapPin, Share2, Calendar, User } from 'lucide-react';
+import Image from 'next/image';
+import type { Spot } from '@/store/useSpotStore';
+import { useUserStore } from '@/store/useUserStore';
+import { useState } from 'react';
+
+interface SpotDetailsPanelProps {
+  spot: Spot | null;
+  onClose: () => void;
+}
+
+const categoryEmojis: Record<Spot['category'], string> = {
+  scenic: '🌅',
+  'smoke-spot': '💨',
+  viewpoint: '🏔️',
+  other: '📍',
+};
+
+const categoryLabels: Record<Spot['category'], string> = {
+  scenic: 'Scenic View',
+  'smoke-spot': 'Smoke Spot',
+  viewpoint: 'Viewpoint',
+  other: 'Other',
+};
+
+export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetailsPanelProps>) {
+  const { user, toggleFavorite } = useUserStore();
+  const [isFavorite, setIsFavorite] = useState(
+    spot ? user?.savedSpots?.includes(spot.id) || false : false
+  );
+
+  if (!spot) return null;
+
+  const handleFavoriteToggle = async () => {
+    if (!user) return;
+    try {
+      await toggleFavorite(spot.id);
+      setIsFavorite(!isFavorite);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: spot.name,
+          text: spot.description,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.log('Share cancelled');
+      }
+    }
+  };
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'Unknown';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[3000] animate-slide-up">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Panel */}
+      <div className="absolute inset-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800">
+        {/* Hero Image */}
+        <div className="relative w-full h-[40vh] flex-shrink-0">
+          <Image
+            src={spot.imageUrl}
+            alt={spot.name}
+            fill
+            className="object-cover"
+            priority
+          />
+          
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/80" />
+          
+          {/* Action Buttons */}
+          <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
+            <button
+              onClick={onClose}
+              className="glass-button p-3 rounded-full"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+            
+            <div className="flex gap-2">
+              {user && (
+                <button
+                  onClick={handleFavoriteToggle}
+                  className="glass-button p-3 rounded-full"
+                  aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <Heart
+                    className={`w-5 h-5 ${
+                      isFavorite ? 'fill-red-500 text-red-500' : 'text-white'
+                    }`}
+                  />
+                </button>
+              )}
+              
+              <button
+                onClick={handleShare}
+                className="glass-button p-3 rounded-full"
+                aria-label="Share"
+              >
+                <Share2 className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          </div>
+          
+          {/* Category Badge */}
+          <div className="absolute bottom-4 left-4">
+            <div className="glass-card px-4 py-2 flex items-center gap-2">
+              <span className="text-2xl">{categoryEmojis[spot.category]}</span>
+              <span className="text-white font-medium">{categoryLabels[spot.category]}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 space-y-6">
+          {/* Title & Rating */}
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">{spot.name}</h1>
+            
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                <span className="text-white font-semibold">4.5</span>
+              </div>
+              <span className="text-white/60">(12 reviews)</span>
+            </div>
+          </div>
+
+          {/* Location */}
+          <div className="glass-card p-4 flex items-start gap-3">
+            <MapPin className="w-5 h-5 text-primary-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-white/80 text-sm">
+                {spot.location.lat.toFixed(6)}, {spot.location.lng.toFixed(6)}
+              </p>
+              <button className="text-primary-400 text-sm font-medium mt-1 hover:underline">
+                Open in Maps →
+              </button>
+            </div>
+          </div>
+
+          {/* Description */}
+          {spot.description && (
+            <div>
+              <h2 className="text-xl font-bold text-white mb-3">Description</h2>
+              <p className="text-white/80 leading-relaxed">{spot.description}</p>
+            </div>
+          )}
+
+          {/* Meta Info */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="glass-card p-4">
+              <div className="flex items-center gap-2 text-white/60 mb-1">
+                <Calendar className="w-4 h-4" />
+                <span className="text-xs uppercase">Added</span>
+              </div>
+              <p className="text-white font-medium">{formatDate(spot.createdAt)}</p>
+            </div>
+            
+            <div className="glass-card p-4">
+              <div className="flex items-center gap-2 text-white/60 mb-1">
+                <User className="w-4 h-4" />
+                <span className="text-xs uppercase">By</span>
+              </div>
+              <p className="text-white font-medium">Anonymous</p>
+            </div>
+          </div>
+
+          {/* Reviews Section Placeholder */}
+          <div>
+            <h2 className="text-xl font-bold text-white mb-3">Reviews</h2>
+            <div className="glass-card p-6 text-center">
+              <Star className="w-12 h-12 text-white/40 mx-auto mb-3" />
+              <p className="text-white/60">No reviews yet</p>
+              <p className="text-white/40 text-sm mt-1">Be the first to review this spot!</p>
+            </div>
+          </div>
+
+          {/* CTA Button */}
+          <button
+            className="w-full py-4 rounded-2xl font-semibold text-lg
+              bg-gradient-to-r from-primary-500 to-primary-600 text-white
+              shadow-lg shadow-primary-500/30 
+              hover:shadow-xl hover:shadow-primary-500/40 
+              active:scale-98 transition-all duration-200
+              flex items-center justify-center gap-2"
+          >
+            <MapPin className="w-5 h-5" />
+            <span>Get Directions</span>
+          </button>
+
+          {/* Bottom Padding for safe area */}
+          <div className="h-20" />
+        </div>
+      </div>
+    </div>
+  );
+}

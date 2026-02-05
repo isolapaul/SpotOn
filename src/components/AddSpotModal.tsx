@@ -2,6 +2,7 @@
 
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
+import { useToastStore } from '@/store/useToastStore';
 import { X, MapPin, Upload, Loader2 } from 'lucide-react';
 import { useState, useRef, ChangeEvent } from 'react';
 
@@ -16,6 +17,7 @@ type Category = 'scenic' | 'smoke-spot' | 'viewpoint' | 'other';
 export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Readonly<AddSpotModalProps>) {
   const { user } = useUserStore();
   const { addSpot } = useSpotStore();
+  const { showToast } = useToastStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -93,10 +95,11 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
       setImagePreview(null);
       onClose();
       
-      alert('Spot uploaded! Waiting for approval.');
+      showToast('Spot uploaded! Waiting for approval.', 'success');
     } catch (err) {
       console.error('Error adding spot:', err);
       setError('Failed to add spot. Please try again.');
+      showToast('Failed to add spot. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -270,7 +273,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading || !selectedLocation || !imageFile}
+            disabled={loading || !selectedLocation || !imageFile || !formData.name.trim()}
             className="w-full py-4 rounded-2xl font-semibold text-lg
               bg-gradient-to-r from-primary-500 to-primary-600 text-white
               shadow-lg shadow-primary-500/30 
