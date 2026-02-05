@@ -83,6 +83,18 @@ export const translations = {
     save: 'Mentés',
     delete: 'Törlés',
     edit: 'Szerkesztés',
+    
+    // Filters
+    filters: 'Szűrők',
+    distance: 'Távolság',
+    anyDistance: 'Bármekkora távolság',
+    within1km: '1 km-en belül',
+    within5km: '5 km-en belül',
+    within10km: '10 km-en belül',
+    within25km: '25 km-en belül',
+    within50km: '50 km-en belül',
+    allCategories: 'Minden kategória',
+    clearFilters: 'Szűrők törlése',
   },
   en: {
     // Navigation
@@ -168,6 +180,18 @@ export const translations = {
     save: 'Save',
     delete: 'Delete',
     edit: 'Edit',
+    
+    // Filters
+    filters: 'Filters',
+    distance: 'Distance',
+    anyDistance: 'Any distance',
+    within1km: 'Within 1 km',
+    within5km: 'Within 5 km',
+    within10km: 'Within 10 km',
+    within25km: 'Within 25 km',
+    within50km: 'Within 50 km',
+    allCategories: 'All categories',
+    clearFilters: 'Clear filters',
   },
   de: {
     // Navigation
@@ -253,6 +277,18 @@ export const translations = {
     save: 'Speichern',
     delete: 'Löschen',
     edit: 'Bearbeiten',
+    
+    // Filters
+    filters: 'Filter',
+    distance: 'Entfernung',
+    anyDistance: 'Beliebige Entfernung',
+    within1km: 'Innerhalb 1 km',
+    within5km: 'Innerhalb 5 km',
+    within10km: 'Innerhalb 10 km',
+    within25km: 'Innerhalb 25 km',
+    within50km: 'Innerhalb 50 km',
+    allCategories: 'Alle Kategorien',
+    clearFilters: 'Filter löschen',
   },
 };
 
