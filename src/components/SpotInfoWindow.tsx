@@ -27,7 +27,7 @@ const categoryLabels: Record<Spot['category'], { hu: string; en: string; de: str
   scenic: { hu: 'Szép Kilátás', en: 'Scenic View', de: 'Malerische Aussicht' },
   'smoke-spot': { hu: 'Eldugott Spot', en: 'Hidden Spot', de: 'Versteckter Ort' },
   viewpoint: { hu: 'Kilátópont', en: 'Viewpoint', de: 'Aussichtspunkt' },
-  other: { hu: 'Park/Bokor', en: 'Park/Bush', de: 'Park/Busch' },
+  other: { hu: 'Park', en: 'Park', de: 'Park' },
 };
 
 export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewDetails }: Readonly<SpotInfoWindowProps>) {

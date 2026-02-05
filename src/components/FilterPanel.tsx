@@ -5,6 +5,8 @@ import { SlidersHorizontal, X } from 'lucide-react';
 import { useState } from 'react';
 
 interface FilterPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
   selectedDistance: number | null;
   selectedCategory: string | null;
   onDistanceChange: (distance: number | null) => void;
@@ -13,6 +15,8 @@ interface FilterPanelProps {
 }
 
 export default function FilterPanel({
+  isOpen,
+  onClose,
   selectedDistance,
   selectedCategory,
   onDistanceChange,
@@ -20,7 +24,6 @@ export default function FilterPanel({
   onClearFilters,
 }: Readonly<FilterPanelProps>) {
   const { t, language } = useLanguageStore();
-  const [isOpen, setIsOpen] = useState(false);
 
   const distances = [
     { value: 1, label: t('within1km') },
@@ -41,30 +44,13 @@ export default function FilterPanel({
 
   return (
     <>
-      {/* Filter Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`fixed top-4 right-4 z-[1000] glass-button p-3 rounded-full shadow-lg
-          ${hasActiveFilters ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20' : ''}
-          hover:scale-105 active:scale-95 transition-all duration-200`}
-        aria-label={t('filters')}
-      >
-        <SlidersHorizontal className="w-6 h-6 text-white" />
-        {hasActiveFilters && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full 
-            flex items-center justify-center text-xs text-white font-bold">
-            {(selectedDistance ? 1 : 0) + (selectedCategory ? 1 : 0)}
-          </span>
-        )}
-      </button>
-
       {/* Filter Panel */}
       {isOpen && (
         <div className="fixed inset-0 z-[1999] flex items-start justify-end p-4 animate-fade-in">
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/60 backdrop-blur-md"
-            onClick={() => setIsOpen(false)}
+            onClick={onClose}
           />
           
           {/* Panel */}
@@ -79,7 +65,7 @@ export default function FilterPanel({
                 <h2 className="text-xl font-bold text-white">{t('filters')}</h2>
               </div>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={onClose}
                 className="glass-button p-2 rounded-full"
                 aria-label={t('close')}
               >
@@ -154,7 +140,7 @@ export default function FilterPanel({
               <button
                 onClick={() => {
                   onClearFilters();
-                  setIsOpen(false);
+                  onClose();
                 }}
                 className="w-full px-4 py-3 rounded-xl font-medium
                   bg-gradient-to-r from-red-500/20 to-pink-500/20 text-white

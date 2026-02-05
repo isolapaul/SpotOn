@@ -11,9 +11,18 @@ type NavItem = 'explore' | 'navigate' | 'add' | 'favorites' | 'profile';
 interface BottomNavigationProps {
   onAddSpotClick: () => void;
   onProfileClick: () => void;
+  onExploreClick: () => void;
+  onNavigateClick: () => void;
+  onFavoritesClick: () => void;
 }
 
-export default function BottomNavigation({ onAddSpotClick, onProfileClick }: Readonly<BottomNavigationProps>) {
+export default function BottomNavigation({ 
+  onAddSpotClick, 
+  onProfileClick,
+  onExploreClick,
+  onNavigateClick,
+  onFavoritesClick,
+}: Readonly<BottomNavigationProps>) {
   const [activeTab, setActiveTab] = useState<NavItem>('explore');
   const { t } = useLanguageStore();
   const { user } = useUserStore();
@@ -33,6 +42,12 @@ export default function BottomNavigation({ onAddSpotClick, onProfileClick }: Rea
       onAddSpotClick();
     } else if (itemId === 'profile') {
       onProfileClick();
+    } else if (itemId === 'explore') {
+      onExploreClick();
+    } else if (itemId === 'navigate') {
+      onNavigateClick();
+    } else if (itemId === 'favorites') {
+      onFavoritesClick();
     }
   };
 

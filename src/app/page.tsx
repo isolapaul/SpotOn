@@ -45,6 +45,7 @@ export default function Home() {
   const [selectedDistance, setSelectedDistance] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   
   const { user, initAuth } = useUserStore();
   const { spots, fetchSpots } = useSpotStore();
@@ -154,6 +155,45 @@ export default function Home() {
     setSelectedCategory(null);
   };
 
+  const handleExploreClick = () => {
+    setFilterPanelOpen(true);
+  };
+
+  const handleNavigateClick = () => {
+    if (!userLocation || visibleSpots.length === 0) return;
+    
+    // Find nearest spot
+    let nearestSpot = visibleSpots[0];
+    let minDistance = calculateDistance(
+      userLocation.lat,
+      userLocation.lng,
+      nearestSpot.location.lat,
+      nearestSpot.location.lng
+    );
+
+    visibleSpots.forEach(spot => {
+      const distance = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        spot.location.lat,
+        spot.location.lng
+      );
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestSpot = spot;
+      }
+    });
+
+    // Open Google Maps with directions
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${nearestSpot.location.lat},${nearestSpot.location.lng}`;
+    window.open(url, '_blank');
+  };
+
+  const handleFavoritesClick = () => {
+    // TODO: Show favorites panel
+    console.log('Favorites clicked');
+  };
+
   if (!isClient) {
     return null;
   }
@@ -165,6 +205,8 @@ export default function Home() {
       
       {/* Filter Panel */}
       <FilterPanel 
+        isOpen={filterPanelOpen}
+        onClose={() => setFilterPanelOpen(false)}
         selectedDistance={selectedDistance}
         selectedCategory={selectedCategory}
         onDistanceChange={setSelectedDistance}
@@ -236,6 +278,9 @@ export default function Home() {
       <BottomNavigation 
         onAddSpotClick={handleAddSpotClick}
         onProfileClick={handleProfileClick}
+        onExploreClick={handleExploreClick}
+        onNavigateClick={handleNavigateClick}
+        onFavoritesClick={handleFavoritesClick}
       />
 
       {/* Toast Notifications */}
