@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import InstallGate from '@/components/InstallGate';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -39,6 +40,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
       </head>
       <body className={`${inter.className} overflow-hidden`}>
+        <InstallGate />
         {children}
       </body>
     </html>
