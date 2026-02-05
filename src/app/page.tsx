@@ -4,28 +4,66 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import BottomNavigation from '@/components/BottomNavigation';
 import LanguageSelector from '@/components/LanguageSelector';
-import { useTranslation } from '@/hooks/useTranslation';
+import AuthModal from '@/components/AuthModal';
+import AddSpotModal from '@/components/AddSpotModal';
+import { useUserStore } from '@/store/useUserStore';
 
 // Dynamic import to avoid SSR issues with Leaflet
-const MapView = dynamic(() => import('@/components/MapView'), {
-  ssr: false,
-  loading: () => {
-    return (
-      <div className="w-full h-[100dvh] bg-slate-900 flex items-center justify-center">
-        <div className="glass-card px-8 py-4">
-          <p className="text-white font-medium">Loading map...</p>
+const MapView = dynamic(
+  () => import('@/components/MapView'),
+  {
+    ssr: false,
+    loading: () => {
+      return (
+        <div className="w-full h-[100dvh] bg-slate-900 flex items-center justify-center">
+          <div className="glass-card px-8 py-4">
+            <p className="text-white font-medium">Loading map...</p>
+          </div>
         </div>
-      </div>
-    );
-  },
-});
+      );
+    },
+  }
+);
 
 export default function Home() {
   const [isClient, setIsClient] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [addSpotModalOpen, setAddSpotModalOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  
+  const { user, initAuth } = useUserStore();
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    // Initialize Firebase auth listener
+    initAuth();
+  }, [initAuth]);
+
+  const handleAddSpotClick = () => {
+    if (user) {
+      setAddSpotModalOpen(true);
+    } else {
+      setAuthModalOpen(true);
+    }
+  };
+
+  const handleProfileClick = () => {
+    if (user) {
+      // Open profile panel in Phase 3
+      console.log('Open profile for:', user.name);
+    } else {
+      setAuthModalOpen(true);
+    }
+  };
+
+  const handleLocationSelect = (location: { lat: number; lng: number }) => {
+    setSelectedLocation(location);
+  };
+
+  const handleAddSpotClose = () => {
+    setAddSpotModalOpen(false);
+    setSelectedLocation(null);
+  };
 
   if (!isClient) {
     return null;
@@ -36,11 +74,28 @@ export default function Home() {
       {/* Language Selector Modal */}
       <LanguageSelector />
       
+      {/* Authentication Modal */}
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      
+      {/* Add Spot Modal */}
+      <AddSpotModal 
+        isOpen={addSpotModalOpen} 
+        onClose={handleAddSpotClose}
+        selectedLocation={selectedLocation}
+      />
+      
       {/* Full-screen map background */}
-      <MapView />
+      <MapView 
+        isAddingSpot={addSpotModalOpen}
+        onLocationSelect={handleLocationSelect}
+        tempMarker={selectedLocation}
+      />
       
       {/* Bottom Navigation - Floating Dock */}
-      <BottomNavigation />
+      <BottomNavigation 
+        onAddSpotClick={handleAddSpotClick}
+        onProfileClick={handleProfileClick}
+      />
     </main>
   );
 }

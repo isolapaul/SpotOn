@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { translations } from '@/locales/translations';
 
 export default function LanguageSelector() {
-  const { language, setLanguage, hasSelectedLanguage } = useLanguageStore();
+  const { setLanguage, hasSelectedLanguage } = useLanguageStore();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLang, setSelectedLang] = useState<'en' | 'hu' | null>(null);
 

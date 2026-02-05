@@ -1,6 +1,6 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker, useMapEvents } from 'react-leaflet';
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -17,6 +17,21 @@ const icon = L.icon({
 });
 
 L.Marker.prototype.options.icon = icon;
+
+// iPhone-style blue dot for user location
+const userLocationStyle = {
+  color: '#007AFF',
+  fillColor: '#007AFF',
+  fillOpacity: 1,
+  weight: 3,
+  radius: 8,
+};
+
+interface MapViewProps {
+  isAddingSpot?: boolean;
+  onLocationSelect?: (location: { lat: number; lng: number }) => void;
+  tempMarker?: { lat: number; lng: number } | null;
+}
 
 // Component to handle user location
 function LocationMarker() {
@@ -52,28 +67,64 @@ function LocationMarker() {
   }, [map]);
 
   return position === null ? null : (
-    <Marker position={position}>
+    <CircleMarker 
+      center={position} 
+      pathOptions={userLocationStyle}
+      radius={8}
+    >
       <Popup>
         <div className="text-center">
           <p className="font-semibold">You are here</p>
           <p className="text-xs text-gray-600 mt-1">Current location</p>
         </div>
       </Popup>
-    </Marker>
+    </CircleMarker>
   );
 }
 
-export default function MapView() {
+// Component to handle map clicks for adding spots
+function MapClickHandler({ 
+  isAddingSpot, 
+  onLocationSelect 
+}: { 
+  isAddingSpot: boolean; 
+  onLocationSelect: (location: { lat: number; lng: number }) => void;
+}) {
+  useMapEvents({
+    click(e) {
+      if (isAddingSpot) {
+        onLocationSelect({ lat: e.latlng.lat, lng: e.latlng.lng });
+      }
+    },
+  });
+  return null;
+}
+
+export default function MapView({ 
+  isAddingSpot = false, 
+  onLocationSelect, 
+  tempMarker 
+}: Readonly<MapViewProps>) {
   const defaultCenter: [number, number] = [47.4979, 19.0402]; // Budapest, Hungary
 
   return (
     <div className="absolute inset-0 w-full h-full">
+      {/* Instructions overlay when adding spot */}
+      {isAddingSpot && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1000] glass-card px-6 py-3 pointer-events-none animate-fade-in">
+          <p className="text-white font-medium text-center">
+            📍 Tap on the map to select location
+          </p>
+        </div>
+      )}
+
       <MapContainer
         center={defaultCenter}
         zoom={6}
         className="w-full h-full"
         zoomControl={true}
         attributionControl={false}
+        style={{ cursor: isAddingSpot ? 'crosshair' : 'grab' }}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -81,6 +132,28 @@ export default function MapView() {
         />
         
         <LocationMarker />
+        
+        {/* Map click handler for adding spots */}
+        {isAddingSpot && onLocationSelect && (
+          <MapClickHandler 
+            isAddingSpot={isAddingSpot} 
+            onLocationSelect={onLocationSelect} 
+          />
+        )}
+        
+        {/* Temporary marker when selecting location */}
+        {tempMarker && (
+          <Marker position={[tempMarker.lat, tempMarker.lng]}>
+            <Popup>
+              <div className="text-center">
+                <p className="font-semibold">New Spot Location</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {tempMarker.lat.toFixed(6)}, {tempMarker.lng.toFixed(6)}
+                </p>
+              </div>
+            </Popup>
+          </Marker>
+        )}
         
         {/* Sample marker - will be replaced with real data later */}
         <Marker position={[47.4979, 19.0402]}>
