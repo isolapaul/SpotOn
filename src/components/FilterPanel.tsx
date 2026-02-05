@@ -81,8 +81,8 @@ export default function FilterPanel({
                   onClick={() => onDistanceChange(null)}
                   className={`w-full px-4 py-3 rounded-xl text-left transition-all duration-200
                     ${selectedDistance === null 
-                      ? 'glass-card border-2 border-blue-500/50 text-white' 
-                      : 'glass border border-white/10 text-white/70 hover:text-white hover:border-white/30'
+                      ? 'bg-blue-500/30 border-2 border-blue-500/60 text-white backdrop-blur-xl' 
+                      : 'bg-black/40 border border-white/10 text-white/70 hover:text-white hover:border-white/30 hover:bg-black/50 backdrop-blur-xl'
                     }`}
                 >
                   {t('anyDistance')}
@@ -93,8 +93,8 @@ export default function FilterPanel({
                     onClick={() => onDistanceChange(distance.value)}
                     className={`w-full px-4 py-3 rounded-xl text-left transition-all duration-200
                       ${selectedDistance === distance.value 
-                        ? 'glass-card border-2 border-blue-500/50 text-white' 
-                        : 'glass border border-white/10 text-white/70 hover:text-white hover:border-white/30'
+                        ? 'bg-blue-500/30 border-2 border-blue-500/60 text-white backdrop-blur-xl' 
+                        : 'bg-black/40 border border-white/10 text-white/70 hover:text-white hover:border-white/30 hover:bg-black/50 backdrop-blur-xl'
                       }`}
                   >
                     {distance.label}
@@ -111,8 +111,8 @@ export default function FilterPanel({
                   onClick={() => onCategoryChange(null)}
                   className={`w-full px-4 py-3 rounded-xl text-left transition-all duration-200
                     ${selectedCategory === null 
-                      ? 'glass-card border-2 border-blue-500/50 text-white' 
-                      : 'glass border border-white/10 text-white/70 hover:text-white hover:border-white/30'
+                      ? 'bg-blue-500/30 border-2 border-blue-500/60 text-white backdrop-blur-xl' 
+                      : 'bg-black/40 border border-white/10 text-white/70 hover:text-white hover:border-white/30 hover:bg-black/50 backdrop-blur-xl'
                     }`}
                 >
                   {t('allCategories')}
@@ -124,8 +124,8 @@ export default function FilterPanel({
                     className={`w-full px-4 py-3 rounded-xl text-left transition-all duration-200 
                       flex items-center gap-2
                       ${selectedCategory === category.value 
-                        ? 'glass-card border-2 border-blue-500/50 text-white' 
-                        : 'glass border border-white/10 text-white/70 hover:text-white hover:border-white/30'
+                        ? 'bg-blue-500/30 border-2 border-blue-500/60 text-white backdrop-blur-xl' 
+                        : 'bg-black/40 border border-white/10 text-white/70 hover:text-white hover:border-white/30 hover:bg-black/50 backdrop-blur-xl'
                       }`}
                   >
                     <span className="text-xl">{category.emoji}</span>
