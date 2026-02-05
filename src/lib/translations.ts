@@ -161,6 +161,87 @@ export const translations = {
     delete: 'Delete',
     edit: 'Edit',
   },
+  de: {
+    // Navigation
+    explore: 'Entdecken',
+    navigate: 'Navigieren',
+    search: 'Suchen',
+    add: 'Hinzufügen',
+    favorites: 'Favoriten',
+    profile: 'Profil',
+    
+    // Auth
+    signIn: 'Anmelden',
+    signOut: 'Abmelden',
+    signInWithGoogle: 'Mit Google anmelden',
+    welcomeBack: 'Willkommen zurück',
+    pleaseSignIn: 'Bitte melden Sie sich an, um fortzufahren',
+    
+    // Add Spot
+    addNewSpot: 'Neuen Ort hinzufügen',
+    shareLocation: 'Teilen Sie einen malerischen Ort',
+    spotName: 'Ortsname',
+    spotNamePlaceholder: 'z.B. Sonnenuntergangspunkt',
+    category: 'Kategorie',
+    scenicView: 'Malerische Aussicht',
+    smokeSpot: 'Rastplatz',
+    viewpoint: 'Aussichtspunkt',
+    other: 'Sonstiges',
+    description: 'Beschreibung',
+    descriptionPlaceholder: 'Beschreiben Sie, was diesen Ort besonders macht...',
+    photo: 'Foto',
+    photoOptional: 'Foto (Optional)',
+    clickToUpload: 'Klicken Sie zum Hochladen',
+    maxSize: 'Max 5MB',
+    submit: 'Absenden',
+    submitSpot: 'Ort einreichen',
+    compressing: 'Komprimieren und Hochladen...',
+    location: 'Standort',
+    clickMapToSelect: '📍 Klicken Sie auf die Karte, um den Standort auszuwählen',
+    cancel: 'Abbrechen',
+    spotUploaded: 'Ort hochgeladen! Wartet auf Genehmigung.',
+    spotUploadFailed: 'Fehler beim Hinzufügen des Ortes. Bitte versuchen Sie es erneut.',
+    reviewMessage: 'Ihr Ort wird überprüft, bevor er auf der Karte erscheint',
+    
+    // Profile
+    mySpots: 'Meine Orte',
+    noSpotsYet: 'Sie haben noch keine Orte hinzugefügt',
+    startExploring: 'Beginnen Sie zu erkunden und teilen Sie Ihre Lieblingsorte!',
+    noFavoritesYet: 'Noch keine Lieblingsorte',
+    startSaving: 'Beginnen Sie zu erkunden und speichern Sie Ihre Favoriten!',
+    spots: 'Orte',
+    approved: 'Genehmigt',
+    pending: 'Ausstehend',
+    rejected: 'Abgelehnt',
+    
+    // Spot Details
+    viewDetails: 'Details anzeigen',
+    getDirections: 'Wegbeschreibung',
+    share: 'Teilen',
+    addedOn: 'Hinzugefügt',
+    by: 'Von',
+    anonymous: 'Anonym',
+    reviews: 'Bewertungen',
+    noReviews: 'Noch keine Bewertungen',
+    beFirstToReview: 'Seien Sie der Erste, der diesen Ort bewertet!',
+    openInMaps: 'In Karten öffnen',
+    
+    // Empty States
+    noSpotsFound: '🗺️ Noch keine Orte gefunden. Seien Sie der Erste, der einen hinzufügt!',
+    
+    // Errors
+    mustBeLoggedIn: 'Sie müssen angemeldet sein, um einen Ort hinzuzufügen',
+    pleaseSelectLocation: 'Bitte wählen Sie einen Standort auf der Karte',
+    pleaseUploadImage: 'Bitte laden Sie ein Bild hoch',
+    pleaseEnterName: 'Bitte geben Sie einen Namen für den Ort ein',
+    imageTooLarge: 'Bild muss kleiner als 5MB sein',
+    
+    // Actions
+    close: 'Schließen',
+    save: 'Speichern',
+    delete: 'Löschen',
+    edit: 'Bearbeiten',
+  },
 };
 
 export type TranslationKey = keyof typeof translations.hu;

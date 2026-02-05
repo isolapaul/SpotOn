@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { translations, TranslationKey } from '@/lib/translations';
 
-type Language = 'en' | 'hu';
+type Language = 'en' | 'hu' | 'de';
 
 interface LanguageStore {
   language: Language | null;

@@ -21,11 +21,11 @@ const categoryEmojis: Record<Spot['category'], string> = {
   other: '📍',
 };
 
-const categoryLabels: Record<Spot['category'], { hu: string; en: string }> = {
-  scenic: { hu: 'Festői Kilátás', en: 'Scenic View' },
-  'smoke-spot': { hu: 'Pihenőhely', en: 'Smoke Spot' },
-  viewpoint: { hu: 'Kilátópont', en: 'Viewpoint' },
-  other: { hu: 'Egyéb', en: 'Other' },
+const categoryLabels: Record<Spot['category'], { hu: string; en: string; de: string }> = {
+  scenic: { hu: 'Festői Kilátás', en: 'Scenic View', de: 'Malerische Aussicht' },
+  'smoke-spot': { hu: 'Pihenőhely', en: 'Smoke Spot', de: 'Rastplatz' },
+  viewpoint: { hu: 'Kilátópont', en: 'Viewpoint', de: 'Aussichtspunkt' },
+  other: { hu: 'Egyéb', en: 'Other', de: 'Sonstiges' },
 };
 
 export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetailsPanelProps>) {

@@ -20,12 +20,24 @@ const categoryEmojis: Record<Spot['category'], string> = {
   other: '📍',
 };
 
+const categoryLabels: Record<Spot['category'], { hu: string; en: string; de: string }> = {
+  scenic: { hu: 'Festői Kilátás', en: 'Scenic View', de: 'Malerische Aussicht' },
+  'smoke-spot': { hu: 'Pihenőhely', en: 'Smoke Spot', de: 'Rastplatz' },
+  viewpoint: { hu: 'Kilátópont', en: 'Viewpoint', de: 'Aussichtspunkt' },
+  other: { hu: 'Egyéb', en: 'Other', de: 'Sonstiges' },
+};
+
 export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonly<SpotInfoWindowProps>) {
   const { user, toggleFavorite } = useUserStore();
-  const { t } = useLanguageStore();
+  const { language, t } = useLanguageStore();
   const [isFavorite, setIsFavorite] = useState(
     user?.savedSpots?.includes(spot.id) || false
   );
+
+  const averageRating = spot.reviews && spot.reviews.length > 0
+    ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
+    : 0;
+  const reviewCount = spot.reviews?.length || 0;
 
   const handleFavoriteToggle = async () => {
     if (!user) return;
@@ -84,8 +96,8 @@ export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonl
               {spot.name}
             </h3>
           </div>
-          <p className="text-white/60 text-xs capitalize">
-            {spot.category.replace('-', ' ')}
+          <p className="text-white/60 text-xs">
+            {categoryLabels[spot.category][language || 'hu']}
           </p>
         </div>
 
@@ -96,12 +108,28 @@ export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonl
           </p>
         )}
 
-        {/* Rating Placeholder */}
-        <div className="flex items-center gap-1">
-          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-          <span className="text-white/80 text-sm">4.5</span>
-          <span className="text-white/40 text-xs">(12 reviews)</span>
-        </div>
+        {/* Rating */}
+        {reviewCount > 0 ? (
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                className={`w-4 h-4 ${
+                  star <= Math.round(averageRating)
+                    ? 'text-yellow-400 fill-yellow-400'
+                    : 'text-white/30'
+                }`}
+              />
+            ))}
+            <span className="text-white/80 text-sm ml-1">{averageRating.toFixed(1)}</span>
+            <span className="text-white/40 text-xs">({reviewCount} {t('reviews')})</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <Star className="w-4 h-4 text-white/30" />
+            <span className="text-white/40 text-xs">{t('noReviews')}</span>
+          </div>
+        )}
 
         {/* View Details Button */}
         <button

@@ -3,12 +3,12 @@
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { Globe, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { translations } from '@/locales/translations';
+import { translations } from '@/lib/translations';
 
 export default function LanguageSelector() {
   const { setLanguage, hasSelectedLanguage } = useLanguageStore();
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedLang, setSelectedLang] = useState<'en' | 'hu' | null>(null);
+  const [selectedLang, setSelectedLang] = useState<'en' | 'hu' | 'de' | null>(null);
 
   useEffect(() => {
     // Show language selector if user hasn't selected a language yet
@@ -18,7 +18,7 @@ export default function LanguageSelector() {
     }
   }, [hasSelectedLanguage]);
 
-  const handleLanguageSelect = (lang: 'en' | 'hu') => {
+  const handleLanguageSelect = (lang: 'en' | 'hu' | 'de') => {
     setSelectedLang(lang);
   };
 
@@ -33,7 +33,11 @@ export default function LanguageSelector() {
     return null;
   }
 
-  const t = translations[selectedLang || 'en'];
+  const t = {
+    selectLanguage: selectedLang === 'hu' ? 'Válassz Nyelvet' : selectedLang === 'de' ? 'Sprache wählen' : 'Select Language',
+    selectLanguageDesc: selectedLang === 'hu' ? 'Válaszd ki az előnyben részesített nyelvet' : selectedLang === 'de' ? 'Wählen Sie Ihre bevorzugte Sprache' : 'Choose your preferred language',
+    continue: selectedLang === 'hu' ? 'Folytatás' : selectedLang === 'de' ? 'Weiter' : 'Continue'
+  };
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 animate-fade-in">
@@ -113,6 +117,36 @@ export default function LanguageSelector() {
               </div>
             </div>
             {selectedLang === 'hu' && (
+              <div className="bg-primary-500 rounded-full p-1">
+                <Check className="w-5 h-5 text-white" strokeWidth={3} />
+              </div>
+            )}
+          </button>
+
+          {/* German */}
+          <button
+            onClick={() => handleLanguageSelect('de')}
+            className={`
+              w-full p-4 rounded-2xl border-2 transition-all duration-200
+              flex items-center justify-between
+              active:scale-98
+              ${selectedLang === 'de'
+                ? 'bg-white/20 border-white/40 backdrop-blur-xl shadow-glass-lg'
+                : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+              }
+            `}
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-3xl">🇩🇪</div>
+              <div className="text-left">
+                <div className="flex items-center gap-2">
+                  <p className="text-white font-semibold text-lg">Deutsch</p>
+                  <span className="text-white/60 text-sm font-medium">(DE)</span>
+                </div>
+                <p className="text-white/60 text-sm">Deutschland</p>
+              </div>
+            </div>
+            {selectedLang === 'de' && (
               <div className="bg-primary-500 rounded-full p-1">
                 <Check className="w-5 h-5 text-white" strokeWidth={3} />
               </div>
