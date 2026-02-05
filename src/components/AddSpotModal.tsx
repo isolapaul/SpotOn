@@ -3,6 +3,7 @@
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
+import { useLanguageStore } from '@/store/useLanguageStore';
 import { X, MapPin, Upload, Loader2 } from 'lucide-react';
 import { useState, useRef, ChangeEvent } from 'react';
 
@@ -18,6 +19,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
   const { user } = useUserStore();
   const { addSpot } = useSpotStore();
   const { showToast } = useToastStore();
+  const { t } = useLanguageStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -36,7 +38,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setError('Image must be less than 5MB');
+        setError(t('imageTooLarge'));
         return;
       }
       setImageFile(file);
@@ -53,22 +55,17 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     e.preventDefault();
     
     if (!user) {
-      setError('You must be logged in to add a spot');
+      setError(t('mustBeLoggedIn'));
       return;
     }
 
     if (!selectedLocation) {
-      setError('Please select a location on the map');
-      return;
-    }
-
-    if (!imageFile) {
-      setError('Please upload an image');
+      setError(t('pleaseSelectLocation'));
       return;
     }
 
     if (!formData.name.trim()) {
-      setError('Please enter a name for the spot');
+      setError(t('pleaseEnterName'));
       return;
     }
 
@@ -90,7 +87,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           location: selectedLocation,
           createdBy: user.uid,
         },
-        imageFile,
+        imageFile, // Can be null now
         user.uid
       );
 
@@ -102,10 +99,10 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
       setImagePreview(null);
       onClose();
       
-      showToast('Spot uploaded! Waiting for approval.', 'success');
+      showToast(t('spotUploaded'), 'success');
     } catch (err: any) {
       console.error('=== AddSpotModal: Submission error ===', err);
-      const errorMessage = err.message || 'Failed to add spot. Please try again.';
+      const errorMessage = err.message || t('spotUploadFailed');
       setError(errorMessage);
       showToast(errorMessage, 'error');
     } finally {

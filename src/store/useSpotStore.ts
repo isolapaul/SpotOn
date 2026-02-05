@@ -32,7 +32,7 @@ interface SpotStore {
   isLoading: boolean;
   error: string | null;
   fetchSpots: () => void;
-  addSpot: (spotData: Omit<Spot, 'id' | 'imageUrl' | 'createdAt' | 'status'>, imageFile: File, userId: string) => Promise<void>;
+  addSpot: (spotData: Omit<Spot, 'id' | 'imageUrl' | 'createdAt' | 'status'>, imageFile: File | null, userId: string) => Promise<void>;
 }
 
 export const useSpotStore = create<SpotStore>((set) => ({
@@ -76,33 +76,42 @@ export const useSpotStore = create<SpotStore>((set) => ({
       console.log('=== Starting addSpot ===');
       console.log('Spot data:', spotData);
       console.log('User ID:', userId);
+      console.log('Has image:', !!imageFile);
 
-      // Step 1: Compress the image
-      console.log('Step 1: Compressing image...');
-      console.log('Original file size:', imageFile.size / 1024 / 1024, 'MB');
-      
-      const options = {
-        maxSizeMB: 0.3,
-        maxWidthOrHeight: 1280,
-        useWebWorker: true,
-      };
+      let imageUrl = '';
 
-      const compressedFile = await imageCompression(imageFile, options);
-      console.log('Compressed file size:', compressedFile.size / 1024 / 1024, 'MB');
-      console.log('Step 1 complete ✓');
+      // Only compress and upload if image is provided
+      if (imageFile) {
+        // Step 1: Compress the image
+        console.log('Step 1: Compressing image...');
+        console.log('Original file size:', imageFile.size / 1024 / 1024, 'MB');
+        
+        const options = {
+          maxSizeMB: 0.3,
+          maxWidthOrHeight: 1280,
+          useWebWorker: true,
+        };
 
-      // Step 2: Upload compressed image to Firebase Storage
-      console.log('Step 2: Uploading to Firebase Storage...');
-      const timestamp = Date.now();
-      const fileName = `${timestamp}_${imageFile.name}`;
-      const imageRef = ref(storage, `spot-images/${fileName}`);
-      console.log('Storage path:', `spot-images/${fileName}`);
-      
-      await uploadBytes(imageRef, compressedFile);
-      console.log('Upload complete, getting download URL...');
-      const imageUrl = await getDownloadURL(imageRef);
-      console.log('Image URL:', imageUrl);
-      console.log('Step 2 complete ✓');
+        const compressedFile = await imageCompression(imageFile, options);
+        console.log('Compressed file size:', compressedFile.size / 1024 / 1024, 'MB');
+        console.log('Step 1 complete ✓');
+
+        // Step 2: Upload compressed image to Firebase Storage
+        console.log('Step 2: Uploading to Firebase Storage...');
+        const timestamp = Date.now();
+        const fileName = `${timestamp}_${imageFile.name}`;
+        const imageRef = ref(storage, `spot-images/${fileName}`);
+        console.log('Storage path:', `spot-images/${fileName}`);
+        
+        await uploadBytes(imageRef, compressedFile);
+        console.log('Upload complete, getting download URL...');
+        imageUrl = await getDownloadURL(imageRef);
+        console.log('Image URL:', imageUrl);
+        console.log('Step 2 complete ✓');
+      } else {
+        console.log('No image provided, using placeholder');
+        imageUrl = '/placeholder-spot.jpg'; // Placeholder image
+      }
 
       // Step 3: Add spot document to Firestore
       console.log('Step 3: Adding to Firestore...');
