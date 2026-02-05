@@ -2,7 +2,7 @@
 
 import { MapPin, Compass, Heart, User, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useLanguageStore } from '@/store/useLanguageStore';
 import { useUserStore } from '@/store/useUserStore';
 import Image from 'next/image';
 
@@ -15,7 +15,7 @@ interface BottomNavigationProps {
 
 export default function BottomNavigation({ onAddSpotClick, onProfileClick }: Readonly<BottomNavigationProps>) {
   const [activeTab, setActiveTab] = useState<NavItem>('explore');
-  const { t } = useTranslation();
+  const { t } = useLanguageStore();
   const { user } = useUserStore();
 
   const navItems = [

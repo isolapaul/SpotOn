@@ -4,6 +4,7 @@ import { X, Heart, Star, MapPin, Share2, Calendar, User } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useLanguageStore } from '@/store/useLanguageStore';
 import { useState } from 'react';
 
 interface SpotDetailsPanelProps {
@@ -18,15 +19,16 @@ const categoryEmojis: Record<Spot['category'], string> = {
   other: '📍',
 };
 
-const categoryLabels: Record<Spot['category'], string> = {
-  scenic: 'Scenic View',
-  'smoke-spot': 'Smoke Spot',
-  viewpoint: 'Viewpoint',
-  other: 'Other',
+const categoryLabels: Record<Spot['category'], { hu: string; en: string }> = {
+  scenic: { hu: 'Festői Kilátás', en: 'Scenic View' },
+  'smoke-spot': { hu: 'Pihenőhely', en: 'Smoke Spot' },
+  viewpoint: { hu: 'Kilátópont', en: 'Viewpoint' },
+  other: { hu: 'Egyéb', en: 'Other' },
 };
 
 export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetailsPanelProps>) {
   const { user, toggleFavorite } = useUserStore();
+  const { language, t } = useLanguageStore();
   const [isFavorite, setIsFavorite] = useState(
     spot ? user?.savedSpots?.includes(spot.id) || false : false
   );
@@ -55,6 +57,25 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
         console.log('Share cancelled');
       }
     }
+  };
+
+  // Platform detection for navigation
+  const getPlatform = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (/iphone|ipad|ipod/.test(userAgent)) return 'ios';
+    if (/android/.test(userAgent)) return 'android';
+    return 'desktop';
+  };
+
+  const getNavigationUrl = () => {
+    const platform = getPlatform();
+    const { lat, lng } = spot.location;
+    
+    if (platform === 'ios') {
+      return `maps://maps.apple.com/?q=${lat},${lng}`;
+    }
+    // Android and Desktop use Google Maps
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
   };
 
   const formatDate = (timestamp: any) => {
@@ -129,7 +150,7 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
           <div className="absolute bottom-4 left-4">
             <div className="glass-card px-4 py-2 flex items-center gap-2">
               <span className="text-2xl">{categoryEmojis[spot.category]}</span>
-              <span className="text-white font-medium">{categoryLabels[spot.category]}</span>
+              <span className="text-white font-medium">{categoryLabels[spot.category][language || 'hu']}</span>
             </div>
           </div>
         </div>
@@ -156,16 +177,21 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
               <p className="text-white/80 text-sm">
                 {spot.location.lat.toFixed(6)}, {spot.location.lng.toFixed(6)}
               </p>
-              <button className="text-primary-400 text-sm font-medium mt-1 hover:underline">
-                Open in Maps →
-              </button>
+              <a 
+                href={getNavigationUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-400 text-sm font-medium mt-1 hover:underline inline-block"
+              >
+                {t('openInMaps')} →
+              </a>
             </div>
           </div>
 
           {/* Description */}
           {spot.description && (
             <div>
-              <h2 className="text-xl font-bold text-white mb-3">Description</h2>
+              <h2 className="text-xl font-bold text-white mb-3">{t('description')}</h2>
               <p className="text-white/80 leading-relaxed">{spot.description}</p>
             </div>
           )}
@@ -175,7 +201,7 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
             <div className="glass-card p-4">
               <div className="flex items-center gap-2 text-white/60 mb-1">
                 <Calendar className="w-4 h-4" />
-                <span className="text-xs uppercase">Added</span>
+                <span className="text-xs uppercase">{t('addedOn')}</span>
               </div>
               <p className="text-white font-medium">{formatDate(spot.createdAt)}</p>
             </div>
@@ -183,24 +209,27 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
             <div className="glass-card p-4">
               <div className="flex items-center gap-2 text-white/60 mb-1">
                 <User className="w-4 h-4" />
-                <span className="text-xs uppercase">By</span>
+                <span className="text-xs uppercase">{t('by')}</span>
               </div>
-              <p className="text-white font-medium">Anonymous</p>
+              <p className="text-white font-medium">{t('anonymous')}</p>
             </div>
           </div>
 
           {/* Reviews Section Placeholder */}
           <div>
-            <h2 className="text-xl font-bold text-white mb-3">Reviews</h2>
+            <h2 className="text-xl font-bold text-white mb-3">{t('reviews')}</h2>
             <div className="glass-card p-6 text-center">
               <Star className="w-12 h-12 text-white/40 mx-auto mb-3" />
-              <p className="text-white/60">No reviews yet</p>
-              <p className="text-white/40 text-sm mt-1">Be the first to review this spot!</p>
+              <p className="text-white/60">{t('noReviews')}</p>
+              <p className="text-white/40 text-sm mt-1">{t('beFirstToReview')}</p>
             </div>
           </div>
 
           {/* CTA Button */}
-          <button
+          <a
+            href={getNavigationUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-full py-4 rounded-2xl font-semibold text-lg
               bg-gradient-to-r from-primary-500 to-primary-600 text-white
               shadow-lg shadow-primary-500/30 
@@ -209,8 +238,8 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
               flex items-center justify-center gap-2"
           >
             <MapPin className="w-5 h-5" />
-            <span>Get Directions</span>
-          </button>
+            <span>{t('getDirections')}</span>
+          </a>
 
           {/* Bottom Padding for safe area */}
           <div className="h-20" />

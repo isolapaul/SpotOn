@@ -4,6 +4,7 @@ import { X, Heart, Star, MapPin } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useLanguageStore } from '@/store/useLanguageStore';
 import { useState } from 'react';
 
 interface SpotInfoWindowProps {
@@ -21,6 +22,7 @@ const categoryEmojis: Record<Spot['category'], string> = {
 
 export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonly<SpotInfoWindowProps>) {
   const { user, toggleFavorite } = useUserStore();
+  const { t } = useLanguageStore();
   const [isFavorite, setIsFavorite] = useState(
     user?.savedSpots?.includes(spot.id) || false
   );
@@ -112,7 +114,7 @@ export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonl
             flex items-center justify-center gap-2"
         >
           <MapPin className="w-4 h-4" />
-          <span>View Details</span>
+          <span>{t('viewDetails')}</span>
         </button>
       </div>
     </div>

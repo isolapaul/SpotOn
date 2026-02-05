@@ -2,6 +2,7 @@ export const translations = {
   hu: {
     // Navigation
     explore: 'Felfedezés',
+    navigate: 'Navigáció',
     search: 'Keresés',
     add: 'Hozzáadás',
     favorites: 'Kedvencek',
@@ -82,6 +83,7 @@ export const translations = {
   en: {
     // Navigation
     explore: 'Explore',
+    navigate: 'Navigate',
     search: 'Search',
     add: 'Add',
     favorites: 'Favorites',

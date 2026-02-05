@@ -12,6 +12,7 @@ import Toast from '@/components/Toast';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
+import { useLanguageStore } from '@/store/useLanguageStore';
 import type { Spot } from '@/store/useSpotStore';
 
 // Dynamic import to avoid SSR issues with Leaflet
@@ -43,6 +44,7 @@ export default function Home() {
   const { user, initAuth } = useUserStore();
   const { spots, fetchSpots } = useSpotStore();
   const { toasts, removeToast } = useToastStore();
+  const { t } = useLanguageStore();
 
   useEffect(() => {
     setIsClient(true);
@@ -128,7 +130,7 @@ export default function Home() {
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10
           glass-card px-6 py-3 animate-fade-in pointer-events-none">
           <p className="text-white/80 text-sm text-center">
-            🗺️ No spots found yet. Be the first to add one!
+            {t('noSpotsFound')}
           </p>
         </div>
       )}
@@ -138,14 +140,14 @@ export default function Home() {
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10
           glass-card px-6 py-4 animate-fade-in max-w-sm">
           <p className="text-white font-semibold text-center mb-3">
-            📍 Click on the map to select location
+            {t('clickMapToSelect')}
           </p>
           <button
             onClick={() => setIsSelectingLocation(false)}
             className="w-full py-2 rounded-xl glass-button text-white font-medium
               hover:bg-white/10 transition-all"
           >
-            Cancel
+            {t('cancel')}
           </button>
         </div>
       )}
