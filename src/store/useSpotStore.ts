@@ -6,11 +6,25 @@ import {
   onSnapshot,
   query,
   where,
-  orderBy
+  orderBy,
+  doc,
+  updateDoc,
+  arrayUnion,
+  Timestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import imageCompression from 'browser-image-compression';
+
+export interface Review {
+  id: string;
+  userId: string;
+  userName: string;
+  userPhoto?: string;
+  rating: number;
+  comment: string;
+  createdAt: Timestamp;
+}
 
 export interface Spot {
   id: string;
@@ -23,8 +37,12 @@ export interface Spot {
     lng: number;
   };
   createdBy: string;
+  createdByName?: string;
+  createdByPhoto?: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: any;
+  reviews?: Review[];
+  averageRating?: number;
 }
 
 interface SpotStore {
@@ -33,6 +51,7 @@ interface SpotStore {
   error: string | null;
   fetchSpots: () => void;
   addSpot: (spotData: Omit<Spot, 'id' | 'imageUrl' | 'createdAt' | 'status'>, imageFile: File | null, userId: string) => Promise<void>;
+  addReview: (spotId: string, review: Omit<Review, 'id' | 'createdAt'>) => Promise<void>;
 }
 
 export const useSpotStore = create<SpotStore>((set) => ({
@@ -138,6 +157,40 @@ export const useSpotStore = create<SpotStore>((set) => ({
       console.error('Full error:', error);
       set({ error: error.message, isLoading: false });
       throw error; // Re-throw so the UI can handle it
+    }
+  },
+
+  addReview: async (spotId, review) => {
+    try {
+      const spotRef = doc(db, 'spots', spotId);
+      const reviewWithTimestamp = {
+        ...review,
+        id: `${review.userId}_${Date.now()}`,
+        createdAt: Timestamp.now(),
+      };
+
+      await updateDoc(spotRef, {
+        reviews: arrayUnion(reviewWithTimestamp),
+      });
+
+      // Update local state
+      set((state) => ({
+        spots: state.spots.map((spot) => {
+          if (spot.id === spotId) {
+            const updatedReviews = [...(spot.reviews || []), reviewWithTimestamp];
+            const avgRating = updatedReviews.reduce((acc, r) => acc + r.rating, 0) / updatedReviews.length;
+            return { 
+              ...spot, 
+              reviews: updatedReviews,
+              averageRating: avgRating
+            };
+          }
+          return spot;
+        }),
+      }));
+    } catch (error: any) {
+      console.error('Error adding review:', error);
+      throw error;
     }
   },
 }));

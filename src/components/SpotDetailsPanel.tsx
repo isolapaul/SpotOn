@@ -1,10 +1,12 @@
 'use client';
 
-import { X, Heart, Star, MapPin, Share2, Calendar, User } from 'lucide-react';
+import { X, Heart, Star, MapPin, Share2, Calendar, User, Send } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { useSpotStore } from '@/store/useSpotStore';
+import { useToastStore } from '@/store/useToastStore';
 import { useState } from 'react';
 
 interface SpotDetailsPanelProps {
@@ -29,9 +31,14 @@ const categoryLabels: Record<Spot['category'], { hu: string; en: string }> = {
 export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetailsPanelProps>) {
   const { user, toggleFavorite } = useUserStore();
   const { language, t } = useLanguageStore();
+  const { addReview } = useSpotStore();
+  const { addToast } = useToastStore();
   const [isFavorite, setIsFavorite] = useState(
     spot ? user?.savedSpots?.includes(spot.id) || false : false
   );
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!spot) return null;
 
@@ -42,6 +49,36 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
       setIsFavorite(!isFavorite);
     } catch (error) {
       console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!user) {
+      addToast(t('mustBeLoggedIn'), 'error');
+      return;
+    }
+    if (rating === 0) {
+      addToast('Kérlek adj értékelést!', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await addReview(spot.id, {
+        userId: user.uid,
+        userName: user.name || 'Névtelen',
+        userPhoto: user.photoURL,
+        rating,
+        comment,
+      });
+      addToast('Értékelés sikeresen hozzáadva!', 'success');
+      setRating(0);
+      setComment('');
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      addToast('Hiba az értékelés hozzáadásakor', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -81,12 +118,16 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'Unknown';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString(language === 'hu' ? 'hu-HU' : 'en-US', { 
       year: 'numeric', 
-      month: 'short', 
+      month: 'long', 
       day: 'numeric' 
     });
   };
+
+  const averageRating = spot.reviews && spot.reviews.length > 0
+    ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
+    : 0;
 
   return (
     <div className="fixed inset-0 z-[3000] animate-slide-up">
@@ -163,10 +204,23 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
             
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
-                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                <span className="text-white font-semibold">4.5</span>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={`w-5 h-5 ${
+                      star <= Math.round(averageRating)
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-white/30'
+                    }`}
+                  />
+                ))}
+                <span className="text-white font-semibold ml-2">
+                  {averageRating > 0 ? averageRating.toFixed(1) : '-'}
+                </span>
               </div>
-              <span className="text-white/60">(12 reviews)</span>
+              <span className="text-white/60">
+                ({spot.reviews?.length || 0} {t('reviews')})
+              </span>
             </div>
           </div>
 

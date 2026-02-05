@@ -38,7 +38,7 @@ export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonl
   };
 
   return (
-    <div className="glass-card w-[300px] overflow-hidden animate-slide-up">
+    <div className="w-[300px] overflow-hidden animate-slide-up bg-slate-900/95 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl">
       {/* Close Button */}
       <button
         onClick={onClose}

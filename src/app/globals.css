@@ -22,7 +22,7 @@
   }
   
   .glass-nav {
-    @apply bg-white/10 backdrop-blur-xl border border-white/20 shadow-glass-lg;
+    @apply bg-slate-900/85 backdrop-blur-xl border border-white/20 shadow-glass-lg;
   }
 }
 
