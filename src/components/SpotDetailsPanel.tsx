@@ -23,8 +23,8 @@ const categoryEmojis: Record<Spot['category'], string> = {
 };
 
 const categoryLabels: Record<Spot['category'], { hu: string; en: string; de: string }> = {
-  scenic: { hu: 'Festői Kilátás', en: 'Scenic View', de: 'Malerische Aussicht' },
-  'smoke-spot': { hu: 'Pihenőhely', en: 'Smoke Spot', de: 'Rastplatz' },
+  scenic: { hu: 'Szép Kilátás', en: 'Scenic View', de: 'Malerische Aussicht' },
+  'smoke-spot': { hu: 'Eldugott Spot', en: 'Hidden Spot', de: 'Versteckter Ort' },
   viewpoint: { hu: 'Kilátópont', en: 'Viewpoint', de: 'Aussichtspunkt' },
   other: { hu: 'Park/Bokor', en: 'Park/Bush', de: 'Park/Busch' },
 };

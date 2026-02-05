@@ -150,8 +150,8 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             <MapPin className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">Add New Spot</h2>
-            <p className="text-white/60 text-sm">Share a scenic location</p>
+            <h2 className="text-2xl font-bold text-white">{t('addNewSpot')}</h2>
+            <p className="text-white/60 text-sm">{t('shareLocation')}</p>
           </div>
         </div>
 
@@ -169,13 +169,13 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {/* Name Input */}
           <div>
             <label className="block text-white font-medium mb-2">
-              Spot Name *
+              {t('spotName')} *
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g., Sunset Point"
+              placeholder={t('spotNamePlaceholder')}
               className="w-full px-4 py-3 rounded-xl glass text-white placeholder-white/40
                 border border-white/10 focus:border-white/30 focus:outline-none
                 transition-all duration-200"
@@ -187,7 +187,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {/* Category Select */}
           <div>
             <label className="block text-white font-medium mb-2">
-              Category *
+              {t('category')} *
             </label>
             <select
               value={formData.category}
@@ -198,22 +198,22 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               disabled={loading}
               required
             >
-              <option value="scenic" className="bg-gray-800">🌅 Scenic View</option>
-              <option value="smoke-spot" className="bg-gray-800">💨 Smoke Spot</option>
-              <option value="viewpoint" className="bg-gray-800">🏔️ Viewpoint</option>
-              <option value="other" className="bg-gray-800">📍 Other</option>
+              <option value="scenic" className="bg-gray-800">🌅 {t('categoryScenic')}</option>
+              <option value="smoke-spot" className="bg-gray-800">💨 {t('categorySmoke')}</option>
+              <option value="viewpoint" className="bg-gray-800">🏔️ {t('categoryViewpoint')}</option>
+              <option value="other" className="bg-gray-800">🌳 {t('categoryOther')}</option>
             </select>
           </div>
 
           {/* Description */}
           <div>
             <label className="block text-white font-medium mb-2">
-              Description
+              {t('description')}
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Describe what makes this spot special..."
+              placeholder={t('descriptionPlaceholder')}
               rows={3}
               className="w-full px-4 py-3 rounded-xl glass text-white placeholder-white/40
                 border border-white/10 focus:border-white/30 focus:outline-none
@@ -225,7 +225,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {/* Image Upload */}
           <div>
             <label className="block text-white font-medium mb-2">
-              Photo *
+              {t('photo')} *
             </label>
             <input
               ref={fileInputRef}
