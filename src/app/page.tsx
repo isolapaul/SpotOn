@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import BottomNavigation from '@/components/BottomNavigation';
 import LanguageSelector from '@/components/LanguageSelector';
 import AuthModal from '@/components/AuthModal';
@@ -9,13 +9,13 @@ import AddSpotModal from '@/components/AddSpotModal';
 import SpotDetailsPanel from '@/components/SpotDetailsPanel';
 import ProfilePanel from '@/components/ProfilePanel';
 import FilterPanel from '@/components/FilterPanel';
+import DistanceSelector from '@/components/DistanceSelector';
 import Toast from '@/components/Toast';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import type { Spot } from '@/store/useSpotStore';
-import { useMemo } from 'react';
 
 // Dynamic import to avoid SSR issues with Leaflet
 const MapView = dynamic(
@@ -46,11 +46,13 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [distanceSelectorOpen, setDistanceSelectorOpen] = useState(false);
   
   const { user, initAuth } = useUserStore();
   const { spots, fetchSpots } = useSpotStore();
   const { toasts, removeToast } = useToastStore();
-  const { t } = useLanguageStore();
+  const { t, language } = useLanguageStore();
+  const { showToast } = useToastStore();
 
   // Check if current user is admin
   const userIsAdmin = useMemo(() => isAdmin(user?.email), [user?.email]);
@@ -92,7 +94,6 @@ export default function Home() {
       filtered = filtered.filter(spot => spot.category === selectedCategory);
     }
 
-    return filtered;
     return filtered;
   }, [spots, userIsAdmin, selectedDistance, selectedCategory, userLocation]);
 
@@ -161,36 +162,46 @@ export default function Home() {
 
   const handleNavigateClick = () => {
     if (!userLocation || visibleSpots.length === 0) return;
-    
-    // Find nearest spot
-    let nearestSpot = visibleSpots[0];
-    let minDistance = calculateDistance(
-      userLocation.lat,
-      userLocation.lng,
-      nearestSpot.location.lat,
-      nearestSpot.location.lng
-    );
+    // Open distance selector
+    setDistanceSelectorOpen(true);
+  };
 
-    visibleSpots.forEach(spot => {
-      const distance = calculateDistance(
+  const handleDistanceSelect = (distance: number) => {
+    if (!userLocation || visibleSpots.length === 0) return;
+    
+    // Filter spots within the selected distance
+    const spotsInRange = visibleSpots.filter(spot => {
+      const dist = calculateDistance(
         userLocation.lat,
         userLocation.lng,
         spot.location.lat,
         spot.location.lng
       );
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearestSpot = spot;
-      }
+      return dist <= distance;
     });
 
+    if (spotsInRange.length === 0) {
+      showToast(
+        language === 'hu' 
+          ? `Nincs hely ${distance} km-en belül` 
+          : language === 'de'
+          ? `Keine Orte innerhalb von ${distance} km`
+          : `No spots within ${distance} km`,
+        'error'
+      );
+      return;
+    }
+
+    // Pick a random spot
+    const randomSpot = spotsInRange[Math.floor(Math.random() * spotsInRange.length)];
+
     // Open Google Maps with directions
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${nearestSpot.location.lat},${nearestSpot.location.lng}`;
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${randomSpot.location.lat},${randomSpot.location.lng}`;
     window.open(url, '_blank');
   };
 
   const handleFavoritesClick = () => {
-    // TODO: Show favorites panel
+    // Show only favorited spots (filter by favorites in future implementation)
     console.log('Favorites clicked');
   };
 
@@ -212,6 +223,13 @@ export default function Home() {
         onDistanceChange={setSelectedDistance}
         onCategoryChange={setSelectedCategory}
         onClearFilters={handleClearFilters}
+      />
+      
+      {/* Distance Selector Modal */}
+      <DistanceSelector
+        isOpen={distanceSelectorOpen}
+        onClose={() => setDistanceSelectorOpen(false)}
+        onSelect={handleDistanceSelect}
       />
       
       {/* Authentication Modal */}

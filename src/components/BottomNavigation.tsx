@@ -52,9 +52,14 @@ export default function BottomNavigation({
   };
 
   return (
-    <div className="fixed bottom-6 left-0 right-0 z-[1000] px-6 safe-bottom">
-      <nav className="glass-nav mx-auto max-w-md rounded-[32px] px-4 py-3 shadow-glass-lg">
-        <div className="flex items-center justify-around gap-2">
+    <div className="fixed bottom-0 left-0 right-0 z-50 md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:w-auto">
+      <nav className="
+        w-full bg-gray-900/95 backdrop-blur-md border-t border-white/10
+        md:rounded-full md:border md:border-white/20 md:shadow-glass-lg md:px-6 md:py-3
+        px-0 py-2 pb-safe
+        md:max-w-md md:mx-auto
+      ">
+        <div className="flex items-center justify-around md:gap-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -65,28 +70,25 @@ export default function BottomNavigation({
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className="relative group"
+                  className="relative group min-h-[44px] flex items-center justify-center"
                   aria-label={item.label}
                 >
                   <div className={`
-                    relative flex items-center justify-center w-14 h-14 -mt-6
+                    relative flex items-center justify-center 
+                    w-14 h-14 md:w-16 md:h-16
+                    -mt-8 md:-mt-10
                     rounded-full transition-all duration-300
                     ${isActive 
                       ? 'bg-gradient-to-br from-primary-400 to-primary-600 shadow-lg shadow-primary-500/50' 
                       : 'bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg shadow-primary-600/40'
                     }
-                    active:scale-95 group-hover:shadow-xl
+                    active:scale-95 md:group-hover:shadow-xl
                   `}>
                     <Icon 
-                      className="w-7 h-7 text-white" 
+                      className="w-7 h-7 md:w-8 md:h-8 text-white" 
                       strokeWidth={2.5}
                     />
                   </div>
-                  
-                  {/* Ripple effect on active */}
-                  {isActive && (
-                    <div className="absolute inset-0 rounded-full bg-primary-400/30 animate-ping" />
-                  )}
                 </button>
               );
             }
@@ -98,8 +100,9 @@ export default function BottomNavigation({
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
                   className={`
-                    relative flex flex-col items-center justify-center gap-1
-                    px-4 py-2 rounded-2xl transition-all duration-200
+                    relative flex flex-col items-center justify-center gap-0.5 md:gap-1
+                    px-2 md:px-4 py-2 md:py-2 rounded-xl md:rounded-2xl 
+                    transition-all duration-200 min-h-[44px]
                     ${isActive 
                       ? 'bg-white/20 text-white' 
                       : 'text-white/60 hover:text-white/80 active:scale-95'
@@ -107,7 +110,7 @@ export default function BottomNavigation({
                   `}
                   aria-label={item.label}
                 >
-                  <div className={`relative w-7 h-7 rounded-full overflow-hidden border-2 transition-all duration-200 ${
+                  <div className={`relative w-6 h-6 md:w-7 md:h-7 rounded-full overflow-hidden border-2 transition-all duration-200 ${
                     isActive ? 'border-white' : 'border-white/30'
                   }`}>
                     <Image 
@@ -119,16 +122,11 @@ export default function BottomNavigation({
                     />
                   </div>
                   <span className={`
-                    text-[10px] font-medium transition-all duration-200
+                    text-[8px] md:text-[10px] font-medium transition-all duration-200
                     ${isActive ? 'opacity-100' : 'opacity-70'}
                   `}>
                     {item.label}
                   </span>
-                  
-                  {/* Active indicator dot */}
-                  {isActive && (
-                    <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-white shadow-lg shadow-white/50 animate-fade-in" />
-                  )}
                 </button>
               );
             }
@@ -138,8 +136,9 @@ export default function BottomNavigation({
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
                 className={`
-                  relative flex flex-col items-center justify-center gap-1
-                  px-4 py-2 rounded-2xl transition-all duration-200
+                  relative flex flex-col items-center justify-center gap-0.5 md:gap-1
+                  px-2 md:px-4 py-2 md:py-2 rounded-xl md:rounded-2xl 
+                  transition-all duration-200 min-h-[44px]
                   ${isActive 
                     ? 'bg-white/20 text-white' 
                     : 'text-white/60 hover:text-white/80 active:scale-95'
@@ -148,22 +147,17 @@ export default function BottomNavigation({
                 aria-label={item.label}
               >
                 <Icon 
-                  className={`w-6 h-6 transition-all duration-200 ${
+                  className={`w-6 h-6 md:w-6 md:h-6 transition-all duration-200 ${
                     isActive ? 'scale-110' : 'scale-100'
                   }`}
                   strokeWidth={isActive ? 2.5 : 2}
                 />
                 <span className={`
-                  text-[10px] font-medium transition-all duration-200
+                  text-[8px] md:text-[10px] font-medium transition-all duration-200
                   ${isActive ? 'opacity-100' : 'opacity-70'}
                 `}>
                   {item.label}
                 </span>
-                
-                {/* Active indicator dot */}
-                {isActive && (
-                  <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-white shadow-lg shadow-white/50 animate-fade-in" />
-                )}
               </button>
             );
           })}

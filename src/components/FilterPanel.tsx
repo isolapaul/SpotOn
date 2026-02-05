@@ -2,7 +2,6 @@
 
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { SlidersHorizontal, X } from 'lucide-react';
-import { useState } from 'react';
 
 interface FilterPanelProps {
   isOpen: boolean;
@@ -23,7 +22,7 @@ export default function FilterPanel({
   onCategoryChange,
   onClearFilters,
 }: Readonly<FilterPanelProps>) {
-  const { t, language } = useLanguageStore();
+  const { t } = useLanguageStore();
 
   const distances = [
     { value: 1, label: t('within1km') },
@@ -48,9 +47,11 @@ export default function FilterPanel({
       {isOpen && (
         <div className="fixed inset-0 z-[1999] flex items-start justify-end p-4 animate-fade-in">
           {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-md"
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60 backdrop-blur-md cursor-default"
             onClick={onClose}
+            aria-label="Close filter panel"
           />
           
           {/* Panel */}
