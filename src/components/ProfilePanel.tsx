@@ -4,7 +4,11 @@ import { X, MapPin, Heart, LogOut } from 'lucide-react';
 import Image from 'next/image';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
-import { useState } from 'react';
+import { useLanguageStore } from '@/store/useLanguageStore';
+import { useState, useEffect } from 'react';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Spot } from '@/store/useSpotStore';
 
 interface ProfilePanelProps {
   isOpen: boolean;
@@ -14,11 +18,30 @@ interface ProfilePanelProps {
 export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelProps>) {
   const { user, signOut } = useUserStore();
   const { spots } = useSpotStore();
+  const { t } = useLanguageStore();
   const [activeTab, setActiveTab] = useState<'my-spots' | 'favorites'>('my-spots');
+  const [myAllSpots, setMyAllSpots] = useState<Spot[]>([]);
+
+  // Fetch ALL user's spots (approved + pending)
+  useEffect(() => {
+    if (!user || !isOpen) return;
+
+    const spotsRef = collection(db, 'spots');
+    const q = query(spotsRef, where('createdBy', '==', user.uid));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const userSpots: Spot[] = [];
+      snapshot.forEach((doc) => {
+        userSpots.push({ id: doc.id, ...doc.data() } as Spot);
+      });
+      setMyAllSpots(userSpots);
+    });
+
+    return () => unsubscribe();
+  }, [user, isOpen]);
 
   if (!isOpen || !user) return null;
 
-  const mySpots = spots.filter((spot) => spot.createdBy === user.uid);
   const favoriteSpots = spots.filter((spot) => user.savedSpots.includes(spot.id));
 
   const handleSignOut = async () => {
@@ -56,7 +79,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               className="glass-button px-4 py-2 rounded-full flex items-center gap-2"
             >
               <LogOut className="w-4 h-4 text-white" />
-              <span className="text-white text-sm">Sign Out</span>
+              <span className="text-white text-sm">{t('signOut')}</span>
             </button>
           </div>
 
@@ -76,12 +99,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               <p className="text-white/60 text-sm">{user.email}</p>
               <div className="flex gap-4 mt-2">
                 <div>
-                  <span className="text-white font-bold">{mySpots.length}</span>
-                  <span className="text-white/60 text-xs ml-1">Spots</span>
+                  <span className="text-white font-bold">{myAllSpots.length}</span>
+                  <span className="text-white/60 text-xs ml-1">{t('spots')}</span>
                 </div>
                 <div>
                   <span className="text-white font-bold">{favoriteSpots.length}</span>
-                  <span className="text-white/60 text-xs ml-1">Favorites</span>
+                  <span className="text-white/60 text-xs ml-1">{t('favorites')}</span>
                 </div>
               </div>
             </div>
@@ -99,7 +122,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
             }`}
           >
             <MapPin className="w-4 h-4 inline mr-2" />
-            My Spots
+            {t('mySpots')}
           </button>
           <button
             onClick={() => setActiveTab('favorites')}
@@ -110,7 +133,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
             }`}
           >
             <Heart className="w-4 h-4 inline mr-2" />
-            Favorites
+            {t('favorites')}
           </button>
         </div>
 
@@ -118,14 +141,14 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
           {activeTab === 'my-spots' && (
             <div className="space-y-4">
-              {mySpots.length === 0 ? (
+              {myAllSpots.length === 0 ? (
                 <div className="glass-card p-8 text-center">
                   <MapPin className="w-12 h-12 text-white/40 mx-auto mb-3" />
-                  <p className="text-white/60">You haven't added any spots yet</p>
-                  <p className="text-white/40 text-sm mt-1">Start exploring and share your favorite places!</p>
+                  <p className="text-white/60">{t('noSpotsYet')}</p>
+                  <p className="text-white/40 text-sm mt-1">{t('startExploring')}</p>
                 </div>
               ) : (
-                mySpots.map((spot) => (
+                myAllSpots.map((spot) => (
                   <div key={spot.id} className="glass-card p-4 flex gap-4">
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                       <Image
@@ -142,9 +165,11 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         <span className={`text-xs px-2 py-1 rounded-full ${
                           spot.status === 'approved' 
                             ? 'bg-green-500/20 text-green-400'
-                            : 'bg-yellow-500/20 text-yellow-400'
+                            : spot.status === 'pending'
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-red-500/20 text-red-400'
                         }`}>
-                          {spot.status}
+                          {spot.status === 'approved' ? t('approved') : spot.status === 'pending' ? t('pending') : t('rejected')}
                         </span>
                       </div>
                     </div>
@@ -159,8 +184,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               {favoriteSpots.length === 0 ? (
                 <div className="glass-card p-8 text-center">
                   <Heart className="w-12 h-12 text-white/40 mx-auto mb-3" />
-                  <p className="text-white/60">No favorite spots yet</p>
-                  <p className="text-white/40 text-sm mt-1">Start exploring and save your favorites!</p>
+                  <p className="text-white/60">{t('noFavoritesYet')}</p>
+                  <p className="text-white/40 text-sm mt-1">{t('startSaving')}</p>
                 </div>
               ) : (
                 favoriteSpots.map((spot) => (
