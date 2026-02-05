@@ -86,6 +86,8 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           description: formData.description.trim(),
           location: selectedLocation,
           createdBy: user.uid,
+          createdByName: user.name,
+          createdByPhoto: user.photoURL,
         },
         imageFile, // Can be null now
         user.uid

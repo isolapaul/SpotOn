@@ -32,7 +32,7 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
   const { user, toggleFavorite } = useUserStore();
   const { language, t } = useLanguageStore();
   const { addReview } = useSpotStore();
-  const { addToast } = useToastStore();
+  const { showToast } = useToastStore();
   const [isFavorite, setIsFavorite] = useState(
     spot ? user?.savedSpots?.includes(spot.id) || false : false
   );
@@ -54,11 +54,11 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
 
   const handleSubmitReview = async () => {
     if (!user) {
-      addToast(t('mustBeLoggedIn'), 'error');
+      showToast(t('mustBeLoggedIn'), 'error');
       return;
     }
     if (rating === 0) {
-      addToast('Kérlek adj értékelést!', 'error');
+      showToast('Kérlek adj értékelést!', 'error');
       return;
     }
 
@@ -71,12 +71,12 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
         rating,
         comment,
       });
-      addToast('Értékelés sikeresen hozzáadva!', 'success');
+      showToast('Értékelés sikeresen hozzáadva!', 'success');
       setRating(0);
       setComment('');
     } catch (error) {
       console.error('Error submitting review:', error);
-      addToast('Hiba az értékelés hozzáadásakor', 'error');
+      showToast('Hiba az értékelés hozzáadásakor', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -265,17 +265,121 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
                 <User className="w-4 h-4" />
                 <span className="text-xs uppercase">{t('by')}</span>
               </div>
-              <p className="text-white font-medium">{t('anonymous')}</p>
+              <div className="flex items-center gap-2">
+                {spot.createdByPhoto && (
+                  <div className="relative w-6 h-6 rounded-full overflow-hidden">
+                    <Image src={spot.createdByPhoto} alt="User" fill className="object-cover" />
+                  </div>
+                )}
+                <p className="text-white font-medium">
+                  {spot.createdByName || t('anonymous')}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Reviews Section Placeholder */}
+          {/* Reviews Section */}
           <div>
-            <h2 className="text-xl font-bold text-white mb-3">{t('reviews')}</h2>
-            <div className="glass-card p-6 text-center">
-              <Star className="w-12 h-12 text-white/40 mx-auto mb-3" />
-              <p className="text-white/60">{t('noReviews')}</p>
-              <p className="text-white/40 text-sm mt-1">{t('beFirstToReview')}</p>
+            <h2 className="text-xl font-bold text-white mb-4">{t('reviews')}</h2>
+            
+            {/* Add Review Form */}
+            {user && (
+              <div className="glass-card p-4 mb-4">
+                <div className="flex items-center gap-3 mb-3">
+                  {user.photoURL && (
+                    <div className="relative w-10 h-10 rounded-full overflow-hidden">
+                      <Image src={user.photoURL} alt={user.name || 'User'} fill className="object-cover" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-white font-medium">{user.name}</p>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => setRating(star)}
+                          className="transition-all duration-200 active:scale-95"
+                        >
+                          <Star
+                            className={`w-5 h-5 ${
+                              star <= rating
+                                ? 'text-yellow-400 fill-yellow-400'
+                                : 'text-white/30'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Írd le a véleményedet..."
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
+                  rows={3}
+                />
+                
+                <button
+                  onClick={handleSubmitReview}
+                  disabled={isSubmitting || rating === 0}
+                  className="mt-3 w-full py-3 rounded-xl font-medium bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{isSubmitting ? 'Küldés...' : 'Értékelés küldése'}</span>
+                </button>
+              </div>
+            )}
+
+            {/* Reviews List */}
+            <div className="space-y-3">
+              {!spot.reviews || spot.reviews.length === 0 ? (
+                <div className="glass-card p-6 text-center">
+                  <Star className="w-12 h-12 text-white/40 mx-auto mb-3" />
+                  <p className="text-white/60">{t('noReviews')}</p>
+                  <p className="text-white/40 text-sm mt-1">{t('beFirstToReview')}</p>
+                </div>
+              ) : (
+                spot.reviews.map((review) => (
+                  <div key={review.id} className="glass-card p-4">
+                    <div className="flex items-start gap-3">
+                      {review.userPhoto && (
+                        <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                          <Image src={review.userPhoto} alt={review.userName} fill className="object-cover" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-white font-medium">{review.userName}</p>
+                          <span className="text-white/40 text-xs">
+                            {review.createdAt?.toDate ? 
+                              new Date(review.createdAt.toDate()).toLocaleDateString(language === 'hu' ? 'hu-HU' : 'en-US', {
+                                month: 'short',
+                                day: 'numeric'
+                              }) : ''}
+                          </span>
+                        </div>
+                        <div className="flex gap-0.5 mb-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`w-4 h-4 ${
+                                star <= review.rating
+                                  ? 'text-yellow-400 fill-yellow-400'
+                                  : 'text-white/30'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        {review.comment && (
+                          <p className="text-white/80 text-sm">{review.comment}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
