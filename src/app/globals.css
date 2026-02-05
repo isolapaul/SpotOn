@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Glassmorphism utility classes for Apple Liquid Glass effect */
+@layer components {
+  .glass {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20 shadow-glass;
+  }
+  
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-xl border border-white/10 shadow-glass;
+  }
+  
+  .glass-card {
+    @apply bg-white/15 backdrop-blur-2xl border border-white/25 shadow-glass-lg rounded-3xl;
+  }
+  
+  .glass-button {
+    @apply bg-white/20 backdrop-blur-xl border border-white/30 shadow-glass 
+           hover:bg-white/30 active:scale-95 transition-all duration-200;
+  }
+  
+  .glass-nav {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20 shadow-glass-lg;
+  }
+}
+
+/* Hide Leaflet zoom controls on mobile */
+@media (max-width: 640px) {
+  .leaflet-control-zoom {
+    display: none;
+  }
+}
+
+/* Smooth map loading */
+.leaflet-container {
+  background: #0f172a;
+  font-family: inherit;
+}
+
+/* Custom scrollbar for panels */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* iOS safe area support */
+@supports (padding: max(0px)) {
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
