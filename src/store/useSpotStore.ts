@@ -183,25 +183,12 @@ export const useSpotStore = create<SpotStore>((set) => ({
         createdAt: Timestamp.now(),
       };
 
+      // Only send to Firebase - the onSnapshot listener will automatically update the local state
       await updateDoc(spotRef, {
         reviews: arrayUnion(reviewWithTimestamp),
       });
 
-      // Update local state
-      set((state) => ({
-        spots: state.spots.map((spot) => {
-          if (spot.id === spotId) {
-            const updatedReviews = [...(spot.reviews || []), reviewWithTimestamp];
-            const avgRating = updatedReviews.reduce((acc, r) => acc + r.rating, 0) / updatedReviews.length;
-            return { 
-              ...spot, 
-              reviews: updatedReviews,
-              averageRating: avgRating
-            };
-          }
-          return spot;
-        }),
-      }));
+      // ✅ NO manual state update here - let Firebase onSnapshot handle it
     } catch (error: any) {
       console.error('Error adding review:', error);
       throw error;
@@ -211,17 +198,13 @@ export const useSpotStore = create<SpotStore>((set) => ({
   approveSpot: async (spotId) => {
     try {
       const spotRef = doc(db, 'spots', spotId);
+      
+      // Only send to Firebase - the onSnapshot listener will automatically update the local state
       await updateDoc(spotRef, {
         status: 'approved',
       });
 
-      // Update local state
-      set((state) => ({
-        spots: state.spots.map((spot) =>
-          spot.id === spotId ? { ...spot, status: 'approved' as const } : spot
-        ),
-      }));
-
+      // ✅ NO manual state update here - let Firebase onSnapshot handle it
       console.log(`Spot ${spotId} approved successfully`);
     } catch (error: any) {
       console.error('Error approving spot:', error);
