@@ -7,6 +7,7 @@ import LanguageSelector from '@/components/LanguageSelector';
 import AuthModal from '@/components/AuthModal';
 import AddSpotModal from '@/components/AddSpotModal';
 import { useUserStore } from '@/store/useUserStore';
+import { useSpotStore } from '@/store/useSpotStore';
 
 // Dynamic import to avoid SSR issues with Leaflet
 const MapView = dynamic(
@@ -32,12 +33,15 @@ export default function Home() {
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   
   const { user, initAuth } = useUserStore();
+  const { spots, fetchSpots } = useSpotStore();
 
   useEffect(() => {
     setIsClient(true);
     // Initialize Firebase auth listener
     initAuth();
-  }, [initAuth]);
+    // Fetch approved spots
+    fetchSpots();
+  }, [initAuth, fetchSpots]);
 
   const handleAddSpotClick = () => {
     if (user) {
@@ -89,7 +93,18 @@ export default function Home() {
         isAddingSpot={addSpotModalOpen}
         onLocationSelect={handleLocationSelect}
         tempMarker={selectedLocation}
+        spots={spots}
       />
+      
+      {/* Empty state message */}
+      {spots.length === 0 && (
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10
+          glass-card px-6 py-3 animate-fade-in pointer-events-none">
+          <p className="text-white/80 text-sm text-center">
+            🗺️ No spots found yet. Be the first to add one!
+          </p>
+        </div>
+      )}
       
       {/* Bottom Navigation - Floating Dock */}
       <BottomNavigation 

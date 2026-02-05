@@ -13,7 +13,7 @@ interface BottomNavigationProps {
   onProfileClick: () => void;
 }
 
-export default function BottomNavigation({ onAddSpotClick, onProfileClick }: BottomNavigationProps) {
+export default function BottomNavigation({ onAddSpotClick, onProfileClick }: Readonly<BottomNavigationProps>) {
   const [activeTab, setActiveTab] = useState<NavItem>('explore');
   const { t } = useTranslation();
   const { user } = useUserStore();

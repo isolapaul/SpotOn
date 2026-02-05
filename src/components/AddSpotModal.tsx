@@ -1,11 +1,9 @@
 'use client';
 
 import { useUserStore } from '@/store/useUserStore';
+import { useSpotStore } from '@/store/useSpotStore';
 import { X, MapPin, Upload, Loader2 } from 'lucide-react';
 import { useState, useRef, ChangeEvent } from 'react';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db, storage } from '@/lib/firebase';
 
 interface AddSpotModalProps {
   isOpen: boolean;
@@ -17,6 +15,7 @@ type Category = 'scenic' | 'smoke-spot' | 'viewpoint' | 'other';
 
 export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Readonly<AddSpotModalProps>) {
   const { user } = useUserStore();
+  const { addSpot } = useSpotStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -75,25 +74,18 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     setError(null);
 
     try {
-      // 1. Upload image to Firebase Storage
-      const imageRef = ref(storage, `spots/${user.uid}/${Date.now()}_${imageFile.name}`);
-      await uploadBytes(imageRef, imageFile);
-      const imageUrl = await getDownloadURL(imageRef);
-
-      // 2. Create spot document in Firestore
-      await addDoc(collection(db, 'spots'), {
-        name: formData.name.trim(),
-        category: formData.category,
-        description: formData.description.trim(),
-        imageUrl,
-        lat: selectedLocation.lat,
-        lng: selectedLocation.lng,
-        createdBy: user.uid,
-        createdByName: user.name,
-        status: 'pending', // CRITICAL: Always set to pending
-        reviews: [],
-        createdAt: serverTimestamp(),
-      });
+      // Use the store's addSpot method (handles compression & upload)
+      await addSpot(
+        {
+          name: formData.name.trim(),
+          category: formData.category,
+          description: formData.description.trim(),
+          location: selectedLocation,
+          createdBy: user.uid,
+        },
+        imageFile,
+        user.uid
+      );
 
       // Reset form and close
       setFormData({ name: '', category: 'scenic', description: '' });
@@ -101,7 +93,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
       setImagePreview(null);
       onClose();
       
-      alert('Spot submitted successfully! It will be visible after approval.');
+      alert('Spot uploaded! Waiting for approval.');
     } catch (err) {
       console.error('Error adding spot:', err);
       setError('Failed to add spot. Please try again.');
@@ -290,7 +282,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             {loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Submitting...</span>
+                <span>Compressing & Uploading...</span>
               </>
             ) : (
               <>
