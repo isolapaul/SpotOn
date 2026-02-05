@@ -1,14 +1,17 @@
 'use client';
 
-import { X, Heart, Star, MapPin } from 'lucide-react';
+import { X, Heart, Star, MapPin, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { useSpotStore } from '@/store/useSpotStore';
+import { useToastStore } from '@/store/useToastStore';
 import { useState } from 'react';
 
 interface SpotInfoWindowProps {
   spot: Spot;
+  isAdmin?: boolean;
   onClose: () => void;
   onViewDetails: () => void;
 }
@@ -24,15 +27,18 @@ const categoryLabels: Record<Spot['category'], { hu: string; en: string; de: str
   scenic: { hu: 'Festői Kilátás', en: 'Scenic View', de: 'Malerische Aussicht' },
   'smoke-spot': { hu: 'Pihenőhely', en: 'Smoke Spot', de: 'Rastplatz' },
   viewpoint: { hu: 'Kilátópont', en: 'Viewpoint', de: 'Aussichtspunkt' },
-  other: { hu: 'Egyéb', en: 'Other', de: 'Sonstiges' },
+  other: { hu: 'Park/Bokor', en: 'Park/Bush', de: 'Park/Busch' },
 };
 
-export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonly<SpotInfoWindowProps>) {
+export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewDetails }: Readonly<SpotInfoWindowProps>) {
   const { user, toggleFavorite } = useUserStore();
   const { language, t } = useLanguageStore();
+  const { approveSpot } = useSpotStore();
+  const { showToast } = useToastStore();
   const [isFavorite, setIsFavorite] = useState(
     user?.savedSpots?.includes(spot.id) || false
   );
+  const [isApproving, setIsApproving] = useState(false);
 
   const averageRating = spot.reviews && spot.reviews.length > 0
     ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
@@ -46,6 +52,26 @@ export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonl
       setIsFavorite(!isFavorite);
     } catch (error) {
       console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const handleApprove = async () => {
+    setIsApproving(true);
+    try {
+      await approveSpot(spot.id);
+      showToast(
+        language === 'hu' ? 'Hely jóváhagyva!' : language === 'de' ? 'Ort genehmigt!' : 'Spot approved!',
+        'success'
+      );
+      onClose();
+    } catch (error) {
+      console.error('Error approving spot:', error);
+      showToast(
+        language === 'hu' ? 'Hiba a jóváhagyáskor' : language === 'de' ? 'Fehler bei der Genehmigung' : 'Error approving spot',
+        'error'
+      );
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -128,6 +154,42 @@ export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonl
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 text-white/30" />
             <span className="text-white/40 text-xs">{t('noReviews')}</span>
+          </div>
+        )}
+
+        {/* Admin Approve Button */}
+        {isAdmin && spot.status === 'pending' && (
+          <button
+            onClick={handleApprove}
+            disabled={isApproving}
+            className="w-full py-2.5 rounded-xl font-medium mb-2
+              bg-gradient-to-r from-green-500 to-green-600 text-white
+              shadow-lg shadow-green-500/20
+              hover:shadow-xl hover:shadow-green-500/30
+              active:scale-98 transition-all duration-200
+              disabled:opacity-50 disabled:cursor-not-allowed
+              flex items-center justify-center gap-2"
+          >
+            <CheckCircle className="w-4 h-4" />
+            <span>
+              {isApproving 
+                ? (language === 'hu' ? 'Jóváhagyás...' : language === 'de' ? 'Genehmigung...' : 'Approving...')
+                : (language === 'hu' ? 'Hely Jóváhagyása' : language === 'de' ? 'Ort genehmigen' : 'Approve Spot')
+              }
+            </span>
+          </button>
+        )}
+
+        {/* Status Badge for Admin */}
+        {isAdmin && (
+          <div className="mb-2">
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              spot.status === 'approved' 
+                ? 'bg-green-500/20 text-green-400'
+                : 'bg-yellow-500/20 text-yellow-400'
+            }`}>
+              {spot.status === 'approved' ? t('approved') : t('pending')}
+            </span>
           </div>
         )}
 

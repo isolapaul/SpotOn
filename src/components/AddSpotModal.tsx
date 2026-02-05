@@ -90,7 +90,8 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           createdByPhoto: user.photoURL,
         },
         imageFile, // Can be null now
-        user.uid
+        user.uid,
+        user.email // Pass email for admin check
       );
 
       console.log('=== AddSpotModal: Submission successful ===');

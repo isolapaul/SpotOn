@@ -10,10 +10,11 @@ import SpotDetailsPanel from '@/components/SpotDetailsPanel';
 import ProfilePanel from '@/components/ProfilePanel';
 import Toast from '@/components/Toast';
 import { useUserStore } from '@/store/useUserStore';
-import { useSpotStore } from '@/store/useSpotStore';
+import { useSpotStore, isAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import type { Spot } from '@/store/useSpotStore';
+import { useMemo } from 'react';
 
 // Dynamic import to avoid SSR issues with Leaflet
 const MapView = dynamic(
@@ -45,6 +46,19 @@ export default function Home() {
   const { spots, fetchSpots } = useSpotStore();
   const { toasts, removeToast } = useToastStore();
   const { t } = useLanguageStore();
+
+  // Check if current user is admin
+  const userIsAdmin = useMemo(() => isAdmin(user?.email), [user?.email]);
+
+  // Filter spots based on user role
+  const visibleSpots = useMemo(() => {
+    if (userIsAdmin) {
+      // Admins see ALL spots (approved + pending)
+      return spots;
+    }
+    // Regular users see only approved spots
+    return spots.filter(spot => spot.status === 'approved');
+  }, [spots, userIsAdmin]);
 
   useEffect(() => {
     setIsClient(true);
@@ -108,6 +122,7 @@ export default function Home() {
       <SpotDetailsPanel 
         spot={selectedSpot}
         onClose={() => setSelectedSpot(null)}
+        isAdmin={userIsAdmin}
       />
 
       {/* Profile Panel */}
@@ -121,12 +136,13 @@ export default function Home() {
         isAddingSpot={isSelectingLocation}
         onLocationSelect={handleLocationSelect}
         tempMarker={selectedLocation}
-        spots={spots}
+        spots={visibleSpots}
+        isAdmin={userIsAdmin}
         onSpotDetailsOpen={setSelectedSpot}
       />
       
       {/* Empty state message */}
-      {spots.length === 0 && !isSelectingLocation && (
+      {visibleSpots.length === 0 && !isSelectingLocation && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10
           glass-card px-6 py-3 animate-fade-in pointer-events-none">
           <p className="text-white/80 text-sm text-center">

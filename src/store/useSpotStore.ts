@@ -16,6 +16,14 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import imageCompression from 'browser-image-compression';
 
+// Admin emails - spots created by these users are auto-approved
+const ADMIN_EMAILS = ['te_email_cimed@gmail.com'];
+
+export const isAdmin = (email: string | undefined): boolean => {
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email.toLowerCase());
+};
+
 export interface Review {
   id: string;
   userId: string;
@@ -50,8 +58,9 @@ interface SpotStore {
   isLoading: boolean;
   error: string | null;
   fetchSpots: () => void;
-  addSpot: (spotData: Omit<Spot, 'id' | 'imageUrl' | 'createdAt' | 'status'>, imageFile: File | null, userId: string) => Promise<void>;
+  addSpot: (spotData: Omit<Spot, 'id' | 'imageUrl' | 'createdAt' | 'status'>, imageFile: File | null, userId: string, userEmail?: string) => Promise<void>;
   addReview: (spotId: string, review: Omit<Review, 'id' | 'createdAt'>) => Promise<void>;
+  approveSpot: (spotId: string) => Promise<void>;
 }
 
 export const useSpotStore = create<SpotStore>((set) => ({
@@ -62,10 +71,9 @@ export const useSpotStore = create<SpotStore>((set) => ({
   fetchSpots: () => {
     try {
       const spotsRef = collection(db, 'spots');
-      // Fetch only approved spots for public view
+      // Fetch ALL spots (both pending and approved) for admin filtering
       const q = query(
         spotsRef, 
-        where('status', '==', 'approved'),
         orderBy('createdAt', 'desc')
       );
 
@@ -88,7 +96,7 @@ export const useSpotStore = create<SpotStore>((set) => ({
     }
   },
 
-  addSpot: async (spotData, imageFile, userId) => {
+  addSpot: async (spotData, imageFile, userId, userEmail) => {
     try {
       set({ isLoading: true, error: null });
 
@@ -134,11 +142,17 @@ export const useSpotStore = create<SpotStore>((set) => ({
 
       // Step 3: Add spot document to Firestore
       console.log('Step 3: Adding to Firestore...');
+      
+      // Check if user is admin - admins get instant approval
+      const userIsAdmin = isAdmin(userEmail);
+      const spotStatus = userIsAdmin ? 'approved' : 'pending';
+      console.log(`User ${userEmail} is ${userIsAdmin ? 'ADMIN' : 'USER'} - Status: ${spotStatus}`);
+      
       const spotDoc = {
         ...spotData,
         imageUrl,
         createdBy: userId,
-        status: 'pending', // CRITICAL: All new spots start as pending
+        status: spotStatus,
         createdAt: serverTimestamp(),
       };
       console.log('Spot document:', spotDoc);
@@ -190,6 +204,27 @@ export const useSpotStore = create<SpotStore>((set) => ({
       }));
     } catch (error: any) {
       console.error('Error adding review:', error);
+      throw error;
+    }
+  },
+
+  approveSpot: async (spotId) => {
+    try {
+      const spotRef = doc(db, 'spots', spotId);
+      await updateDoc(spotRef, {
+        status: 'approved',
+      });
+
+      // Update local state
+      set((state) => ({
+        spots: state.spots.map((spot) =>
+          spot.id === spotId ? { ...spot, status: 'approved' as const } : spot
+        ),
+      }));
+
+      console.log(`Spot ${spotId} approved successfully`);
+    } catch (error: any) {
+      console.error('Error approving spot:', error);
       throw error;
     }
   },

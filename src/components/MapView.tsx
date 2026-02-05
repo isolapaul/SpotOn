@@ -10,8 +10,41 @@ interface MapViewProps {
   onLocationSelect?: (location: { lat: number; lng: number }) => void;
   tempMarker?: { lat: number; lng: number } | null;
   spots?: Spot[];
+  isAdmin?: boolean;
   onSpotDetailsOpen?: (spot: Spot) => void;
 }
+
+// Category emoji markers
+const getCategoryIcon = (category: Spot['category'], status: 'approved' | 'pending' | 'rejected') => {
+  const baseUrl = 'data:image/svg+xml;charset=UTF-8,';
+  
+  // Get emoji based on category
+  let emoji = '📍';
+  switch (category) {
+    case 'scenic':
+      emoji = '🌅';
+      break;
+    case 'smoke-spot':
+      emoji = '💨';
+      break;
+    case 'viewpoint':
+      emoji = '🏔️';
+      break;
+    case 'other':
+      emoji = '🌳'; // Park/bush icon
+      break;
+  }
+  
+  // Color based on status (for admin view)
+  const bgColor = status === 'approved' ? '#10b981' : '#eab308'; // green vs yellow
+  
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+    <circle cx="24" cy="24" r="20" fill="${bgColor}" opacity="0.9"/>
+    <text x="24" y="30" font-size="20" text-anchor="middle" fill="white">${emoji}</text>
+  </svg>`;
+  
+  return baseUrl + encodeURIComponent(svg);
+};
 
 // Clean/Simple map style - removes POIs and unnecessary labels
 const mapStyles = [
@@ -47,6 +80,7 @@ export default function MapView({
   onLocationSelect, 
   tempMarker,
   spots = [],
+  isAdmin = false,
   onSpotDetailsOpen
 }: Readonly<MapViewProps>) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -178,6 +212,11 @@ export default function MapView({
             key={spot.id}
             position={spot.location}
             title={spot.name}
+            icon={{
+              url: getCategoryIcon(spot.category, spot.status),
+              scaledSize: new google.maps.Size(48, 48),
+              anchor: new google.maps.Point(24, 24),
+            }}
             onClick={() => setSelectedSpot(spot)}
           />
         ))}
@@ -194,6 +233,7 @@ export default function MapView({
             <div>
               <SpotInfoWindow
                 spot={selectedSpot}
+                isAdmin={isAdmin}
                 onClose={() => setSelectedSpot(null)}
                 onViewDetails={() => {
                   onSpotDetailsOpen?.(selectedSpot);

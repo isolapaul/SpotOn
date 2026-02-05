@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Heart, Star, MapPin, Share2, Calendar, User, Send } from 'lucide-react';
+import { X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -11,6 +11,7 @@ import { useState } from 'react';
 
 interface SpotDetailsPanelProps {
   spot: Spot | null;
+  isAdmin?: boolean;
   onClose: () => void;
 }
 
@@ -25,13 +26,13 @@ const categoryLabels: Record<Spot['category'], { hu: string; en: string; de: str
   scenic: { hu: 'Festői Kilátás', en: 'Scenic View', de: 'Malerische Aussicht' },
   'smoke-spot': { hu: 'Pihenőhely', en: 'Smoke Spot', de: 'Rastplatz' },
   viewpoint: { hu: 'Kilátópont', en: 'Viewpoint', de: 'Aussichtspunkt' },
-  other: { hu: 'Egyéb', en: 'Other', de: 'Sonstiges' },
+  other: { hu: 'Park/Bokor', en: 'Park/Bush', de: 'Park/Busch' },
 };
 
-export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetailsPanelProps>) {
+export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Readonly<SpotDetailsPanelProps>) {
   const { user, toggleFavorite } = useUserStore();
   const { language, t } = useLanguageStore();
-  const { addReview } = useSpotStore();
+  const { addReview, approveSpot } = useSpotStore();
   const { showToast } = useToastStore();
   const [isFavorite, setIsFavorite] = useState(
     spot ? user?.savedSpots?.includes(spot.id) || false : false
@@ -39,6 +40,7 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
   if (!spot) return null;
 
@@ -79,6 +81,27 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
       showToast('Hiba az értékelés hozzáadásakor', 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!spot) return;
+    setIsApproving(true);
+    try {
+      await approveSpot(spot.id);
+      showToast(
+        language === 'hu' ? 'Hely jóváhagyva!' : language === 'de' ? 'Ort genehmigt!' : 'Spot approved!',
+        'success'
+      );
+      setTimeout(() => onClose(), 1000);
+    } catch (error) {
+      console.error('Error approving spot:', error);
+      showToast(
+        language === 'hu' ? 'Hiba a jóváhagyáskor' : language === 'de' ? 'Fehler bei der Genehmigung' : 'Error approving spot',
+        'error'
+      );
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -198,6 +221,43 @@ export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetails
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 space-y-6">
+          {/* Admin Status Badge & Approve Button */}
+          {isAdmin && (
+            <div className="glass-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                  spot.status === 'approved' 
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-yellow-500/20 text-yellow-400'
+                }`}>
+                  {spot.status === 'approved' ? t('approved') : t('pending')}
+                </span>
+                
+                {spot.status === 'pending' && (
+                  <button
+                    onClick={handleApprove}
+                    disabled={isApproving}
+                    className="px-4 py-2 rounded-xl font-medium
+                      bg-gradient-to-r from-green-500 to-green-600 text-white text-sm
+                      shadow-lg shadow-green-500/20
+                      hover:shadow-xl hover:shadow-green-500/30
+                      active:scale-98 transition-all duration-200
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                      flex items-center gap-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>
+                      {isApproving 
+                        ? (language === 'hu' ? 'Jóváhagyás...' : language === 'de' ? 'Genehmigung...' : 'Approving...')
+                        : (language === 'hu' ? 'Jóváhagyás' : language === 'de' ? 'Genehmigen' : 'Approve')
+                      }
+                    </span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Title & Rating */}
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">{spot.name}</h1>
