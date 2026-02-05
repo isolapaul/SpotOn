@@ -2,18 +2,20 @@
 
 import { MapPin, Compass, Heart, User, Plus } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 type NavItem = 'explore' | 'navigate' | 'add' | 'favorites' | 'profile';
 
 export default function BottomNavigation() {
   const [activeTab, setActiveTab] = useState<NavItem>('explore');
+  const { t } = useTranslation();
 
   const navItems = [
-    { id: 'explore' as NavItem, icon: MapPin, label: 'Explore' },
-    { id: 'navigate' as NavItem, icon: Compass, label: 'Navigate' },
-    { id: 'add' as NavItem, icon: Plus, label: 'Add', special: true },
-    { id: 'favorites' as NavItem, icon: Heart, label: 'Favorites' },
-    { id: 'profile' as NavItem, icon: User, label: 'Profile' },
+    { id: 'explore' as NavItem, icon: MapPin, label: t('explore') },
+    { id: 'navigate' as NavItem, icon: Compass, label: t('navigate') },
+    { id: 'add' as NavItem, icon: Plus, label: t('add'), special: true },
+    { id: 'favorites' as NavItem, icon: Heart, label: t('favorites') },
+    { id: 'profile' as NavItem, icon: User, label: t('profile') },
   ];
 
   return (
