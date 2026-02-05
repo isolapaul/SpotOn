@@ -131,7 +131,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
     }
   };
 
-  const t = texts[language] || texts.en;
+  const t = texts[language as keyof typeof texts] || texts.en;
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
