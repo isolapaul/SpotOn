@@ -36,6 +36,7 @@ export default function Home() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [addSpotModalOpen, setAddSpotModalOpen] = useState(false);
   const [profilePanelOpen, setProfilePanelOpen] = useState(false);
+  const [isSelectingLocation, setIsSelectingLocation] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   
@@ -53,7 +54,9 @@ export default function Home() {
 
   const handleAddSpotClick = () => {
     if (user) {
-      setAddSpotModalOpen(true);
+      // Start location selection mode
+      setIsSelectingLocation(true);
+      setSelectedLocation(null);
     } else {
       setAuthModalOpen(true);
     }
@@ -69,11 +72,15 @@ export default function Home() {
 
   const handleLocationSelect = (location: { lat: number; lng: number }) => {
     setSelectedLocation(location);
+    setIsSelectingLocation(false);
+    // Automatically open the modal after location is selected
+    setAddSpotModalOpen(true);
   };
 
   const handleAddSpotClose = () => {
     setAddSpotModalOpen(false);
     setSelectedLocation(null);
+    setIsSelectingLocation(false);
   };
 
   if (!isClient) {
@@ -109,7 +116,7 @@ export default function Home() {
       
       {/* Full-screen map background */}
       <MapView 
-        isAddingSpot={addSpotModalOpen}
+        isAddingSpot={isSelectingLocation}
         onLocationSelect={handleLocationSelect}
         tempMarker={selectedLocation}
         spots={spots}
@@ -117,12 +124,29 @@ export default function Home() {
       />
       
       {/* Empty state message */}
-      {spots.length === 0 && (
+      {spots.length === 0 && !isSelectingLocation && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10
           glass-card px-6 py-3 animate-fade-in pointer-events-none">
           <p className="text-white/80 text-sm text-center">
             🗺️ No spots found yet. Be the first to add one!
           </p>
+        </div>
+      )}
+
+      {/* Location Selection Instructions */}
+      {isSelectingLocation && (
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10
+          glass-card px-6 py-4 animate-fade-in max-w-sm">
+          <p className="text-white font-semibold text-center mb-3">
+            📍 Click on the map to select location
+          </p>
+          <button
+            onClick={() => setIsSelectingLocation(false)}
+            className="w-full py-2 rounded-xl glass-button text-white font-medium
+              hover:bg-white/10 transition-all"
+          >
+            Cancel
+          </button>
         </div>
       )}
       

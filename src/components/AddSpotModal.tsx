@@ -76,6 +76,11 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     setError(null);
 
     try {
+      console.log('=== AddSpotModal: Starting submission ===');
+      console.log('Form data:', formData);
+      console.log('Selected location:', selectedLocation);
+      console.log('Image file:', imageFile);
+      
       // Use the store's addSpot method (handles compression & upload)
       await addSpot(
         {
@@ -89,6 +94,8 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
         user.uid
       );
 
+      console.log('=== AddSpotModal: Submission successful ===');
+      
       // Reset form and close
       setFormData({ name: '', category: 'scenic', description: '' });
       setImageFile(null);
@@ -96,12 +103,14 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
       onClose();
       
       showToast('Spot uploaded! Waiting for approval.', 'success');
-    } catch (err) {
-      console.error('Error adding spot:', err);
-      setError('Failed to add spot. Please try again.');
-      showToast('Failed to add spot. Please try again.', 'error');
+    } catch (err: any) {
+      console.error('=== AddSpotModal: Submission error ===', err);
+      const errorMessage = err.message || 'Failed to add spot. Please try again.';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
+      console.log('=== AddSpotModal: Submission finished ===');
     }
   };
 

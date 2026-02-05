@@ -73,7 +73,12 @@ export const useSpotStore = create<SpotStore>((set) => ({
     try {
       set({ isLoading: true, error: null });
 
+      console.log('=== Starting addSpot ===');
+      console.log('Spot data:', spotData);
+      console.log('User ID:', userId);
+
       // Step 1: Compress the image
+      console.log('Step 1: Compressing image...');
       console.log('Original file size:', imageFile.size / 1024 / 1024, 'MB');
       
       const options = {
@@ -84,16 +89,23 @@ export const useSpotStore = create<SpotStore>((set) => ({
 
       const compressedFile = await imageCompression(imageFile, options);
       console.log('Compressed file size:', compressedFile.size / 1024 / 1024, 'MB');
+      console.log('Step 1 complete ✓');
 
       // Step 2: Upload compressed image to Firebase Storage
+      console.log('Step 2: Uploading to Firebase Storage...');
       const timestamp = Date.now();
       const fileName = `${timestamp}_${imageFile.name}`;
       const imageRef = ref(storage, `spot-images/${fileName}`);
+      console.log('Storage path:', `spot-images/${fileName}`);
       
       await uploadBytes(imageRef, compressedFile);
+      console.log('Upload complete, getting download URL...');
       const imageUrl = await getDownloadURL(imageRef);
+      console.log('Image URL:', imageUrl);
+      console.log('Step 2 complete ✓');
 
       // Step 3: Add spot document to Firestore
+      console.log('Step 3: Adding to Firestore...');
       const spotDoc = {
         ...spotData,
         imageUrl,
@@ -101,13 +113,20 @@ export const useSpotStore = create<SpotStore>((set) => ({
         status: 'pending', // CRITICAL: All new spots start as pending
         createdAt: serverTimestamp(),
       };
+      console.log('Spot document:', spotDoc);
 
-      await addDoc(collection(db, 'spots'), spotDoc);
+      const docRef = await addDoc(collection(db, 'spots'), spotDoc);
+      console.log('Document added with ID:', docRef.id);
+      console.log('Step 3 complete ✓');
       
       set({ isLoading: false });
-      console.log('Spot added successfully!');
+      console.log('=== Spot added successfully! ===');
     } catch (error: any) {
-      console.error('Error adding spot:', error);
+      console.error('=== ERROR in addSpot ===');
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Full error:', error);
       set({ error: error.message, isLoading: false });
       throw error; // Re-throw so the UI can handle it
     }
