@@ -17,7 +17,7 @@ import { db, storage } from '@/lib/firebase';
 import imageCompression from 'browser-image-compression';
 
 // Admin emails - spots created by these users are auto-approved
-const ADMIN_EMAILS = ['isolapaul100@gmail.com'];
+const ADMIN_EMAILS = ['isolapaul100@gmail.com', 'kalaszmilan2006@gmail.com'];
 
 export const isAdmin = (email: string | undefined): boolean => {
   if (!email) return false;
