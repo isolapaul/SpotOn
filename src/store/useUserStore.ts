@@ -255,7 +255,13 @@ export const useUserStore = create<UserStore>()(
       },
 
       // Search for a user by email
+      // Search for a user by email (only Super Admin can do this)
       searchUserByEmail: async (email: string) => {
+        const { user } = get();
+        if (!user || !isSuperAdmin(user.email)) {
+          throw new Error('Only Super Admin can search users');
+        }
+
         try {
           const usersRef = collection(db, 'users');
           const q = query(usersRef);
@@ -302,8 +308,9 @@ export const useUserStore = create<UserStore>()(
             throw new Error('User is already an admin');
           }
 
-          // Add to Firestore admins collection
-          await addDoc(collection(db, 'admins'), {
+          // Add to Firestore admins collection using user's UID as document ID
+          // This makes it easy to check in security rules: exists(/databases/.../admins/$(request.auth.uid))
+          await setDoc(doc(db, 'admins', targetUser.uid), {
             email: targetUser.email,
             name: targetUser.name,
             photoURL: targetUser.photoURL || '',
