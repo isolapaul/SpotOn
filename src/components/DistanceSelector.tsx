@@ -30,17 +30,26 @@ export default function DistanceSelector({ isOpen, onClose, onSelect }: Readonly
     : 'Choose distance for random spot';
 
   return (
-    <div className="fixed inset-0 z-[2001] flex items-center justify-center p-4 animate-fade-in">
+    <div 
+      className="fixed inset-0 z-[2001] flex items-center justify-center p-4 animate-fade-in"
+      style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}
+    >
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/70 backdrop-blur-md cursor-default"
+        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
         onClick={onClose}
         aria-label="Close"
       />
       
       {/* Modal */}
-      <div className="relative glass-card max-w-sm w-full p-6 animate-slide-up">
+      <div 
+        className="relative glass-card max-w-sm w-full p-6 animate-slide-up"
+        style={{
+          marginTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+          marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
+        }}
+      >
         {/* Close Button */}
         <button
           onClick={onClose}

@@ -180,11 +180,11 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     : 0;
 
   return (
-    <div className="fixed inset-0 z-[3000] animate-slide-up">
+    <div className="fixed inset-0 z-[3000] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm cursor-default"
+        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
         onClick={onClose}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
         aria-label="Close spot details"
@@ -207,7 +207,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/80" />
           
           {/* Action Buttons */}
-          <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
+          <div className="absolute left-4 right-4 flex justify-between items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}>
             <button
               onClick={onClose}
               className="glass-button p-3 rounded-full"
@@ -251,7 +251,8 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
+          <div className="space-y-6">
           {/* Admin Status Badge & Approve Button */}
           {isAdmin && (
             <div className="glass-card p-4 space-y-3">
@@ -497,6 +498,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
 
           {/* Bottom Padding for safe area */}
           <div className="h-20" />
+          </div>
         </div>
       </div>
     </div>

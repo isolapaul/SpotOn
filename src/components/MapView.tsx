@@ -88,7 +88,23 @@ export default function MapView({
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(13);
   const defaultCenter = { lat: 47.4979, lng: 19.0402 }; // Budapest, Hungary
+
+  // Calculate marker size based on zoom level
+  const getMarkerSize = useCallback((zoom: number) => {
+    // Zoom levels: 1-22
+    // At zoom 1-5: tiny (24px)
+    // At zoom 6-10: small (32px)
+    // At zoom 11-14: medium (48px)
+    // At zoom 15-18: large (64px)
+    // At zoom 19-22: extra large (80px)
+    if (zoom <= 5) return 24;
+    if (zoom <= 10) return 32;
+    if (zoom <= 14) return 48;
+    if (zoom <= 18) return 64;
+    return 80;
+  }, []);
 
   // Load Google Maps API
   const { isLoaded, loadError } = useJsApiLoader({
@@ -136,6 +152,11 @@ export default function MapView({
 
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
+    // Listen to zoom changes
+    map.addListener('zoom_changed', () => {
+      const zoom = map.getZoom() || 13;
+      setZoomLevel(zoom);
+    });
   }, []);
 
   const onUnmount = useCallback(() => {
@@ -209,19 +230,22 @@ export default function MapView({
         )}
 
         {/* Real spots from Firestore */}
-        {spots.map((spot) => (
-          <Marker
-            key={spot.id}
-            position={spot.location}
-            title={spot.name}
-            icon={{
-              url: getCategoryIcon(spot.category, spot.status),
-              scaledSize: new google.maps.Size(48, 48),
-              anchor: new google.maps.Point(24, 24),
-            }}
-            onClick={() => setSelectedSpot(spot)}
-          />
-        ))}
+        {spots.map((spot) => {
+          const markerSize = getMarkerSize(zoomLevel);
+          return (
+            <Marker
+              key={spot.id}
+              position={spot.location}
+              title={spot.name}
+              icon={{
+                url: getCategoryIcon(spot.category, spot.status),
+                scaledSize: new google.maps.Size(markerSize, markerSize),
+                anchor: new google.maps.Point(markerSize / 2, markerSize / 2),
+              }}
+              onClick={() => setSelectedSpot(spot)}
+            />
+          );
+        })}
 
         {/* InfoWindow for selected spot */}
         {selectedSpot && (

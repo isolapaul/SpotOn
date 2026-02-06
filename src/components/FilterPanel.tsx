@@ -45,18 +45,29 @@ export default function FilterPanel({
     <>
       {/* Filter Panel */}
       {isOpen && (
-        <div className="fixed inset-0 z-[1999] flex items-start justify-end p-4 animate-fade-in">
+        <div 
+          className="fixed inset-0 z-[1999] flex items-start justify-end p-4 animate-fade-in"
+          style={{ backgroundColor: '#0f172a' }}
+        >
           {/* Backdrop */}
           <button
             type="button"
-            className="absolute inset-0 bg-black/60 backdrop-blur-md cursor-default"
+            className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
             onClick={onClose}
             aria-label="Close filter panel"
           />
           
           {/* Panel */}
-          <div className="relative glass-card max-w-sm w-full max-h-[90vh] overflow-y-auto 
-            custom-scrollbar p-6 animate-slide-left mt-16">
+          <div 
+            className="relative glass-card max-w-sm w-full max-h-[90vh] overflow-y-auto 
+            custom-scrollbar animate-slide-left"
+            style={{
+              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)',
+              paddingLeft: '1.5rem',
+              paddingRight: '1.5rem'
+            }}
+          >
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">

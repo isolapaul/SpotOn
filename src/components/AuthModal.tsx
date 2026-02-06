@@ -215,11 +215,11 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 animate-fade-in" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/60 backdrop-blur-md cursor-default"
+        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
         onClick={onClose}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
         aria-label="Close authentication modal"
@@ -227,7 +227,12 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       />
       
       {/* Modal */}
-      <div className="relative glass-card max-w-md w-full p-8 animate-slide-up">
+      <div className="relative glass-card max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-8 animate-slide-up"
+        style={{ 
+          marginTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+          marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
+        }}
+      >
         {/* Close Button */}
         <button
           onClick={() => {

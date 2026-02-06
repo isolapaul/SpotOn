@@ -16,7 +16,10 @@ body {
   height: 100dvh; /* Dynamic viewport height for iOS */
   overflow: hidden;
   position: fixed;
+  /* Prevent white background on overscroll */
+  background-color: #0f172a; /* slate-900 to match app theme */
   overscroll-behavior: none;
+  overscroll-behavior-y: none; /* Prevent bounce effect on iOS */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -72,6 +75,16 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Hide scrollbar completely */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* iOS safe area support */

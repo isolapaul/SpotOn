@@ -134,11 +134,11 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   };
 
   return (
-    <div className="fixed inset-0 z-[2500] animate-slide-up">
+    <div className="fixed inset-0 z-[2500] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/60 backdrop-blur-md cursor-default"
+        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
         onClick={onClose}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
         aria-label="Close profile panel"
@@ -146,10 +146,10 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       />
       
       {/* Panel */}
-      <div className="absolute inset-0 flex flex-col glass">
-        {/* Header */}
-        <div className="flex-shrink-0 p-6 border-b border-white/10">
-          <div className="flex items-start justify-between mb-4">
+      <div className="absolute inset-0 flex flex-col bg-gray-900/95 backdrop-blur-2xl">
+        {/* Header with Safe Area Top Padding */}
+        <div className="flex-shrink-0 px-6 pb-4 border-b border-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)' }}>
+          <div className="flex items-start justify-between mb-6">
             <button
               onClick={onClose}
               className="glass-button p-2 rounded-full"
@@ -168,15 +168,28 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
           </div>
 
           {/* User Info */}
-          <div className="flex items-center gap-4">
-            <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-white/20">
-              <Image
-                src={user.photoURL || '/default-avatar.png'}
-                alt={user.name}
-                fill
-                className="object-cover"
-              />
-            </div>
+          <div className="flex items-center gap-4 mb-4">
+            {user.photoURL ? (
+              <div className="relative w-20 h-20 rounded-full overflow-hidden border-4 border-white/30 shadow-lg">
+                <Image
+                  src={user.photoURL}
+                  alt={user.name}
+                  fill
+                  className="object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    if (target.parentElement) {
+                      target.parentElement.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center"><span class="text-white text-3xl font-bold">${user.name?.charAt(0).toUpperCase() || 'U'}</span></div>`;
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="relative w-20 h-20 rounded-full overflow-hidden border-4 border-white/30 shadow-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                <span className="text-white text-3xl font-bold">{user.name?.charAt(0).toUpperCase() || 'U'}</span>
+              </div>
+            )}
             
             <div>
               <div className="flex items-center gap-2">
@@ -204,12 +217,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         </div>
 
         {/* Tabs */}
-        <div className="flex-shrink-0 flex border-b border-white/10">
+        <div className="flex-shrink-0 flex overflow-x-auto border-b border-white/10 scrollbar-hide">
           <button
             onClick={() => setActiveTab('my-spots')}
-            className={`flex-1 py-4 text-center font-medium transition-all ${
+            className={`flex-shrink-0 px-6 py-4 text-center font-medium transition-all whitespace-nowrap ${
               activeTab === 'my-spots'
-                ? 'text-white border-b-2 border-primary-500'
+                ? 'text-white border-b-2 border-primary-500 bg-white/5'
                 : 'text-white/60'
             }`}
           >
@@ -218,9 +231,9 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
           </button>
           <button
             onClick={() => setActiveTab('favorites')}
-            className={`flex-1 py-4 text-center font-medium transition-all ${
+            className={`flex-shrink-0 px-6 py-4 text-center font-medium transition-all whitespace-nowrap ${
               activeTab === 'favorites'
-                ? 'text-white border-b-2 border-primary-500'
+                ? 'text-white border-b-2 border-primary-500 bg-white/5'
                 : 'text-white/60'
             }`}
           >
@@ -232,9 +245,9 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
           {userIsAdmin && (
             <button
               onClick={() => setActiveTab('pending')}
-              className={`flex-1 py-4 text-center font-medium transition-all ${
+              className={`flex-shrink-0 px-6 py-4 text-center font-medium transition-all whitespace-nowrap ${
                 activeTab === 'pending'
-                  ? 'text-white border-b-2 border-amber-500'
+                  ? 'text-white border-b-2 border-amber-500 bg-white/5'
                   : 'text-white/60'
               }`}
             >
@@ -254,9 +267,9 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
           {userIsSuperAdmin && (
             <button
               onClick={() => setActiveTab('admin')}
-              className={`flex-1 py-4 text-center font-medium transition-all ${
+              className={`flex-shrink-0 px-6 py-4 text-center font-medium transition-all whitespace-nowrap ${
                 activeTab === 'admin'
-                  ? 'text-white border-b-2 border-purple-500'
+                  ? 'text-white border-b-2 border-purple-500 bg-white/5'
                   : 'text-white/60'
               }`}
             >
@@ -266,8 +279,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
           )}
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+        {/* Content with Safe Area Bottom Padding */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
           {activeTab === 'my-spots' && (
             <div className="space-y-4">
               {myAllSpots.length === 0 ? (
