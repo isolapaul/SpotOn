@@ -52,20 +52,26 @@ export default function BottomNavigation({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:w-auto">
+    <div 
+      className="
+        fixed bottom-0 left-0 w-full z-50
+        /* Mobile: Edge-to-Edge Native Design - Background extends to bottom */
+        bg-gray-900/90 backdrop-blur-xl border-t border-white/10
+        /* Desktop: Floating Pill Design */
+        md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:w-auto md:bg-transparent md:backdrop-blur-none md:border-none
+      "
+      style={{ 
+        paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+        paddingTop: '12px'
+      }}
+    >
       <nav 
         className="
           w-full
-          /* Mobile: Edge-to-Edge Native Design */
-          bg-gray-900/90 backdrop-blur-xl border-t border-white/10
-          /* Desktop: Floating Pill Design */
+          /* Desktop only: Floating pill with its own background */
           md:rounded-full md:border md:border-white/20 md:shadow-glass-lg md:px-6
-          md:max-w-md md:mx-auto md:bg-gray-900/95 md:backdrop-blur-md
+          md:max-w-md md:mx-auto md:bg-gray-900/95 md:backdrop-blur-md md:py-3
         "
-        style={{ 
-          paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
-          paddingTop: '0.75rem'
-        }}
       >
         <div className="flex items-center justify-around md:gap-2">
           {navItems.map((item) => {
