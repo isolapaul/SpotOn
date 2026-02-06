@@ -30,6 +30,20 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const userIsAdmin = isAdmin(user?.email);
   const userIsSuperAdmin = isSuperAdmin(user?.email);
 
+  // Helper function for spot status styling
+  const getStatusClassName = (status: string) => {
+    if (status === 'approved') return 'bg-green-500/20 text-green-400';
+    if (status === 'pending') return 'bg-yellow-500/20 text-yellow-400';
+    return 'bg-red-500/20 text-red-400';
+  };
+
+  // Helper function for spot status text
+  const getStatusText = (status: string) => {
+    if (status === 'approved') return t('approved');
+    if (status === 'pending') return t('pending');
+    return t('rejected');
+  };
+
   // Fetch ALL user's spots (approved + pending)
   useEffect(() => {
     if (!user || !isOpen) return;
@@ -122,9 +136,13 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   return (
     <div className="fixed inset-0 z-[2500] animate-slide-up">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/60 backdrop-blur-md cursor-default"
         onClick={onClose}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        aria-label="Close profile panel"
+        tabIndex={-1}
       />
       
       {/* Panel */}
@@ -273,14 +291,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                       <h3 className="text-white font-semibold line-clamp-1">{spot.name}</h3>
                       <p className="text-white/60 text-sm line-clamp-2">{spot.description}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          spot.status === 'approved' 
-                            ? 'bg-green-500/20 text-green-400'
-                            : spot.status === 'pending'
-                            ? 'bg-yellow-500/20 text-yellow-400'
-                            : 'bg-red-500/20 text-red-400'
-                        }`}>
-                          {spot.status === 'approved' ? t('approved') : spot.status === 'pending' ? t('pending') : t('rejected')}
+                        <span className={`text-xs px-2 py-1 rounded-full ${getStatusClassName(spot.status)}`}>
+                          {getStatusText(spot.status)}
                         </span>
                       </div>
                     </div>

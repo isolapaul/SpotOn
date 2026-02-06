@@ -188,14 +188,13 @@ export default function Home() {
     });
 
     if (spotsInRange.length === 0) {
-      showToast(
-        language === 'hu' 
-          ? `Nincs hely ${distance} km-en belül` 
-          : language === 'de'
-          ? `Keine Orte innerhalb von ${distance} km`
-          : `No spots within ${distance} km`,
-        'error'
-      );
+      const getNoSpotsMessage = () => {
+        if (language === 'hu') return `Nincs hely ${distance} km-en belül`;
+        if (language === 'de') return `Keine Orte innerhalb von ${distance} km`;
+        return `No spots within ${distance} km`;
+      };
+      
+      showToast(getNoSpotsMessage(), 'error');
       return;
     }
 

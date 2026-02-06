@@ -44,6 +44,35 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
 
   if (!spot) return null;
 
+  // Helper functions for multilingual messages to avoid nested ternaries
+  const getApprovedMessage = () => {
+    if (language === 'hu') return 'Hely jóváhagyva!';
+    if (language === 'de') return 'Ort genehmigt!';
+    return 'Spot approved!';
+  };
+
+  const getApproveErrorMessage = () => {
+    if (language === 'hu') return 'Hiba a jóváhagyáskor';
+    if (language === 'de') return 'Fehler bei der Genehmigung';
+    return 'Error approving spot';
+  };
+
+  const getApprovingText = () => {
+    if (language === 'hu') return 'Jóváhagyás...';
+    if (language === 'de') return 'Genehmigung...';
+    return 'Approving...';
+  };
+
+  const getApproveText = () => {
+    if (language === 'hu') return 'Jóváhagyás';
+    if (language === 'de') return 'Genehmigen';
+    return 'Approve';
+  };
+
+  const getDateLocale = () => {
+    return language === 'hu' ? 'hu-HU' : 'en-US';
+  };
+
   const handleFavoriteToggle = async () => {
     if (!user) return;
     try {
@@ -90,17 +119,11 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     setIsApproving(true);
     try {
       await approveSpot(spot.id);
-      showToast(
-        language === 'hu' ? 'Hely jóváhagyva!' : language === 'de' ? 'Ort genehmigt!' : 'Spot approved!',
-        'success'
-      );
+      showToast(getApprovedMessage(), 'success');
       setTimeout(() => onClose(), 1000);
     } catch (error) {
       console.error('Error approving spot:', error);
-      showToast(
-        language === 'hu' ? 'Hiba a jóváhagyáskor' : language === 'de' ? 'Fehler bei der Genehmigung' : 'Error approving spot',
-        'error'
-      );
+      showToast(getApproveErrorMessage(), 'error');
     } finally {
       setIsApproving(false);
     }
@@ -112,10 +135,13 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         await navigator.share({
           title: spot.name,
           text: spot.description,
-          url: window.location.href,
+          url: globalThis.location.href,
         });
       } catch (err) {
-        console.log('Share cancelled');
+        // User cancelled sharing, this is expected behavior
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Error sharing:', err);
+        }
       }
     }
   };
@@ -142,7 +168,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'Unknown';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString(language === 'hu' ? 'hu-HU' : 'en-US', { 
+    return date.toLocaleDateString(getDateLocale(), { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric' 
@@ -156,9 +182,13 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   return (
     <div className="fixed inset-0 z-[3000] animate-slide-up">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm cursor-default"
         onClick={onClose}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        aria-label="Close spot details"
+        tabIndex={-1}
       />
       
       {/* Panel */}
@@ -248,10 +278,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                   >
                     <CheckCircle className="w-4 h-4" />
                     <span>
-                      {isApproving 
-                        ? (language === 'hu' ? 'Jóváhagyás...' : language === 'de' ? 'Genehmigung...' : 'Approving...')
-                        : (language === 'hu' ? 'Jóváhagyás' : language === 'de' ? 'Genehmigen' : 'Approve')
-                      }
+                      {isApproving ? getApprovingText() : getApproveText()}
                     </span>
                   </button>
                 )}
@@ -423,7 +450,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                           </div>
                           <span className="text-white/40 text-xs">
                             {review.createdAt?.toDate ? 
-                              new Date(review.createdAt.toDate()).toLocaleDateString(language === 'hu' ? 'hu-HU' : 'en-US', {
+                              new Date(review.createdAt.toDate()).toLocaleDateString(getDateLocale(), {
                                 month: 'short',
                                 day: 'numeric'
                               }) : ''}
