@@ -54,15 +54,15 @@ export default function BottomNavigation({
   return (
     <div 
       className="
-        fixed bottom-0 left-0 w-full z-50
-        /* Mobile: Edge-to-Edge Native Design - Background extends to bottom */
+        fixed bottom-0 left-0 right-0 z-50
+        /* Mobile: Edge-to-Edge Native Design */
         bg-gray-900/90 backdrop-blur-xl border-t border-white/10
         /* Desktop: Floating Pill Design */
         md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:w-auto md:bg-transparent md:backdrop-blur-none md:border-none
       "
-      style={{ 
-        paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
-        paddingTop: '12px'
+      style={{
+        paddingTop: '12px',
+        paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))'
       }}
     >
       <nav 
