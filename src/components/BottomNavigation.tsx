@@ -56,9 +56,10 @@ export default function BottomNavigation({
       <nav className="
         w-full bg-gray-900/95 backdrop-blur-md border-t border-white/10
         md:rounded-full md:border md:border-white/20 md:shadow-glass-lg md:px-6 md:py-3
-        px-0 py-2 pb-safe
+        px-0 py-2
         md:max-w-md md:mx-auto
-      ">
+      "
+      style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}>
         <div className="flex items-center justify-around md:gap-2">
           {navItems.map((item) => {
             const Icon = item.icon;
