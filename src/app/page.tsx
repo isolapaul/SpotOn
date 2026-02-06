@@ -48,7 +48,7 @@ export default function Home() {
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [distanceSelectorOpen, setDistanceSelectorOpen] = useState(false);
   
-  const { user, initAuth } = useUserStore();
+  const { user, initAuth, initAdminListener } = useUserStore();
   const { spots, fetchSpots } = useSpotStore();
   const { toasts, removeToast } = useToastStore();
   const { t, language } = useLanguageStore();
@@ -101,6 +101,8 @@ export default function Home() {
     setIsClient(true);
     // Initialize Firebase auth listener
     initAuth();
+    // Initialize admin emails listener
+    const unsubscribeAdmins = initAdminListener();
     // Fetch approved spots
     fetchSpots();
     
@@ -118,7 +120,12 @@ export default function Home() {
         }
       );
     }
-  }, [initAuth, fetchSpots]);
+    
+    // Cleanup
+    return () => {
+      unsubscribeAdmins();
+    };
+  }, [initAuth, initAdminListener, fetchSpots]);
 
   const handleAddSpotClick = () => {
     if (user) {

@@ -1,14 +1,15 @@
 'use client';
 
-import { X, MapPin, Heart, LogOut, Shield, Clock } from 'lucide-react';
+import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useUserStore } from '@/store/useUserStore';
-import { useSpotStore, isAdmin } from '@/store/useSpotStore';
+import { useSpotStore, isAdmin, isSuperAdmin } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Spot } from '@/store/useSpotStore';
+import { useToastStore } from '@/store/useToastStore';
 
 interface ProfilePanelProps {
   isOpen: boolean;
@@ -16,13 +17,18 @@ interface ProfilePanelProps {
 }
 
 export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelProps>) {
-  const { user, signOut } = useUserStore();
+  const { user, signOut, adminUsers, addAdmin, removeAdmin, searchUserByEmail } = useUserStore();
   const { spots, approveSpot } = useSpotStore();
   const { t } = useLanguageStore();
-  const [activeTab, setActiveTab] = useState<'my-spots' | 'favorites' | 'pending'>('my-spots');
+  const { showToast } = useToastStore();
+  const [activeTab, setActiveTab] = useState<'my-spots' | 'favorites' | 'pending' | 'admin'>('my-spots');
   const [myAllSpots, setMyAllSpots] = useState<Spot[]>([]);
+  const [adminEmailInput, setAdminEmailInput] = useState('');
+  const [searchedUser, setSearchedUser] = useState<any>(null);
+  const [isSearching, setIsSearching] = useState(false);
   
   const userIsAdmin = isAdmin(user?.email);
+  const userIsSuperAdmin = isSuperAdmin(user?.email);
 
   // Fetch ALL user's spots (approved + pending)
   useEffect(() => {
@@ -61,6 +67,55 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       onClose();
     } catch (error) {
       console.error('Error signing out:', error);
+    }
+  };
+
+  const handleSearchUser = async () => {
+    if (!adminEmailInput.trim()) {
+      showToast('Kérlek adj meg egy email címet!', 'error');
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const foundUser = await searchUserByEmail(adminEmailInput.trim());
+      if (foundUser) {
+        setSearchedUser(foundUser);
+      } else {
+        showToast('Felhasználó nem található', 'error');
+        setSearchedUser(null);
+      }
+    } catch (error) {
+      console.error('Error searching user:', error);
+      showToast('Hiba történt a keresés során', 'error');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddAdmin = async () => {
+    if (!searchedUser) return;
+
+    try {
+      await addAdmin(searchedUser.email);
+      showToast(`${searchedUser.name} hozzáadva admin-ként!`, 'success');
+      setAdminEmailInput('');
+      setSearchedUser(null);
+    } catch (error: any) {
+      console.error('Error adding admin:', error);
+      showToast(error.message || 'Hiba az admin hozzáadásakor', 'error');
+    }
+  };
+
+  const handleRemoveAdmin = async (adminId: string, adminName: string) => {
+    if (!confirm(`Biztosan eltávolítod ${adminName} admin jogosultságát?`)) return;
+
+    try {
+      await removeAdmin(adminId);
+      showToast(`${adminName} eltávolítva az admin listából`, 'success');
+    } catch (error: any) {
+      console.error('Error removing admin:', error);
+      showToast(error.message || 'Hiba az admin eltávolításakor', 'error');
     }
   };
 
@@ -174,6 +229,21 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   </span>
                 )}
               </span>
+            </button>
+          )}
+
+          {/* Admin Panel Tab - Only for Super Admin */}
+          {userIsSuperAdmin && (
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={`flex-1 py-4 text-center font-medium transition-all ${
+                activeTab === 'admin'
+                  ? 'text-white border-b-2 border-purple-500'
+                  : 'text-white/60'
+              }`}
+            >
+              <Shield className="w-4 h-4 inline mr-2" />
+              <span>Admin</span>
             </button>
           )}
         </div>
@@ -302,6 +372,118 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   </div>
                 ))
               )}
+            </div>
+          )}
+
+          {/* Admin Panel - Super Admin Only */}
+          {activeTab === 'admin' && userIsSuperAdmin && (
+            <div className="space-y-6">
+              {/* Add Admin Section */}
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-white font-bold text-lg">Admin hozzáadása</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <input
+                    type="email"
+                    placeholder="Felhasználó email címe..."
+                    value={adminEmailInput}
+                    onChange={(e) => setAdminEmailInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchUser()}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl
+                      text-white placeholder:text-white/40 focus:outline-none focus:border-purple-500/50"
+                  />
+                  
+                  <button
+                    onClick={handleSearchUser}
+                    disabled={isSearching || !adminEmailInput.trim()}
+                    className="w-full py-3 px-4 rounded-xl font-semibold
+                      bg-purple-500/20 text-purple-400 border border-purple-500/30
+                      hover:bg-purple-500/30 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed
+                      transition-all duration-200"
+                  >
+                    {isSearching ? 'Keresés...' : 'Felhasználó keresése'}
+                  </button>
+
+                  {/* Searched User Preview */}
+                  {searchedUser && (
+                    <div className="bg-white/5 border border-purple-500/30 rounded-xl p-4">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-purple-500/30">
+                          <Image
+                            src={searchedUser.photoURL || '/default-avatar.png'}
+                            alt={searchedUser.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h4 className="text-white font-semibold">{searchedUser.name}</h4>
+                          <p className="text-white/60 text-sm">{searchedUser.email}</p>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={handleAddAdmin}
+                        className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm
+                          bg-green-500/20 text-green-400 border border-green-500/30
+                          hover:bg-green-500/30 active:scale-98
+                          transition-all duration-200 flex items-center justify-center gap-2"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        <span>Admin jogosultság megadása</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Current Admins List */}
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-white font-bold text-lg">Jelenlegi adminok</h3>
+                  <span className="text-white/60 text-sm ml-auto">{adminUsers.length} admin</span>
+                </div>
+
+                <div className="space-y-3">
+                  {adminUsers.length === 0 ? (
+                    <p className="text-white/40 text-center py-4">Még nincs admin hozzáadva</p>
+                  ) : (
+                    adminUsers.map((admin) => (
+                      <div key={admin.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4">
+                        <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500/30 flex-shrink-0">
+                          <Image
+                            src={admin.photoURL || '/default-avatar.png'}
+                            alt={admin.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-white font-semibold">{admin.name}</h4>
+                            <Shield className="w-3 h-3 text-amber-400" />
+                          </div>
+                          <p className="text-white/60 text-sm truncate">{admin.email}</p>
+                        </div>
+
+                        <button
+                          onClick={() => handleRemoveAdmin(admin.id, admin.name)}
+                          className="p-2 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30
+                            hover:bg-red-500/30 active:scale-95 transition-all duration-200 flex-shrink-0"
+                          aria-label="Remove admin"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

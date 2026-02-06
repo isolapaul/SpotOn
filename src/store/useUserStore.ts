@@ -7,8 +7,9 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged 
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, query, onSnapshot, addDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
+import { setCachedAdminEmails, isSuperAdmin } from '@/store/useSpotStore';
 
 interface User {
   uid: string;
@@ -18,9 +19,20 @@ interface User {
   savedSpots: string[];
 }
 
+interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  photoURL?: string;
+  addedAt: any;
+  addedBy: string;
+}
+
 interface UserStore {
   user: User | null;
   loading: boolean;
+  adminEmails: string[];
+  adminUsers: AdminUser[];
   setUser: (user: User | null) => void;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
@@ -28,13 +40,19 @@ interface UserStore {
   signOut: () => Promise<void>;
   initAuth: () => void;
   toggleFavorite: (spotId: string) => Promise<void>;
+  initAdminListener: () => () => void;
+  addAdmin: (email: string) => Promise<void>;
+  removeAdmin: (adminId: string) => Promise<void>;
+  searchUserByEmail: (email: string) => Promise<User | null>;
 }
 
 export const useUserStore = create<UserStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       loading: true,
+      adminEmails: [],
+      adminUsers: [],
       
       setUser: (user) => set({ user, loading: false }),
       
@@ -206,6 +224,112 @@ export const useUserStore = create<UserStore>()(
           }
         } catch (error) {
           console.error('Error toggling favorite:', error);
+          throw error;
+        }
+      },
+
+      // Initialize listener for admin emails
+      initAdminListener: () => {
+        const adminsRef = collection(db, 'admins');
+        const q = query(adminsRef);
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const adminsList: AdminUser[] = [];
+          const emailsList: string[] = [];
+          
+          snapshot.forEach((doc) => {
+            const adminData = { id: doc.id, ...doc.data() } as AdminUser;
+            adminsList.push(adminData);
+            emailsList.push(adminData.email);
+          });
+          
+          set({ adminEmails: emailsList, adminUsers: adminsList });
+          
+          // Update cached admin emails in useSpotStore
+          setCachedAdminEmails(emailsList);
+          
+          console.log('Admin emails updated:', emailsList);
+        });
+
+        return unsubscribe;
+      },
+
+      // Search for a user by email
+      searchUserByEmail: async (email: string) => {
+        try {
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef);
+          const snapshot = await getDocs(q);
+          
+          let foundUser: User | null = null;
+          snapshot.forEach((doc) => {
+            const userData = doc.data();
+            if (userData.email?.toLowerCase() === email.toLowerCase()) {
+              foundUser = {
+                uid: doc.id,
+                name: userData.name || 'Unknown',
+                email: userData.email,
+                photoURL: userData.photoURL || '',
+                savedSpots: userData.savedSpots || [],
+              };
+            }
+          });
+          
+          return foundUser;
+        } catch (error) {
+          console.error('Error searching user:', error);
+          throw error;
+        }
+      },
+
+      // Add a new admin (only Super Admin can do this)
+      addAdmin: async (email: string) => {
+        const { user } = get();
+        if (!user || !isSuperAdmin(user.email)) {
+          throw new Error('Only Super Admin can add admins');
+        }
+
+        try {
+          // Check if user exists
+          const targetUser = await get().searchUserByEmail(email);
+          if (!targetUser) {
+            throw new Error('User not found');
+          }
+
+          // Check if already admin
+          const { adminEmails } = get();
+          if (adminEmails.includes(email.toLowerCase()) || isSuperAdmin(email)) {
+            throw new Error('User is already an admin');
+          }
+
+          // Add to Firestore admins collection
+          await addDoc(collection(db, 'admins'), {
+            email: targetUser.email,
+            name: targetUser.name,
+            photoURL: targetUser.photoURL || '',
+            addedAt: serverTimestamp(),
+            addedBy: user.uid,
+          });
+
+          console.log(`Admin added: ${email}`);
+        } catch (error) {
+          console.error('Error adding admin:', error);
+          throw error;
+        }
+      },
+
+      // Remove an admin (only Super Admin can do this)
+      removeAdmin: async (adminId: string) => {
+        const { user } = get();
+        if (!user || !isSuperAdmin(user.email)) {
+          throw new Error('Only Super Admin can remove admins');
+        }
+
+        try {
+          await deleteDoc(doc(db, 'admins', adminId));
+          console.log(`Admin removed: ${adminId}`);
+        } catch (error) {
+          console.error('Error removing admin:', error);
           throw error;
         }
       },

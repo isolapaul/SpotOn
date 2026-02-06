@@ -1,11 +1,11 @@
 'use client';
 
-import { X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle } from 'lucide-react';
+import { X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle, Shield } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { useSpotStore } from '@/store/useSpotStore';
+import { useSpotStore, isAdmin as checkIsAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useState } from 'react';
 
@@ -69,6 +69,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       await addReview(spot.id, {
         userId: user.uid,
         userName: user.name || 'Névtelen',
+        userEmail: user.email,
         userPhoto: user.photoURL,
         rating,
         comment,
@@ -411,7 +412,15 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-white font-medium">{review.userName}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-white font-medium">{review.userName}</p>
+                            {checkIsAdmin(review.userEmail) && (
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">
+                                <Shield className="w-3 h-3 text-amber-400" />
+                                <span className="text-amber-400 text-xs font-bold">Admin</span>
+                              </div>
+                            )}
+                          </div>
                           <span className="text-white/40 text-xs">
                             {review.createdAt?.toDate ? 
                               new Date(review.createdAt.toDate()).toLocaleDateString(language === 'hu' ? 'hu-HU' : 'en-US', {

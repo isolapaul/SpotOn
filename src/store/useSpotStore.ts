@@ -5,7 +5,6 @@ import {
   serverTimestamp, 
   onSnapshot,
   query,
-  where,
   orderBy,
   doc,
   updateDoc,
@@ -16,18 +15,37 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import imageCompression from 'browser-image-compression';
 
-// Check if the user is an admin by comparing with the environment variable
+// Store for admin emails (will be populated by Firestore listener)
+let cachedAdminEmails: string[] = [];
+
+export const setCachedAdminEmails = (emails: string[]) => {
+  cachedAdminEmails = emails;
+};
+
+// Check if the user is Super Admin (from environment variable)
+export const isSuperAdmin = (email: string | undefined): boolean => {
+  if (!email) return false;
+  const superAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  if (!superAdminEmail) return false;
+  return email.toLowerCase() === superAdminEmail.toLowerCase();
+};
+
+// Check if the user is any admin (Super Admin OR in Firestore admins collection)
 export const isAdmin = (email: string | undefined): boolean => {
   if (!email) return false;
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-  if (!adminEmail) return false;
-  return email.toLowerCase() === adminEmail.toLowerCase();
+  
+  // Check if super admin
+  if (isSuperAdmin(email)) return true;
+  
+  // Check if in cached admin list
+  return cachedAdminEmails.some(adminEmail => adminEmail.toLowerCase() === email.toLowerCase());
 };
 
 export interface Review {
   id: string;
   userId: string;
   userName: string;
+  userEmail: string;
   userPhoto?: string;
   rating: number;
   comment: string;
