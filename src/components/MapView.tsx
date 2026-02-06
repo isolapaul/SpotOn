@@ -74,6 +74,7 @@ const mapOptions = {
   rotateControl: false,
   fullscreenControl: false,
   clickableIcons: false, // Disable clicking on POI markers (city names, businesses, etc.)
+  gestureHandling: 'greedy', // Allow one-finger touch gestures on mobile
 };
 
 export default function MapView({ 
