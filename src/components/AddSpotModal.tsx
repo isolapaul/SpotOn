@@ -225,7 +225,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {/* Image Upload */}
           <div>
             <label className="block text-white font-medium mb-2">
-              {t('photo')} *
+              {t('photoOptional')}
             </label>
             <input
               ref={fileInputRef}
@@ -282,7 +282,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading || !selectedLocation || !imageFile || !formData.name.trim()}
+            disabled={loading || !selectedLocation || !formData.name.trim()}
             className="w-full py-4 rounded-2xl font-semibold text-lg
               bg-gradient-to-r from-primary-500 to-primary-600 text-white
               shadow-lg shadow-primary-500/30 

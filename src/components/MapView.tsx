@@ -73,6 +73,7 @@ const mapOptions = {
   streetViewControl: false,
   rotateControl: false,
   fullscreenControl: false,
+  clickableIcons: false, // Disable clicking on POI markers (city names, businesses, etc.)
 };
 
 export default function MapView({ 
