@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Heart, Star, MapPin, CheckCircle } from 'lucide-react';
+import { X, Heart, Star, MapPin, CheckCircle, Navigation } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -73,6 +73,25 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
     } finally {
       setIsApproving(false);
     }
+  };
+
+  // Platform detection for navigation
+  const getPlatform = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (/iphone|ipad|ipod/.test(userAgent)) return 'ios';
+    if (/android/.test(userAgent)) return 'android';
+    return 'desktop';
+  };
+
+  const getNavigationUrl = () => {
+    const platform = getPlatform();
+    const { lat, lng } = spot.location;
+    
+    if (platform === 'ios') {
+      return `maps://maps.apple.com/?q=${lat},${lng}`;
+    }
+    // Android and Desktop use Google Maps
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
   };
 
   return (
@@ -193,19 +212,38 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
           </div>
         )}
 
-        {/* View Details Button */}
-        <button
-          onClick={onViewDetails}
-          className="w-full py-2.5 rounded-xl font-medium
-            bg-gradient-to-r from-primary-500 to-primary-600 text-white
-            shadow-lg shadow-primary-500/20
-            hover:shadow-xl hover:shadow-primary-500/30
-            active:scale-98 transition-all duration-200
-            flex items-center justify-center gap-2"
-        >
-          <MapPin className="w-4 h-4" />
-          <span>{t('viewDetails')}</span>
-        </button>
+        {/* Action Buttons */}
+        <div className="space-y-2">
+          {/* View Details Button */}
+          <button
+            onClick={onViewDetails}
+            className="w-full py-2.5 rounded-xl font-medium
+              bg-gradient-to-r from-primary-500 to-primary-600 text-white
+              shadow-lg shadow-primary-500/20
+              hover:shadow-xl hover:shadow-primary-500/30
+              active:scale-98 transition-all duration-200
+              flex items-center justify-center gap-2"
+          >
+            <MapPin className="w-4 h-4" />
+            <span>{t('viewDetails')}</span>
+          </button>
+
+          {/* Get Directions Button */}
+          <a
+            href={getNavigationUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-2.5 rounded-xl font-medium
+              bg-gradient-to-r from-blue-500 to-blue-600 text-white
+              shadow-lg shadow-blue-500/20
+              hover:shadow-xl hover:shadow-blue-500/30
+              active:scale-98 transition-all duration-200
+              flex items-center justify-center gap-2"
+          >
+            <Navigation className="w-4 h-4" />
+            <span>{t('getDirections')}</span>
+          </a>
+        </div>
       </div>
     </div>
   );

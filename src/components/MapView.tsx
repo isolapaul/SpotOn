@@ -254,19 +254,18 @@ export default function MapView({
             onCloseClick={() => setSelectedSpot(null)}
             options={{
               pixelOffset: new google.maps.Size(0, -40),
+              disableAutoPan: false,
             }}
           >
-            <div>
-              <SpotInfoWindow
-                spot={selectedSpot}
-                isAdmin={isAdmin}
-                onClose={() => setSelectedSpot(null)}
-                onViewDetails={() => {
-                  onSpotDetailsOpen?.(selectedSpot);
-                  setSelectedSpot(null);
-                }}
-              />
-            </div>
+            <SpotInfoWindow
+              spot={selectedSpot}
+              isAdmin={isAdmin}
+              onClose={() => setSelectedSpot(null)}
+              onViewDetails={() => {
+                onSpotDetailsOpen?.(selectedSpot);
+                setSelectedSpot(null);
+              }}
+            />
           </InfoWindow>
         )}
       </GoogleMap>

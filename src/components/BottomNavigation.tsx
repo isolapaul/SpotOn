@@ -53,13 +53,20 @@ export default function BottomNavigation({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:w-auto">
-      <nav className="
-        w-full bg-gray-900/95 backdrop-blur-md border-t border-white/10
-        md:rounded-full md:border md:border-white/20 md:shadow-glass-lg md:px-6 md:py-3
-        px-0 py-2
-        md:max-w-md md:mx-auto
-      "
-      style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}>
+      <nav 
+        className="
+          w-full
+          /* Mobile: Edge-to-Edge Native Design */
+          bg-gray-900/90 backdrop-blur-xl border-t border-white/10
+          /* Desktop: Floating Pill Design */
+          md:rounded-full md:border md:border-white/20 md:shadow-glass-lg md:px-6
+          md:max-w-md md:mx-auto md:bg-gray-900/95 md:backdrop-blur-md
+        "
+        style={{ 
+          paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
+          paddingTop: '0.75rem'
+        }}
+      >
         <div className="flex items-center justify-around md:gap-2">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -77,13 +84,14 @@ export default function BottomNavigation({
                   <div className={`
                     relative flex items-center justify-center 
                     w-14 h-14 md:w-16 md:h-16
-                    -mt-8 md:-mt-10
+                    -mt-6 md:-mt-10
                     rounded-full transition-all duration-300
                     ${isActive 
-                      ? 'bg-gradient-to-br from-primary-400 to-primary-600 shadow-lg shadow-primary-500/50' 
-                      : 'bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg shadow-primary-600/40'
+                      ? 'bg-gradient-to-br from-primary-400 to-primary-600 shadow-xl shadow-primary-500/60' 
+                      : 'bg-gradient-to-br from-primary-500 to-primary-700 shadow-xl shadow-primary-600/50'
                     }
-                    active:scale-95 md:group-hover:shadow-xl
+                    active:scale-95 md:group-hover:shadow-2xl
+                    border-4 border-gray-900/50
                   `}>
                     <Icon 
                       className="w-7 h-7 md:w-8 md:h-8 text-white" 

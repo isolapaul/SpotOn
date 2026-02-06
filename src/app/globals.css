@@ -87,6 +87,29 @@ body {
   scrollbar-width: none;
 }
 
+/* Remove white background from Google Maps InfoWindow */
+.gm-style .gm-style-iw-c {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 24px !important;
+  overflow: visible !important;
+}
+
+.gm-style .gm-style-iw-d {
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.gm-style .gm-style-iw-t::after {
+  display: none !important;
+}
+
+/* Hide default close button since we have our own */
+.gm-style .gm-ui-hover-effect {
+  display: none !important;
+}
+
 /* iOS safe area support */
 @supports (padding: max(0px)) {
   .safe-bottom {
