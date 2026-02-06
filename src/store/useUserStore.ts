@@ -2,12 +2,14 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { 
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged 
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, query, onSnapshot, addDoc, deleteDoc, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, query, onSnapshot, deleteDoc, getDocs } from 'firebase/firestore';
 import { auth, db, googleProvider } from '@/lib/firebase';
 import { setCachedAdminEmails, isSuperAdmin } from '@/store/useSpotStore';
 
@@ -58,6 +60,17 @@ export const useUserStore = create<UserStore>()(
       
       signInWithGoogle: async () => {
         try {
+          // Check if mobile device
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          
+          if (isMobile) {
+            // Use redirect for mobile (popup blockers are common on mobile)
+            await signInWithRedirect(auth, googleProvider);
+            // The result will be handled in initAuth() via getRedirectResult()
+            return;
+          }
+          
+          // Use popup for desktop
           const result = await signInWithPopup(auth, googleProvider);
           const firebaseUser = result.user;
           
@@ -164,6 +177,45 @@ export const useUserStore = create<UserStore>()(
       },
       
       initAuth: () => {
+        // Handle redirect result (for mobile Google sign-in)
+        getRedirectResult(auth)
+          .then(async (result) => {
+            if (result) {
+              const firebaseUser = result.user;
+              
+              // Create or update user document in Firestore
+              const userRef = doc(db, 'users', firebaseUser.uid);
+              const userSnap = await getDoc(userRef);
+              
+              if (!userSnap.exists()) {
+                // Create new user document
+                await setDoc(userRef, {
+                  uid: firebaseUser.uid,
+                  name: firebaseUser.displayName || 'Anonymous',
+                  email: firebaseUser.email || '',
+                  photoURL: firebaseUser.photoURL || '',
+                  savedSpots: [],
+                  createdAt: serverTimestamp(),
+                });
+              }
+              
+              // Set user in store
+              const userData: User = {
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || 'Anonymous',
+                email: firebaseUser.email || '',
+                photoURL: firebaseUser.photoURL || '',
+                savedSpots: userSnap.exists() ? userSnap.data().savedSpots : [],
+              };
+              
+              set({ user: userData, loading: false });
+            }
+          })
+          .catch((error) => {
+            console.error('Error handling redirect result:', error);
+            set({ loading: false });
+          });
+
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
           if (firebaseUser) {
             // User is signed in
