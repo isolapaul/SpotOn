@@ -16,12 +16,12 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import imageCompression from 'browser-image-compression';
 
-// Admin emails - spots created by these users are auto-approved
-const ADMIN_EMAILS = ['isolapaul100@gmail.com', 'kalaszmilan2006@gmail.com'];
-
+// Check if the user is an admin by comparing with the environment variable
 export const isAdmin = (email: string | undefined): boolean => {
   if (!email) return false;
-  return ADMIN_EMAILS.includes(email.toLowerCase());
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  if (!adminEmail) return false;
+  return email.toLowerCase() === adminEmail.toLowerCase();
 };
 
 export interface Review {
