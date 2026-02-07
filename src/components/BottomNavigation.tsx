@@ -57,10 +57,13 @@ export default function BottomNavigation({
         fixed bottom-0 left-0 right-0 z-50
         /* Mobile: Edge-to-Edge Native Design */
         bg-gray-900/90 backdrop-blur-xl border-t border-white/10
-        pt-3
+        pt-3 select-none
         /* Desktop: Floating Pill Design */
         md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:w-auto md:bg-transparent md:backdrop-blur-none md:border-none
       "
+      style={{
+        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))'
+      }}
     >
       <nav 
         className="
@@ -81,7 +84,7 @@ export default function BottomNavigation({
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className="relative group min-h-[44px] flex items-center justify-center"
+                  className="relative group min-h-[44px] flex items-center justify-center touch-manipulation"
                   aria-label={item.label}
                 >
                   <div className={`
@@ -114,7 +117,7 @@ export default function BottomNavigation({
                   className={`
                     relative flex flex-col items-center justify-center gap-0.5 md:gap-1
                     px-2 md:px-4 py-2 md:py-2 rounded-xl md:rounded-2xl 
-                    transition-all duration-200 min-h-[44px]
+                    transition-all duration-200 min-h-[44px] touch-manipulation
                     ${isActive 
                       ? 'bg-white/20 text-white' 
                       : 'text-white/60 hover:text-white/80 active:scale-95'

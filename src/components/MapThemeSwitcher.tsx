@@ -29,13 +29,17 @@ export default function MapThemeSwitcher() {
       {/* Theme Switcher Button - Bottom Right */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed bottom-24 right-4 z-[1500] p-3 rounded-full 
+        className={`fixed z-[1500] p-3 rounded-full 
           active:scale-95 transition-all duration-200 shadow-glass-lg
-          safe-bottom ${
+          touch-manipulation select-none ${
             isOpen 
               ? 'bg-purple-600 border-2 border-purple-400' 
               : 'bg-slate-800/90 backdrop-blur-xl border-2 border-white/20 hover:bg-slate-700/90'
           }`}
+        style={{
+          bottom: 'calc(6rem + env(safe-area-inset-bottom))',
+          right: 'max(1rem, env(safe-area-inset-right))'
+        }}
         aria-label="Map Theme"
       >
         <Palette className="w-5 h-5 text-white" strokeWidth={2} />

@@ -28,6 +28,13 @@ html {
   -webkit-text-size-adjust: 100%;
   /* Prevent gray highlight on tap */
   -webkit-tap-highlight-color: transparent;
+  /* Disable text selection globally */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* Enable fast touch response */
+  touch-action: manipulation;
 }
 
 body {
@@ -37,6 +44,8 @@ body {
   /* Keep right/left insets for horizontal safe areas */
   padding-right: env(safe-area-inset-right, 0);
   padding-left: env(safe-area-inset-left, 0);
+  /* Bottom padding to match the navigation bar - makes background seamless */
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 /* Glassmorphism utility classes for Apple Liquid Glass effect */
@@ -60,6 +69,20 @@ body {
   
   .glass-nav {
     @apply bg-slate-900/85 backdrop-blur-xl border border-white/20 shadow-glass-lg;
+  }
+  
+  /* Touch responsiveness utilities */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Disable text selection */
+  .select-none {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
   }
 }
 

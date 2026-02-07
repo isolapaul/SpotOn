@@ -61,7 +61,7 @@ export const usePushNotifications = () => {
       if (permission === 'granted') {
         setIsPermissionGranted(true);
         
-        // Register service worker (dynamically generated from API)
+        // Register service worker (dynamically generated)
         if ('serviceWorker' in navigator) {
           const registration = await navigator.serviceWorker.register('/api/firebase-messaging-sw', {
             scope: '/',
@@ -87,8 +87,6 @@ export const usePushNotifications = () => {
           });
 
           if (token) {
-            console.log('FCM Token obtained:', token);
-            
             // Save token to Firestore
             const userRef = doc(db, 'users', user.uid);
             await updateDoc(userRef, {

@@ -257,8 +257,6 @@ export const useUserStore = create<UserStore>()(
           
           // Update cached admin emails in useSpotStore
           setCachedAdminEmails(emailsList);
-          
-          console.log('Admin emails updated:', emailsList);
         });
 
         return unsubscribe;
@@ -327,8 +325,6 @@ export const useUserStore = create<UserStore>()(
             addedAt: serverTimestamp(),
             addedBy: user.uid,
           });
-
-          console.log(`Admin added: ${email}`);
         } catch (error) {
           console.error('Error adding admin:', error);
           throw error;
@@ -344,7 +340,6 @@ export const useUserStore = create<UserStore>()(
 
         try {
           await deleteDoc(doc(db, 'admins', adminId));
-          console.log(`Admin removed: ${adminId}`);
         } catch (error) {
           console.error('Error removing admin:', error);
           throw error;

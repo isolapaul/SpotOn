@@ -13,8 +13,7 @@ const nextConfig = {
       },
     ],
   },
-  // Service worker headers are now handled by the API route
-  // No additional headers configuration needed here
+  // Service worker is now served from API route at /api/firebase-messaging-sw
 };
 
 export default nextConfig;
