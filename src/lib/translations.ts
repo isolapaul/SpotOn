@@ -95,6 +95,15 @@ export const translations = {
     within50km: '50 km-en belül',
     allCategories: 'Minden kategória',
     clearFilters: 'Szűrők törlése',
+    
+    // Notifications
+    enableNotifications: 'Értesítések engedélyezése',
+    notificationPromptText: 'Értesítést kapsz, ha jóváhagyják a helyedet, vagy értékelést kap',
+    enable: 'Engedélyezés',
+    enabling: 'Engedélyezés...',
+    notNow: 'Most nem',
+    notificationsEnabled: 'Értesítések engedélyezve',
+    notificationsDisabled: 'Értesítések letiltva',
   },
   en: {
     // Navigation
@@ -192,6 +201,15 @@ export const translations = {
     within50km: 'Within 50 km',
     allCategories: 'All categories',
     clearFilters: 'Clear filters',
+    
+    // Notifications
+    enableNotifications: 'Enable Notifications',
+    notificationPromptText: 'Get notified when your spot is approved or receives reviews',
+    enable: 'Enable',
+    enabling: 'Enabling...',
+    notNow: 'Not now',
+    notificationsEnabled: 'Notifications enabled',
+    notificationsDisabled: 'Notifications disabled',
   },
   de: {
     // Navigation
@@ -280,6 +298,15 @@ export const translations = {
     
     // Filters
     filters: 'Filter',
+    
+    // Notifications
+    enableNotifications: 'Benachrichtigungen aktivieren',
+    notificationPromptText: 'Erhalten Sie Benachrichtigungen, wenn Ihr Ort genehmigt oder bewertet wird',
+    enable: 'Aktivieren',
+    enabling: 'Aktivierung...',
+    notNow: 'Nicht jetzt',
+    notificationsEnabled: 'Benachrichtigungen aktiviert',
+    notificationsDisabled: 'Benachrichtigungen deaktiviert',
     distance: 'Entfernung',
     anyDistance: 'Beliebige Entfernung',
     within1km: 'Innerhalb 1 km',

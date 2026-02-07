@@ -1,10 +1,11 @@
 'use client';
 
-import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2 } from 'lucide-react';
+import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2, Bell, BellOff } from 'lucide-react';
 import Image from 'next/image';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin, isSuperAdmin } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -21,6 +22,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const { spots, approveSpot } = useSpotStore();
   const { t } = useLanguageStore();
   const { showToast } = useToastStore();
+  const { isPermissionGranted, isLoading: isNotificationLoading, requestPermission, disableNotifications } = usePushNotifications();
   const [activeTab, setActiveTab] = useState<'my-spots' | 'favorites' | 'pending' | 'admin'>('my-spots');
   const [myAllSpots, setMyAllSpots] = useState<Spot[]>([]);
   const [adminEmailInput, setAdminEmailInput] = useState('');
@@ -282,7 +284,51 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         {/* Content with Safe Area Bottom Padding */}
         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
           {activeTab === 'my-spots' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Notification Settings */}
+              <div className="glass-card p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    {isPermissionGranted ? (
+                      <Bell className="w-5 h-5 text-green-400" />
+                    ) : (
+                      <BellOff className="w-5 h-5 text-white/40" />
+                    )}
+                    <div>
+                      <h3 className="text-white font-semibold text-sm">
+                        {t('enableNotifications')}
+                      </h3>
+                      <p className="text-white/60 text-xs">
+                        {t('notificationPromptText')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {isPermissionGranted ? (
+                  <button
+                    onClick={disableNotifications}
+                    className="w-full py-2 px-4 rounded-lg bg-red-500/20 text-red-400 
+                      border border-red-500/30 font-medium text-sm hover:bg-red-500/30 
+                      transition-all"
+                  >
+                    {t('notificationsDisabled')}
+                  </button>
+                ) : (
+                  <button
+                    onClick={requestPermission}
+                    disabled={isNotificationLoading}
+                    className="w-full py-2 px-4 rounded-lg bg-green-500/20 text-green-400 
+                      border border-green-500/30 font-medium text-sm hover:bg-green-500/30 
+                      transition-all disabled:opacity-50"
+                  >
+                    {isNotificationLoading ? t('enabling') : t('enable')}
+                  </button>
+                )}
+              </div>
+
+              {/* My Spots List */}
+              <div className="space-y-4">
               {myAllSpots.length === 0 ? (
                 <div className="glass-card p-8 text-center">
                   <MapPin className="w-12 h-12 text-white/40 mx-auto mb-3" />
@@ -312,6 +358,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   </div>
                 ))
               )}
+              </div>
             </div>
           )}
 

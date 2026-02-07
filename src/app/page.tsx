@@ -12,6 +12,7 @@ import FilterPanel from '@/components/FilterPanel';
 import DistanceSelector from '@/components/DistanceSelector';
 import Toast from '@/components/Toast';
 import LoadingScreen from '@/components/LoadingScreen';
+import NotificationPrompt from '@/components/NotificationPrompt';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
@@ -215,16 +216,7 @@ export default function Home() {
         spot.location.lat,
         spot.location.lng
       );
-     >
-      {/* Loading Screen - shown until everything is ready */}
-      <LoadingScreen isLoading={!isAppReady} />
-      
-      {/* Main App - hidden until ready, then fades in */}
-      <main 
-        className={`relative w-full h-[100dvh] overflow-hidden transition-opacity duration-700 ${
-          isAppReady ? 'opacity-100' : 'opacity-0'
-        }`}
-      
+      return dist <= distance;
     });
 
     if (spotsInRange.length === 0) {
@@ -256,7 +248,19 @@ export default function Home() {
   }
 
   return (
-    <main className="relative w-full h-[100dvh] overflow-hidden">
+    <>
+      {/* Loading Screen - shown until everything is ready */}
+      <LoadingScreen isLoading={!isAppReady} />
+      
+      {/* Notification Prompt - shown after app loads */}
+      <NotificationPrompt />
+      
+      {/* Main App - hidden until ready, then fades in */}
+      <main 
+        className={`relative w-full h-[100dvh] overflow-hidden transition-opacity duration-700 ${
+          isAppReady ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
       {/* Language Selector Modal */}
       <LanguageSelector />
       
@@ -300,7 +304,6 @@ export default function Home() {
         isOpen={profilePanelOpen}
         onClose={() => setProfilePanelOpen(false)}
       />
-        onMapLoad={handleMapLoad}
       
       {/* Full-screen map background */}
       <MapView 
@@ -310,6 +313,7 @@ export default function Home() {
         spots={visibleSpots}
         isAdmin={userIsAdmin}
         onSpotDetailsOpen={setSelectedSpot}
+        onMapLoad={handleMapLoad}
       />
       
       {/* Empty state message */}
@@ -347,8 +351,7 @@ export default function Home() {
         onNavigateClick={handleNavigateClick}
         onFavoritesClick={handleFavoritesClick}
       />
-  </main>
-    </
+
       {/* Toast Notifications */}
       {toasts.map((toast) => (
         <Toast
@@ -358,6 +361,7 @@ export default function Home() {
           onClose={() => removeToast(toast.id)}
         />
       ))}
-    </main>
+      </main>
+    </>
   );
 }
