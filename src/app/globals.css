@@ -32,11 +32,11 @@ html {
 
 body {
   /* Safe area insets for notched devices */
-  /* Note: bottom padding is handled by BottomNavigation component itself */
-  padding-top: env(safe-area-inset-top, 0);
+  /* Map fills entire screen - safe area is handled by individual UI components */
+  padding: 0;
+  /* Keep right/left insets for horizontal safe areas */
   padding-right: env(safe-area-inset-right, 0);
   padding-left: env(safe-area-inset-left, 0);
-  padding-bottom: 0;
 }
 
 /* Glassmorphism utility classes for Apple Liquid Glass effect */
