@@ -75,7 +75,7 @@ interface SpotStore {
   spots: Spot[];
   isLoading: boolean;
   error: string | null;
-  fetchSpots: () => void;
+  fetchSpots: () => Promise<void>;
   addSpot: (spotData: Omit<Spot, 'id' | 'imageUrl' | 'createdAt' | 'status'>, imageFile: File | null, userId: string, userEmail?: string) => Promise<void>;
   addReview: (spotId: string, review: Omit<Review, 'id' | 'createdAt'>) => Promise<void>;
   approveSpot: (spotId: string) => Promise<void>;
@@ -87,31 +87,44 @@ export const useSpotStore = create<SpotStore>((set) => ({
   error: null,
 
   fetchSpots: () => {
-    try {
-      const spotsRef = collection(db, 'spots');
-      // Fetch ALL spots (both pending and approved) for admin filtering
-      const q = query(
-        spotsRef, 
-        orderBy('createdAt', 'desc')
-      );
+    return new Promise<void>((resolve, reject) => {
+      try {
+        set({ isLoading: true });
+        const spotsRef = collection(db, 'spots');
+        // Fetch ALL spots (both pending and approved) for admin filtering
+        const q = query(
+          spotsRef, 
+          orderBy('createdAt', 'desc')
+        );
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const spotsList: Spot[] = [];
-        snapshot.forEach((doc) => {
-          spotsList.push({ id: doc.id, ...doc.data() } as Spot);
+        let isFirstSnapshot = true;
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const spotsList: Spot[] = [];
+          snapshot.forEach((doc) => {
+            spotsList.push({ id: doc.id, ...doc.data() } as Spot);
+          });
+          set({ spots: spotsList, isLoading: false, error: null });
+          
+          // Resolve promise on first snapshot
+          if (isFirstSnapshot) {
+            isFirstSnapshot = false;
+            resolve();
+          }
+        }, (error) => {
+          console.error('Error fetching spots:', error);
+          set({ error: error.message, isLoading: false });
+          reject(error);
         });
-        set({ spots: spotsList, isLoading: false, error: null });
-      }, (error) => {
-        console.error('Error fetching spots:', error);
-        set({ error: error.message, isLoading: false });
-      });
 
-      // Store unsubscribe function if needed
-      return unsubscribe;
-    } catch (error: any) {
-      console.error('Error setting up spots listener:', error);
-      set({ error: error.message, isLoading: false });
-    }
+        // Store unsubscribe function if needed
+        return unsubscribe;
+      } catch (error: any) {
+        console.error('Error setting up spots listener:', error);
+        set({ error: error.message, isLoading: false });
+        reject(error);
+      }
+    });
   },
 
   addSpot: async (spotData, imageFile, userId, userEmail) => {

@@ -12,6 +12,7 @@ interface MapViewProps {
   spots?: Spot[];
   isAdmin?: boolean;
   onSpotDetailsOpen?: (spot: Spot) => void;
+  onMapLoad?: () => void;
 }
 
 // Category emoji markers
@@ -83,7 +84,8 @@ export default function MapView({
   tempMarker,
   spots = [],
   isAdmin = false,
-  onSpotDetailsOpen
+  onSpotDetailsOpen,
+  onMapLoad
 }: Readonly<MapViewProps>) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -111,6 +113,17 @@ export default function MapView({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries: ['places'],
   });
+
+  // Notify parent when map is loaded
+  useEffect(() => {
+    if (isLoaded && !loadError && onMapLoad) {
+      // Give it a moment to ensure everything is ready
+      const timer = setTimeout(() => {
+        onMapLoad();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoaded, loadError, onMapLoad]);
 
   // Get user's current location
   useEffect(() => {
@@ -174,13 +187,7 @@ export default function MapView({
   }
 
   if (!isLoaded) {
-    return (
-      <div className="w-full h-[100dvh] bg-slate-900 flex items-center justify-center">
-        <div className="glass-card px-8 py-4">
-          <p className="text-white font-medium">Loading map...</p>
-        </div>
-      </div>
-    );
+    return null; // Return nothing, LoadingScreen handles this
   }
 
   return (

@@ -38,7 +38,7 @@ interface UserStore {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
-  initAuth: () => void;
+  initAuth: () => Promise<void>;
   toggleFavorite: (spotId: string) => Promise<void>;
   initAdminListener: () => () => void;
   addAdmin: (email: string) => Promise<void>;
@@ -164,31 +164,41 @@ export const useUserStore = create<UserStore>()(
       },
       
       initAuth: () => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-          if (firebaseUser) {
-            // User is signed in
-            const userRef = doc(db, 'users', firebaseUser.uid);
-            const userSnap = await getDoc(userRef);
-            
-            if (userSnap.exists()) {
-              const userData: User = {
-                uid: firebaseUser.uid,
-                name: userSnap.data().name || firebaseUser.displayName || 'Anonymous',
-                email: firebaseUser.email || '',
-                photoURL: firebaseUser.photoURL || '',
-                savedSpots: userSnap.data().savedSpots || [],
-              };
-              set({ user: userData, loading: false });
+        return new Promise<void>((resolve) => {
+          let isFirstCall = true;
+          
+          const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+              // User is signed in
+              const userRef = doc(db, 'users', firebaseUser.uid);
+              const userSnap = await getDoc(userRef);
+              
+              if (userSnap.exists()) {
+                const userData: User = {
+                  uid: firebaseUser.uid,
+                  name: userSnap.data().name || firebaseUser.displayName || 'Anonymous',
+                  email: firebaseUser.email || '',
+                  photoURL: firebaseUser.photoURL || '',
+                  savedSpots: userSnap.data().savedSpots || [],
+                };
+                set({ user: userData, loading: false });
+              } else {
+                set({ user: null, loading: false });
+              }
             } else {
+              // User is signed out
               set({ user: null, loading: false });
             }
-          } else {
-            // User is signed out
-            set({ user: null, loading: false });
-          }
+            
+            // Resolve promise on first auth state change
+            if (isFirstCall) {
+              isFirstCall = false;
+              resolve();
+            }
+          });
+          
+          return unsubscribe;
         });
-        
-        return unsubscribe;
       },
 
       toggleFavorite: async (spotId: string) => {

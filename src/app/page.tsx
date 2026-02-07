@@ -11,6 +11,7 @@ import ProfilePanel from '@/components/ProfilePanel';
 import FilterPanel from '@/components/FilterPanel';
 import DistanceSelector from '@/components/DistanceSelector';
 import Toast from '@/components/Toast';
+import LoadingScreen from '@/components/LoadingScreen';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
@@ -22,20 +23,18 @@ const MapView = dynamic(
   () => import('@/components/MapView'),
   {
     ssr: false,
-    loading: () => {
-      return (
-        <div className="w-full h-[100dvh] bg-slate-900 flex items-center justify-center">
-          <div className="glass-card px-8 py-4">
-            <p className="text-white font-medium">Loading map...</p>
-          </div>
-        </div>
-      );
-    },
+    loading: () => null, // No loading indicator here, we use LoadingScreen
   }
 );
 
 export default function Home() {
   const [isClient, setIsClient] = useState(false);
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [loadingStates, setLoadingStates] = useState({
+    auth: false,
+    spots: false,
+    map: false,
+  });
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [addSpotModalOpen, setAddSpotModalOpen] = useState(false);
   const [profilePanelOpen, setProfilePanelOpen] = useState(false);
@@ -97,16 +96,43 @@ export default function Home() {
     return filtered;
   }, [spots, userIsAdmin, selectedDistance, selectedCategory, userLocation]);
 
+  // Check if all resources are loaded
+  useEffect(() => {
+    const allLoaded = loadingStates.auth && loadingStates.spots && loadingStates.map;
+    if (allLoaded && !isAppReady) {
+      // Small delay for smooth transition
+      setTimeout(() => {
+        setIsAppReady(true);
+      }, 500);
+    }
+  }, [loadingStates, isAppReady]);
+
   useEffect(() => {
     setIsClient(true);
+    
     // Initialize Firebase auth listener
-    initAuth();
+    const initializeAuth = async () => {
+      await initAuth();
+      setLoadingStates(prev => ({ ...prev, auth: true }));
+    };
+    
     // Initialize admin emails listener
     const unsubscribeAdmins = initAdminListener();
-    // Fetch approved spots
-    fetchSpots();
     
-    // Get user's location
+    // Fetch spots
+    const initializeSpots = async () => {
+      await fetchSpots();
+      // Wait a bit to ensure spots are populated
+      setTimeout(() => {
+        setLoadingStates(prev => ({ ...prev, spots: true }));
+      }, 300);
+    };
+    
+    // Start both initializations in parallel
+    initializeAuth();
+    initializeSpots();
+    
+    // Get user's location (non-blocking)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -126,6 +152,11 @@ export default function Home() {
       unsubscribeAdmins();
     };
   }, [initAuth, initAdminListener, fetchSpots]);
+
+  // Handle map load callback
+  const handleMapLoad = () => {
+    setLoadingStates(prev => ({ ...prev, map: true }));
+  };
 
   const handleAddSpotClick = () => {
     if (user) {
@@ -184,7 +215,16 @@ export default function Home() {
         spot.location.lat,
         spot.location.lng
       );
-      return dist <= distance;
+     >
+      {/* Loading Screen - shown until everything is ready */}
+      <LoadingScreen isLoading={!isAppReady} />
+      
+      {/* Main App - hidden until ready, then fades in */}
+      <main 
+        className={`relative w-full h-[100dvh] overflow-hidden transition-opacity duration-700 ${
+          isAppReady ? 'opacity-100' : 'opacity-0'
+        }`}
+      
     });
 
     if (spotsInRange.length === 0) {
@@ -260,6 +300,7 @@ export default function Home() {
         isOpen={profilePanelOpen}
         onClose={() => setProfilePanelOpen(false)}
       />
+        onMapLoad={handleMapLoad}
       
       {/* Full-screen map background */}
       <MapView 
@@ -306,7 +347,8 @@ export default function Home() {
         onNavigateClick={handleNavigateClick}
         onFavoritesClick={handleFavoritesClick}
       />
-
+  </main>
+    </
       {/* Toast Notifications */}
       {toasts.map((toast) => (
         <Toast
