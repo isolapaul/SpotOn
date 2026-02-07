@@ -61,9 +61,9 @@ export const usePushNotifications = () => {
       if (permission === 'granted') {
         setIsPermissionGranted(true);
         
-        // Register service worker
+        // Register service worker (dynamically generated from API)
         if ('serviceWorker' in navigator) {
-          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+          const registration = await navigator.serviceWorker.register('/api/firebase-messaging-sw', {
             scope: '/',
           });
           console.log('Service Worker registered:', registration);

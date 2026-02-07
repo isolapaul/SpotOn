@@ -13,24 +13,8 @@ const nextConfig = {
       },
     ],
   },
-  // Enable service worker for push notifications
-  async headers() {
-    return [
-      {
-        source: '/firebase-messaging-sw.js',
-        headers: [
-          {
-            key: 'Service-Worker-Allowed',
-            value: '/',
-          },
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=0, must-revalidate',
-          },
-        ],
-      },
-    ];
-  },
+  // Service worker headers are now handled by the API route
+  // No additional headers configuration needed here
 };
 
 export default nextConfig;
