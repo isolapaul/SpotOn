@@ -3,6 +3,7 @@
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import { useEffect, useState, useCallback } from 'react';
 import type { Spot } from '@/store/useSpotStore';
+import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
 import SpotInfoWindow from './SpotInfoWindow';
 
 interface MapViewProps {
@@ -47,8 +48,8 @@ const getCategoryIcon = (category: Spot['category'], status: 'approved' | 'pendi
   return baseUrl + encodeURIComponent(svg);
 };
 
-// Clean/Simple map style - removes POIs and unnecessary labels
-const mapStyles = [
+// Clean/Simple map style additions - removes POIs and unnecessary labels
+const baseMapStyles = [
   {
     featureType: 'poi',
     elementType: 'labels',
@@ -65,19 +66,6 @@ const mapStyles = [
   },
 ];
 
-const mapOptions = {
-  styles: mapStyles,
-  disableDefaultUI: false,
-  zoomControl: true,
-  mapTypeControl: false,
-  scaleControl: false,
-  streetViewControl: false,
-  rotateControl: false,
-  fullscreenControl: false,
-  clickableIcons: false, // Disable clicking on POI markers (city names, businesses, etc.)
-  gestureHandling: 'greedy', // Allow one-finger touch gestures on mobile
-};
-
 export default function MapView({ 
   isAddingSpot = false, 
   onLocationSelect, 
@@ -92,6 +80,25 @@ export default function MapView({
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [zoomLevel, setZoomLevel] = useState(13);
   const defaultCenter = { lat: 47.4979, lng: 19.0402 }; // Budapest, Hungary
+  
+  // Get current map theme
+  const { theme } = useMapThemeStore();
+  
+  // Combine base styles with theme-specific styles
+  const mapStyles = [...baseMapStyles, ...mapThemes[theme]];
+  
+  const mapOptions = {
+    styles: mapStyles,
+    disableDefaultUI: false,
+    zoomControl: true,
+    mapTypeControl: false,
+    scaleControl: false,
+    streetViewControl: false,
+    rotateControl: false,
+    fullscreenControl: false,
+    clickableIcons: false,
+    gestureHandling: 'greedy' as const,
+  };
 
   // Calculate marker size based on zoom level
   const getMarkerSize = useCallback((zoom: number) => {

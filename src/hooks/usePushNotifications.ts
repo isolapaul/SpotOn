@@ -5,8 +5,16 @@ import { db, app } from '@/lib/firebase';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useToastStore } from '@/store/useToastStore';
+import { useNotificationStore } from '@/store/useNotificationStore';
 
-const VAPID_KEY = 'BAIqueMC6OvXpphaPtr05XoUCEY6jwNZLglXd5IxaVHfLh3coEQKqM4ttvduKNsL1s2p_TU-xc9Bc_fNsunMCUk';
+// Get VAPID key from environment variables
+const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+
+// Validate VAPID key is present
+if (!VAPID_KEY) {
+  console.error('❌ FIREBASE VAPID KEY IS MISSING!');
+  console.error('Please add NEXT_PUBLIC_FIREBASE_VAPID_KEY to your .env.local file');
+}
 
 export const usePushNotifications = () => {
   const [isPermissionGranted, setIsPermissionGranted] = useState(false);
@@ -14,6 +22,7 @@ export const usePushNotifications = () => {
   const { user } = useUserStore();
   const { language } = useLanguageStore();
   const { showToast } = useToastStore();
+  const { addNotification } = useNotificationStore();
 
   // Check if notifications are supported and permission status
   useEffect(() => {
@@ -61,6 +70,14 @@ export const usePushNotifications = () => {
 
           // Wait for service worker to be ready
           await navigator.serviceWorker.ready;
+
+          // Validate VAPID key before requesting token
+          if (!VAPID_KEY) {
+            console.error('❌ Cannot request FCM token: VAPID key is missing');
+            showToast('Push notifications configuration error', 'error');
+            setIsLoading(false);
+            return false;
+          }
 
           // Get FCM token
           const messaging = getMessaging(app);
@@ -113,6 +130,14 @@ export const usePushNotifications = () => {
       // Show toast notification when app is in foreground
       const title = payload.notification?.title || 'New Notification';
       const body = payload.notification?.body || '';
+      
+      // Add to notification center
+      const notificationType = payload.data?.type || 'general';
+      addNotification({
+        title,
+        body,
+        type: notificationType as any,
+      });
       
       showToast(`${title}: ${body}`, 'info');
       

@@ -104,6 +104,26 @@ export const translations = {
     notNow: 'Most nem',
     notificationsEnabled: 'Értesítések engedélyezve',
     notificationsDisabled: 'Értesítések letiltva',
+    
+    // Notification Center
+    notifications: 'Értesítések',
+    markAllRead: 'Mind olvasottnak jelölése',
+    clearAll: 'Mind törlése',
+    noNotifications: 'Nincs értesítés',
+    noNotificationsDesc: 'Amikor történik valami, itt fogsz értesítést kapni',
+    justNow: 'most',
+    minutesAgo: 'perce',
+    hoursAgo: 'órája',
+    daysAgo: 'napja',
+    
+    // Map Themes
+    mapTheme: 'Térkép Téma',
+    themeStandard: 'Standard',
+    themeDark: 'Sötét',
+    themeNight: 'Éjszakai',
+    themeSilver: 'Ezüst',
+    themeRetro: 'Retro',
+    themePurple: 'Lila',
   },
   en: {
     // Navigation
@@ -210,6 +230,26 @@ export const translations = {
     notNow: 'Not now',
     notificationsEnabled: 'Notifications enabled',
     notificationsDisabled: 'Notifications disabled',
+    
+    // Notification Center
+    notifications: 'Notifications',
+    markAllRead: 'Mark all read',
+    clearAll: 'Clear all',
+    noNotifications: 'No notifications',
+    noNotificationsDesc: 'When something happens, you\'ll get notified here',
+    justNow: 'just now',
+    minutesAgo: 'min ago',
+    hoursAgo: 'hr ago',
+    daysAgo: 'days ago',
+    
+    // Map Themes
+    mapTheme: 'Map Theme',
+    themeStandard: 'Standard',
+    themeDark: 'Dark',
+    themeNight: 'Night',
+    themeSilver: 'Silver',
+    themeRetro: 'Retro',
+    themePurple: 'Purple',
   },
   de: {
     // Navigation
@@ -307,6 +347,27 @@ export const translations = {
     notNow: 'Nicht jetzt',
     notificationsEnabled: 'Benachrichtigungen aktiviert',
     notificationsDisabled: 'Benachrichtigungen deaktiviert',
+    
+    // Notification Center
+    notifications: 'Benachrichtigungen',
+    markAllRead: 'Alle als gelesen markieren',
+    clearAll: 'Alle löschen',
+    noNotifications: 'Keine Benachrichtigungen',
+    noNotificationsDesc: 'Wenn etwas passiert, werden Sie hier benachrichtigt',
+    justNow: 'gerade eben',
+    minutesAgo: 'Min. her',
+    hoursAgo: 'Std. her',
+    daysAgo: 'Tage her',
+    
+    // Map Themes
+    mapTheme: 'Kartenstil',
+    themeStandard: 'Standard',
+    themeDark: 'Dunkel',
+    themeNight: 'Nacht',
+    themeSilver: 'Silber',
+    themeRetro: 'Retro',
+    themePurple: 'Lila',
+    
     distance: 'Entfernung',
     anyDistance: 'Beliebige Entfernung',
     within1km: 'Innerhalb 1 km',

@@ -13,6 +13,8 @@ import DistanceSelector from '@/components/DistanceSelector';
 import Toast from '@/components/Toast';
 import LoadingScreen from '@/components/LoadingScreen';
 import NotificationPrompt from '@/components/NotificationPrompt';
+import NotificationCenter from '@/components/NotificationCenter';
+import MapThemeSwitcher from '@/components/MapThemeSwitcher';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
@@ -254,6 +256,12 @@ export default function Home() {
       
       {/* Notification Prompt - shown after app loads */}
       <NotificationPrompt />
+      
+      {/* Notification Center - Top Left Button */}
+      <NotificationCenter />
+      
+      {/* Map Theme Switcher - Bottom Right Button */}
+      <MapThemeSwitcher />
       
       {/* Main App - hidden until ready, then fades in */}
       <main 
