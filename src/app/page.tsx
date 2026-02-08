@@ -256,11 +256,16 @@ export default function Home() {
       {/* Notification Prompt - shown after app loads */}
       <NotificationPrompt />
       
-      {/* Notification Center - Top Left Button */}
-      <NotificationCenter />
-      
-      {/* Map Theme Switcher - Top Right Button - PHASE 3 */}
-      <MapThemeSwitcher />
+      {/* Top Buttons - Hidden when modals are open */}
+      {!profilePanelOpen && !discoveryPanelOpen && !selectedSpot && (
+        <>
+          {/* Notification Center - Top Left Button */}
+          <NotificationCenter />
+          
+          {/* Map Theme Switcher - Top Right Button - PHASE 3 */}
+          <MapThemeSwitcher />
+        </>
+      )}
       
       {/* Main App - hidden until ready, then fades in */}
       <main 

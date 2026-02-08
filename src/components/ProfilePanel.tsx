@@ -1,6 +1,6 @@
 'use client';
 
-import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2, Bell, BellOff, Camera, Pencil, ImageIcon, Loader2, Star, Plus } from 'lucide-react';
+import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2, Bell, BellOff, Pencil, Star, Plus } from 'lucide-react';
 import Image from 'next/image';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin, isSuperAdmin } from '@/store/useSpotStore';
@@ -291,31 +291,20 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Profile Banner */}
-        <div className="relative w-full h-32 flex-shrink-0 bg-gradient-to-r from-primary-700 to-primary-900">
+        {/* Profile Banner - Larger 40vh */}
+        <div className="relative w-full h-[40vh] flex-shrink-0 bg-gradient-to-r from-primary-700 to-primary-900">
           {user.profileBannerURL ? (
             <Image
               src={user.profileBannerURL}
               alt="Profile banner"
               fill
               className="object-cover"
+              priority
             />
           ) : null}
-          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
           
-          {/* Banner edit button */}
-          <button
-            onClick={() => bannerInputRef.current?.click()}
-            disabled={isUploadingBanner}
-            className="absolute bottom-2 right-2 glass-button p-2 rounded-full"
-            aria-label={t('changeProfileBanner')}
-          >
-            {isUploadingBanner ? (
-              <Loader2 className="w-4 h-4 text-white animate-spin" />
-            ) : (
-              <ImageIcon className="w-4 h-4 text-white" />
-            )}
-          </button>
+          {/* Hidden file inputs */}
           <input
             id="banner-upload"
             name="bannerUpload"
@@ -325,9 +314,26 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
             onChange={handleBannerChange}
             className="hidden"
           />
+          <input
+            id="profile-pic-upload"
+            name="profilePicUpload"
+            ref={profilePicInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleProfilePictureChange}
+            className="hidden"
+          />
           
-          {/* Top action buttons - on banner */}
+          {/* Top action buttons */}
           <div className="absolute left-4 right-4 flex justify-between items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}>
+            <button
+              onClick={handleSignOut}
+              className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]"
+              aria-label="Sign Out"
+            >
+              <LogOut className="w-5 h-5 text-white" />
+            </button>
+            
             <button
               onClick={onClose}
               className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]"
@@ -335,75 +341,45 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
             >
               <X className="w-5 h-5 text-white" />
             </button>
-            
-            <button
-              onClick={handleSignOut}
-              className="glass-button px-4 py-2 rounded-full flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4 text-white" />
-              <span className="text-white text-sm">{t('signOut')}</span>
-            </button>
           </div>
         </div>
 
-        {/* Header with User Info */}
-        <div className="flex-shrink-0 px-6 pb-4 border-b border-white/10 -mt-10">
-          {/* User Info */}
-          <div className="flex items-end gap-4 mb-4">
-            {/* Profile Picture with edit */}
-            <div className="relative flex-shrink-0">
+        {/* Avatar & User Info - Overlapping Banner */}
+        <div className="flex-shrink-0 px-6 -mt-16 mb-6">
+          <div className="flex flex-col items-center">
+            {/* Large Profile Picture */}
+            <div className="relative">
               {(user.profilePictureURL || user.photoURL) ? (
-                <div className="relative w-20 h-20 rounded-full overflow-hidden border-4 border-gray-900 shadow-lg">
+                <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 shadow-2xl bg-gray-800">
                   <Image
                     src={user.profilePictureURL || user.photoURL || ''}
                     alt={user.name}
                     fill
                     className="object-cover"
+                    priority
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                       if (target.parentElement) {
-                        target.parentElement.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center"><span class="text-white text-3xl font-bold">${user.name?.charAt(0).toUpperCase() || 'U'}</span></div>`;
+                        target.parentElement.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center"><span class="text-white text-5xl font-bold">${user.name?.charAt(0).toUpperCase() || 'U'}</span></div>`;
                       }
                     }}
                   />
                 </div>
               ) : (
-                <div className="relative w-20 h-20 rounded-full overflow-hidden border-4 border-gray-900 shadow-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                  <span className="text-white text-3xl font-bold">{user.name?.charAt(0).toUpperCase() || 'U'}</span>
+                <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 shadow-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                  <span className="text-white text-5xl font-bold">{user.name?.charAt(0).toUpperCase() || 'U'}</span>
                 </div>
               )}
-              {/* Edit profile picture button */}
-              <button
-                onClick={() => profilePicInputRef.current?.click()}
-                disabled={isUploadingPicture}
-                className="absolute -bottom-1 -right-1 glass-button p-1.5 rounded-full border-2 border-gray-900"
-                aria-label={t('changeProfilePicture')}
-              >
-                {isUploadingPicture ? (
-                  <Loader2 className="w-3 h-3 text-white animate-spin" />
-                ) : (
-                  <Camera className="w-3 h-3 text-white" />
-                )}
-              </button>
-              <input
-                id="profile-pic-upload"
-                name="profilePicUpload"
-                ref={profilePicInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleProfilePictureChange}
-                className="hidden"
-              />
             </div>
             
-            <div className="flex-1 min-w-0 pt-8">
-              <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-white truncate">{user.name}</h2>
+            {/* User Info - Centered */}
+            <div className="flex flex-col items-center mt-4 w-full">
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-3xl font-bold text-white text-center">{user.name}</h2>
                 {userIsAdmin && (
                   <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">
-                    <Shield className="w-3 h-3 text-amber-400" />
-                    <span className="text-amber-400 text-xs font-bold">{t('adminCount')}</span>
+                    <Shield className="w-4 h-4 text-amber-400" />
                   </div>
                 )}
               </div>

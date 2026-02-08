@@ -16,8 +16,8 @@ body {
   height: 100dvh; /* Dynamic viewport height for iOS */
   overflow: hidden;
   position: fixed;
-  /* Prevent white background on overscroll */
-  background-color: #0f172a; /* slate-900 to match app theme */
+  /* True edge-to-edge: black background extends to physical edges */
+  background-color: #000000;
   overscroll-behavior: none;
   overscroll-behavior-y: none; /* Prevent bounce effect on iOS */
   -webkit-overflow-scrolling: touch;
