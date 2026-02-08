@@ -287,7 +287,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
           )}
 
           {/* Meta Info */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid ${isAdmin ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
             <div className="glass-card p-4">
               <div className="flex items-center gap-2 text-white/60 mb-1">
                 <Calendar className="w-4 h-4" />
@@ -296,22 +296,24 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
               <p className="text-white font-medium">{formatDate(spot.createdAt)}</p>
             </div>
             
-            <div className="glass-card p-4">
-              <div className="flex items-center gap-2 text-white/60 mb-1">
-                <User className="w-4 h-4" />
-                <span className="text-xs uppercase">{t('by')}</span>
+            {isAdmin && (
+              <div className="glass-card p-4">
+                <div className="flex items-center gap-2 text-white/60 mb-1">
+                  <User className="w-4 h-4" />
+                  <span className="text-xs uppercase">{t('by')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {spot.createdByPhoto && (
+                    <div className="relative w-6 h-6 rounded-full overflow-hidden">
+                      <Image src={spot.createdByPhoto} alt="User" fill className="object-cover" />
+                    </div>
+                  )}
+                  <p className="text-white font-medium">
+                    {spot.createdByName || t('anonymous')}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {spot.createdByPhoto && (
-                  <div className="relative w-6 h-6 rounded-full overflow-hidden">
-                    <Image src={spot.createdByPhoto} alt="User" fill className="object-cover" />
-                  </div>
-                )}
-                <p className="text-white font-medium">
-                  {spot.createdByName || t('anonymous')}
-                </p>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Reviews Section */}
