@@ -6,14 +6,13 @@ import { useToastStore } from '@/store/useToastStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { X, MapPin, Upload, Loader2 } from 'lucide-react';
 import { useState, useRef, ChangeEvent } from 'react';
+import type { SpotCategory } from '@/store/useSpotStore';
 
 interface AddSpotModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedLocation: { lat: number; lng: number } | null;
 }
-
-type Category = 'scenic' | 'smoke-spot' | 'viewpoint' | 'other';
 
 export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Readonly<AddSpotModalProps>) {
   const { user } = useUserStore();
@@ -24,7 +23,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
 
   const [formData, setFormData] = useState({
     name: '',
-    category: 'scenic' as Category,
+    category: 'scenic' as SpotCategory,
     description: '',
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -191,7 +190,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             </label>
             <select
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value as Category })}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value as SpotCategory })}
               className="w-full px-4 py-3 rounded-xl glass text-white
                 border border-white/10 focus:border-white/30 focus:outline-none
                 transition-all duration-200 bg-transparent"
@@ -201,7 +200,11 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               <option value="scenic" className="bg-gray-800">🌅 {t('categoryScenic')}</option>
               <option value="smoke-spot" className="bg-gray-800">💨 {t('categorySmoke')}</option>
               <option value="viewpoint" className="bg-gray-800">🏔️ {t('categoryViewpoint')}</option>
-              <option value="other" className="bg-gray-800">🌳 {t('categoryOther')}</option>
+              <option value="hiking" className="bg-gray-800">🥾 {t('categoryHiking')}</option>
+              <option value="random" className="bg-gray-800">🎲 {t('categoryRandom')}</option>
+              <option value="date-spot" className="bg-gray-800">❤️ {t('categoryDateSpot')}</option>
+              <option value="park" className="bg-gray-800">🌳 {t('categoryPark')}</option>
+              <option value="other" className="bg-gray-800">📍 {t('categoryOther')}</option>
             </select>
           </div>
 

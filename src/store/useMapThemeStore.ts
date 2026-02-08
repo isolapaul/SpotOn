@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type MapTheme = 'standard' | 'dark' | 'night' | 'silver' | 'retro' | 'purple';
+export type MapTheme = 'standard' | 'dark' | 'light' | 'night' | 'silver' | 'retro' | 'purple';
 
 interface MapThemeStore {
   theme: MapTheme;
@@ -23,6 +23,73 @@ export const useMapThemeStore = create<MapThemeStore>()(
 // Google Maps Styles for each theme
 export const mapThemes = {
   standard: [], // Default Google Maps style
+
+  light: [
+    { elementType: "geometry", stylers: [{ color: "#f8f9fa" }] },
+    { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#5f6368" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }] },
+    {
+      featureType: "administrative.land_parcel",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#9e9e9e" }],
+    },
+    {
+      featureType: "poi",
+      elementType: "geometry",
+      stylers: [{ color: "#e8f5e9" }],
+    },
+    {
+      featureType: "poi",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#757575" }],
+    },
+    {
+      featureType: "poi.park",
+      elementType: "geometry",
+      stylers: [{ color: "#c8e6c9" }],
+    },
+    {
+      featureType: "road",
+      elementType: "geometry",
+      stylers: [{ color: "#ffffff" }],
+    },
+    {
+      featureType: "road.arterial",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#757575" }],
+    },
+    {
+      featureType: "road.highway",
+      elementType: "geometry",
+      stylers: [{ color: "#e0e0e0" }],
+    },
+    {
+      featureType: "road.highway",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#616161" }],
+    },
+    {
+      featureType: "road.local",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#9e9e9e" }],
+    },
+    {
+      featureType: "transit.line",
+      elementType: "geometry",
+      stylers: [{ color: "#e0e0e0" }],
+    },
+    {
+      featureType: "water",
+      elementType: "geometry",
+      stylers: [{ color: "#bbdefb" }],
+    },
+    {
+      featureType: "water",
+      elementType: "labels.text.fill",
+      stylers: [{ color: "#64b5f6" }],
+    },
+  ],
   
   dark: [
     { elementType: "geometry", stylers: [{ color: "#212121" }] },

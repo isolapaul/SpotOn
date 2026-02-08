@@ -1,6 +1,6 @@
 'use client';
 
-import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2, Bell, BellOff, Camera, Pencil, ImageIcon, Loader2 } from 'lucide-react';
+import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2, Bell, BellOff, Camera, Pencil, ImageIcon, Loader2, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin, isSuperAdmin } from '@/store/useSpotStore';
@@ -527,26 +527,51 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   <p className="text-white/40 text-sm mt-1">{t('startSaving')}</p>
                 </div>
               ) : (
-                favoriteSpots.map((spot) => (
-                  <div key={spot.id} className="glass-card p-4 flex gap-4">
-                    <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
-                      <Image
-                        src={spot.imageUrl}
-                        alt={spot.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold line-clamp-1">{spot.name}</h3>
-                      <p className="text-white/60 text-sm line-clamp-2">{spot.description}</p>
-                      <div className="flex items-center gap-1 mt-2">
-                        <span className="text-yellow-400">⭐</span>
-                        <span className="text-white/80 text-sm">4.5</span>
+                favoriteSpots.map((spot) => {
+                  const avgRating = spot.reviews && spot.reviews.length > 0
+                    ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
+                    : 0;
+                  const reviewCount = spot.reviews?.length || 0;
+                  return (
+                    <div key={spot.id} className="glass-card p-4 flex gap-4">
+                      <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+                        <Image
+                          src={spot.imageUrl}
+                          alt={spot.name}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-semibold line-clamp-1">{spot.name}</h3>
+                        <p className="text-white/60 text-sm line-clamp-2">{spot.description}</p>
+                        <div className="flex items-center gap-1 mt-2">
+                          {avgRating > 0 ? (
+                            <>
+                              <div className="flex gap-0.5">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`w-3 h-3 ${
+                                      star <= Math.round(avgRating)
+                                        ? 'text-yellow-400 fill-yellow-400'
+                                        : 'text-white/20'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-white/70 text-xs ml-1">
+                                {avgRating.toFixed(1)} ({reviewCount})
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-white/40 text-xs">{t('noReviews')}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}

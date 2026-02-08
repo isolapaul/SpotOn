@@ -10,6 +10,7 @@ import SpotDetailsPanel from '@/components/SpotDetailsPanel';
 import ProfilePanel from '@/components/ProfilePanel';
 import FilterPanel from '@/components/FilterPanel';
 import DistanceSelector from '@/components/DistanceSelector';
+import DiscoveryPanel from '@/components/DiscoveryPanel';
 import Toast from '@/components/Toast';
 import LoadingScreen from '@/components/LoadingScreen';
 import NotificationPrompt from '@/components/NotificationPrompt';
@@ -50,6 +51,7 @@ export default function Home() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [distanceSelectorOpen, setDistanceSelectorOpen] = useState(false);
+  const [discoveryPanelOpen, setDiscoveryPanelOpen] = useState(false);
   
   const { user, needsUsername, setNeedsUsername, initAuth, initAdminListener } = useUserStore();
   const { spots, fetchSpots } = useSpotStore();
@@ -199,7 +201,7 @@ export default function Home() {
   };
 
   const handleExploreClick = () => {
-    setFilterPanelOpen(true);
+    setDiscoveryPanelOpen(true);
   };
 
   const handleNavigateClick = () => {
@@ -242,7 +244,11 @@ export default function Home() {
   };
 
   const handleFavoritesClick = () => {
-    // Show only favorited spots (filter by favorites in future implementation)
+    if (user) {
+      setProfilePanelOpen(true);
+    } else {
+      setAuthModalOpen(true);
+    }
   };
 
   if (!isClient) {
@@ -288,6 +294,17 @@ export default function Home() {
         isOpen={distanceSelectorOpen}
         onClose={() => setDistanceSelectorOpen(false)}
         onSelect={handleDistanceSelect}
+      />
+
+      {/* Discovery Panel */}
+      <DiscoveryPanel
+        isOpen={discoveryPanelOpen}
+        onClose={() => setDiscoveryPanelOpen(false)}
+        userLocation={userLocation}
+        onSpotSelect={(spot) => {
+          setDiscoveryPanelOpen(false);
+          setSelectedSpot(spot);
+        }}
       />
       
       {/* Authentication Modal */}

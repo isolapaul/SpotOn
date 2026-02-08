@@ -21,7 +21,7 @@ interface MapViewProps {
 }
 
 // Category emoji markers
-const getCategoryIcon = (category: Spot['category'], status: 'approved' | 'pending' | 'rejected') => {
+const getCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rejected') => {
   const baseUrl = 'data:image/svg+xml;charset=UTF-8,';
   
   // Get emoji based on category
@@ -36,8 +36,20 @@ const getCategoryIcon = (category: Spot['category'], status: 'approved' | 'pendi
     case 'viewpoint':
       emoji = '🏔️';
       break;
+    case 'hiking':
+      emoji = '🥾';
+      break;
+    case 'random':
+      emoji = '🎲';
+      break;
+    case 'date-spot':
+      emoji = '❤️';
+      break;
+    case 'park':
+      emoji = '🌳';
+      break;
     case 'other':
-      emoji = '🌳'; // Park/bush icon
+      emoji = '📍';
       break;
   }
   

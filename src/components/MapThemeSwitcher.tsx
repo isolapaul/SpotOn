@@ -12,6 +12,7 @@ export default function MapThemeSwitcher() {
 
   const themes: { id: MapTheme; name: string; preview: string }[] = [
     { id: 'standard', name: t('themeStandard'), preview: 'bg-gradient-to-br from-blue-100 to-green-100' },
+    { id: 'light', name: t('themeLight'), preview: 'bg-gradient-to-br from-gray-50 to-blue-50' },
     { id: 'dark', name: t('themeDark'), preview: 'bg-gradient-to-br from-gray-800 to-gray-900' },
     { id: 'night', name: t('themeNight'), preview: 'bg-gradient-to-br from-black to-gray-900' },
     { id: 'silver', name: t('themeSilver'), preview: 'bg-gradient-to-br from-gray-200 to-gray-400' },

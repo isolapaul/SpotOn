@@ -28,7 +28,11 @@ export const translations = {
     categoryScenic: 'Szép Kilátás',
     categorySmoke: 'Eldugott Spot',
     categoryViewpoint: 'Kilátópont',
-    categoryOther: 'Park/Bokor',
+    categoryOther: 'Egyéb',
+    categoryHiking: 'Túraspot',
+    categoryRandom: 'Random spot',
+    categoryDateSpot: 'Randihely',
+    categoryPark: 'Park',
     description: 'Leírás',
     descriptionPlaceholder: 'Írd le, mi teszi különlegessé ezt a helyet...',
     photo: 'Fotó',
@@ -181,6 +185,29 @@ export const translations = {
     profileUpdated: 'Profil frissítve!',
     profileUpdateError: 'Hiba a profil frissítésekor',
     editUsername: 'Felhasználónév szerkesztése',
+
+    // Discovery
+    discovery: 'Felfedezés',
+    sortBy: 'Rendezés',
+    nearestToMe: 'Legközelebbi',
+    bestRated: 'Legjobban értékelt',
+    loadMore: 'Több betöltése',
+    noMoreSpots: 'Nincs több hely',
+    distanceAway: '{distance} km',
+    noRating: 'Nincs értékelés',
+    locationRequired: 'A közelségi rendezéshez engedélyezd a helymeghatározást',
+
+    // Map Themes (additional)
+    themeLight: 'Világos',
+
+    // Category Management
+    manageCategories: 'Kategóriák kezelése',
+    categoryName: 'Kategória neve',
+    categoryIcon: 'Kategória ikon',
+    addCategory: 'Kategória hozzáadása',
+    categoryAdded: 'Kategória hozzáadva!',
+    categoryAddError: 'Hiba a kategória hozzáadásakor',
+    noCategoriesYet: 'Még nincs kategória hozzáadva',
   },
   en: {
     // Navigation
@@ -211,7 +238,11 @@ export const translations = {
     categoryScenic: 'Scenic View',
     categorySmoke: 'Hidden Spot',
     categoryViewpoint: 'Viewpoint',
-    categoryOther: 'Park/Bush',
+    categoryOther: 'Other',
+    categoryHiking: 'Hiking Spot',
+    categoryRandom: 'Random Spot',
+    categoryDateSpot: 'Date Spot',
+    categoryPark: 'Park',
     description: 'Description',
     descriptionPlaceholder: 'Describe what makes this spot special...',
     photo: 'Photo',
@@ -364,6 +395,29 @@ export const translations = {
     profileUpdated: 'Profile updated!',
     profileUpdateError: 'Error updating profile',
     editUsername: 'Edit Username',
+
+    // Discovery
+    discovery: 'Discovery',
+    sortBy: 'Sort by',
+    nearestToMe: 'Nearest to me',
+    bestRated: 'Best rated',
+    loadMore: 'Load more',
+    noMoreSpots: 'No more spots',
+    distanceAway: '{distance} km',
+    noRating: 'No rating',
+    locationRequired: 'Enable location to sort by distance',
+
+    // Map Themes (additional)
+    themeLight: 'Light',
+
+    // Category Management
+    manageCategories: 'Manage Categories',
+    categoryName: 'Category name',
+    categoryIcon: 'Category icon',
+    addCategory: 'Add Category',
+    categoryAdded: 'Category added!',
+    categoryAddError: 'Error adding category',
+    noCategoriesYet: 'No categories added yet',
   },
   de: {
     // Navigation
@@ -394,7 +448,11 @@ export const translations = {
     categoryScenic: 'Malerische Aussicht',
     categorySmoke: 'Versteckter Ort',
     categoryViewpoint: 'Aussichtspunkt',
-    categoryOther: 'Park/Busch',
+    categoryOther: 'Sonstiges',
+    categoryHiking: 'Wanderspot',
+    categoryRandom: 'Zufälliger Ort',
+    categoryDateSpot: 'Date-Spot',
+    categoryPark: 'Park',
     description: 'Beschreibung',
     descriptionPlaceholder: 'Beschreiben Sie, was diesen Ort besonders macht...',
     photo: 'Foto',
@@ -548,6 +606,29 @@ export const translations = {
     profileUpdated: 'Profil aktualisiert!',
     profileUpdateError: 'Fehler beim Aktualisieren des Profils',
     editUsername: 'Benutzernamen bearbeiten',
+
+    // Discovery
+    discovery: 'Entdecken',
+    sortBy: 'Sortieren nach',
+    nearestToMe: 'Nächstgelegene',
+    bestRated: 'Bestbewertet',
+    loadMore: 'Mehr laden',
+    noMoreSpots: 'Keine weiteren Orte',
+    distanceAway: '{distance} km',
+    noRating: 'Keine Bewertung',
+    locationRequired: 'Standort aktivieren, um nach Entfernung zu sortieren',
+
+    // Map Themes (additional)
+    themeLight: 'Hell',
+
+    // Category Management
+    manageCategories: 'Kategorien verwalten',
+    categoryName: 'Kategoriename',
+    categoryIcon: 'Kategorie-Symbol',
+    addCategory: 'Kategorie hinzufügen',
+    categoryAdded: 'Kategorie hinzugefügt!',
+    categoryAddError: 'Fehler beim Hinzufügen der Kategorie',
+    noCategoriesYet: 'Noch keine Kategorien hinzugefügt',
   },
 };
 
