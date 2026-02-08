@@ -163,7 +163,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const translateY = isDragging ? Math.max(0, dragCurrentY - dragStartY) : 0;
 
   return (
-    <div className="fixed inset-0 z-[3000] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
+    <div className="fixed inset-0 z-[60] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
       {/* Backdrop */}
       <button
         type="button"

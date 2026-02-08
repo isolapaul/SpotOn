@@ -38,6 +38,11 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [firestoreCategories, setFirestoreCategories] = useState<Array<{ id: string; name: string; icon: string }>>([]);
   const profilePicInputRef = useRef<HTMLInputElement>(null);
+  
+  // iOS Swipe-to-Close Gesture
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragCurrentX, setDragCurrentX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   
   const userIsAdmin = isAdmin(user?.email);
@@ -228,8 +233,43 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
     }
   };
 
+  // Touch handlers for swipe gesture
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setDragStartX(e.touches[0].clientX);
+    setDragCurrentX(e.touches[0].clientX);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - dragStartX;
+    
+    // Only allow rightward drag (iOS back gesture)
+    if (diff > 0) {
+      setDragCurrentX(currentX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    const dragDistance = dragCurrentX - dragStartX;
+    
+    // Close if dragged more than 150px to the right
+    if (dragDistance > 150) {
+      onClose();
+    }
+    
+    // Reset
+    setIsDragging(false);
+    setDragStartX(0);
+    setDragCurrentX(0);
+  };
+
+  const translateX = isDragging ? Math.max(0, dragCurrentX - dragStartX) : 0;
+  
   return (
-    <div className="fixed inset-0 z-[2500] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
+    <div className="fixed inset-0 z-[60] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
       {/* Backdrop */}
       <button
         type="button"
@@ -240,8 +280,17 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         tabIndex={-1}
       />
       
-      {/* Panel */}
-      <div className="absolute inset-0 flex flex-col bg-gray-900/95 backdrop-blur-2xl">
+      {/* Panel with Swipe Support */}
+      <div 
+        className="absolute inset-0 flex flex-col bg-gray-900/95 backdrop-blur-2xl"
+        style={{
+          transform: `translateX(${translateX}px)`,
+          transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* Profile Banner */}
         <div className="relative w-full h-32 flex-shrink-0 bg-gradient-to-r from-primary-700 to-primary-900">
           {user.profileBannerURL ? (

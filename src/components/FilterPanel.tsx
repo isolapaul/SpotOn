@@ -91,7 +91,7 @@ export default function FilterPanel({
       {/* Filter Panel */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-[1999] flex items-start justify-end p-4 animate-fade-in"
+          className="fixed inset-0 z-[60] flex items-start justify-end p-4 animate-fade-in"
           style={{ backgroundColor: '#0f172a' }}
         >
           {/* Backdrop */}

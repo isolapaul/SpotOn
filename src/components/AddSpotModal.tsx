@@ -155,7 +155,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
   const translateY = isDragging ? Math.max(0, dragCurrentY - dragStartY) : 0;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 animate-fade-in" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
       {/* Backdrop */}
       <button
         type="button"

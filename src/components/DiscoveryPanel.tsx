@@ -105,6 +105,46 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   const handleLoadMore = () => {
     setVisibleCount(prev => prev + BATCH_SIZE);
   };
+  
+  // iOS Swipe-to-Close Gesture
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragCurrentX, setDragCurrentX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // Touch handlers for swipe gesture
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setDragStartX(e.touches[0].clientX);
+    setDragCurrentX(e.touches[0].clientX);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - dragStartX;
+    
+    // Only allow rightward drag (iOS back gesture)
+    if (diff > 0) {
+      setDragCurrentX(currentX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    const dragDistance = dragCurrentX - dragStartX;
+    
+    // Close if dragged more than 150px to the right
+    if (dragDistance > 150) {
+      onClose();
+    }
+    
+    // Reset
+    setIsDragging(false);
+    setDragStartX(0);
+    setDragCurrentX(0);
+  };
+
+  const translateX = isDragging ? Math.max(0, dragCurrentX - dragStartX) : 0;
 
   const handleSortChange = (option: SortOption) => {
     if (option === 'nearest' && !userLocation) {
@@ -117,7 +157,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[2500] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
+    <div className="fixed inset-0 z-[60] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
       {/* Backdrop */}
       <button
         type="button"
@@ -128,8 +168,17 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
         tabIndex={-1}
       />
 
-      {/* Panel */}
-      <div className="absolute inset-0 flex flex-col bg-gray-900/95 backdrop-blur-2xl">
+      {/* Panel with Swipe Support */}
+      <div 
+        className="absolute inset-0 flex flex-col bg-gray-900/95 backdrop-blur-2xl"
+        style={{
+          transform: `translateX(${translateX}px)`,
+          transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* Header */}
         <div className="flex-shrink-0 px-6 border-b border-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)', paddingBottom: '1rem' }}>
           <div className="flex items-center justify-between mb-4">

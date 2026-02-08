@@ -58,7 +58,7 @@ export default function NotificationCenter() {
           bg-slate-800/90 backdrop-blur-xl border-2 border-white/20 hover:bg-slate-700/90
           touch-manipulation select-none min-w-[56px] min-h-[56px]"
         style={{
-          top: 'max(1rem, env(safe-area-inset-top))',
+          top: 'calc(1rem + env(safe-area-inset-top))',
           left: 'max(1rem, env(safe-area-inset-left))'
         }}
         aria-label="Notifications"
