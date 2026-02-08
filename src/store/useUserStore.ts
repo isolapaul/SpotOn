@@ -7,15 +7,20 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged 
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, query, onSnapshot, deleteDoc, getDocs } from 'firebase/firestore';
-import { auth, db, googleProvider } from '@/lib/firebase';
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, query, onSnapshot, deleteDoc, getDocs, where } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db, googleProvider, storage } from '@/lib/firebase';
 import { setCachedAdminEmails, isSuperAdmin } from '@/store/useSpotStore';
+import imageCompression from 'browser-image-compression';
 
 interface User {
   uid: string;
   name: string;
+  username?: string;
   email: string;
   photoURL?: string;
+  profilePictureURL?: string;
+  profileBannerURL?: string;
   savedSpots: string[];
 }
 
@@ -31,6 +36,7 @@ interface AdminUser {
 interface UserStore {
   user: User | null;
   loading: boolean;
+  needsUsername: boolean;
   adminEmails: string[];
   adminUsers: AdminUser[];
   setUser: (user: User | null) => void;
@@ -44,6 +50,31 @@ interface UserStore {
   addAdmin: (email: string) => Promise<void>;
   removeAdmin: (adminId: string) => Promise<void>;
   searchUserByEmail: (email: string) => Promise<User | null>;
+  checkUsernameAvailable: (username: string) => Promise<boolean>;
+  updateUsername: (username: string) => Promise<void>;
+  updateProfilePicture: (file: File) => Promise<void>;
+  updateProfileBanner: (file: File) => Promise<void>;
+  setNeedsUsername: (needs: boolean) => void;
+}
+
+// Compress profile images before upload (max 1920px, ~1MB)
+async function compressProfileImage(file: File): Promise<File> {
+  const options = {
+    maxSizeMB: 1,
+    maxWidthOrHeight: 1920,
+    useWebWorker: true,
+  };
+  return imageCompression(file, options);
+}
+
+// Generate a username from display name
+function generateUsername(displayName: string): string {
+  const base = displayName
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .slice(0, 12);
+  const suffix = Math.floor(Math.random() * 1000000);
+  return `${base || 'user'}${suffix}`;
 }
 
 export const useUserStore = create<UserStore>()(
@@ -51,10 +82,12 @@ export const useUserStore = create<UserStore>()(
     (set, get) => ({
       user: null,
       loading: true,
+      needsUsername: false,
       adminEmails: [],
       adminUsers: [],
       
       setUser: (user) => set({ user, loading: false }),
+      setNeedsUsername: (needs) => set({ needsUsername: needs }),
       
       signInWithGoogle: async () => {
         try {
@@ -65,24 +98,53 @@ export const useUserStore = create<UserStore>()(
           const userRef = doc(db, 'users', firebaseUser.uid);
           const userSnap = await getDoc(userRef);
           
+          let username: string | undefined;
+          let profilePictureURL: string | undefined;
+          let profileBannerURL: string | undefined;
+          
           if (!userSnap.exists()) {
+            // Generate a unique username for new users
+            username = generateUsername(firebaseUser.displayName || 'user');
+            profilePictureURL = firebaseUser.photoURL || '';
+            
             // Create new user document
             await setDoc(userRef, {
               uid: firebaseUser.uid,
               name: firebaseUser.displayName || 'Anonymous',
+              username,
               email: firebaseUser.email || '',
               photoURL: firebaseUser.photoURL || '',
+              profilePictureURL: profilePictureURL,
+              profileBannerURL: '',
               savedSpots: [],
               createdAt: serverTimestamp(),
             });
+            
+            // New user needs to set username
+            set({ needsUsername: true });
+          } else {
+            const data = userSnap.data();
+            username = data.username;
+            profilePictureURL = data.profilePictureURL || data.photoURL || firebaseUser.photoURL || '';
+            profileBannerURL = data.profileBannerURL || '';
+            
+            // If no custom username, prompt to set one
+            if (!username) {
+              username = generateUsername(firebaseUser.displayName || 'user');
+              await updateDoc(userRef, { username });
+              set({ needsUsername: true });
+            }
           }
           
           // Set user in store
           const userData: User = {
             uid: firebaseUser.uid,
             name: firebaseUser.displayName || 'Anonymous',
+            username,
             email: firebaseUser.email || '',
             photoURL: firebaseUser.photoURL || '',
+            profilePictureURL,
+            profileBannerURL,
             savedSpots: userSnap.exists() ? userSnap.data().savedSpots : [],
           };
           
@@ -104,13 +166,23 @@ export const useUserStore = create<UserStore>()(
           const userSnap = await getDoc(userRef);
           
           if (userSnap.exists()) {
+            const data = userSnap.data();
             const userData: User = {
               uid: firebaseUser.uid,
-              name: userSnap.data().name || 'User',
+              name: data.name || 'User',
+              username: data.username,
               email: firebaseUser.email || '',
-              photoURL: userSnap.data().photoURL || '',
-              savedSpots: userSnap.data().savedSpots || [],
+              photoURL: data.photoURL || '',
+              profilePictureURL: data.profilePictureURL || data.photoURL || '',
+              profileBannerURL: data.profileBannerURL || '',
+              savedSpots: data.savedSpots || [],
             };
+            
+            // Check if username needs to be set
+            if (!data.username) {
+              set({ needsUsername: true });
+            }
+            
             set({ user: userData, loading: false });
           }
         } catch (error) {
@@ -125,13 +197,19 @@ export const useUserStore = create<UserStore>()(
           const result = await createUserWithEmailAndPassword(auth, email, password);
           const firebaseUser = result.user;
           
+          // Generate username from name
+          const username = generateUsername(name || 'user');
+          
           // Create user document in Firestore
           const userRef = doc(db, 'users', firebaseUser.uid);
           await setDoc(userRef, {
             uid: firebaseUser.uid,
             name: name || 'User',
+            username,
             email: firebaseUser.email || '',
             photoURL: '',
+            profilePictureURL: '',
+            profileBannerURL: '',
             savedSpots: [],
             createdAt: serverTimestamp(),
           });
@@ -140,12 +218,16 @@ export const useUserStore = create<UserStore>()(
           const userData: User = {
             uid: firebaseUser.uid,
             name: name || 'User',
+            username,
             email: firebaseUser.email || '',
             photoURL: '',
+            profilePictureURL: '',
+            profileBannerURL: '',
             savedSpots: [],
           };
           
-          set({ user: userData, loading: false });
+          // Prompt to customize username
+          set({ user: userData, loading: false, needsUsername: true });
         } catch (error) {
           console.error('Error signing up with email:', error);
           set({ loading: false });
@@ -174,20 +256,30 @@ export const useUserStore = create<UserStore>()(
               const userSnap = await getDoc(userRef);
               
               if (userSnap.exists()) {
+                const data = userSnap.data();
                 const userData: User = {
                   uid: firebaseUser.uid,
-                  name: userSnap.data().name || firebaseUser.displayName || 'Anonymous',
+                  name: data.name || firebaseUser.displayName || 'Anonymous',
+                  username: data.username,
                   email: firebaseUser.email || '',
                   photoURL: firebaseUser.photoURL || '',
-                  savedSpots: userSnap.data().savedSpots || [],
+                  profilePictureURL: data.profilePictureURL || data.photoURL || firebaseUser.photoURL || '',
+                  profileBannerURL: data.profileBannerURL || '',
+                  savedSpots: data.savedSpots || [],
                 };
+                
+                // Check if username needs to be set
+                if (!data.username) {
+                  set({ needsUsername: true });
+                }
+                
                 set({ user: userData, loading: false });
               } else {
                 set({ user: null, loading: false });
               }
             } else {
               // User is signed out
-              set({ user: null, loading: false });
+              set({ user: null, loading: false, needsUsername: false });
             }
             
             // Resolve promise on first auth state change
@@ -282,8 +374,11 @@ export const useUserStore = create<UserStore>()(
               foundUser = {
                 uid: doc.id,
                 name: userData.name || 'Unknown',
+                username: userData.username,
                 email: userData.email,
                 photoURL: userData.photoURL || '',
+                profilePictureURL: userData.profilePictureURL || userData.photoURL || '',
+                profileBannerURL: userData.profileBannerURL || '',
                 savedSpots: userData.savedSpots || [],
               };
             }
@@ -342,6 +437,118 @@ export const useUserStore = create<UserStore>()(
           await deleteDoc(doc(db, 'admins', adminId));
         } catch (error) {
           console.error('Error removing admin:', error);
+          throw error;
+        }
+      },
+
+      // Check if a username is available
+      checkUsernameAvailable: async (username: string) => {
+        try {
+          const normalized = username.trim().toLowerCase();
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('username', '==', normalized));
+          const snapshot = await getDocs(q);
+          
+          // If found docs, check if it's the current user's own username
+          const { user } = get();
+          if (snapshot.empty) return true;
+          
+          // Allow if it's the user's own current username
+          let isOwnUsername = false;
+          snapshot.forEach((docSnap) => {
+            if (docSnap.id === user?.uid) {
+              isOwnUsername = true;
+            }
+          });
+          return isOwnUsername;
+        } catch (error) {
+          console.error('Error checking username:', error);
+          throw error;
+        }
+      },
+
+      // Update the user's username
+      updateUsername: async (username: string) => {
+        const { user } = get();
+        if (!user) throw new Error('Not authenticated');
+
+        const trimmed = username.trim().toLowerCase();
+        if (trimmed.length < 3 || trimmed.length > 20) {
+          throw new Error('Username must be 3-20 characters');
+        }
+        if (!/^[a-z0-9_]+$/.test(trimmed)) {
+          throw new Error('Username can only contain letters, numbers, and underscores');
+        }
+
+        // Check uniqueness
+        const available = await get().checkUsernameAvailable(trimmed);
+        if (!available) {
+          throw new Error('Username is already taken');
+        }
+
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { username: trimmed });
+          set({ user: { ...user, username: trimmed }, needsUsername: false });
+        } catch (error) {
+          console.error('Error updating username:', error);
+          throw error;
+        }
+      },
+
+      // Upload and update profile picture with compression
+      updateProfilePicture: async (file: File) => {
+        const { user } = get();
+        if (!user) throw new Error('Not authenticated');
+
+        try {
+          const compressed = await compressProfileImage(file);
+          const timestamp = Date.now();
+          const fileName = `${timestamp}_${file.name}`;
+          const imageRef = ref(storage, `profile-pictures/${user.uid}/${fileName}`);
+          
+          await uploadBytes(imageRef, compressed);
+          const downloadURL = await getDownloadURL(imageRef);
+          
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { 
+            profilePictureURL: downloadURL,
+            photoURL: downloadURL,
+          });
+          
+          set({ 
+            user: { 
+              ...user, 
+              profilePictureURL: downloadURL,
+              photoURL: downloadURL,
+            } 
+          });
+        } catch (error) {
+          console.error('Error updating profile picture:', error);
+          throw error;
+        }
+      },
+
+      // Upload and update profile banner with compression
+      updateProfileBanner: async (file: File) => {
+        const { user } = get();
+        if (!user) throw new Error('Not authenticated');
+
+        try {
+          const compressed = await compressProfileImage(file);
+          const timestamp = Date.now();
+          const fileName = `${timestamp}_${file.name}`;
+          const imageRef = ref(storage, `profile-banners/${user.uid}/${fileName}`);
+          
+          await uploadBytes(imageRef, compressed);
+          const downloadURL = await getDownloadURL(imageRef);
+          
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { profileBannerURL: downloadURL });
+          
+          set({ user: { ...user, profileBannerURL: downloadURL } });
+        } catch (error) {
+          console.error('Error updating profile banner:', error);
           throw error;
         }
       },

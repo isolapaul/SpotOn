@@ -15,6 +15,7 @@ import LoadingScreen from '@/components/LoadingScreen';
 import NotificationPrompt from '@/components/NotificationPrompt';
 import NotificationCenter from '@/components/NotificationCenter';
 import MapThemeSwitcher from '@/components/MapThemeSwitcher';
+import UsernameSetupModal from '@/components/UsernameSetupModal';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
@@ -50,7 +51,7 @@ export default function Home() {
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [distanceSelectorOpen, setDistanceSelectorOpen] = useState(false);
   
-  const { user, initAuth, initAdminListener } = useUserStore();
+  const { user, needsUsername, setNeedsUsername, initAuth, initAdminListener } = useUserStore();
   const { spots, fetchSpots } = useSpotStore();
   const { toasts, removeToast } = useToastStore();
   const { t, language } = useLanguageStore();
@@ -291,6 +292,12 @@ export default function Home() {
       
       {/* Authentication Modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      
+      {/* Username Setup Modal - shown after first login */}
+      <UsernameSetupModal 
+        isOpen={!!user && needsUsername} 
+        onClose={() => setNeedsUsername(false)} 
+      />
       
       {/* Add Spot Modal */}
       <AddSpotModal 

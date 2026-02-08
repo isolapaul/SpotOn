@@ -23,7 +23,10 @@ export interface Review {
 export interface User {
   uid: string;
   name: string;
+  username?: string;
   email: string;
+  profilePictureURL?: string;
+  profileBannerURL?: string;
   savedSpots: string[];
   createdAt: Date;
 }
