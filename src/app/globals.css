@@ -40,13 +40,40 @@ html {
 /* Force immediate touch response on all interactive elements */
 button,
 a,
-[role="button"] {
+[role="button"],
+.clickable,
+input[type="button"],
+input[type="submit"],
+label[for] {
   touch-action: manipulation !important;
   -webkit-tap-highlight-color: transparent !important;
   cursor: pointer;
   /* Ensure instant feedback - no delays */
   -webkit-user-select: none;
   user-select: none;
+  /* Position relative to respect z-index properly */
+  position: relative;
+  /* Prevent accidental text selection on double tap */
+  -webkit-touch-callout: none;
+}
+
+/* Minimum touch target sizes (Apple's recommendation) */
+button:not(.no-min-size),
+a:not(.no-min-size),
+[role="button"]:not(.no-min-size) {
+  min-width: 44px;
+  min-height: 44px;
+  /* Center content if button is small */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ensure floating buttons are always on top */
+.fixed,
+[class*="fixed"] {
+  /* Prevent map from stealing touch events */
+  isolation: isolate;
 }
 
 body {
@@ -77,6 +104,10 @@ body {
   .glass-button {
     @apply bg-white/20 backdrop-blur-xl border border-white/30 shadow-glass 
            hover:bg-white/30 active:scale-95 transition-all duration-200;
+    /* Enhanced touch response */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
   }
   
   .glass-nav {
@@ -85,8 +116,26 @@ body {
   
   /* Touch responsiveness utilities */
   .touch-manipulation {
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+    position: relative;
+    /* Prevent accidental text selection */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  
+  /* Clickable utility class */
+  .clickable {
+    cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    position: relative;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   
   /* Disable text selection */

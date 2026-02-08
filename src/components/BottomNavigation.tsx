@@ -54,7 +54,7 @@ export default function BottomNavigation({
   return (
     <div 
       className="
-        fixed bottom-0 left-0 right-0 z-50
+        fixed bottom-0 left-0 right-0 z-[1600]
         /* Mobile: Edge-to-Edge Native Design */
         bg-gray-900/90 backdrop-blur-xl border-t border-white/10
         pt-3 select-none
@@ -84,7 +84,7 @@ export default function BottomNavigation({
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className="relative group min-h-[44px] flex items-center justify-center touch-manipulation"
+                  className="relative group min-h-[56px] min-w-[56px] flex items-center justify-center touch-manipulation"
                   aria-label={item.label}
                 >
                   <div className={`
@@ -116,8 +116,8 @@ export default function BottomNavigation({
                   onClick={() => handleNavClick(item.id)}
                   className={`
                     relative flex flex-col items-center justify-center gap-0.5 md:gap-1
-                    px-2 md:px-4 py-2 md:py-2 rounded-xl md:rounded-2xl 
-                    transition-all duration-200 min-h-[44px] touch-manipulation
+                    px-3 md:px-4 py-2 md:py-2 rounded-xl md:rounded-2xl 
+                    transition-all duration-200 min-h-[56px] min-w-[56px] touch-manipulation
                     ${isActive 
                       ? 'bg-white/20 text-white' 
                       : 'text-white/60 hover:text-white/80 active:scale-95'
@@ -152,8 +152,8 @@ export default function BottomNavigation({
                 onClick={() => handleNavClick(item.id)}
                 className={`
                   relative flex flex-col items-center justify-center gap-0.5 md:gap-1
-                  px-2 md:px-4 py-2 md:py-2 rounded-xl md:rounded-2xl 
-                  transition-all duration-200 min-h-[44px] touch-manipulation
+                  px-3 md:px-4 py-2 md:py-2 rounded-xl md:rounded-2xl 
+                  transition-all duration-200 min-h-[56px] min-w-[56px] touch-manipulation
                   ${isActive 
                     ? 'bg-white/20 text-white' 
                     : 'text-white/60 hover:text-white/80 active:scale-95'

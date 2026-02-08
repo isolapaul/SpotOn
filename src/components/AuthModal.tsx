@@ -280,6 +280,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                   <input
                     id="name"
+                    name="name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -302,6 +303,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                 <input
                   id="email"
+                  name="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -323,6 +325,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                 <input
                   id="password"
+                  name="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

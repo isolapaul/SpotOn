@@ -121,6 +121,7 @@ export default function UsernameSetupModal({ isOpen, onClose }: Readonly<Usernam
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50">@</span>
               <input
                 id="username"
+                name="username"
                 type="text"
                 value={username}
                 onChange={(e) => handleInputChange(e.target.value)}

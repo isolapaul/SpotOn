@@ -138,7 +138,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
         <button
           onClick={handleClose}
           disabled={loading}
-          className="absolute top-4 right-4 glass-button p-2 rounded-full disabled:opacity-50"
+          className="absolute top-4 right-4 glass-button p-3 rounded-full disabled:opacity-50 touch-manipulation min-w-[48px] min-h-[48px]"
           aria-label="Close"
         >
           <X className="w-5 h-5 text-white" />
@@ -168,10 +168,12 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
 
           {/* Name Input */}
           <div>
-            <label className="block text-white font-medium mb-2">
+            <label htmlFor="spot-name" className="block text-white font-medium mb-2">
               {t('spotName')} *
             </label>
             <input
+              id="spot-name"
+              name="spotName"
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -186,10 +188,12 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
 
           {/* Category Select */}
           <div>
-            <label className="block text-white font-medium mb-2">
+            <label htmlFor="spot-category" className="block text-white font-medium mb-2">
               {t('category')} *
             </label>
             <select
+              id="spot-category"
+              name="spotCategory"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value as Category })}
               className="w-full px-4 py-3 rounded-xl glass text-white
@@ -207,10 +211,12 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
 
           {/* Description */}
           <div>
-            <label className="block text-white font-medium mb-2">
+            <label htmlFor="spot-description" className="block text-white font-medium mb-2">
               {t('description')}
             </label>
             <textarea
+              id="spot-description"
+              name="spotDescription"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder={t('descriptionPlaceholder')}
@@ -224,10 +230,12 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
 
           {/* Image Upload */}
           <div>
-            <label className="block text-white font-medium mb-2">
+            <label htmlFor="spot-image" className="block text-white font-medium mb-2">
               {t('photoOptional')}
             </label>
             <input
+              id="spot-image"
+              name="spotImage"
               ref={fileInputRef}
               type="file"
               accept="image/*"

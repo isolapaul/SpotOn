@@ -29,9 +29,9 @@ export default function MapThemeSwitcher() {
       {/* Theme Switcher Button - Bottom Right */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed z-[1500] p-3 rounded-full 
+        className={`fixed z-[1500] p-4 rounded-full 
           active:scale-95 transition-all duration-200 shadow-glass-lg
-          touch-manipulation select-none ${
+          touch-manipulation select-none min-w-[56px] min-h-[56px] ${
             isOpen 
               ? 'bg-purple-600 border-2 border-purple-400' 
               : 'bg-slate-800/90 backdrop-blur-xl border-2 border-white/20 hover:bg-slate-700/90'

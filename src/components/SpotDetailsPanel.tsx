@@ -157,7 +157,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
           <div className="absolute left-4 right-4 flex justify-between items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}>
             <button
               onClick={onClose}
-              className="glass-button p-3 rounded-full"
+              className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]"
               aria-label="Close"
             >
               <X className="w-5 h-5 text-white" />
@@ -167,7 +167,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
               {user && (
                 <button
                   onClick={handleFavoriteToggle}
-                  className="glass-button p-3 rounded-full"
+                  className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]"
                   aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                 >
                   <Heart
@@ -352,6 +352,8 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                 </div>
                 
                 <textarea
+                  id="review-comment"
+                  name="reviewComment"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder={t('writeReview')}

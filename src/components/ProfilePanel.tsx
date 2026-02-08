@@ -233,6 +233,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
             )}
           </button>
           <input
+            id="banner-upload"
+            name="bannerUpload"
             ref={bannerInputRef}
             type="file"
             accept="image/*"
@@ -301,6 +303,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                 )}
               </button>
               <input
+                id="profile-pic-upload"
+                name="profilePicUpload"
                 ref={profilePicInputRef}
                 type="file"
                 accept="image/*"
@@ -324,6 +328,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-white/50">@</span>
                   <input
+                    id="edit-username"
+                    name="editUsername"
                     type="text"
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
@@ -615,6 +621,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                 
                 <div className="space-y-4">
                   <input
+                    id="admin-email"
+                    name="adminEmail"
                     type="email"
                     placeholder={t('adminEmailPlaceholder')}
                     value={adminEmailInput}

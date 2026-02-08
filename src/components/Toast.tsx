@@ -48,7 +48,7 @@ export default function Toast({ message, type, onClose, duration = 3000 }: Reado
         
         <button
           onClick={onClose}
-          className="glass-button p-1.5 rounded-full flex-shrink-0"
+          className="glass-button p-2.5 rounded-full flex-shrink-0 touch-manipulation min-w-[44px] min-h-[44px]"
           aria-label="Close"
         >
           <X className="w-4 h-4 text-white" />

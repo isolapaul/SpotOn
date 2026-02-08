@@ -62,7 +62,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
       {/* Close Button */}
       <button
         onClick={onClose}
-        className="absolute top-2 right-2 z-10 glass-button p-1.5 rounded-full touch-manipulation"
+        className="absolute top-2 right-2 z-10 glass-button p-2.5 rounded-full touch-manipulation min-w-[44px] min-h-[44px]"
         aria-label="Close"
       >
         <X className="w-4 h-4 text-white" />
