@@ -56,7 +56,7 @@ export default function Home() {
   const { user, needsUsername, setNeedsUsername, initAuth, initAdminListener } = useUserStore();
   const { spots, fetchSpots } = useSpotStore();
   const { toasts, removeToast } = useToastStore();
-  const { t, language } = useLanguageStore();
+  const { t } = useLanguageStore();
   const { showToast } = useToastStore();
 
   // Check if current user is admin
@@ -225,13 +225,8 @@ export default function Home() {
     });
 
     if (spotsInRange.length === 0) {
-      const getNoSpotsMessage = () => {
-        if (language === 'hu') return `Nincs hely ${distance} km-en belül`;
-        if (language === 'de') return `Keine Orte innerhalb von ${distance} km`;
-        return `No spots within ${distance} km`;
-      };
-      
-      showToast(getNoSpotsMessage(), 'error');
+      const msg = t('noSpotsInRange').replace('{distance}', String(distance));
+      showToast(msg, 'error');
       return;
     }
 

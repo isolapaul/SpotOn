@@ -217,7 +217,7 @@ export default function MapView({
     return (
       <div className="w-full h-[100dvh] bg-slate-900 flex items-center justify-center">
         <div className="glass-card px-8 py-4">
-          <p className="text-white font-medium">Error loading maps</p>
+          <p className="text-white font-medium">{t('mapLoadError')}</p>
         </div>
       </div>
     );

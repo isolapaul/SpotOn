@@ -208,6 +208,8 @@ export const translations = {
     categoryAdded: 'Kategória hozzáadva!',
     categoryAddError: 'Hiba a kategória hozzáadásakor',
     noCategoriesYet: 'Még nincs kategória hozzáadva',
+    noSpotsInRange: 'Nincs hely {distance} km-en belül',
+    mapLoadError: 'Hiba a térkép betöltésekor',
   },
   en: {
     // Navigation
@@ -418,6 +420,8 @@ export const translations = {
     categoryAdded: 'Category added!',
     categoryAddError: 'Error adding category',
     noCategoriesYet: 'No categories added yet',
+    noSpotsInRange: 'No spots within {distance} km',
+    mapLoadError: 'Error loading maps',
   },
   de: {
     // Navigation
@@ -629,6 +633,8 @@ export const translations = {
     categoryAdded: 'Kategorie hinzugefügt!',
     categoryAddError: 'Fehler beim Hinzufügen der Kategorie',
     noCategoriesYet: 'Noch keine Kategorien hinzugefügt',
+    noSpotsInRange: 'Keine Orte innerhalb von {distance} km',
+    mapLoadError: 'Fehler beim Laden der Karte',
   },
 };
 
