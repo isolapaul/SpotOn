@@ -8,8 +8,7 @@ import { useLanguageStore } from '@/store/useLanguageStore';
 import SpotInfoWindow from './SpotInfoWindow';
 
 // Define libraries as a constant to prevent unnecessary reloads
-// Including 'marker' for AdvancedMarkerElement support
-const GOOGLE_MAPS_LIBRARIES: ('places' | 'marker')[] = ['places', 'marker'];
+const GOOGLE_MAPS_LIBRARIES: ('places')[] = ['places'];
 
 interface MapViewProps {
   isAddingSpot?: boolean;
@@ -104,7 +103,6 @@ export default function MapView({
     fullscreenControl: false,
     clickableIcons: false,
     gestureHandling: 'greedy' as const,
-    mapId: '8e0a97af9386fef', // Required for AdvancedMarkerElement
   };
 
   // Calculate marker size based on zoom level
@@ -126,7 +124,6 @@ export default function MapView({
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries: GOOGLE_MAPS_LIBRARIES,
-    mapIds: ['8e0a97af9386fef'], // Map ID for AdvancedMarkerElement
   });
 
   // Notify parent when map is loaded
