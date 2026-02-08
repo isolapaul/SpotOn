@@ -1,12 +1,12 @@
 'use client';
 
-import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2, Bell, BellOff } from 'lucide-react';
+import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2, Bell, BellOff, Camera, Pencil, ImageIcon, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin, isSuperAdmin } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Spot } from '@/store/useSpotStore';
@@ -18,7 +18,7 @@ interface ProfilePanelProps {
 }
 
 export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelProps>) {
-  const { user, signOut, adminUsers, addAdmin, removeAdmin, searchUserByEmail } = useUserStore();
+  const { user, signOut, adminUsers, addAdmin, removeAdmin, searchUserByEmail, updateProfilePicture, updateProfileBanner, updateUsername } = useUserStore();
   const { spots, approveSpot } = useSpotStore();
   const { t } = useLanguageStore();
   const { showToast } = useToastStore();
@@ -28,6 +28,13 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const [adminEmailInput, setAdminEmailInput] = useState('');
   const [searchedUser, setSearchedUser] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
+  const profilePicInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   
   const userIsAdmin = isAdmin(user?.email);
   const userIsSuperAdmin = isSuperAdmin(user?.email);
@@ -135,6 +142,57 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
     }
   };
 
+  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast(t('imageTooLarge'), 'error');
+      return;
+    }
+    setIsUploadingPicture(true);
+    try {
+      await updateProfilePicture(file);
+      showToast(t('profileUpdated'), 'success');
+    } catch {
+      showToast(t('profileUpdateError'), 'error');
+    } finally {
+      setIsUploadingPicture(false);
+    }
+  };
+
+  const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast(t('imageTooLarge'), 'error');
+      return;
+    }
+    setIsUploadingBanner(true);
+    try {
+      await updateProfileBanner(file);
+      showToast(t('profileUpdated'), 'success');
+    } catch {
+      showToast(t('profileUpdateError'), 'error');
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
+
+  const handleSaveUsername = async () => {
+    const trimmed = newUsername.trim().toLowerCase();
+    if (!trimmed) return;
+    setIsSavingUsername(true);
+    try {
+      await updateUsername(trimmed);
+      showToast(t('usernameSaved'), 'success');
+      setIsEditingUsername(false);
+    } catch (error: any) {
+      showToast(error.message || t('usernameSaveError'), 'error');
+    } finally {
+      setIsSavingUsername(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[2500] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
       {/* Backdrop */}
@@ -149,9 +207,41 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       
       {/* Panel */}
       <div className="absolute inset-0 flex flex-col bg-gray-900/95 backdrop-blur-2xl">
-        {/* Header with Safe Area Top Padding */}
-        <div className="flex-shrink-0 px-6 pb-4 border-b border-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)' }}>
-          <div className="flex items-start justify-between mb-6">
+        {/* Profile Banner */}
+        <div className="relative w-full h-32 flex-shrink-0 bg-gradient-to-r from-primary-700 to-primary-900">
+          {user.profileBannerURL ? (
+            <Image
+              src={user.profileBannerURL}
+              alt="Profile banner"
+              fill
+              className="object-cover"
+            />
+          ) : null}
+          <div className="absolute inset-0 bg-black/20" />
+          
+          {/* Banner edit button */}
+          <button
+            onClick={() => bannerInputRef.current?.click()}
+            disabled={isUploadingBanner}
+            className="absolute bottom-2 right-2 glass-button p-2 rounded-full"
+            aria-label={t('changeProfileBanner')}
+          >
+            {isUploadingBanner ? (
+              <Loader2 className="w-4 h-4 text-white animate-spin" />
+            ) : (
+              <ImageIcon className="w-4 h-4 text-white" />
+            )}
+          </button>
+          <input
+            ref={bannerInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleBannerChange}
+            className="hidden"
+          />
+          
+          {/* Top action buttons - on banner */}
+          <div className="absolute left-4 right-4 flex justify-between items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}>
             <button
               onClick={onClose}
               className="glass-button p-2 rounded-full"
@@ -168,34 +258,60 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               <span className="text-white text-sm">{t('signOut')}</span>
             </button>
           </div>
+        </div>
 
+        {/* Header with User Info */}
+        <div className="flex-shrink-0 px-6 pb-4 border-b border-white/10 -mt-10">
           {/* User Info */}
-          <div className="flex items-center gap-4 mb-4">
-            {user.photoURL ? (
-              <div className="relative w-20 h-20 rounded-full overflow-hidden border-4 border-white/30 shadow-lg">
-                <Image
-                  src={user.photoURL}
-                  alt={user.name}
-                  fill
-                  className="object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    if (target.parentElement) {
-                      target.parentElement.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center"><span class="text-white text-3xl font-bold">${user.name?.charAt(0).toUpperCase() || 'U'}</span></div>`;
-                    }
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="relative w-20 h-20 rounded-full overflow-hidden border-4 border-white/30 shadow-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                <span className="text-white text-3xl font-bold">{user.name?.charAt(0).toUpperCase() || 'U'}</span>
-              </div>
-            )}
+          <div className="flex items-end gap-4 mb-4">
+            {/* Profile Picture with edit */}
+            <div className="relative flex-shrink-0">
+              {(user.profilePictureURL || user.photoURL) ? (
+                <div className="relative w-20 h-20 rounded-full overflow-hidden border-4 border-gray-900 shadow-lg">
+                  <Image
+                    src={user.profilePictureURL || user.photoURL || ''}
+                    alt={user.name}
+                    fill
+                    className="object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      if (target.parentElement) {
+                        target.parentElement.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center"><span class="text-white text-3xl font-bold">${user.name?.charAt(0).toUpperCase() || 'U'}</span></div>`;
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="relative w-20 h-20 rounded-full overflow-hidden border-4 border-gray-900 shadow-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                  <span className="text-white text-3xl font-bold">{user.name?.charAt(0).toUpperCase() || 'U'}</span>
+                </div>
+              )}
+              {/* Edit profile picture button */}
+              <button
+                onClick={() => profilePicInputRef.current?.click()}
+                disabled={isUploadingPicture}
+                className="absolute -bottom-1 -right-1 glass-button p-1.5 rounded-full border-2 border-gray-900"
+                aria-label={t('changeProfilePicture')}
+              >
+                {isUploadingPicture ? (
+                  <Loader2 className="w-3 h-3 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-3 h-3 text-white" />
+                )}
+              </button>
+              <input
+                ref={profilePicInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePictureChange}
+                className="hidden"
+              />
+            </div>
             
-            <div>
+            <div className="flex-1 min-w-0 pt-8">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-white">{user.name}</h2>
+                <h2 className="text-2xl font-bold text-white truncate">{user.name}</h2>
                 {userIsAdmin && (
                   <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">
                     <Shield className="w-3 h-3 text-amber-400" />
@@ -203,7 +319,47 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   </div>
                 )}
               </div>
-              <p className="text-white/60 text-sm">{user.email}</p>
+              {/* Editable Username */}
+              {isEditingUsername ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-white/50">@</span>
+                  <input
+                    type="text"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    maxLength={20}
+                    className="bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 w-32"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleSaveUsername}
+                    disabled={isSavingUsername || !newUsername.trim()}
+                    className="text-green-400 text-sm font-medium disabled:opacity-50"
+                  >
+                    {isSavingUsername ? '...' : t('save')}
+                  </button>
+                  <button
+                    onClick={() => setIsEditingUsername(false)}
+                    className="text-white/40 text-sm"
+                  >
+                    {t('cancel')}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 mt-1">
+                  <p className="text-white/60 text-sm">@{user.username || 'no-username'}</p>
+                  <button
+                    onClick={() => {
+                      setNewUsername(user.username || '');
+                      setIsEditingUsername(true);
+                    }}
+                    className="p-1 text-white/40 hover:text-white/70 transition-colors"
+                    aria-label={t('editUsername')}
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
               <div className="flex gap-4 mt-2">
                 <div>
                   <span className="text-white font-bold">{myAllSpots.length}</span>

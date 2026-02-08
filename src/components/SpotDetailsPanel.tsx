@@ -61,9 +61,9 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     try {
       await addReview(spot.id, {
         userId: user.uid,
-        userName: user.name || t('anonymous'),
+        userName: user.username || user.name || t('anonymous'),
         userEmail: user.email,
-        userPhoto: user.photoURL,
+        userPhoto: user.profilePictureURL || user.photoURL,
         rating,
         comment,
       });
@@ -322,13 +322,13 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
             {user && (
               <div className="glass-card p-4 mb-4">
                 <div className="flex items-center gap-3 mb-3">
-                  {user.photoURL && (
+                  {(user.profilePictureURL || user.photoURL) && (
                     <div className="relative w-10 h-10 rounded-full overflow-hidden">
-                      <Image src={user.photoURL} alt={user.name || 'User'} fill className="object-cover" />
+                      <Image src={user.profilePictureURL || user.photoURL || ''} alt={user.username || user.name || 'User'} fill className="object-cover" />
                     </div>
                   )}
                   <div>
-                    <p className="text-white font-medium">{user.name}</p>
+                    <p className="text-white font-medium">@{user.username || user.name}</p>
                     <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -388,7 +388,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
-                            <p className="text-white font-medium">{review.userName}</p>
+                            <p className="text-white font-medium">@{review.userName}</p>
                             {checkIsAdmin(review.userEmail) && (
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">
                                 <Shield className="w-3 h-3 text-amber-400" />
