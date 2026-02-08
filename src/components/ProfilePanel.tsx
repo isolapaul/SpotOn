@@ -1,13 +1,13 @@
 'use client';
 
-import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2, Bell, BellOff, Camera, Pencil, ImageIcon, Loader2 } from 'lucide-react';
+import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2, Bell, BellOff, Camera, Pencil, ImageIcon, Loader2, Star, Plus } from 'lucide-react';
 import Image from 'next/image';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin, isSuperAdmin } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useState, useEffect, useRef } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
@@ -33,6 +33,10 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [isSavingUsername, setIsSavingUsername] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryIcon, setNewCategoryIcon] = useState('');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [firestoreCategories, setFirestoreCategories] = useState<Array<{ id: string; name: string; icon: string }>>([]);
   const profilePicInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   
@@ -70,6 +74,23 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
 
     return () => unsubscribe();
   }, [user, isOpen]);
+
+  // Fetch dynamic categories from Firestore (admin only)
+  useEffect(() => {
+    if (!isOpen || !userIsSuperAdmin) return;
+
+    const categoriesRef = collection(db, 'categories');
+    const unsubscribe = onSnapshot(categoriesRef, (snapshot) => {
+      const cats: Array<{ id: string; name: string; icon: string }> = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        cats.push({ id: doc.id, name: data.name, icon: data.icon });
+      });
+      setFirestoreCategories(cats);
+    });
+
+    return () => unsubscribe();
+  }, [isOpen, userIsSuperAdmin]);
 
   if (!isOpen || !user) return null;
 
@@ -190,6 +211,25 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       showToast(error.message || t('usernameSaveError'), 'error');
     } finally {
       setIsSavingUsername(false);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim() || !newCategoryIcon.trim()) return;
+    setIsAddingCategory(true);
+    try {
+      await addDoc(collection(db, 'categories'), {
+        name: newCategoryName.trim(),
+        icon: newCategoryIcon.trim(),
+        createdAt: serverTimestamp(),
+      });
+      showToast(t('categoryAdded'), 'success');
+      setNewCategoryName('');
+      setNewCategoryIcon('');
+    } catch (error: any) {
+      showToast(error.message || t('categoryAddError'), 'error');
+    } finally {
+      setIsAddingCategory(false);
     }
   };
 
@@ -319,7 +359,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                 {userIsAdmin && (
                   <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">
                     <Shield className="w-3 h-3 text-amber-400" />
-                    <span className="text-amber-400 text-xs font-bold">Admin</span>
+                    <span className="text-amber-400 text-xs font-bold">{t('adminCount')}</span>
                   </div>
                 )}
               </div>
@@ -438,7 +478,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               }`}
             >
               <Shield className="w-4 h-4 inline mr-2" />
-              <span>Admin</span>
+              <span>{t('adminCount')}</span>
             </button>
           )}
         </div>
@@ -533,26 +573,51 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   <p className="text-white/40 text-sm mt-1">{t('startSaving')}</p>
                 </div>
               ) : (
-                favoriteSpots.map((spot) => (
-                  <div key={spot.id} className="glass-card p-4 flex gap-4">
-                    <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
-                      <Image
-                        src={spot.imageUrl}
-                        alt={spot.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold line-clamp-1">{spot.name}</h3>
-                      <p className="text-white/60 text-sm line-clamp-2">{spot.description}</p>
-                      <div className="flex items-center gap-1 mt-2">
-                        <span className="text-yellow-400">⭐</span>
-                        <span className="text-white/80 text-sm">4.5</span>
+                favoriteSpots.map((spot) => {
+                  const avgRating = spot.reviews && spot.reviews.length > 0
+                    ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
+                    : 0;
+                  const reviewCount = spot.reviews?.length || 0;
+                  return (
+                    <div key={spot.id} className="glass-card p-4 flex gap-4">
+                      <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+                        <Image
+                          src={spot.imageUrl}
+                          alt={spot.name}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-semibold line-clamp-1">{spot.name}</h3>
+                        <p className="text-white/60 text-sm line-clamp-2">{spot.description}</p>
+                        <div className="flex items-center gap-1 mt-2">
+                          {avgRating > 0 ? (
+                            <>
+                              <div className="flex gap-0.5">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`w-3 h-3 ${
+                                      star <= Math.round(avgRating)
+                                        ? 'text-yellow-400 fill-yellow-400'
+                                        : 'text-white/20'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-white/70 text-xs ml-1">
+                                {avgRating.toFixed(1)} ({reviewCount})
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-white/40 text-xs">{t('noReviews')}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
@@ -717,6 +782,62 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         </button>
                       </div>
                     ))
+                  )}
+                </div>
+              </div>
+
+              {/* Category Management Section */}
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Plus className="w-5 h-5 text-green-400" />
+                  <h3 className="text-white font-bold text-lg">{t('manageCategories')}</h3>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder={t('categoryIcon')}
+                      value={newCategoryIcon}
+                      onChange={(e) => setNewCategoryIcon(e.target.value)}
+                      className="w-16 px-3 py-3 bg-white/5 border border-white/10 rounded-xl
+                        text-white text-center text-xl placeholder:text-white/40 focus:outline-none focus:border-green-500/50"
+                      maxLength={4}
+                    />
+                    <input
+                      type="text"
+                      placeholder={t('categoryName')}
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl
+                        text-white placeholder:text-white/40 focus:outline-none focus:border-green-500/50"
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleAddCategory}
+                    disabled={isAddingCategory || !newCategoryName.trim() || !newCategoryIcon.trim()}
+                    className="w-full py-3 px-4 rounded-xl font-semibold
+                      bg-green-500/20 text-green-400 border border-green-500/30
+                      hover:bg-green-500/30 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed
+                      transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{isAddingCategory ? t('saving') : t('addCategory')}</span>
+                  </button>
+
+                  {/* Existing Dynamic Categories */}
+                  {firestoreCategories.length > 0 ? (
+                    <div className="space-y-2 mt-4">
+                      {firestoreCategories.map((cat) => (
+                        <div key={cat.id} className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-3">
+                          <span className="text-xl">{cat.icon}</span>
+                          <span className="text-white font-medium">{cat.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-white/40 text-center py-2 text-sm">{t('noCategoriesYet')}</p>
                   )}
                 </div>
               </div>

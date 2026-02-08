@@ -1,18 +1,26 @@
-import type { Spot } from '@/store/useSpotStore';
+import type { SpotCategory } from '@/store/useSpotStore';
 import type { TranslationKey } from '@/lib/translations';
 
-export const categoryEmojis: Record<Spot['category'], string> = {
+export const categoryEmojis: Record<SpotCategory, string> = {
   scenic: '🌅',
   'smoke-spot': '💨',
   viewpoint: '🏔️',
   other: '📍',
+  hiking: '🥾',
+  random: '🎲',
+  'date-spot': '❤️',
+  park: '🌳',
 };
 
-export const categoryTranslationKeys: Record<Spot['category'], TranslationKey> = {
+export const categoryTranslationKeys: Record<SpotCategory, TranslationKey> = {
   scenic: 'categoryScenic',
   'smoke-spot': 'categorySmoke',
   viewpoint: 'categoryViewpoint',
   other: 'categoryOther',
+  hiking: 'categoryHiking',
+  random: 'categoryRandom',
+  'date-spot': 'categoryDateSpot',
+  park: 'categoryPark',
 };
 
 export const getPlatform = (): 'ios' | 'android' | 'desktop' => {

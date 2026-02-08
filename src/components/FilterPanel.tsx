@@ -36,7 +36,11 @@ export default function FilterPanel({
     { value: 'scenic', label: t('categoryScenic'), emoji: '🌅' },
     { value: 'smoke-spot', label: t('categorySmoke'), emoji: '💨' },
     { value: 'viewpoint', label: t('categoryViewpoint'), emoji: '🏔️' },
-    { value: 'other', label: t('categoryOther'), emoji: '🌳' },
+    { value: 'hiking', label: t('categoryHiking'), emoji: '🥾' },
+    { value: 'random', label: t('categoryRandom'), emoji: '🎲' },
+    { value: 'date-spot', label: t('categoryDateSpot'), emoji: '❤️' },
+    { value: 'park', label: t('categoryPark'), emoji: '🌳' },
+    { value: 'other', label: t('categoryOther'), emoji: '📍' },
   ];
 
   const hasActiveFilters = selectedDistance !== null || selectedCategory !== null;

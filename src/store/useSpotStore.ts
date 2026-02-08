@@ -52,10 +52,12 @@ export interface Review {
   createdAt: Timestamp;
 }
 
+export type SpotCategory = 'scenic' | 'smoke-spot' | 'viewpoint' | 'other' | 'hiking' | 'random' | 'date-spot' | 'park';
+
 export interface Spot {
   id: string;
   name: string;
-  category: 'scenic' | 'smoke-spot' | 'viewpoint' | 'other';
+  category: SpotCategory;
   description: string;
   imageUrl: string;
   location: {
@@ -136,8 +138,8 @@ export const useSpotStore = create<SpotStore>((set) => ({
       // Only compress and upload if image is provided
       if (imageFile) {
         const options = {
-          maxSizeMB: 0.3,
-          maxWidthOrHeight: 1280,
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1080,
           useWebWorker: true,
         };
 

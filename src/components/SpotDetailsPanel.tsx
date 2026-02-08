@@ -396,7 +396,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                             {checkIsAdmin(review.userEmail) && (
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">
                                 <Shield className="w-3 h-3 text-amber-400" />
-                                <span className="text-amber-400 text-xs font-bold">Admin</span>
+                                <span className="text-amber-400 text-xs font-bold">{t('adminCount')}</span>
                               </div>
                             )}
                           </div>
