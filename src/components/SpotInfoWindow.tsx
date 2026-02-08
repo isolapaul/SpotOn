@@ -7,7 +7,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
-import { categoryEmojis, categoryLabels, getNavigationUrl } from '@/lib/spotUtils';
+import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { useState } from 'react';
 
 interface SpotInfoWindowProps {
@@ -19,7 +19,7 @@ interface SpotInfoWindowProps {
 
 export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewDetails }: Readonly<SpotInfoWindowProps>) {
   const { user, toggleFavorite } = useUserStore();
-  const { language, t } = useLanguageStore();
+  const { t } = useLanguageStore();
   const { approveSpot } = useSpotStore();
   const { showToast } = useToastStore();
   const [isFavorite, setIsFavorite] = useState(
@@ -46,17 +46,10 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
     setIsApproving(true);
     try {
       await approveSpot(spot.id);
-      showToast(
-        language === 'hu' ? 'Hely jóváhagyva!' : language === 'de' ? 'Ort genehmigt!' : 'Spot approved!',
-        'success'
-      );
+      showToast(t('spotApproved'), 'success');
       onClose();
     } catch (error) {
-      console.error('Error approving spot:', error);
-      showToast(
-        language === 'hu' ? 'Hiba a jóváhagyáskor' : language === 'de' ? 'Fehler bei der Genehmigung' : 'Error approving spot',
-        'error'
-      );
+      showToast(t('approveError'), 'error');
     } finally {
       setIsApproving(false);
     }
@@ -112,7 +105,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
             </h3>
           </div>
           <p className="text-white/60 text-xs">
-            {categoryLabels[spot.category][language || 'hu']}
+            {t(categoryTranslationKeys[spot.category])}
           </p>
         </div>
 
@@ -162,8 +155,8 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
             <CheckCircle className="w-4 h-4" />
             <span>
               {isApproving 
-                ? (language === 'hu' ? 'Jóváhagyás...' : language === 'de' ? 'Genehmigung...' : 'Approving...')
-                : (language === 'hu' ? 'Hely Jóváhagyása' : language === 'de' ? 'Ort genehmigen' : 'Approve Spot')
+                ? t('approving')
+                : t('approve')
               }
             </span>
           </button>

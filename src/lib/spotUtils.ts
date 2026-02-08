@@ -1,4 +1,5 @@
 import type { Spot } from '@/store/useSpotStore';
+import type { TranslationKey } from '@/lib/translations';
 
 export const categoryEmojis: Record<Spot['category'], string> = {
   scenic: '🌅',
@@ -7,11 +8,11 @@ export const categoryEmojis: Record<Spot['category'], string> = {
   other: '📍',
 };
 
-export const categoryLabels: Record<Spot['category'], { hu: string; en: string; de: string }> = {
-  scenic: { hu: 'Szép Kilátás', en: 'Scenic View', de: 'Malerische Aussicht' },
-  'smoke-spot': { hu: 'Eldugott Spot', en: 'Hidden Spot', de: 'Versteckter Ort' },
-  viewpoint: { hu: 'Kilátópont', en: 'Viewpoint', de: 'Aussichtspunkt' },
-  other: { hu: 'Park/Bokor', en: 'Park/Bush', de: 'Park/Busch' },
+export const categoryTranslationKeys: Record<Spot['category'], TranslationKey> = {
+  scenic: 'categoryScenic',
+  'smoke-spot': 'categorySmoke',
+  viewpoint: 'categoryViewpoint',
+  other: 'categoryOther',
 };
 
 export const getPlatform = (): 'ios' | 'android' | 'desktop' => {

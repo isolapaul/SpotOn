@@ -143,7 +143,7 @@ export const translations = {
     searchError: 'Hiba történt a keresés során',
     adminAddError: 'Hiba az admin hozzáadásakor',
     adminRemoveError: 'Hiba az admin eltávolításakor',
-    addedAsAdmin: 'hozzáadva admin-ként!',
+    addedAsAdmin: 'hozzáadva adminként!',
     removedFromAdmins: 'eltávolítva az admin listából',
     confirmRemoveAdmin: 'Biztosan eltávolítod {name} admin jogosultságát?',
 

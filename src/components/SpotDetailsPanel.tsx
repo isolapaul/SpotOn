@@ -7,7 +7,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useSpotStore, isAdmin as checkIsAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
-import { categoryEmojis, categoryLabels, getNavigationUrl } from '@/lib/spotUtils';
+import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { useState } from 'react';
 
 interface SpotDetailsPanelProps {
@@ -192,7 +192,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
           <div className="absolute bottom-4 left-4">
             <div className="glass-card px-4 py-2 flex items-center gap-2">
               <span className="text-2xl">{categoryEmojis[spot.category]}</span>
-              <span className="text-white font-medium">{categoryLabels[spot.category][language || 'hu']}</span>
+              <span className="text-white font-medium">{t(categoryTranslationKeys[spot.category])}</span>
             </div>
           </div>
         </div>
