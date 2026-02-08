@@ -7,6 +7,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useSpotStore, isAdmin as checkIsAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
+import { categoryEmojis, categoryLabels, getNavigationUrl } from '@/lib/spotUtils';
 import { useState } from 'react';
 
 interface SpotDetailsPanelProps {
@@ -14,20 +15,6 @@ interface SpotDetailsPanelProps {
   isAdmin?: boolean;
   onClose: () => void;
 }
-
-const categoryEmojis: Record<Spot['category'], string> = {
-  scenic: '🌅',
-  'smoke-spot': '💨',
-  viewpoint: '🏔️',
-  other: '📍',
-};
-
-const categoryLabels: Record<Spot['category'], { hu: string; en: string; de: string }> = {
-  scenic: { hu: 'Szép Kilátás', en: 'Scenic View', de: 'Malerische Aussicht' },
-  'smoke-spot': { hu: 'Eldugott Spot', en: 'Hidden Spot', de: 'Versteckter Ort' },
-  viewpoint: { hu: 'Kilátópont', en: 'Viewpoint', de: 'Aussichtspunkt' },
-  other: { hu: 'Park/Bokor', en: 'Park/Bush', de: 'Park/Busch' },
-};
 
 export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Readonly<SpotDetailsPanelProps>) {
   const { user, toggleFavorite } = useUserStore();
@@ -44,33 +31,10 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
 
   if (!spot) return null;
 
-  // Helper functions for multilingual messages to avoid nested ternaries
-  const getApprovedMessage = () => {
-    if (language === 'hu') return 'Hely jóváhagyva!';
-    if (language === 'de') return 'Ort genehmigt!';
-    return 'Spot approved!';
-  };
-
-  const getApproveErrorMessage = () => {
-    if (language === 'hu') return 'Hiba a jóváhagyáskor';
-    if (language === 'de') return 'Fehler bei der Genehmigung';
-    return 'Error approving spot';
-  };
-
-  const getApprovingText = () => {
-    if (language === 'hu') return 'Jóváhagyás...';
-    if (language === 'de') return 'Genehmigung...';
-    return 'Approving...';
-  };
-
-  const getApproveText = () => {
-    if (language === 'hu') return 'Jóváhagyás';
-    if (language === 'de') return 'Genehmigen';
-    return 'Approve';
-  };
-
   const getDateLocale = () => {
-    return language === 'hu' ? 'hu-HU' : 'en-US';
+    if (language === 'hu') return 'hu-HU';
+    if (language === 'de') return 'de-DE';
+    return 'en-US';
   };
 
   const handleFavoriteToggle = async () => {
@@ -89,7 +53,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       return;
     }
     if (rating === 0) {
-      showToast('Kérlek adj értékelést!', 'error');
+      showToast(t('ratingRequired'), 'error');
       return;
     }
 
@@ -97,18 +61,18 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     try {
       await addReview(spot.id, {
         userId: user.uid,
-        userName: user.name || 'Névtelen',
+        userName: user.name || t('anonymous'),
         userEmail: user.email,
         userPhoto: user.photoURL,
         rating,
         comment,
       });
-      showToast('Értékelés sikeresen hozzáadva!', 'success');
+      showToast(t('reviewAdded'), 'success');
       setRating(0);
       setComment('');
     } catch (error) {
       console.error('Error submitting review:', error);
-      showToast('Hiba az értékelés hozzáadásakor', 'error');
+      showToast(t('reviewError'), 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -119,11 +83,11 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     setIsApproving(true);
     try {
       await approveSpot(spot.id);
-      showToast(getApprovedMessage(), 'success');
+      showToast(t('spotApproved'), 'success');
       setTimeout(() => onClose(), 1000);
     } catch (error) {
       console.error('Error approving spot:', error);
-      showToast(getApproveErrorMessage(), 'error');
+      showToast(t('approveError'), 'error');
     } finally {
       setIsApproving(false);
     }
@@ -146,24 +110,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     }
   };
 
-  // Platform detection for navigation
-  const getPlatform = () => {
-    const userAgent = navigator.userAgent.toLowerCase();
-    if (/iphone|ipad|ipod/.test(userAgent)) return 'ios';
-    if (/android/.test(userAgent)) return 'android';
-    return 'desktop';
-  };
-
-  const getNavigationUrl = () => {
-    const platform = getPlatform();
-    const { lat, lng } = spot.location;
-    
-    if (platform === 'ios') {
-      return `maps://maps.apple.com/?q=${lat},${lng}`;
-    }
-    // Android and Desktop use Google Maps
-    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  };
+  const navigationUrl = getNavigationUrl(spot.location.lat, spot.location.lng);
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'Unknown';
@@ -279,7 +226,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                   >
                     <CheckCircle className="w-4 h-4" />
                     <span>
-                      {isApproving ? getApprovingText() : getApproveText()}
+                      {isApproving ? t('approving') : t('approve')}
                     </span>
                   </button>
                 )}
@@ -321,7 +268,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                 {spot.location.lat.toFixed(6)}, {spot.location.lng.toFixed(6)}
               </p>
               <a 
-                href={getNavigationUrl()}
+                href={navigationUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-400 text-sm font-medium mt-1 hover:underline inline-block"
@@ -405,7 +352,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="Írd le a véleményedet..."
+                  placeholder={t('writeReview')}
                   className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
                   rows={3}
                 />
@@ -416,7 +363,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                   className="mt-3 w-full py-3 rounded-xl font-medium bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  <span>{isSubmitting ? 'Küldés...' : 'Értékelés küldése'}</span>
+                  <span>{isSubmitting ? t('submittingReview') : t('submitReview')}</span>
                 </button>
               </div>
             )}
@@ -482,7 +429,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
 
           {/* CTA Button */}
           <a
-            href={getNavigationUrl()}
+            href={navigationUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full py-4 rounded-2xl font-semibold text-lg

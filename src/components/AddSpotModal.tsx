@@ -73,11 +73,6 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     setError(null);
 
     try {
-      console.log('=== AddSpotModal: Starting submission ===');
-      console.log('Form data:', formData);
-      console.log('Selected location:', selectedLocation);
-      console.log('Image file:', imageFile);
-      
       // Use the store's addSpot method (handles compression & upload)
       await addSpot(
         {
@@ -93,8 +88,6 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
         user.uid,
         user.email // Pass email for admin check
       );
-
-      console.log('=== AddSpotModal: Submission successful ===');
       
       // Reset form and close
       setFormData({ name: '', category: 'scenic', description: '' });
@@ -104,13 +97,11 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
       
       showToast(t('spotUploaded'), 'success');
     } catch (err: any) {
-      console.error('=== AddSpotModal: Submission error ===', err);
       const errorMessage = err.message || t('spotUploadFailed');
       setError(errorMessage);
       showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
-      console.log('=== AddSpotModal: Submission finished ===');
     }
   };
 
@@ -275,8 +266,8 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
                 disabled={loading}
               >
                 <Upload className="w-8 h-8 text-white/60" />
-                <span className="text-white/80 font-medium">Click to upload image</span>
-                <span className="text-white/40 text-xs">Max 5MB</span>
+                <span className="text-white/80 font-medium">{t('clickToUpload')}</span>
+                <span className="text-white/40 text-xs">{t('maxSize')}</span>
               </button>
             )}
           </div>
@@ -303,18 +294,18 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             {loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Compressing & Uploading...</span>
+                <span>{t('compressing')}</span>
               </>
             ) : (
               <>
                 <MapPin className="w-5 h-5" />
-                <span>Submit Spot</span>
+                <span>{t('submitSpot')}</span>
               </>
             )}
           </button>
 
           <p className="text-white/50 text-xs text-center">
-            Your spot will be reviewed before appearing on the map
+            {t('reviewMessage')}
           </p>
         </form>
       </div>

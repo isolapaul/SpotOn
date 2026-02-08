@@ -242,7 +242,6 @@ export default function Home() {
 
   const handleFavoritesClick = () => {
     // Show only favorited spots (filter by favorites in future implementation)
-    console.log('Favorites clicked');
   };
 
   if (!isClient) {
