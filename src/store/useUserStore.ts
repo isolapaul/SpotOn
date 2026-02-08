@@ -72,8 +72,8 @@ function generateUsername(displayName: string): string {
   const base = displayName
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '')
-    .slice(0, 15);
-  const suffix = Math.floor(Math.random() * 10000);
+    .slice(0, 12);
+  const suffix = Math.floor(Math.random() * 1000000);
   return `${base || 'user'}${suffix}`;
 }
 
@@ -444,8 +444,9 @@ export const useUserStore = create<UserStore>()(
       // Check if a username is available
       checkUsernameAvailable: async (username: string) => {
         try {
+          const normalized = username.trim().toLowerCase();
           const usersRef = collection(db, 'users');
-          const q = query(usersRef, where('username', '==', username.toLowerCase()));
+          const q = query(usersRef, where('username', '==', normalized));
           const snapshot = await getDocs(q);
           
           // If found docs, check if it's the current user's own username

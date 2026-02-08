@@ -21,12 +21,14 @@ export default function UsernameSetupModal({ isOpen, onClose }: Readonly<Usernam
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const VALID_USERNAME_REGEX = /^[a-z0-9_]+$/;
+
   if (!isOpen || !user) return null;
 
   const validateFormat = (value: string): string | null => {
     if (value.length < 3) return t('usernameTooShort');
     if (value.length > 20) return t('usernameTooLong');
-    if (!/^[a-z0-9_]+$/.test(value)) return t('usernameInvalidChars');
+    if (!VALID_USERNAME_REGEX.test(value)) return t('usernameInvalidChars');
     return null;
   };
 
