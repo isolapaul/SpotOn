@@ -76,14 +76,14 @@ export default function NotificationPrompt() {
                 onClick={handleEnable}
                 disabled={isLoading}
                 className="flex-1 py-2 px-4 rounded-lg bg-white/20 text-white font-medium
-                  hover:bg-white/30 transition-all disabled:opacity-50"
+                  hover:bg-white/30 active:scale-95 transition-all disabled:opacity-50 touch-manipulation"
               >
                 {isLoading ? t('enabling') : t('enable')}
               </button>
               <button
                 onClick={handleDismiss}
                 className="py-2 px-4 rounded-lg bg-white/10 text-white/70 font-medium
-                  hover:bg-white/20 transition-all"
+                  hover:bg-white/20 active:scale-95 transition-all touch-manipulation"
               >
                 {t('notNow')}
               </button>

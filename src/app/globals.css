@@ -76,6 +76,15 @@ a:not(.no-min-size),
   isolation: isolate;
 }
 
+/* Floating container optimization - allows clicking through empty space to map */
+.floating-container {
+  pointer-events: none;
+}
+
+.floating-container > * {
+  pointer-events: auto;
+}
+
 body {
   /* Safe area insets for notched devices */
   /* Map fills entire screen - safe area is handled by individual UI components */
