@@ -167,7 +167,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
+        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default pointer-events-auto"
         onClick={onClose}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
         aria-label="Close spot details"
@@ -176,7 +176,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       
       {/* Panel - With Swipe Support */}
       <div 
-        className="absolute inset-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800"
+        className="absolute inset-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 pointer-events-none"
         style={{ 
           transform: `translateY(${translateY}px)`,
           transition: isDragging ? 'none' : 'transform 0.3s ease-out'
@@ -186,10 +186,10 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         onTouchEnd={handleTouchEnd}
       >
         {/* Grabber Pill - PHASE 4 */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gray-600/50 rounded-full z-10" />
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gray-600/50 rounded-full z-10 pointer-events-auto" />
         
         {/* Hero Image */}
-        <div className="relative w-full h-[40vh] flex-shrink-0">
+        <div className="relative w-full h-[40vh] flex-shrink-0 pointer-events-auto">
           <Image
             src={spot.imageUrl}
             alt={spot.name}
@@ -246,7 +246,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-6 pointer-events-auto" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
           <div className="space-y-6">
           {/* Admin Status Badge & Approve Button */}
           {isAdmin && (

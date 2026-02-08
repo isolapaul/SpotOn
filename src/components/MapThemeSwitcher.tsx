@@ -30,13 +30,11 @@ export default function MapThemeSwitcher() {
       {/* Theme Switcher Button - Top Right Corner - PHASE 3 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed z-[1500] p-4 rounded-full 
+        className="fixed z-[1500] w-12 h-12 rounded-full 
+          bg-black/40 backdrop-blur-md border border-white/10
           active:scale-95 transition-all duration-200 shadow-glass-lg
-          touch-manipulation select-none min-w-[56px] min-h-[56px] ${
-            isOpen 
-              ? 'bg-purple-600 border-2 border-purple-400' 
-              : 'bg-slate-800/90 backdrop-blur-xl border-2 border-white/20 hover:bg-slate-700/90'
-          }`}
+          hover:bg-black/50
+          touch-manipulation select-none flex items-center justify-center"
         style={{
           top: 'calc(1rem + env(safe-area-inset-top))',
           right: 'max(1rem, env(safe-area-inset-right))'
@@ -46,25 +44,26 @@ export default function MapThemeSwitcher() {
         <Palette className="w-6 h-6 text-white" strokeWidth={2} />
       </button>
 
-      {/* Theme Selector Panel */}
+      {/* Theme Selector Modal - Centered */}
       {isOpen && (
-        <>
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 animate-fade-in">
+          {/* Backdrop - Click to close */}
           <button
             type="button"
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[1400] animate-fade-in touch-manipulation"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm touch-manipulation"
             onClick={() => setIsOpen(false)}
             aria-label="Close theme selector"
           />
           
-          {/* Panel */}
-          <div className="fixed top-20 right-4 z-[1500] glass-card w-72
-            animate-slide-down safe-area">
+          {/* Modal Content */}
+          <div className="relative bg-[#0f172a]/90 backdrop-blur-xl w-[80%] max-w-sm rounded-3xl 
+            border border-white/10 overflow-hidden animate-scale-in
+            max-h-[80vh] flex flex-col">
             
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
+            <div className="flex items-center justify-between p-6 border-b border-white/10 bg-slate-800/50">
               <div className="flex items-center gap-3">
-                <Palette className="w-5 h-5 text-white" strokeWidth={2} />
+                <Palette className="w-6 h-6 text-white" strokeWidth={2} />
                 <h3 className="text-white font-semibold text-lg">
                   {t('mapTheme')}
                 </h3>
@@ -79,7 +78,7 @@ export default function MapThemeSwitcher() {
             </div>
 
             {/* Theme Grid */}
-            <div className="p-4 grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <div className="p-6 grid grid-cols-2 gap-3 overflow-y-auto custom-scrollbar">
               {themes.map((themeOption) => (
                 <button
                   key={themeOption.id}
@@ -113,7 +112,7 @@ export default function MapThemeSwitcher() {
               ))}
             </div>
           </div>
-        </>
+        </div>
       )}
     </>
   );

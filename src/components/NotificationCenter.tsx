@@ -53,17 +53,18 @@ export default function NotificationCenter() {
       {/* Notification Bell Button - Top Left */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed z-[1500] p-4 rounded-full 
+        className="fixed z-[1500] w-12 h-12 rounded-full 
+          bg-black/40 backdrop-blur-md border border-white/10
           active:scale-95 transition-all duration-200 shadow-glass-lg
-          bg-slate-800/90 backdrop-blur-xl border-2 border-white/20 hover:bg-slate-700/90
-          touch-manipulation select-none min-w-[56px] min-h-[56px]"
+          hover:bg-black/50
+          touch-manipulation select-none flex items-center justify-center"
         style={{
           top: 'calc(1rem + env(safe-area-inset-top))',
           left: 'max(1rem, env(safe-area-inset-left))'
         }}
         aria-label="Notifications"
       >
-        <Bell className="w-5 h-5 text-white" strokeWidth={2} />
+        <Bell className="w-6 h-6 text-white" strokeWidth={2} />
         
         {/* Unread Badge - Red Dot */}
         {unreadCount > 0 && (
