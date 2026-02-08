@@ -17,6 +17,7 @@ if (!VAPID_KEY) {
 export const usePushNotifications = () => {
   const [isPermissionGranted, setIsPermissionGranted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [foregroundUnsubscribe, setForegroundUnsubscribe] = useState<(() => void) | null>(null);
   const { user } = useUserStore();
   const { language } = useLanguageStore();
   const { showToast } = useToastStore();
@@ -32,6 +33,12 @@ export const usePushNotifications = () => {
   // Initialize push notifications
   const initializePush = async (): Promise<boolean> => {
     try {
+      // Clean up existing foreground listener if any
+      if (foregroundUnsubscribe) {
+        foregroundUnsubscribe();
+        setForegroundUnsubscribe(null);
+      }
+
       // Check if the browser supports notifications
       if (!('Notification' in window)) {
         return false;
@@ -111,7 +118,9 @@ export const usePushNotifications = () => {
 
   // Setup foreground message listener (when app is open)
   const setupForegroundListener = (messaging: any) => {
-    onMessage(messaging, (payload) => {
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log('Foreground message received:', payload);
+      
       // Show toast notification when app is in foreground
       const title = payload.notification?.title || 'New Notification';
       const body = payload.notification?.body || '';
@@ -137,6 +146,9 @@ export const usePushNotifications = () => {
         });
       }
     });
+    
+    // Store unsubscribe function for cleanup
+    setForegroundUnsubscribe(() => unsubscribe);
   };
 
   // Request permission explicitly (for button click)

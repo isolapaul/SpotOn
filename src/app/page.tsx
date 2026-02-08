@@ -54,7 +54,7 @@ export default function Home() {
   const [discoveryPanelOpen, setDiscoveryPanelOpen] = useState(false);
   
   const { user, needsUsername, setNeedsUsername, initAuth, initAdminListener } = useUserStore();
-  const { spots, fetchSpots } = useSpotStore();
+  const { spots, fetchSpots, unsubscribeSpots } = useSpotStore();
   const { toasts, removeToast } = useToastStore();
   const { t } = useLanguageStore();
   const { showToast } = useToastStore();
@@ -155,8 +155,12 @@ export default function Home() {
     // Cleanup
     return () => {
       unsubscribeAdmins();
+      // Clean up spots listener
+      if (unsubscribeSpots) {
+        unsubscribeSpots();
+      }
     };
-  }, [initAuth, initAdminListener, fetchSpots]);
+  }, [initAuth, initAdminListener, fetchSpots, unsubscribeSpots]);
 
   // Handle map load callback
   const handleMapLoad = () => {

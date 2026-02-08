@@ -77,20 +77,29 @@ interface SpotStore {
   spots: Spot[];
   isLoading: boolean;
   error: string | null;
+  unsubscribeSpots: (() => void) | null;
   fetchSpots: () => Promise<void>;
   addSpot: (spotData: Omit<Spot, 'id' | 'imageUrl' | 'createdAt' | 'status'>, imageFile: File | null, userId: string, userEmail?: string) => Promise<void>;
   addReview: (spotId: string, review: Omit<Review, 'id' | 'createdAt'>) => Promise<void>;
   approveSpot: (spotId: string) => Promise<void>;
 }
 
-export const useSpotStore = create<SpotStore>((set) => ({
+export const useSpotStore = create<SpotStore>((set, get) => ({
   spots: [],
   isLoading: false,
   error: null,
+  unsubscribeSpots: null,
 
   fetchSpots: () => {
     return new Promise<void>((resolve, reject) => {
       try {
+        // Clean up existing listener if any
+        const existingUnsubscribe = get().unsubscribeSpots;
+        if (existingUnsubscribe) {
+          existingUnsubscribe();
+          set({ unsubscribeSpots: null });
+        }
+
         set({ isLoading: true });
         const spotsRef = collection(db, 'spots');
         // Fetch ALL spots (both pending and approved) for admin filtering
@@ -118,8 +127,8 @@ export const useSpotStore = create<SpotStore>((set) => ({
           reject(error);
         });
 
-        // Store unsubscribe function if needed
-        return unsubscribe;
+        // Store unsubscribe function for cleanup
+        set({ unsubscribeSpots: unsubscribe });
       } catch (error: any) {
         set({ error: error.message, isLoading: false });
         reject(error);
