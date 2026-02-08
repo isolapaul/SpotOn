@@ -178,7 +178,6 @@ export default function MapView({
           }
         },
         (error) => {
-          console.error('Error getting location:', error);
           setUserLocation(defaultCenter);
         },
         {

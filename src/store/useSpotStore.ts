@@ -114,7 +114,6 @@ export const useSpotStore = create<SpotStore>((set) => ({
             resolve();
           }
         }, (error) => {
-          console.error('Error fetching spots:', error);
           set({ error: error.message, isLoading: false });
           reject(error);
         });
@@ -122,7 +121,6 @@ export const useSpotStore = create<SpotStore>((set) => ({
         // Store unsubscribe function if needed
         return unsubscribe;
       } catch (error: any) {
-        console.error('Error setting up spots listener:', error);
         set({ error: error.message, isLoading: false });
         reject(error);
       }
@@ -206,7 +204,6 @@ export const useSpotStore = create<SpotStore>((set) => ({
         }),
       }));
     } catch (error: any) {
-      console.error('Error adding review:', error);
       throw error;
     }
   },
@@ -227,7 +224,6 @@ export const useSpotStore = create<SpotStore>((set) => ({
         ),
       }));
     } catch (error: any) {
-      console.error('Error approving spot:', error);
       throw error;
     }
   },

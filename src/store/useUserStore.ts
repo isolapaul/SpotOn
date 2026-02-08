@@ -150,7 +150,6 @@ export const useUserStore = create<UserStore>()(
           
           set({ user: userData, loading: false });
         } catch (error) {
-          console.error('Error signing in with Google:', error);
           set({ loading: false });
           throw error;
         }
@@ -186,7 +185,6 @@ export const useUserStore = create<UserStore>()(
             set({ user: userData, loading: false });
           }
         } catch (error) {
-          console.error('Error signing in with email:', error);
           set({ loading: false });
           throw error;
         }
@@ -229,7 +227,6 @@ export const useUserStore = create<UserStore>()(
           // Prompt to customize username
           set({ user: userData, loading: false, needsUsername: true });
         } catch (error) {
-          console.error('Error signing up with email:', error);
           set({ loading: false });
           throw error;
         }
@@ -240,7 +237,6 @@ export const useUserStore = create<UserStore>()(
           await firebaseSignOut(auth);
           set({ user: null, loading: false });
         } catch (error) {
-          console.error('Error signing out:', error);
           throw error;
         }
       },
@@ -325,7 +321,6 @@ export const useUserStore = create<UserStore>()(
             });
           }
         } catch (error) {
-          console.error('Error toggling favorite:', error);
           throw error;
         }
       },
@@ -386,7 +381,6 @@ export const useUserStore = create<UserStore>()(
           
           return foundUser;
         } catch (error) {
-          console.error('Error searching user:', error);
           throw error;
         }
       },
@@ -421,7 +415,6 @@ export const useUserStore = create<UserStore>()(
             addedBy: user.uid,
           });
         } catch (error) {
-          console.error('Error adding admin:', error);
           throw error;
         }
       },
@@ -436,7 +429,6 @@ export const useUserStore = create<UserStore>()(
         try {
           await deleteDoc(doc(db, 'admins', adminId));
         } catch (error) {
-          console.error('Error removing admin:', error);
           throw error;
         }
       },
@@ -462,7 +454,6 @@ export const useUserStore = create<UserStore>()(
           });
           return isOwnUsername;
         } catch (error) {
-          console.error('Error checking username:', error);
           throw error;
         }
       },
@@ -491,7 +482,6 @@ export const useUserStore = create<UserStore>()(
           await updateDoc(userRef, { username: trimmed });
           set({ user: { ...user, username: trimmed }, needsUsername: false });
         } catch (error) {
-          console.error('Error updating username:', error);
           throw error;
         }
       },
@@ -524,7 +514,6 @@ export const useUserStore = create<UserStore>()(
             } 
           });
         } catch (error) {
-          console.error('Error updating profile picture:', error);
           throw error;
         }
       },
@@ -548,7 +537,6 @@ export const useUserStore = create<UserStore>()(
           
           set({ user: { ...user, profileBannerURL: downloadURL } });
         } catch (error) {
-          console.error('Error updating profile banner:', error);
           throw error;
         }
       },

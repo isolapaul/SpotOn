@@ -43,7 +43,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       await toggleFavorite(spot.id);
       setIsFavorite(!isFavorite);
     } catch (error) {
-      console.error('Error toggling favorite:', error);
     }
   };
 
@@ -71,7 +70,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       setRating(0);
       setComment('');
     } catch (error) {
-      console.error('Error submitting review:', error);
       showToast(t('reviewError'), 'error');
     } finally {
       setIsSubmitting(false);
@@ -86,7 +84,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       showToast(t('spotApproved'), 'success');
       setTimeout(() => onClose(), 1000);
     } catch (error) {
-      console.error('Error approving spot:', error);
       showToast(t('approveError'), 'error');
     } finally {
       setIsApproving(false);
@@ -104,7 +101,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       } catch (err) {
         // User cancelled sharing, this is expected behavior
         if (err instanceof Error && err.name !== 'AbortError') {
-          console.error('Error sharing:', err);
         }
       }
     }
