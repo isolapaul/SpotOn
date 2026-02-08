@@ -141,7 +141,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
             </div>
             <button
               onClick={onClose}
-              className="glass-button p-2 rounded-full"
+              className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]"
               aria-label={t('close')}
             >
               <X className="w-5 h-5 text-white" />

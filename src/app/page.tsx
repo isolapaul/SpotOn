@@ -115,12 +115,12 @@ export default function Home() {
         setIsAppReady(true);
       }, 500);
     }
-  },// Don't initialize anything if InstallGate is blocking
-    if (shouldBlock || isChecking) return;
-    
-     [loadingStates, isAppReady]);
+  }, [loadingStates, isAppReady]);
 
   useEffect(() => {
+    // Don't initialize anything if InstallGate is blocking
+    if (shouldBlock || isChecking) return;
+    
     setIsClient(true);
     
     // Initialize Firebase auth listener
@@ -165,10 +165,10 @@ export default function Home() {
       unsubscribeAdmins();
       // Clean up spots listener
       if (unsubscribeSpots) {
-        unsubscribeSpots();, shouldBlock, isChecking
+        unsubscribeSpots();
       }
     };
-  }, [initAuth, initAdminListener, fetchSpots, unsubscribeSpots]);
+  }, [initAuth, initAdminListener, fetchSpots, unsubscribeSpots, shouldBlock, isChecking]);
 
   // Handle map load callback
   const handleMapLoad = () => {
@@ -215,12 +215,6 @@ export default function Home() {
     setDiscoveryPanelOpen(true);
   };
 
-  const handleNavigateClick = () => {
-    if (!userLocation || visibleSpots.length === 0) return;
-    // Open distance selector
-    setDistanceSelectorOpen(true);
-  };
-
   const handleDistanceSelect = (distance: number) => {
     if (!userLocation || visibleSpots.length === 0) return;
     
@@ -249,14 +243,6 @@ export default function Home() {
     window.open(url, '_blank');
   };
 
-  const handleFavoritesClick = () => {
-    if (user) {
-      setProfilePanelOpen(true);
-    } else {
-      setAuthModalOpen(true);
-    }
-  };
-
   if (!isClient) {
     return null;
   }
@@ -272,7 +258,7 @@ export default function Home() {
       {/* Notification Center - Top Left Button */}
       <NotificationCenter />
       
-      {/* Map Theme Switcher - Bottom Right Button */}
+      {/* Map Theme Switcher - Top Right Button - PHASE 3 */}
       <MapThemeSwitcher />
       
       {/* Main App - hidden until ready, then fades in */}
@@ -351,6 +337,7 @@ export default function Home() {
         isAdmin={userIsAdmin}
         onSpotDetailsOpen={setSelectedSpot}
         onMapLoad={handleMapLoad}
+        onMapClick={() => setSelectedSpot(null)}
       />
       
       {/* Empty state message */}

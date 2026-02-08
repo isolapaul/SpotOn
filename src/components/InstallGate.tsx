@@ -13,8 +13,8 @@ export function useInstallGate() {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     
     // 2. Detect if app is running in standalone mode (installed as PWA)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-      || (window.navigator as any).standalone // iOS Safari specific
+    const isStandalone = globalThis.matchMedia('(display-mode: standalone)').matches
+      || (globalThis.navigator as any).standalone // iOS Safari specific
       || document.referrer.includes('android-app://'); // Android specific
 
     // 3. Determine if we should show the blocking overlay

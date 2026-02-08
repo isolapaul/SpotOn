@@ -281,7 +281,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
           <div className="absolute left-4 right-4 flex justify-between items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}>
             <button
               onClick={onClose}
-              className="glass-button p-2 rounded-full"
+              className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]"
               aria-label="Close"
             >
               <X className="w-5 h-5 text-white" />

@@ -309,7 +309,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
                     setImageFile(null);
                     setImagePreview(null);
                   }}
-                  className="absolute top-2 right-2 glass-button p-2 rounded-full
+                  className="absolute top-2 right-2 glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]
                     opacity-0 group-hover:opacity-100 transition-opacity"
                   disabled={loading}
                 >

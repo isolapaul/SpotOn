@@ -18,6 +18,7 @@ interface MapViewProps {
   isAdmin?: boolean;
   onSpotDetailsOpen?: (spot: Spot) => void;
   onMapLoad?: () => void;
+  onMapClick?: () => void;
 }
 
 // Category emoji markers
@@ -102,7 +103,8 @@ export default function MapView({
   spots = [],
   isAdmin = false,
   onSpotDetailsOpen,
-  onMapLoad
+  onMapLoad,
+  onMapClick
 }: Readonly<MapViewProps>) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -189,15 +191,18 @@ export default function MapView({
     }
   }, [isLoaded, map]);
 
-  // Handle map click for adding spots
+  // Handle map click for adding spots or closing spot details
   const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
     if (isAddingSpot && onLocationSelect && e.latLng) {
       onLocationSelect({
         lat: e.latLng.lat(),
         lng: e.latLng.lng(),
       });
+    } else if (onMapClick) {
+      // Close spot details when clicking on map
+      onMapClick();
     }
-  }, [isAddingSpot, onLocationSelect]);
+  }, [isAddingSpot, onLocationSelect, onMapClick]);
 
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
