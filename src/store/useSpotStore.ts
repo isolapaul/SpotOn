@@ -123,6 +123,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
             resolve();
           }
         }, (error) => {
+          console.error('Error fetching spots:', error);
           set({ error: error.message, isLoading: false });
           reject(error);
         });
@@ -130,6 +131,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         // Store unsubscribe function for cleanup
         set({ unsubscribeSpots: unsubscribe });
       } catch (error: any) {
+        console.error('Error setting up spots listener:', error);
         set({ error: error.message, isLoading: false });
         reject(error);
       }
@@ -145,9 +147,9 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       // Only compress and upload if image is provided
       if (imageFile) {
         const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1080,
-          useWebWorker: true,
+          maxSizeMB: 0.3,
+          maxWidthOrHeight: 1280,
+          useWebWorker: false,
         };
 
         const compressedFile = await imageCompression(imageFile, options);
@@ -213,6 +215,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         }),
       }));
     } catch (error: any) {
+      console.error('Error adding review:', error);
       throw error;
     }
   },
@@ -233,6 +236,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         ),
       }));
     } catch (error: any) {
+      console.error('Error approving spot:', error);
       throw error;
     }
   },

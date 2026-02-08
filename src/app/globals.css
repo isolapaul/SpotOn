@@ -212,6 +212,33 @@ body {
   display: none !important;
 }
 
+/* Hide Google Logo and Copyright text - PHASE 2 */
+.gmnoprint, 
+.gm-style-cc, 
+.gm-style-mtc {
+  display: none !important;
+}
+
+a[href^="https://maps.google.com/maps"] {
+  display: none !important;
+}
+
+/* Hide the Google logo specifically */
+img[alt="Google"] {
+  display: none !important;
+}
+
+/* Hide keyboard shortcuts dialog trigger */
+button[aria-label="Keyboard shortcuts"] {
+  display: none !important;
+}
+
+/* Hide terms of service links */
+.gm-style a[href^="https://www.google.com/intl"],
+.gm-style a[href*="terms"] {
+  display: none !important;
+}
+
 /* iOS safe area support */
 @supports (padding: max(0px)) {
   .safe-bottom {

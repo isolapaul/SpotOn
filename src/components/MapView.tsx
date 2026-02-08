@@ -119,8 +119,8 @@ export default function MapView({
   
   const mapOptions = {
     styles: mapStyles,
-    disableDefaultUI: false,
-    zoomControl: true,
+    disableDefaultUI: true,
+    zoomControl: false,
     mapTypeControl: false,
     scaleControl: false,
     streetViewControl: false,

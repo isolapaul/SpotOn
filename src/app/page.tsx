@@ -207,6 +207,7 @@ export default function Home() {
     setDiscoveryPanelOpen(true);
   };
 
+<<<<<<< HEAD
   const handleNavigateClick = () => {
     if (!userLocation || visibleSpots.length === 0) return;
     // Open distance selector
@@ -249,6 +250,8 @@ export default function Home() {
     }
   };
 
+=======
+>>>>>>> 267e0a3 (Simplified navigation, map ui, improved touch accessibility)
   if (!isClient) {
     return null;
   }
@@ -372,13 +375,11 @@ export default function Home() {
         </div>
       )}
       
-      {/* Bottom Navigation - Floating Dock */}
+      {/* Bottom Navigation - Floating Dock - PHASE 1: Simplified to 3 items */}
       <BottomNavigation 
         onAddSpotClick={handleAddSpotClick}
         onProfileClick={handleProfileClick}
         onExploreClick={handleExploreClick}
-        onNavigateClick={handleNavigateClick}
-        onFavoritesClick={handleFavoritesClick}
       />
 
       {/* Toast Notifications */}

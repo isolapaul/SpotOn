@@ -27,7 +27,7 @@ export default function MapThemeSwitcher() {
 
   return (
     <>
-      {/* Theme Switcher Button - Bottom Right */}
+      {/* Theme Switcher Button - Top Right Corner - PHASE 3 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed z-[1500] p-4 rounded-full 
@@ -38,12 +38,12 @@ export default function MapThemeSwitcher() {
               : 'bg-slate-800/90 backdrop-blur-xl border-2 border-white/20 hover:bg-slate-700/90'
           }`}
         style={{
-          bottom: 'calc(6rem + env(safe-area-inset-bottom))',
+          top: 'calc(1rem + env(safe-area-inset-top))',
           right: 'max(1rem, env(safe-area-inset-right))'
         }}
         aria-label="Map Theme"
       >
-        <Palette className="w-5 h-5 text-white" strokeWidth={2} />
+        <Palette className="w-6 h-6 text-white" strokeWidth={2} />
       </button>
 
       {/* Theme Selector Panel */}
@@ -58,8 +58,8 @@ export default function MapThemeSwitcher() {
           />
           
           {/* Panel */}
-          <div className="fixed bottom-40 right-4 z-[1500] glass-card w-72
-            animate-slide-up safe-bottom">
+          <div className="fixed top-20 right-4 z-[1500] glass-card w-72
+            animate-slide-down safe-area">
             
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -69,6 +69,13 @@ export default function MapThemeSwitcher() {
                   {t('mapTheme')}
                 </h3>
               </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-2 -m-2 rounded-full hover:bg-white/10 transition-colors touch-manipulation min-w-[48px] min-h-[48px] flex items-center justify-center"
+                aria-label="Close"
+              >
+                <span className="text-white/70 text-2xl leading-none">×</span>
+              </button>
             </div>
 
             {/* Theme Grid */}

@@ -62,7 +62,7 @@ async function compressProfileImage(file: File): Promise<File> {
   const options = {
     maxSizeMB: 1,
     maxWidthOrHeight: 1920,
-    useWebWorker: true,
+    useWebWorker: false,
   };
   return imageCompression(file, options);
 }

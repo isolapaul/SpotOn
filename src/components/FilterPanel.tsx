@@ -2,6 +2,7 @@
 
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { SlidersHorizontal, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface FilterPanelProps {
   isOpen: boolean;
@@ -23,6 +24,11 @@ export default function FilterPanel({
   onClearFilters,
 }: Readonly<FilterPanelProps>) {
   const { t } = useLanguageStore();
+  
+  // PHASE 4: iOS Swipe to Dismiss
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragCurrentX, setDragCurrentX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const distances = [
     { value: 1, label: t('within1km') },
@@ -45,6 +51,41 @@ export default function FilterPanel({
 
   const hasActiveFilters = selectedDistance !== null || selectedCategory !== null;
 
+  // PHASE 4: Touch Handlers for Swipe to Dismiss (Right Swipe)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setDragStartX(e.touches[0].clientX);
+    setDragCurrentX(e.touches[0].clientX);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - dragStartX;
+    
+    // Only allow rightward drag (to dismiss)
+    if (diff > 0) {
+      setDragCurrentX(currentX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    const dragDistance = dragCurrentX - dragStartX;
+    
+    // Close if dragged more than 100px to the right
+    if (dragDistance > 100) {
+      onClose();
+    }
+    
+    // Reset
+    setIsDragging(false);
+    setDragStartX(0);
+    setDragCurrentX(0);
+  };
+
+  const translateX = isDragging ? Math.max(0, dragCurrentX - dragStartX) : 0;
+
   return (
     <>
       {/* Filter Panel */}
@@ -61,7 +102,7 @@ export default function FilterPanel({
             aria-label="Close filter panel"
           />
           
-          {/* Panel */}
+          {/* Panel - With Horizontal Swipe Support */}
           <div 
             className="relative glass-card max-w-sm w-full max-h-[90vh] overflow-y-auto 
             custom-scrollbar animate-slide-left"
@@ -69,9 +110,16 @@ export default function FilterPanel({
               paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)',
               paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)',
               paddingLeft: '1.5rem',
-              paddingRight: '1.5rem'
+              paddingRight: '1.5rem',
+              transform: `translateX(${translateX}px)`,
+              transition: isDragging ? 'none' : 'transform 0.3s ease-out'
             }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
+            {/* Edge Indicator for Swipe - PHASE 4 */}
+            <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-gray-600/50 rounded-full" />
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">

@@ -28,6 +28,11 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  
+  // PHASE 4: iOS Swipe to Dismiss
+  const [dragStartY, setDragStartY] = useState(0);
+  const [dragCurrentY, setDragCurrentY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   if (!spot) return null;
 
@@ -122,6 +127,41 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
     : 0;
 
+  // PHASE 4: Touch Handlers for Swipe to Dismiss
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setDragStartY(e.touches[0].clientY);
+    setDragCurrentY(e.touches[0].clientY);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - dragStartY;
+    
+    // Only allow downward drag
+    if (diff > 0) {
+      setDragCurrentY(currentY);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    const dragDistance = dragCurrentY - dragStartY;
+    
+    // Close if dragged more than 100px down
+    if (dragDistance > 100) {
+      onClose();
+    }
+    
+    // Reset
+    setIsDragging(false);
+    setDragStartY(0);
+    setDragCurrentY(0);
+  };
+
+  const translateY = isDragging ? Math.max(0, dragCurrentY - dragStartY) : 0;
+
   return (
     <div className="fixed inset-0 z-[3000] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
       {/* Backdrop */}
@@ -134,8 +174,20 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         tabIndex={-1}
       />
       
-      {/* Panel */}
-      <div className="absolute inset-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800">
+      {/* Panel - With Swipe Support */}
+      <div 
+        className="absolute inset-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800"
+        style={{ 
+          transform: `translateY(${translateY}px)`,
+          transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Grabber Pill - PHASE 4 */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gray-600/50 rounded-full z-10" />
+        
         {/* Hero Image */}
         <div className="relative w-full h-[40vh] flex-shrink-0">
           <Image
