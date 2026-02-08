@@ -1,7 +1,7 @@
 'use client';
 
 import { MapPin, Compass, Heart, User, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useUserStore } from '@/store/useUserStore';
 import Image from 'next/image';
@@ -16,7 +16,7 @@ interface BottomNavigationProps {
   onFavoritesClick: () => void;
 }
 
-export default function BottomNavigation({ 
+function BottomNavigation({ 
   onAddSpotClick, 
   onProfileClick,
   onExploreClick,
@@ -27,13 +27,13 @@ export default function BottomNavigation({
   const { t } = useLanguageStore();
   const { user } = useUserStore();
 
-  const navItems = [
+  const navItems = useMemo(() => [
     { id: 'explore' as NavItem, icon: MapPin, label: t('explore') },
     { id: 'navigate' as NavItem, icon: Compass, label: t('navigate') },
     { id: 'add' as NavItem, icon: Plus, label: t('add'), special: true },
     { id: 'favorites' as NavItem, icon: Heart, label: t('favorites') },
     { id: 'profile' as NavItem, icon: User, label: t('profile'), isProfile: true },
-  ];
+  ], [t]);
 
   const handleNavClick = (itemId: NavItem) => {
     setActiveTab(itemId);
@@ -181,3 +181,6 @@ export default function BottomNavigation({
     </div>
   );
 }
+
+// Memoize to prevent unnecessary re-renders
+export default memo(BottomNavigation);

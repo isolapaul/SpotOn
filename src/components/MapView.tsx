@@ -228,7 +228,7 @@ export default function MapView({
   }
 
   return (
-    <div className="absolute inset-0 w-full h-full">
+    <div className="absolute inset-0 w-full h-full z-0">
       {/* Instructions overlay when adding spot */}
       {isAddingSpot && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1000] glass-card px-6 py-3 pointer-events-none animate-fade-in">

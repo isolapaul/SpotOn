@@ -96,6 +96,7 @@ export default function FilterPanel({
                 <button
                   onClick={() => onDistanceChange(null)}
                   className={`w-full px-4 py-3 rounded-xl text-left transition-all duration-200 touch-manipulation
+                    active:scale-95
                     ${selectedDistance === null 
                       ? 'bg-blue-500/30 border-2 border-blue-500/60 text-white backdrop-blur-xl' 
                       : 'bg-black/40 border border-white/10 text-white/70 hover:text-white hover:border-white/30 hover:bg-black/50 backdrop-blur-xl'
@@ -108,6 +109,7 @@ export default function FilterPanel({
                     key={distance.value}
                     onClick={() => onDistanceChange(distance.value)}
                     className={`w-full px-4 py-3 rounded-xl text-left transition-all duration-200 touch-manipulation
+                      active:scale-95
                       ${selectedDistance === distance.value 
                         ? 'bg-blue-500/30 border-2 border-blue-500/60 text-white backdrop-blur-xl' 
                         : 'bg-black/40 border border-white/10 text-white/70 hover:text-white hover:border-white/30 hover:bg-black/50 backdrop-blur-xl'
@@ -126,6 +128,7 @@ export default function FilterPanel({
                 <button
                   onClick={() => onCategoryChange(null)}
                   className={`w-full px-4 py-3 rounded-xl text-left transition-all duration-200 touch-manipulation
+                    active:scale-95
                     ${selectedCategory === null 
                       ? 'bg-blue-500/30 border-2 border-blue-500/60 text-white backdrop-blur-xl' 
                       : 'bg-black/40 border border-white/10 text-white/70 hover:text-white hover:border-white/30 hover:bg-black/50 backdrop-blur-xl'
@@ -139,6 +142,7 @@ export default function FilterPanel({
                     onClick={() => onCategoryChange(category.value)}
                     className={`w-full px-4 py-3 rounded-xl text-left transition-all duration-200 touch-manipulation
                       flex items-center gap-2
+                      active:scale-95
                       ${selectedCategory === category.value 
                         ? 'bg-blue-500/30 border-2 border-blue-500/60 text-white backdrop-blur-xl' 
                         : 'bg-black/40 border border-white/10 text-white/70 hover:text-white hover:border-white/30 hover:bg-black/50 backdrop-blur-xl'
@@ -161,7 +165,7 @@ export default function FilterPanel({
                 className="w-full px-4 py-3 rounded-xl font-medium touch-manipulation
                   bg-gradient-to-r from-red-500/20 to-pink-500/20 text-white
                   border border-red-500/30 hover:border-red-500/50
-                  transition-all duration-200"
+                  active:scale-95 transition-all duration-200"
               >
                 {t('clearFilters')}
               </button>

@@ -76,6 +76,20 @@ a:not(.no-min-size),
   isolation: isolate;
 }
 
+/* Floating container optimization - allows clicking through empty space to map
+ * Usage: Apply .floating-container to wrapper divs that contain buttons
+ * but should allow clicks to pass through empty space.
+ * Button children automatically get pointer-events: auto via > * selector.
+ * Example: <div className="floating-container fixed ..."><button>...</button></div>
+ */
+.floating-container {
+  pointer-events: none;
+}
+
+.floating-container > * {
+  pointer-events: auto;
+}
+
 body {
   /* Safe area insets for notched devices */
   /* Map fills entire screen - safe area is handled by individual UI components */

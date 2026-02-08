@@ -362,7 +362,7 @@ export default function Home() {
           <button
             onClick={() => setIsSelectingLocation(false)}
             className="w-full py-3 px-4 rounded-xl glass-button text-white font-medium
-              hover:bg-white/10 transition-all touch-manipulation min-h-[48px]"
+              hover:bg-white/10 active:scale-95 transition-all touch-manipulation min-h-[48px]"
           >
             {t('cancel')}
           </button>
