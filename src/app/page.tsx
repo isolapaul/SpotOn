@@ -168,7 +168,8 @@ export default function Home() {
         unsubscribeSpots();
       }
     };
-  }, [initAuth, initAdminListener, fetchSpots, unsubscribeSpots, shouldBlock, isChecking]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldBlock, isChecking]);
 
   // Handle map load callback
   const handleMapLoad = () => {
