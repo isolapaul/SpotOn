@@ -79,12 +79,10 @@ export default function NotificationCenter() {
       {isOpen && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 animate-fade-in">
           {/* Backdrop - Click to close */}
-          <div 
-            role="button"
-            tabIndex={0}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm touch-manipulation"
             onClick={handleClose}
-            onKeyDown={(e) => e.key === 'Escape' && handleClose()}
             aria-label="Close notifications"
           />
           
@@ -110,7 +108,7 @@ export default function NotificationCenter() {
               
               <button
                 onClick={handleClose}
-                className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                className="p-2 hover:bg-white/10 rounded-xl transition-colors touch-manipulation"
                 aria-label="Close"
               >
                 <X className="w-5 h-5 text-white" strokeWidth={2} />
@@ -125,7 +123,7 @@ export default function NotificationCenter() {
                     onClick={markAllAsRead}
                     className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium 
                       text-white/80 hover:text-white bg-white/5 hover:bg-white/10 
-                      rounded-lg transition-all"
+                      rounded-lg transition-all touch-manipulation"
                   >
                     <Check className="w-3.5 h-3.5" strokeWidth={2} />
                     {t('markAllRead')}
@@ -136,7 +134,7 @@ export default function NotificationCenter() {
                   onClick={clearAll}
                   className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium 
                     text-white/80 hover:text-white bg-white/5 hover:bg-white/10 
-                    rounded-lg transition-all"
+                    rounded-lg transition-all touch-manipulation"
                 >
                   <X className="w-3.5 h-3.5" strokeWidth={2} />
                   {t('clearAll')}
@@ -166,7 +164,7 @@ export default function NotificationCenter() {
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification.id)}
                       className={`
-                        w-full text-left p-4 transition-all
+                        w-full text-left p-4 transition-all touch-manipulation
                         hover:bg-white/5 active:scale-[0.99]
                         ${notification.read ? 'bg-transparent' : 'bg-white/5'}
                       `}

@@ -49,12 +49,11 @@ export default function MapThemeSwitcher() {
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div 
-            role="button"
-            tabIndex={0}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[1400] animate-fade-in"
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[1400] animate-fade-in touch-manipulation"
             onClick={() => setIsOpen(false)}
-            onKeyDown={(e) => e.key === 'Escape' && setIsOpen(false)}
+            aria-label="Close theme selector"
           />
           
           {/* Panel */}
@@ -80,7 +79,7 @@ export default function MapThemeSwitcher() {
                   className={`
                     relative p-4 rounded-2xl border-2 transition-all duration-200
                     flex flex-col items-center gap-2
-                    active:scale-95
+                    active:scale-95 touch-manipulation
                     ${theme === themeOption.id
                       ? 'bg-white/20 border-white/40 shadow-glass-lg'
                       : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'

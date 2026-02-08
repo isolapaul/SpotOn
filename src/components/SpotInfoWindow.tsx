@@ -62,7 +62,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
       {/* Close Button */}
       <button
         onClick={onClose}
-        className="absolute top-2 right-2 z-10 glass-button p-1.5 rounded-full"
+        className="absolute top-2 right-2 z-10 glass-button p-1.5 rounded-full touch-manipulation"
         aria-label="Close"
       >
         <X className="w-4 h-4 text-white" />
@@ -82,7 +82,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
         {user && (
           <button
             onClick={handleFavoriteToggle}
-            className="absolute bottom-2 right-2 glass-button p-2 rounded-full"
+            className="absolute bottom-2 right-2 glass-button p-2 rounded-full touch-manipulation"
             aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             <Heart
@@ -144,7 +144,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
           <button
             onClick={handleApprove}
             disabled={isApproving}
-            className="w-full py-2.5 rounded-xl font-medium mb-2
+            className="w-full py-2.5 rounded-xl font-medium mb-2 touch-manipulation
               bg-gradient-to-r from-green-500 to-green-600 text-white
               shadow-lg shadow-green-500/20
               hover:shadow-xl hover:shadow-green-500/30
@@ -180,7 +180,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
           {/* View Details Button */}
           <button
             onClick={onViewDetails}
-            className="w-full py-2.5 rounded-xl font-medium
+            className="w-full py-2.5 rounded-xl font-medium touch-manipulation
               bg-gradient-to-r from-primary-500 to-primary-600 text-white
               shadow-lg shadow-primary-500/20
               hover:shadow-xl hover:shadow-primary-500/30
@@ -196,7 +196,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
             href={navigationUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-2.5 rounded-xl font-medium
+            className="w-full py-2.5 rounded-xl font-medium touch-manipulation
               bg-gradient-to-r from-blue-500 to-blue-600 text-white
               shadow-lg shadow-blue-500/20
               hover:shadow-xl hover:shadow-blue-500/30

@@ -37,6 +37,18 @@ html {
   touch-action: manipulation;
 }
 
+/* Force immediate touch response on all interactive elements */
+button,
+a,
+[role="button"] {
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  cursor: pointer;
+  /* Ensure instant feedback - no delays */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 body {
   /* Safe area insets for notched devices */
   /* Map fills entire screen - safe area is handled by individual UI components */

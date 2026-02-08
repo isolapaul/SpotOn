@@ -1,6 +1,6 @@
 'use client';
 
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, MarkerF, InfoWindow } from '@react-google-maps/api';
 import { useEffect, useState, useCallback } from 'react';
 import type { Spot } from '@/store/useSpotStore';
 import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
@@ -8,7 +8,8 @@ import { useLanguageStore } from '@/store/useLanguageStore';
 import SpotInfoWindow from './SpotInfoWindow';
 
 // Define libraries as a constant to prevent unnecessary reloads
-const GOOGLE_MAPS_LIBRARIES: ('places')[] = ['places'];
+// Including 'marker' for AdvancedMarkerElement support
+const GOOGLE_MAPS_LIBRARIES: ('places' | 'marker')[] = ['places', 'marker'];
 
 interface MapViewProps {
   isAddingSpot?: boolean;
@@ -103,6 +104,7 @@ export default function MapView({
     fullscreenControl: false,
     clickableIcons: false,
     gestureHandling: 'greedy' as const,
+    mapId: '8e0a97af9386fef', // Required for AdvancedMarkerElement
   };
 
   // Calculate marker size based on zoom level
@@ -124,6 +126,7 @@ export default function MapView({
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries: GOOGLE_MAPS_LIBRARIES,
+    mapIds: ['8e0a97af9386fef'], // Map ID for AdvancedMarkerElement
   });
 
   // Notify parent when map is loaded
@@ -226,7 +229,7 @@ export default function MapView({
       >
         {/* User location marker - blue dot */}
         {userLocation && (
-          <Marker
+          <MarkerF
             position={userLocation}
             icon={{
               path: google.maps.SymbolPath.CIRCLE,
@@ -242,7 +245,7 @@ export default function MapView({
 
         {/* Temporary marker when selecting location */}
         {tempMarker && (
-          <Marker
+          <MarkerF
             position={tempMarker}
             animation={google.maps.Animation.DROP}
           />
@@ -252,7 +255,7 @@ export default function MapView({
         {spots.map((spot) => {
           const markerSize = getMarkerSize(zoomLevel);
           return (
-            <Marker
+            <MarkerF
               key={spot.id}
               position={spot.location}
               title={spot.name}

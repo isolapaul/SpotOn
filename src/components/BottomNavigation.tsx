@@ -153,7 +153,7 @@ export default function BottomNavigation({
                 className={`
                   relative flex flex-col items-center justify-center gap-0.5 md:gap-1
                   px-2 md:px-4 py-2 md:py-2 rounded-xl md:rounded-2xl 
-                  transition-all duration-200 min-h-[44px]
+                  transition-all duration-200 min-h-[44px] touch-manipulation
                   ${isActive 
                     ? 'bg-white/20 text-white' 
                     : 'text-white/60 hover:text-white/80 active:scale-95'
