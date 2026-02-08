@@ -155,6 +155,7 @@ export default function Home() {
           });
         },
         (error) => {
+          console.log('Location access denied or unavailable:', error);
         }
       );
     }
@@ -213,13 +214,7 @@ export default function Home() {
   const handleExploreClick = () => {
     setDiscoveryPanelOpen(true);
   };
-  
-  // CRITICAL: If InstallGate is blocking or checking, render nothing (InstallGate will show)
-  if (shouldBlock || isChecking) {
-    return null;
-  }
 
-<<<<<<< HEAD
   const handleNavigateClick = () => {
     if (!userLocation || visibleSpots.length === 0) return;
     // Open distance selector
@@ -262,8 +257,6 @@ export default function Home() {
     }
   };
 
-=======
->>>>>>> 267e0a3 (Simplified navigation, map ui, improved touch accessibility)
   if (!isClient) {
     return null;
   }
