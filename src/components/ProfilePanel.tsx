@@ -88,7 +88,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
 
   const handleSearchUser = async () => {
     if (!adminEmailInput.trim()) {
-      showToast('Kérlek adj meg egy email címet!', 'error');
+      showToast(t('enterEmail'), 'error');
       return;
     }
 
@@ -98,12 +98,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       if (foundUser) {
         setSearchedUser(foundUser);
       } else {
-        showToast('Felhasználó nem található', 'error');
+        showToast(t('userNotFound'), 'error');
         setSearchedUser(null);
       }
     } catch (error) {
       console.error('Error searching user:', error);
-      showToast('Hiba történt a keresés során', 'error');
+      showToast(t('searchError'), 'error');
     } finally {
       setIsSearching(false);
     }
@@ -114,24 +114,24 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
 
     try {
       await addAdmin(searchedUser.email);
-      showToast(`${searchedUser.name} hozzáadva admin-ként!`, 'success');
+      showToast(`${searchedUser.name} ${t('addedAsAdmin')}`, 'success');
       setAdminEmailInput('');
       setSearchedUser(null);
     } catch (error: any) {
       console.error('Error adding admin:', error);
-      showToast(error.message || 'Hiba az admin hozzáadásakor', 'error');
+      showToast(error.message || t('adminAddError'), 'error');
     }
   };
 
   const handleRemoveAdmin = async (adminId: string, adminName: string) => {
-    if (!confirm(`Biztosan eltávolítod ${adminName} admin jogosultságát?`)) return;
+    if (!confirm(t('confirmRemoveAdmin').replace('{name}', adminName))) return;
 
     try {
       await removeAdmin(adminId);
-      showToast(`${adminName} eltávolítva az admin listából`, 'success');
+      showToast(`${adminName} ${t('removedFromAdmins')}`, 'success');
     } catch (error: any) {
       console.error('Error removing admin:', error);
-      showToast(error.message || 'Hiba az admin eltávolításakor', 'error');
+      showToast(error.message || t('adminRemoveError'), 'error');
     }
   };
 
@@ -255,7 +255,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
             >
               <Clock className="w-4 h-4 inline mr-2" />
               <span className="relative">
-                Jóváhagyásra vár
+                {t('pendingApproval')}
                 {pendingSpots.length > 0 && (
                   <span className="absolute -top-1 -right-5 w-5 h-5 bg-amber-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
                     {pendingSpots.length}
@@ -401,8 +401,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               {pendingSpots.length === 0 ? (
                 <div className="glass-card p-8 text-center">
                   <Clock className="w-12 h-12 text-white/40 mx-auto mb-3" />
-                  <p className="text-white/60">Nincs jóváhagyásra váró hely</p>
-                  <p className="text-white/40 text-sm mt-1">Minden hely jóvá van hagyva! 🎉</p>
+                  <p className="text-white/60">{t('noPendingSpots')}</p>
+                  <p className="text-white/40 text-sm mt-1">{t('allSpotsApproved')}</p>
                 </div>
               ) : (
                 pendingSpots.map((spot) => (
@@ -421,7 +421,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         <p className="text-white/60 text-sm line-clamp-2">{spot.description}</p>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400">
-                            ⏳ Jóváhagyásra vár
+                            ⏳ {t('pendingApproval')}
                           </span>
                           <span className="text-white/50 text-xs">
                             {spot.createdByName}
@@ -439,7 +439,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       <Shield className="w-4 h-4" />
-                      <span>Jóváhagyás</span>
+                      <span>{t('approve')}</span>
                     </button>
                   </div>
                 ))
@@ -454,13 +454,13 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               <div className="glass-card p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Shield className="w-5 h-5 text-purple-400" />
-                  <h3 className="text-white font-bold text-lg">Admin hozzáadása</h3>
+                  <h3 className="text-white font-bold text-lg">{t('addAdmin')}</h3>
                 </div>
                 
                 <div className="space-y-4">
                   <input
                     type="email"
-                    placeholder="Felhasználó email címe..."
+                    placeholder={t('adminEmailPlaceholder')}
                     value={adminEmailInput}
                     onChange={(e) => setAdminEmailInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearchUser()}
@@ -476,7 +476,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                       hover:bg-purple-500/30 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed
                       transition-all duration-200"
                   >
-                    {isSearching ? 'Keresés...' : 'Felhasználó keresése'}
+                    {isSearching ? t('searching') : t('searchUser')}
                   </button>
 
                   {/* Searched User Preview */}
@@ -505,7 +505,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                           transition-all duration-200 flex items-center justify-center gap-2"
                       >
                         <UserPlus className="w-4 h-4" />
-                        <span>Admin jogosultság megadása</span>
+                        <span>{t('grantAdmin')}</span>
                       </button>
                     </div>
                   )}
@@ -516,13 +516,13 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               <div className="glass-card p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Shield className="w-5 h-5 text-amber-400" />
-                  <h3 className="text-white font-bold text-lg">Jelenlegi adminok</h3>
-                  <span className="text-white/60 text-sm ml-auto">{adminUsers.length} admin</span>
+                  <h3 className="text-white font-bold text-lg">{t('currentAdmins')}</h3>
+                  <span className="text-white/60 text-sm ml-auto">{adminUsers.length} {t('adminCount')}</span>
                 </div>
 
                 <div className="space-y-3">
                   {adminUsers.length === 0 ? (
-                    <p className="text-white/40 text-center py-4">Még nincs admin hozzáadva</p>
+                    <p className="text-white/40 text-center py-4">{t('noAdminsYet')}</p>
                   ) : (
                     adminUsers.map((admin) => (
                       <div key={admin.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4">

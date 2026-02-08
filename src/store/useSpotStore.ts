@@ -131,19 +131,10 @@ export const useSpotStore = create<SpotStore>((set) => ({
     try {
       set({ isLoading: true, error: null });
 
-      console.log('=== Starting addSpot ===');
-      console.log('Spot data:', spotData);
-      console.log('User ID:', userId);
-      console.log('Has image:', !!imageFile);
-
       let imageUrl = '';
 
       // Only compress and upload if image is provided
       if (imageFile) {
-        // Step 1: Compress the image
-        console.log('Step 1: Compressing image...');
-        console.log('Original file size:', imageFile.size / 1024 / 1024, 'MB');
-        
         const options = {
           maxSizeMB: 0.3,
           maxWidthOrHeight: 1280,
@@ -151,26 +142,16 @@ export const useSpotStore = create<SpotStore>((set) => ({
         };
 
         const compressedFile = await imageCompression(imageFile, options);
-        console.log('Compressed file size:', compressedFile.size / 1024 / 1024, 'MB');
-        console.log('Step 1 complete ✓');
 
-        // Step 2: Upload compressed image to Firebase Storage
-        console.log('Step 2: Uploading to Firebase Storage...');
         const timestamp = Date.now();
         const fileName = `${timestamp}_${imageFile.name}`;
         const imageRef = ref(storage, `spot-images/${fileName}`);
         
         await uploadBytes(imageRef, compressedFile);
-        console.log('Upload complete, getting download URL...');
         imageUrl = await getDownloadURL(imageRef);
-        console.log('Step 2 complete ✓');
       } else {
-        console.log('No image provided, using placeholder');
-        imageUrl = '/placeholder-spot.jpg'; // Placeholder image
+        imageUrl = '/placeholder-spot.jpg';
       }
-
-      // Step 3: Add spot document to Firestore
-      console.log('Step 3: Adding to Firestore...');
       
       // Check if user is admin - admins get instant approval
       const userIsAdmin = isAdmin(userEmail);
@@ -184,17 +165,10 @@ export const useSpotStore = create<SpotStore>((set) => ({
         createdAt: serverTimestamp(),
       };
 
-      const docRef = await addDoc(collection(db, 'spots'), spotDoc);
-      console.log('Step 3 complete ✓');
+      await addDoc(collection(db, 'spots'), spotDoc);
       
       set({ isLoading: false });
-      console.log('=== Spot added successfully! ===');
     } catch (error: any) {
-      console.error('=== ERROR in addSpot ===');
-      console.error('Error type:', error.constructor.name);
-      console.error('Error message:', error.message);
-      console.error('Error code:', error.code);
-      console.error('Full error:', error);
       set({ error: error.message, isLoading: false });
       throw error; // Re-throw so the UI can handle it
     }

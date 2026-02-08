@@ -4,6 +4,7 @@ import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-map
 import { useEffect, useState, useCallback } from 'react';
 import type { Spot } from '@/store/useSpotStore';
 import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
+import { useLanguageStore } from '@/store/useLanguageStore';
 import SpotInfoWindow from './SpotInfoWindow';
 
 interface MapViewProps {
@@ -83,6 +84,7 @@ export default function MapView({
   
   // Get current map theme
   const { theme } = useMapThemeStore();
+  const { t } = useLanguageStore();
   
   // Combine base styles with theme-specific styles
   const mapStyles = [...baseMapStyles, ...mapThemes[theme]];
@@ -203,7 +205,7 @@ export default function MapView({
       {isAddingSpot && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1000] glass-card px-6 py-3 pointer-events-none animate-fade-in">
           <p className="text-white font-medium text-center">
-            📍 Click on the map to select location
+            {t('clickMapToSelect')}
           </p>
         </div>
       )}

@@ -7,6 +7,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
+import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { useState } from 'react';
 
 interface SpotInfoWindowProps {
@@ -16,23 +17,9 @@ interface SpotInfoWindowProps {
   onViewDetails: () => void;
 }
 
-const categoryEmojis: Record<Spot['category'], string> = {
-  scenic: '🌅',
-  'smoke-spot': '💨',
-  viewpoint: '🏔️',
-  other: '📍',
-};
-
-const categoryLabels: Record<Spot['category'], { hu: string; en: string; de: string }> = {
-  scenic: { hu: 'Szép Kilátás', en: 'Scenic View', de: 'Malerische Aussicht' },
-  'smoke-spot': { hu: 'Eldugott Spot', en: 'Hidden Spot', de: 'Versteckter Ort' },
-  viewpoint: { hu: 'Kilátópont', en: 'Viewpoint', de: 'Aussichtspunkt' },
-  other: { hu: 'Park', en: 'Park', de: 'Park' },
-};
-
 export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewDetails }: Readonly<SpotInfoWindowProps>) {
   const { user, toggleFavorite } = useUserStore();
-  const { language, t } = useLanguageStore();
+  const { t } = useLanguageStore();
   const { approveSpot } = useSpotStore();
   const { showToast } = useToastStore();
   const [isFavorite, setIsFavorite] = useState(
@@ -59,40 +46,16 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
     setIsApproving(true);
     try {
       await approveSpot(spot.id);
-      showToast(
-        language === 'hu' ? 'Hely jóváhagyva!' : language === 'de' ? 'Ort genehmigt!' : 'Spot approved!',
-        'success'
-      );
+      showToast(t('spotApproved'), 'success');
       onClose();
     } catch (error) {
-      console.error('Error approving spot:', error);
-      showToast(
-        language === 'hu' ? 'Hiba a jóváhagyáskor' : language === 'de' ? 'Fehler bei der Genehmigung' : 'Error approving spot',
-        'error'
-      );
+      showToast(t('approveError'), 'error');
     } finally {
       setIsApproving(false);
     }
   };
 
-  // Platform detection for navigation
-  const getPlatform = () => {
-    const userAgent = navigator.userAgent.toLowerCase();
-    if (/iphone|ipad|ipod/.test(userAgent)) return 'ios';
-    if (/android/.test(userAgent)) return 'android';
-    return 'desktop';
-  };
-
-  const getNavigationUrl = () => {
-    const platform = getPlatform();
-    const { lat, lng } = spot.location;
-    
-    if (platform === 'ios') {
-      return `maps://maps.apple.com/?q=${lat},${lng}`;
-    }
-    // Android and Desktop use Google Maps
-    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  };
+  const navigationUrl = getNavigationUrl(spot.location.lat, spot.location.lng);
 
   return (
     <div className="w-[300px] overflow-hidden animate-slide-up bg-slate-900/95 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl">
@@ -142,7 +105,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
             </h3>
           </div>
           <p className="text-white/60 text-xs">
-            {categoryLabels[spot.category][language || 'hu']}
+            {t(categoryTranslationKeys[spot.category])}
           </p>
         </div>
 
@@ -192,8 +155,8 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
             <CheckCircle className="w-4 h-4" />
             <span>
               {isApproving 
-                ? (language === 'hu' ? 'Jóváhagyás...' : language === 'de' ? 'Genehmigung...' : 'Approving...')
-                : (language === 'hu' ? 'Hely Jóváhagyása' : language === 'de' ? 'Ort genehmigen' : 'Approve Spot')
+                ? t('approving')
+                : t('approve')
               }
             </span>
           </button>
@@ -230,7 +193,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
 
           {/* Get Directions Button */}
           <a
-            href={getNavigationUrl()}
+            href={navigationUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full py-2.5 rounded-xl font-medium
