@@ -20,8 +20,6 @@ firebase.initializeApp(${JSON.stringify(firebaseConfig)});
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw] Received background message:', payload);
-  
   const notificationTitle = payload.notification?.title || 'SpotOn Notification';
   const notificationOptions = {
     body: payload.notification?.body || 'You have a new notification',
@@ -37,7 +35,6 @@ messaging.onBackgroundMessage((payload) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  console.log('[firebase-messaging-sw] Notification click received:', event);
   event.notification.close();
   
   event.waitUntil(

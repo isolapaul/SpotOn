@@ -101,7 +101,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
     try {
       await approveSpot(spotId);
     } catch (error) {
-      console.error('Error approving spot:', error);
     }
   };
 
@@ -110,7 +109,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       await signOut();
       onClose();
     } catch (error) {
-      console.error('Error signing out:', error);
     }
   };
 
@@ -130,7 +128,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         setSearchedUser(null);
       }
     } catch (error) {
-      console.error('Error searching user:', error);
       showToast(t('searchError'), 'error');
     } finally {
       setIsSearching(false);
@@ -146,7 +143,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       setAdminEmailInput('');
       setSearchedUser(null);
     } catch (error: any) {
-      console.error('Error adding admin:', error);
       showToast(error.message || t('adminAddError'), 'error');
     }
   };
@@ -158,7 +154,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       await removeAdmin(adminId);
       showToast(`${adminName} ${t('removedFromAdmins')}`, 'success');
     } catch (error: any) {
-      console.error('Error removing admin:', error);
       showToast(error.message || t('adminRemoveError'), 'error');
     }
   };

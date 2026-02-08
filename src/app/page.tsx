@@ -148,7 +148,6 @@ export default function Home() {
           });
         },
         (error) => {
-          console.log('Location access denied or unavailable:', error);
         }
       );
     }

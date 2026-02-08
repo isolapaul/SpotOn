@@ -38,7 +38,6 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
       await toggleFavorite(spot.id);
       setIsFavorite(!isFavorite);
     } catch (error) {
-      console.error('Error toggling favorite:', error);
     }
   };
 

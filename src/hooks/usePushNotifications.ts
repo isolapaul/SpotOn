@@ -12,8 +12,6 @@ const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
 // Validate VAPID key is present
 if (!VAPID_KEY) {
-  console.error('❌ FIREBASE VAPID KEY IS MISSING!');
-  console.error('Please add NEXT_PUBLIC_FIREBASE_VAPID_KEY to your .env.local file');
 }
 
 export const usePushNotifications = () => {
@@ -36,20 +34,17 @@ export const usePushNotifications = () => {
     try {
       // Check if the browser supports notifications
       if (!('Notification' in window)) {
-        console.log('This browser does not support notifications');
         return false;
       }
 
       // Check if Firebase Messaging is supported
       const messagingSupported = await isSupported();
       if (!messagingSupported) {
-        console.log('Firebase Messaging is not supported in this browser');
         return false;
       }
 
       // Check if user is logged in
       if (!user) {
-        console.log('User not logged in');
         return false;
       }
 
@@ -66,14 +61,12 @@ export const usePushNotifications = () => {
           const registration = await navigator.serviceWorker.register('/api/firebase-messaging-sw', {
             scope: '/',
           });
-          console.log('Service Worker registered:', registration);
 
           // Wait for service worker to be ready
           await navigator.serviceWorker.ready;
 
           // Validate VAPID key before requesting token
           if (!VAPID_KEY) {
-            console.error('❌ Cannot request FCM token: VAPID key is missing');
             showToast('Push notifications configuration error', 'error');
             setIsLoading(false);
             return false;
@@ -96,8 +89,6 @@ export const usePushNotifications = () => {
               lastTokenUpdate: new Date().toISOString(),
             });
 
-            console.log('FCM token saved to Firestore');
-            
             // Setup foreground message listener
             setupForegroundListener(messaging);
             
@@ -107,14 +98,12 @@ export const usePushNotifications = () => {
         }
       } else if (permission === 'denied') {
         setIsPermissionGranted(false);
-        console.log('Notification permission denied');
         showToast('Notifications blocked. Enable them in browser settings.', 'error');
       }
 
       setIsLoading(false);
       return false;
     } catch (error) {
-      console.error('Error initializing push notifications:', error);
       setIsLoading(false);
       return false;
     }
@@ -123,8 +112,6 @@ export const usePushNotifications = () => {
   // Setup foreground message listener (when app is open)
   const setupForegroundListener = (messaging: any) => {
     onMessage(messaging, (payload) => {
-      console.log('Foreground message received:', payload);
-      
       // Show toast notification when app is in foreground
       const title = payload.notification?.title || 'New Notification';
       const body = payload.notification?.body || '';
@@ -169,7 +156,6 @@ export const usePushNotifications = () => {
       setIsPermissionGranted(false);
       showToast('Notifications disabled', 'info');
     } catch (error) {
-      console.error('Error disabling notifications:', error);
     }
   };
 

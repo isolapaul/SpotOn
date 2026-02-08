@@ -154,7 +154,6 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       resetForm();
     } catch (err) {
       setError(t.errors.google);
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -179,8 +178,6 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       onClose();
       resetForm();
     } catch (err: any) {
-      console.error(err);
-      
       // Firebase error handling
       if (err.code === 'auth/invalid-email') {
         setError(t.errors.invalidEmail);
