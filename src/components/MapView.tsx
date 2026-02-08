@@ -7,6 +7,9 @@ import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import SpotInfoWindow from './SpotInfoWindow';
 
+// Define libraries as a constant to prevent unnecessary reloads
+const GOOGLE_MAPS_LIBRARIES: ('places')[] = ['places'];
+
 interface MapViewProps {
   isAddingSpot?: boolean;
   onLocationSelect?: (location: { lat: number; lng: number }) => void;
@@ -120,7 +123,7 @@ export default function MapView({
   // Load Google Maps API
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places'],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   // Notify parent when map is loaded
