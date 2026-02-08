@@ -17,6 +17,7 @@ import NotificationPrompt from '@/components/NotificationPrompt';
 import NotificationCenter from '@/components/NotificationCenter';
 import MapThemeSwitcher from '@/components/MapThemeSwitcher';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
+import { useInstallGate } from '@/components/InstallGate';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
@@ -33,6 +34,9 @@ const MapView = dynamic(
 );
 
 export default function Home() {
+  // Check if InstallGate is blocking the app
+  const { shouldBlock, isChecking } = useInstallGate();
+  
   const [isClient, setIsClient] = useState(false);
   const [isAppReady, setIsAppReady] = useState(false);
   const [loadingStates, setLoadingStates] = useState({
@@ -111,7 +115,10 @@ export default function Home() {
         setIsAppReady(true);
       }, 500);
     }
-  }, [loadingStates, isAppReady]);
+  },// Don't initialize anything if InstallGate is blocking
+    if (shouldBlock || isChecking) return;
+    
+     [loadingStates, isAppReady]);
 
   useEffect(() => {
     setIsClient(true);
@@ -157,7 +164,7 @@ export default function Home() {
       unsubscribeAdmins();
       // Clean up spots listener
       if (unsubscribeSpots) {
-        unsubscribeSpots();
+        unsubscribeSpots();, shouldBlock, isChecking
       }
     };
   }, [initAuth, initAdminListener, fetchSpots, unsubscribeSpots]);
@@ -206,6 +213,11 @@ export default function Home() {
   const handleExploreClick = () => {
     setDiscoveryPanelOpen(true);
   };
+  
+  // CRITICAL: If InstallGate is blocking or checking, render nothing (InstallGate will show)
+  if (shouldBlock || isChecking) {
+    return null;
+  }
 
 <<<<<<< HEAD
   const handleNavigateClick = () => {

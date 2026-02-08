@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { Share, MoreVertical, Smartphone } from 'lucide-react';
 
-export default function InstallGate() {
+// Export the hook so other components can check if app is blocked
+export function useInstallGate() {
   const [shouldBlock, setShouldBlock] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     // 1. Detect if device is mobile (iOS/Android)
@@ -21,6 +22,17 @@ export default function InstallGate() {
     const shouldShowOverlay = isMobile && !isStandalone;
 
     setShouldBlock(shouldShowOverlay);
+    setIsChecking(false);
+  }, []);
+
+  return { shouldBlock, isChecking };
+}
+
+export default function InstallGate() {
+  const { shouldBlock } = useInstallGate();
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
     setIsIOS(/iPhone|iPad|iPod/i.test(navigator.userAgent));
   }, []);
 
@@ -31,7 +43,7 @@ export default function InstallGate() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center text-white">
+    <div className="fixed inset-0 z-[9999] bg-gray-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center text-white">
       {/* App Icon */}
       <div className="mb-8">
         <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-2xl shadow-primary-500/50">
