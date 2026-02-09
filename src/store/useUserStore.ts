@@ -15,13 +15,15 @@ import imageCompression from 'browser-image-compression';
 
 interface User {
   uid: string;
-  name: string;
-  username?: string;
+  username: string; // Only username, no separate display name
   email: string;
   photoURL?: string;
   profilePictureURL?: string;
   profileBannerURL?: string;
   savedSpots: string[];
+  highlightedSpots?: string[]; // Array of spot IDs user highlighted (max based on level)
+  customNameColor?: string; // Custom name color for level 5
+  customNameFont?: string; // Custom font for level 5
 }
 
 interface AdminUser {
@@ -42,7 +44,7 @@ interface UserStore {
   setUser: (user: User | null) => void;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (email: string, password: string, name: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, username: string) => Promise<void>;
   signOut: () => Promise<void>;
   initAuth: () => Promise<void>;
   toggleFavorite: (spotId: string) => Promise<void>;
@@ -55,6 +57,10 @@ interface UserStore {
   updateProfilePicture: (file: File) => Promise<void>;
   updateProfileBanner: (file: File) => Promise<void>;
   setNeedsUsername: (needs: boolean) => void;
+  highlightSpot: (spotId: string, maxHighlights: number) => Promise<void>;
+  unhighlightSpot: (spotId: string) => Promise<void>;
+  updateCustomNameColor: (color: string) => Promise<void>;
+  updateCustomNameFont: (font: string) => Promise<void>;
 }
 
 // Compress profile images before upload (max 1920px, ~1MB)
@@ -71,7 +77,7 @@ async function compressProfileImage(file: File): Promise<File> {
 function generateUsername(displayName: string): string {
   const base = displayName
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, '')
+    .replaceAll(/[^a-z0-9]/g, '')
     .slice(0, 12);
   const suffix = Math.floor(Math.random() * 1000000);
   return `${base || 'user'}${suffix}`;
@@ -102,27 +108,7 @@ export const useUserStore = create<UserStore>()(
           let profilePictureURL: string | undefined;
           let profileBannerURL: string | undefined;
           
-          if (!userSnap.exists()) {
-            // Generate a unique username for new users
-            username = generateUsername(firebaseUser.displayName || 'user');
-            profilePictureURL = firebaseUser.photoURL || '';
-            
-            // Create new user document
-            await setDoc(userRef, {
-              uid: firebaseUser.uid,
-              name: firebaseUser.displayName || 'Anonymous',
-              username,
-              email: firebaseUser.email || '',
-              photoURL: firebaseUser.photoURL || '',
-              profilePictureURL: profilePictureURL,
-              profileBannerURL: '',
-              savedSpots: [],
-              createdAt: serverTimestamp(),
-            });
-            
-            // New user needs to set username
-            set({ needsUsername: true });
-          } else {
+          if (userSnap.exists()) {
             const data = userSnap.data();
             username = data.username;
             profilePictureURL = data.profilePictureURL || data.photoURL || firebaseUser.photoURL || '';
@@ -134,12 +120,30 @@ export const useUserStore = create<UserStore>()(
               await updateDoc(userRef, { username });
               set({ needsUsername: true });
             }
+          } else {
+            // Generate a unique username for new users
+            username = generateUsername(firebaseUser.displayName || 'user');
+            profilePictureURL = firebaseUser.photoURL || '';
+            
+            // Create new user document
+            await setDoc(userRef, {
+              uid: firebaseUser.uid,
+              username,
+              email: firebaseUser.email || '',
+              photoURL: firebaseUser.photoURL || '',
+              profilePictureURL: profilePictureURL,
+              profileBannerURL: '',
+              savedSpots: [],
+              createdAt: serverTimestamp(),
+            });
+            
+            // New user needs to set username
+            set({ needsUsername: true });
           }
           
           // Set user in store
           const userData: User = {
             uid: firebaseUser.uid,
-            name: firebaseUser.displayName || 'Anonymous',
             username,
             email: firebaseUser.email || '',
             photoURL: firebaseUser.photoURL || '',
@@ -168,8 +172,7 @@ export const useUserStore = create<UserStore>()(
             const data = userSnap.data();
             const userData: User = {
               uid: firebaseUser.uid,
-              name: data.name || 'User',
-              username: data.username,
+              username: data.username || 'user',
               email: firebaseUser.email || '',
               photoURL: data.photoURL || '',
               profilePictureURL: data.profilePictureURL || data.photoURL || '',
@@ -190,20 +193,16 @@ export const useUserStore = create<UserStore>()(
         }
       },
 
-      signUpWithEmail: async (email: string, password: string, name: string) => {
+      signUpWithEmail: async (email: string, password: string, username: string) => {
         try {
           const result = await createUserWithEmailAndPassword(auth, email, password);
           const firebaseUser = result.user;
-          
-          // Generate username from name
-          const username = generateUsername(name || 'user');
           
           // Create user document in Firestore
           const userRef = doc(db, 'users', firebaseUser.uid);
           await setDoc(userRef, {
             uid: firebaseUser.uid,
-            name: name || 'User',
-            username,
+            username: username.trim().toLowerCase(),
             email: firebaseUser.email || '',
             photoURL: '',
             profilePictureURL: '',
@@ -215,8 +214,7 @@ export const useUserStore = create<UserStore>()(
           // Set user in store
           const userData: User = {
             uid: firebaseUser.uid,
-            name: name || 'User',
-            username,
+            username: username.trim().toLowerCase(),
             email: firebaseUser.email || '',
             photoURL: '',
             profilePictureURL: '',
@@ -224,8 +222,7 @@ export const useUserStore = create<UserStore>()(
             savedSpots: [],
           };
           
-          // Prompt to customize username
-          set({ user: userData, loading: false, needsUsername: true });
+          set({ user: userData, loading: false });
         } catch (error) {
           set({ loading: false });
           throw error;
@@ -255,8 +252,7 @@ export const useUserStore = create<UserStore>()(
                 const data = userSnap.data();
                 const userData: User = {
                   uid: firebaseUser.uid,
-                  name: data.name || firebaseUser.displayName || 'Anonymous',
-                  username: data.username,
+                  username: data.username || 'user',
                   email: firebaseUser.email || '',
                   photoURL: firebaseUser.photoURL || '',
                   profilePictureURL: data.profilePictureURL || data.photoURL || firebaseUser.photoURL || '',
@@ -368,8 +364,7 @@ export const useUserStore = create<UserStore>()(
             if (userData.email?.toLowerCase() === email.toLowerCase()) {
               foundUser = {
                 uid: doc.id,
-                name: userData.name || 'Unknown',
-                username: userData.username,
+                username: userData.username || 'user',
                 email: userData.email,
                 photoURL: userData.photoURL || '',
                 profilePictureURL: userData.profilePictureURL || userData.photoURL || '',
@@ -409,7 +404,7 @@ export const useUserStore = create<UserStore>()(
           // This makes it easy to check in security rules: exists(/databases/.../admins/$(request.auth.uid))
           await setDoc(doc(db, 'admins', targetUser.uid), {
             email: targetUser.email,
-            name: targetUser.name,
+            username: targetUser.username,
             photoURL: targetUser.photoURL || '',
             addedAt: serverTimestamp(),
             addedBy: user.uid,
@@ -536,6 +531,101 @@ export const useUserStore = create<UserStore>()(
           await updateDoc(userRef, { profileBannerURL: downloadURL });
           
           set({ user: { ...user, profileBannerURL: downloadURL } });
+        } catch (error) {
+          throw error;
+        }
+      },
+      
+      // Highlight a spot (level 3+)
+      highlightSpot: async (spotId: string, maxHighlights: number) => {
+        const { user } = get();
+        if (!user) throw new Error('Not authenticated');
+
+        const currentHighlights = user.highlightedSpots || [];
+        
+        // Check if already highlighted
+        if (currentHighlights.includes(spotId)) {
+          throw new Error('Spot is already highlighted');
+        }
+        
+        // Check max highlights limit
+        if (currentHighlights.length >= maxHighlights) {
+          throw new Error(`Maximum ${maxHighlights} spots can be highlighted`);
+        }
+
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { 
+            highlightedSpots: arrayUnion(spotId) 
+          });
+          
+          // Also update the spot document
+          const spotRef = doc(db, 'spots', spotId);
+          await updateDoc(spotRef, { isHighlighted: true });
+          
+          set({ 
+            user: { 
+              ...user, 
+              highlightedSpots: [...currentHighlights, spotId] 
+            } 
+          });
+        } catch (error) {
+          throw error;
+        }
+      },
+      
+      // Unhighlight a spot
+      unhighlightSpot: async (spotId: string) => {
+        const { user } = get();
+        if (!user) throw new Error('Not authenticated');
+
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { 
+            highlightedSpots: arrayRemove(spotId) 
+          });
+          
+          // Also update the spot document
+          const spotRef = doc(db, 'spots', spotId);
+          await updateDoc(spotRef, { isHighlighted: false });
+          
+          const currentHighlights = user.highlightedSpots || [];
+          set({ 
+            user: { 
+              ...user, 
+              highlightedSpots: currentHighlights.filter(id => id !== spotId) 
+            } 
+          });
+        } catch (error) {
+          throw error;
+        }
+      },
+      
+      // Update custom name color (level 5 only)
+      updateCustomNameColor: async (color: string) => {
+        const { user } = get();
+        if (!user) throw new Error('Not authenticated');
+
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { customNameColor: color });
+          
+          set({ user: { ...user, customNameColor: color } });
+        } catch (error) {
+          throw error;
+        }
+      },
+      
+      // Update custom name font (level 5 only)
+      updateCustomNameFont: async (font: string) => {
+        const { user } = get();
+        if (!user) throw new Error('Not authenticated');
+
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { customNameFont: font });
+          
+          set({ user: { ...user, customNameFont: font } });
         } catch (error) {
           throw error;
         }

@@ -50,6 +50,9 @@ export interface Review {
   rating: number;
   comment: string;
   createdAt: Timestamp;
+  userSpotsCount?: number; // Number of spots user had when creating review (for level color)
+  customNameColor?: string; // Custom name color if user is level 5
+  customNameFont?: string; // Custom name font if user is level 5
 }
 
 export type SpotCategory = 'scenic' | 'smoke-spot' | 'viewpoint' | 'other' | 'hiking' | 'random' | 'date-spot' | 'park';
@@ -59,7 +62,8 @@ export interface Spot {
   name: string;
   category: SpotCategory;
   description: string;
-  imageUrl: string;
+  imageUrls: string[]; // Changed to array
+  primaryImageIndex?: number; // Index of primary image
   location: {
     lat: number;
     lng: number;
@@ -79,7 +83,7 @@ interface SpotStore {
   error: string | null;
   unsubscribeSpots: (() => void) | null;
   fetchSpots: () => Promise<void>;
-  addSpot: (spotData: Omit<Spot, 'id' | 'imageUrl' | 'createdAt' | 'status'>, imageFile: File | null, userId: string, userEmail?: string) => Promise<void>;
+  addSpot: (spotData: Omit<Spot, 'id' | 'imageUrls' | 'createdAt' | 'status' | 'primaryImageIndex'>, imageFiles: File[], primaryIndex: number, userId: string, userEmail?: string) => Promise<void>;
   addReview: (spotId: string, review: Omit<Review, 'id' | 'createdAt'>) => Promise<void>;
   approveSpot: (spotId: string) => Promise<void>;
 }
@@ -138,30 +142,36 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
     });
   },
 
-  addSpot: async (spotData, imageFile, userId, userEmail) => {
+  addSpot: async (spotData, imageFiles, primaryIndex, userId, userEmail) => {
     try {
       set({ isLoading: true, error: null });
 
-      let imageUrl = '';
+      const imageUrls: string[] = [];
 
-      // Only compress and upload if image is provided
-      if (imageFile) {
+      // Compress and upload all images
+      if (imageFiles && imageFiles.length > 0) {
         const options = {
           maxSizeMB: 0.3,
           maxWidthOrHeight: 1280,
           useWebWorker: false,
         };
 
-        const compressedFile = await imageCompression(imageFile, options);
+        // Upload each image
+        for (const imageFile of imageFiles) {
+          const compressedFile = await imageCompression(imageFile, options);
 
-        const timestamp = Date.now();
-        const fileName = `${timestamp}_${imageFile.name}`;
-        const imageRef = ref(storage, `spot-images/${fileName}`);
-        
-        await uploadBytes(imageRef, compressedFile);
-        imageUrl = await getDownloadURL(imageRef);
+          const timestamp = Date.now();
+          const random = Math.floor(Math.random() * 10000);
+          const fileName = `${timestamp}_${random}_${imageFile.name}`;
+          const imageRef = ref(storage, `spot-images/${fileName}`);
+          
+          await uploadBytes(imageRef, compressedFile);
+          const imageUrl = await getDownloadURL(imageRef);
+          imageUrls.push(imageUrl);
+        }
       } else {
-        imageUrl = '/placeholder-spot.jpg';
+        // No images provided - use placeholder
+        imageUrls.push('/placeholder-spot.jpg');
       }
       
       // Check if user is admin - admins get instant approval
@@ -170,7 +180,8 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       
       const spotDoc = {
         ...spotData,
-        imageUrl,
+        imageUrls,
+        primaryImageIndex: imageUrls.length > 0 ? primaryIndex : 0,
         createdBy: userId,
         status: spotStatus,
         createdAt: serverTimestamp(),

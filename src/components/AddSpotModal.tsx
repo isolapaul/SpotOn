@@ -26,8 +26,9 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     category: 'scenic' as SpotCategory,
     description: '',
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]); // Changed to array
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]); // Changed to array
+  const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -39,19 +40,53 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
   if (!isOpen) return null;
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Check if adding these files would exceed the 15 image limit
+    if (imageFiles.length + files.length > 15) {
+      setError(`Maximum 15 képet tölthetsz fel. Jelenleg ${imageFiles.length} kép van feltöltve.`);
+      return;
+    }
+
+    // Check each file size
+    const validFiles: File[] = [];
+    const previews: string[] = [];
+
+    for (const file of files) {
       if (file.size > 5 * 1024 * 1024) {
         setError(t('imageTooLarge'));
-        return;
+        continue;
       }
-      setImageFile(file);
+      validFiles.push(file);
+    }
+
+    if (validFiles.length === 0) return;
+
+    // Create previews for valid files
+    validFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        previews.push(reader.result as string);
+        if (previews.length === validFiles.length) {
+          setImageFiles((prev) => [...prev, ...validFiles]);
+          setImagePreviews((prev) => [...prev, ...previews]);
+          setError(null);
+        }
       };
       reader.readAsDataURL(file);
-      setError(null);
+    });
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    
+    // Adjust primary image index if needed
+    if (index === primaryImageIndex) {
+      setPrimaryImageIndex(0);
+    } else if (index < primaryImageIndex) {
+      setPrimaryImageIndex((prev) => prev - 1);
     }
   };
 
@@ -85,18 +120,20 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           description: formData.description.trim(),
           location: selectedLocation,
           createdBy: user.uid,
-          createdByName: user.name,
+          createdByName: user.username,
           createdByPhoto: user.photoURL,
         },
-        imageFile, // Can be null now
+        imageFiles, // Array of files
+        primaryImageIndex, // Primary image index
         user.uid,
         user.email // Pass email for admin check
       );
       
       // Reset form and close
       setFormData({ name: '', category: 'scenic', description: '' });
-      setImageFile(null);
-      setImagePreview(null);
+      setImageFiles([]);
+      setImagePreviews([]);
+      setPrimaryImageIndex(0);
       onClose();
       
       showToast(t('spotUploaded'), 'success');
@@ -112,8 +149,9 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
   const handleClose = () => {
     if (!loading) {
       setFormData({ name: '', category: 'scenic', description: '' });
-      setImageFile(null);
-      setImagePreview(null);
+      setImageFiles([]);
+      setImagePreviews([]);
+      setPrimaryImageIndex(0);
       setError(null);
       onClose();
     }
@@ -283,7 +321,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {/* Image Upload */}
           <div>
             <label htmlFor="spot-image" className="block text-white font-medium mb-2">
-              {t('photoOptional')}
+              {t('photoOptional')} <span className="text-white/60 text-sm">({imageFiles.length}/15)</span>
             </label>
             <input
               id="spot-image"
@@ -291,44 +329,70 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               onChange={handleImageChange}
               className="hidden"
               disabled={loading}
             />
             
-            {imagePreview ? (
-              <div className="relative group">
-                <img 
-                  src={imagePreview} 
-                  alt="Preview" 
-                  className="w-full h-48 object-cover rounded-xl"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImageFile(null);
-                    setImagePreview(null);
-                  }}
-                  className="absolute top-2 right-2 glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]
-                    opacity-0 group-hover:opacity-100 transition-opacity"
-                  disabled={loading}
-                >
-                  <X className="w-4 h-4 text-white" />
-                </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading || imageFiles.length >= 15}
+              className="w-full py-8 rounded-xl glass border-2 border-dashed border-white/20
+                hover:border-white/40 hover:bg-white/5
+                transition-all duration-200 flex flex-col items-center gap-2
+                disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Upload className="w-8 h-8 text-white/60" />
+              <span className="text-white/80 font-medium">{t('clickToUpload')}</span>
+              <span className="text-white/40 text-xs">{t('maxSize')} • Max 15 kép</span>
+            </button>
+            
+            {/* Image Previews Grid */}
+            {imagePreviews.length > 0 && (
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {imagePreviews.map((preview, index) => (
+                  <div
+                    key={`preview-${index}-${preview.substring(0, 20)}`}
+                    className={`relative aspect-square rounded-lg overflow-hidden border-2 ${
+                      index === primaryImageIndex ? 'border-primary-500' : 'border-white/20'
+                    }`}
+                  >
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Primary badge */}
+                    {index === primaryImageIndex && (
+                      <div className="absolute top-1 left-1 bg-primary-500 text-white text-xs px-2 py-1 rounded">
+                        Fő
+                      </div>
+                    )}
+                    {/* Remove button */}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full transition-colors"
+                      disabled={loading}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    {/* Set as primary button */}
+                    {index !== primaryImageIndex && (
+                      <button
+                        type="button"
+                        onClick={() => setPrimaryImageIndex(index)}
+                        className="absolute bottom-1 left-1 right-1 bg-black/60 hover:bg-black/80 text-white text-xs py-1 rounded transition-colors"
+                        disabled={loading}
+                      >
+                        Legyen fő
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full py-8 rounded-xl glass border-2 border-dashed border-white/20
-                  hover:border-white/40 hover:bg-white/5
-                  transition-all duration-200 flex flex-col items-center gap-2"
-                disabled={loading}
-              >
-                <Upload className="w-8 h-8 text-white/60" />
-                <span className="text-white/80 font-medium">{t('clickToUpload')}</span>
-                <span className="text-white/40 text-xs">{t('maxSize')}</span>
-              </button>
             )}
           </div>
 

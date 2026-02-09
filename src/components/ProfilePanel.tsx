@@ -1,16 +1,18 @@
 'use client';
 
-import { X, MapPin, Heart, LogOut, Shield, Clock, UserPlus, Trash2, Bell, BellOff, Pencil, Star, Plus } from 'lucide-react';
+import { X, MapPin, Heart, Settings, Shield, Clock, UserPlus, Trash2, Bell, BellOff, Pencil, Star, Plus, TrendingUp } from 'lucide-react';
 import Image from 'next/image';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin, isSuperAdmin } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
+import { getLevelInfo, getLevelProgress, getSpotsRemainingText, CUSTOM_NAME_COLORS, CUSTOM_NAME_FONTS } from '@/lib/levelUtils';
+import SettingsPanel from './SettingsPanel';
 
 interface ProfilePanelProps {
   isOpen: boolean;
@@ -18,7 +20,7 @@ interface ProfilePanelProps {
 }
 
 export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelProps>) {
-  const { user, signOut, adminUsers, addAdmin, removeAdmin, searchUserByEmail, updateProfilePicture, updateProfileBanner, updateUsername } = useUserStore();
+  const { user, adminUsers, addAdmin, removeAdmin, searchUserByEmail, updateUsername, highlightSpot, unhighlightSpot, updateCustomNameColor, updateCustomNameFont } = useUserStore();
   const { spots, approveSpot } = useSpotStore();
   const { t } = useLanguageStore();
   const { showToast } = useToastStore();
@@ -28,8 +30,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const [adminEmailInput, setAdminEmailInput] = useState('');
   const [searchedUser, setSearchedUser] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
-  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [isSavingUsername, setIsSavingUsername] = useState(false);
@@ -37,13 +37,17 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const [newCategoryIcon, setNewCategoryIcon] = useState('');
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [firestoreCategories, setFirestoreCategories] = useState<Array<{ id: string; name: string; icon: string }>>([]);
-  const profilePicInputRef = useRef<HTMLInputElement>(null);
+  const [showHighlightPanel, setShowHighlightPanel] = useState(false);
+  const [isHighlighting, setIsHighlighting] = useState(false);
+  const [showCustomizationPanel, setShowCustomizationPanel] = useState(false);
+  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showLevelInfo, setShowLevelInfo] = useState(false);
   
   // iOS Swipe-to-Close Gesture
   const [dragStartX, setDragStartX] = useState(0);
   const [dragCurrentX, setDragCurrentX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
   
   const userIsAdmin = isAdmin(user?.email);
   const userIsSuperAdmin = isSuperAdmin(user?.email);
@@ -106,14 +110,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
     try {
       await approveSpot(spotId);
     } catch (error) {
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      onClose();
-    } catch (error) {
+      console.error('Failed to add category:', error);
     }
   };
 
@@ -133,6 +130,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         setSearchedUser(null);
       }
     } catch (error) {
+      console.error('Failed to search user:', error);
       showToast(t('searchError'), 'error');
     } finally {
       setIsSearching(false);
@@ -144,7 +142,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
 
     try {
       await addAdmin(searchedUser.email);
-      showToast(`${searchedUser.name} ${t('addedAsAdmin')}`, 'success');
+      showToast(`@${searchedUser.username} ${t('addedAsAdmin')}`, 'success');
       setAdminEmailInput('');
       setSearchedUser(null);
     } catch (error: any) {
@@ -160,42 +158,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       showToast(`${adminName} ${t('removedFromAdmins')}`, 'success');
     } catch (error: any) {
       showToast(error.message || t('adminRemoveError'), 'error');
-    }
-  };
-
-  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      showToast(t('imageTooLarge'), 'error');
-      return;
-    }
-    setIsUploadingPicture(true);
-    try {
-      await updateProfilePicture(file);
-      showToast(t('profileUpdated'), 'success');
-    } catch {
-      showToast(t('profileUpdateError'), 'error');
-    } finally {
-      setIsUploadingPicture(false);
-    }
-  };
-
-  const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      showToast(t('imageTooLarge'), 'error');
-      return;
-    }
-    setIsUploadingBanner(true);
-    try {
-      await updateProfileBanner(file);
-      showToast(t('profileUpdated'), 'success');
-    } catch {
-      showToast(t('profileUpdateError'), 'error');
-    } finally {
-      setIsUploadingBanner(false);
     }
   };
 
@@ -298,40 +260,21 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               src={user.profileBannerURL}
               alt="Profile banner"
               fill
+              sizes="100vw"
               className="object-cover"
               priority
             />
           ) : null}
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
           
-          {/* Hidden file inputs */}
-          <input
-            id="banner-upload"
-            name="bannerUpload"
-            ref={bannerInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleBannerChange}
-            className="hidden"
-          />
-          <input
-            id="profile-pic-upload"
-            name="profilePicUpload"
-            ref={profilePicInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleProfilePictureChange}
-            className="hidden"
-          />
-          
           {/* Top action buttons */}
           <div className="absolute left-4 right-4 flex justify-between items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}>
             <button
-              onClick={handleSignOut}
+              onClick={() => setIsSettingsOpen(true)}
               className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]"
-              aria-label="Sign Out"
+              aria-label="Settings"
             >
-              <LogOut className="w-5 h-5 text-white" />
+              <Settings className="w-5 h-5 text-white" />
             </button>
             
             <button
@@ -353,80 +296,143 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                 <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 shadow-2xl bg-gray-800">
                   <Image
                     src={user.profilePictureURL || user.photoURL || ''}
-                    alt={user.name}
+                    alt={user.username}
                     fill
+                    sizes="128px"
                     className="object-cover"
                     priority
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                       if (target.parentElement) {
-                        target.parentElement.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center"><span class="text-white text-5xl font-bold">${user.name?.charAt(0).toUpperCase() || 'U'}</span></div>`;
+                        target.parentElement.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center"><span class="text-white text-5xl font-bold">${user.username?.charAt(0).toUpperCase() || 'U'}</span></div>`;
                       }
                     }}
                   />
                 </div>
               ) : (
                 <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 shadow-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                  <span className="text-white text-5xl font-bold">{user.name?.charAt(0).toUpperCase() || 'U'}</span>
+                  <span className="text-white text-5xl font-bold">{user.username?.charAt(0).toUpperCase() || 'U'}</span>
                 </div>
               )}
             </div>
             
             {/* User Info - Centered */}
             <div className="flex flex-col items-center mt-4 w-full">
-              <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-3xl font-bold text-white text-center">{user.name}</h2>
+              <div className="flex items-center gap-2 mb-2 flex-wrap justify-center">
+                {isEditingUsername ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/50 text-3xl font-bold">@</span>
+                    <input
+                      id="edit-username"
+                      name="editUsername"
+                      type="text"
+                      value={newUsername}
+                      onChange={(e) => setNewUsername(e.target.value.toLowerCase().replaceAll(/[^a-z0-9_]/g, ''))}
+                      maxLength={20}
+                      className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary-500 w-48"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleSaveUsername}
+                      disabled={isSavingUsername || !newUsername.trim()}
+                      className="text-green-400 text-sm font-medium disabled:opacity-50 px-3 py-2 bg-green-500/20 rounded-lg"
+                    >
+                      {isSavingUsername ? '...' : t('save')}
+                    </button>
+                    <button
+                      onClick={() => setIsEditingUsername(false)}
+                      className="text-white/60 text-sm px-3 py-2 bg-white/10 rounded-lg hover:bg-white/20"
+                    >
+                      {t('cancel')}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="text-3xl font-bold text-white text-center">@{user.username}</h2>
+                    <button
+                      onClick={() => {
+                        setNewUsername(user.username || '');
+                        setIsEditingUsername(true);
+                      }}
+                      className="p-2 text-white/40 hover:text-white/70 transition-colors rounded-lg hover:bg-white/10"
+                      aria-label={t('editUsername')}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+              
+              {/* Badges Row */}
+              <div className="flex items-center gap-2 mb-3 flex-wrap justify-center">
                 {userIsAdmin && (
                   <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">
                     <Shield className="w-4 h-4 text-amber-400" />
                   </div>
                 )}
+                {(() => {
+                  const levelInfo = getLevelInfo(myAllSpots.length);
+                  return (
+                    <button
+                      onClick={() => setShowLevelInfo(true)}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-full ${levelInfo.bgColor} border ${levelInfo.borderColor} hover:opacity-80 transition-all active:scale-95`}
+                    >
+                      <span className="text-lg">{levelInfo.icon}</span>
+                      <span className={`${levelInfo.textColor} text-xs font-bold`}>
+                        {levelInfo.level}. szint
+                      </span>
+                    </button>
+                  );
+                })()}
               </div>
-              {/* Editable Username */}
-              {isEditingUsername ? (
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-white/50">@</span>
-                  <input
-                    id="edit-username"
-                    name="editUsername"
-                    type="text"
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                    maxLength={20}
-                    className="bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 w-32"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleSaveUsername}
-                    disabled={isSavingUsername || !newUsername.trim()}
-                    className="text-green-400 text-sm font-medium disabled:opacity-50"
-                  >
-                    {isSavingUsername ? '...' : t('save')}
-                  </button>
-                  <button
-                    onClick={() => setIsEditingUsername(false)}
-                    className="text-white/40 text-sm"
-                  >
-                    {t('cancel')}
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 mt-1">
-                  <p className="text-white/60 text-sm">@{user.username || 'no-username'}</p>
-                  <button
-                    onClick={() => {
-                      setNewUsername(user.username || '');
-                      setIsEditingUsername(true);
-                    }}
-                    className="p-1 text-white/40 hover:text-white/70 transition-colors"
-                    aria-label={t('editUsername')}
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
-              <div className="flex gap-4 mt-2">
+
+              {/* Level Progress Button */}
+              {(() => {
+                const levelInfo = getLevelInfo(myAllSpots.length);
+                const progress = getLevelProgress(myAllSpots.length);
+                const spotsRemaining = getSpotsRemainingText(myAllSpots.length, levelInfo.spotsForNext);
+                
+                return (
+                  <div className={`w-full max-w-md px-4 py-3 rounded-xl ${levelInfo.bgColor} border ${levelInfo.borderColor} transition-all mb-3`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{levelInfo.icon}</span>
+                        <div>
+                          <p className={`${levelInfo.textColor} font-bold text-sm`}>
+                            {levelInfo.name}
+                          </p>
+                          <p className="text-white/60 text-xs">
+                            {spotsRemaining}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`${levelInfo.textColor} font-bold text-lg`}>
+                        {progress.toFixed(0)}%
+                      </span>
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="relative w-full h-2 bg-white/20 rounded-full overflow-hidden">
+                      <div 
+                        className={`absolute top-0 left-0 h-full ${levelInfo.bgColor.replace('/20', '/80')} transition-all duration-500`}
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    
+                    {/* Perks Preview */}
+                    {levelInfo.level >= 3 && (
+                      <div className="mt-2 flex flex-wrap gap-1 text-xs text-white/70">
+                        {levelInfo.maxHighlights > 0 && <span>✨ {levelInfo.maxHighlights}x kiemelés</span>}
+                        {levelInfo.canCustomizeIcon && <span>🎨 ikonok</span>}
+                        {levelInfo.canCustomizeName && <span>💎 testreszabás</span>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <div className="flex gap-4 mt-0">
                 <div>
                   <span className="text-white font-bold">{myAllSpots.length}</span>
                   <span className="text-white/60 text-xs ml-1">{t('spots')}</span>
@@ -549,6 +555,255 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                 )}
               </div>
 
+              {/* Level Management Buttons */}
+              {(() => {
+                const levelInfo = getLevelInfo(myAllSpots.length);
+                
+                return levelInfo.level >= 3 ? (
+                  <div className="w-full max-w-md space-y-2 mt-3">
+                    {/* Highlight Management Button */}
+                    {levelInfo.maxHighlights > 0 && (
+                      <button
+                        onClick={() => setShowHighlightPanel(!showHighlightPanel)}
+                        className={`w-full py-2 px-4 rounded-lg font-medium text-sm transition-all ${levelInfo.bgColor} ${levelInfo.textColor} border ${levelInfo.borderColor} hover:opacity-80`}
+                      >
+                        {showHighlightPanel ? '✨ Kiemelés bezárása' : '✨ Helyek kiemelése'}
+                      </button>
+                    )}
+                    
+                    {/* Customization Button (Level 5) */}
+                    {levelInfo.canCustomizeName && (
+                      <button
+                        onClick={() => setShowCustomizationPanel(!showCustomizationPanel)}
+                        className={`w-full py-2 px-4 rounded-lg font-medium text-sm transition-all ${levelInfo.bgColor} ${levelInfo.textColor} border ${levelInfo.borderColor} hover:opacity-80`}
+                      >
+                        {showCustomizationPanel ? '💎 Testreszabás bezárása' : '💎 Név testreszabása'}
+                      </button>
+                    )}
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Highlight Panel */}
+              {(() => {
+                const levelInfo = getLevelInfo(myAllSpots.length);
+                const highlightedSpots = user?.highlightedSpots || [];
+                
+                return showHighlightPanel && levelInfo.level >= 3 && (
+                  <div className="glass-card p-5 space-y-4 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className={`font-bold ${levelInfo.textColor}`}>
+                          ✨ Helyek kiemelése
+                        </h3>
+                        <p className="text-white/60 text-xs mt-1">
+                          {highlightedSpots.length} / {levelInfo.maxHighlights} kiemelve
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {myAllSpots.filter(s => s.status === 'approved').length === 0 ? (
+                        <p className="text-white/60 text-sm text-center py-4">
+                          Nincs jóváhagyott helyed a kiemeléshez.
+                        </p>
+                      ) : (
+                        myAllSpots
+                          .filter(s => s.status === 'approved')
+                          .map((spot) => {
+                            const isHighlighted = highlightedSpots.includes(spot.id);
+                            
+                            return (
+                              <div key={spot.id} className={`p-3 rounded-xl border transition-all ${
+                                isHighlighted 
+                                  ? `${levelInfo.bgColor} ${levelInfo.borderColor}` 
+                                  : 'bg-white/5 border-white/10'
+                              }`}>
+                                <div className="flex gap-3 items-center">
+                                  <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
+                                    <Image
+                                      src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
+                                      alt={spot.name}
+                                      fill
+                                      sizes="56px"
+                                      className="object-cover"
+                                    />
+                                    {isHighlighted && (
+                                      <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
+                                        <Star className="w-6 h-6 text-amber-400 fill-amber-400" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-white font-medium text-sm line-clamp-1">
+                                      {spot.name}
+                                    </h4>
+                                    <p className="text-white/60 text-xs line-clamp-1">
+                                      {spot.description}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={async () => {
+                                      setIsHighlighting(true);
+                                      try {
+                                        if (isHighlighted) {
+                                          await unhighlightSpot(spot.id);
+                                          showToast('Kiemelés megszüntetve', 'success');
+                                        } else {
+                                          await highlightSpot(spot.id, levelInfo.maxHighlights);
+                                          showToast('Hely kiemelve! ✨', 'success');
+                                        }
+                                      } catch (error: any) {
+                                        showToast(error.message || 'Hiba történt', 'error');
+                                      } finally {
+                                        setIsHighlighting(false);
+                                      }
+                                    }}
+                                    disabled={isHighlighting || (!isHighlighted && highlightedSpots.length >= levelInfo.maxHighlights)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                                      isHighlighted
+                                        ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                                        : `${levelInfo.bgColor} ${levelInfo.textColor} border ${levelInfo.borderColor} hover:opacity-80`
+                                    }`}
+                                  >
+                                    {isHighlighted ? 'Törlés' : 'Kiemel'}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Level 5 Customization Panel */}
+              {(() => {
+                const levelInfo = getLevelInfo(myAllSpots.length);
+                
+                return showCustomizationPanel && levelInfo.level >= 5 && (
+                  <div className="glass-card p-5 space-y-5 animate-fade-in">
+                    <div>
+                      <h3 className="text-cyan-300 font-bold mb-2 flex items-center gap-2">
+                        💎 Gyémánt Testreszabás
+                      </h3>
+                      <p className="text-white/60 text-xs">
+                        5. szint kizárólagos funkciók - válassz egyedi színt és betűstílust!
+                      </p>
+                    </div>
+                    
+                    {/* Color Selection */}
+                    <div className="space-y-3">
+                      <h4 className="text-white font-semibold text-sm">Név színe:</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {CUSTOM_NAME_COLORS.map((colorOption) => {
+                          const isSelected = user?.customNameColor === colorOption.value;
+                          return (
+                            <button
+                              key={colorOption.value}
+                              onClick={async () => {
+                                setIsCustomizing(true);
+                                try {
+                                  await updateCustomNameColor(colorOption.value);
+                                  showToast(`Szín beállítva: ${colorOption.name}`, 'success');
+                                } catch (error: any) {
+                                  showToast(error.message || 'Hiba történt', 'error');
+                                } finally {
+                                  setIsCustomizing(false);
+                                }
+                              }}
+                              disabled={isCustomizing}
+                              className={`p-3 rounded-xl transition-all text-left ${
+                                isSelected
+                                  ? `${colorOption.value.replace('text-', 'bg-')}/20 border-2 ${colorOption.value.replace('text-', 'border-')}`
+                                  : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                              }`}
+                            >
+                              <div className={`font-bold ${colorOption.value} text-sm mb-1`}>
+                                {colorOption.name}
+                              </div>
+                              <div className={`text-xs ${colorOption.value} opacity-70`}>
+                                @{user?.username || 'username'}
+                              </div>
+                              {isSelected && (
+                                <div className="mt-1 text-xs text-green-400">✓ Aktív</div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Font Selection */}
+                    <div className="space-y-3">
+                      <h4 className="text-white font-semibold text-sm">Betűstílus:</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {CUSTOM_NAME_FONTS.map((fontOption) => {
+                          const isSelected = user?.customNameFont === fontOption.value;
+                          return (
+                            <button
+                              key={fontOption.value}
+                              onClick={async () => {
+                                setIsCustomizing(true);
+                                try {
+                                  await updateCustomNameFont(fontOption.value);
+                                  showToast(`Betűstílus beállítva: ${fontOption.name}`, 'success');
+                                } catch (error: any) {
+                                  showToast(error.message || 'Hiba történt', 'error');
+                                } finally {
+                                  setIsCustomizing(false);
+                                }
+                              }}
+                              disabled={isCustomizing}
+                              className={`p-3 rounded-xl transition-all text-left ${
+                                isSelected
+                                  ? 'bg-cyan-500/20 border-2 border-cyan-500'
+                                  : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                              }`}
+                            >
+                              <div className={`text-white text-sm mb-1 ${fontOption.value}`}>
+                                {fontOption.name}
+                              </div>
+                              <div className={`text-xs text-white/60 ${fontOption.value}`}>
+                                @{user?.username || 'username'}
+                              </div>
+                              {isSelected && (
+                                <div className="mt-1 text-xs text-green-400">✓ Aktív</div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Preview */}
+                    <div className="pt-3 border-t border-white/10">
+                      <h4 className="text-white font-semibold text-sm mb-2">Előnézet:</h4>
+                      <div className="glass-card p-4 flex items-center gap-3">
+                        <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-cyan-500/30">
+                          {(user?.profilePictureURL || user?.photoURL) && (
+                            <Image
+                              src={user.profilePictureURL || user.photoURL || ''}
+                              alt="Preview"
+                              fill
+                              sizes="48px"
+                              className="object-cover"
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <p className={`font-medium ${user?.customNameFont || 'font-sans'} ${user?.customNameColor || 'text-cyan-300'}`}>
+                            @{user?.username || 'username'}
+                          </p>
+                          <p className="text-white/60 text-xs">Így fog megjelenni másoknak</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* My Spots List */}
               <div className="space-y-4">
               {myAllSpots.length === 0 ? (
@@ -562,9 +817,10 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   <div key={spot.id} className="glass-card p-4 flex gap-4">
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                       <Image
-                        src={spot.imageUrl}
+                        src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
                         alt={spot.name}
                         fill
+                        sizes="80px"
                         className="object-cover"
                       />
                     </div>
@@ -602,9 +858,10 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     <div key={spot.id} className="glass-card p-4 flex gap-4">
                       <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                         <Image
-                          src={spot.imageUrl}
+                          src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
                           alt={spot.name}
                           fill
+                          sizes="80px"
                           className="object-cover"
                         />
                       </div>
@@ -657,9 +914,10 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     <div className="flex gap-4 mb-3">
                       <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                         <Image
-                          src={spot.imageUrl}
+                          src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
                           alt={spot.name}
                           fill
+                          sizes="80px"
                           className="object-cover"
                         />
                       </div>
@@ -735,13 +993,14 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-purple-500/30">
                           <Image
                             src={searchedUser.photoURL || '/default-avatar.png'}
-                            alt={searchedUser.name}
+                            alt={searchedUser.username}
                             fill
+                            sizes="64px"
                             className="object-cover"
                           />
                         </div>
                         <div>
-                          <h4 className="text-white font-semibold">{searchedUser.name}</h4>
+                          <h4 className="text-white font-semibold">@{searchedUser.username}</h4>
                           <p className="text-white/60 text-sm">{searchedUser.email}</p>
                         </div>
                       </div>
@@ -780,6 +1039,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                             src={admin.photoURL || '/default-avatar.png'}
                             alt={admin.name}
                             fill
+                            sizes="48px"
                             className="object-cover"
                           />
                         </div>
@@ -865,6 +1125,151 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
           )}
         </div>
       </div>
+      
+      {/* Settings Panel */}
+      <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      
+      {/* Level Info Modal */}
+      {showLevelInfo && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowLevelInfo(false)}
+            aria-label="Close level info"
+          />
+          
+          <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto glass-card p-6 rounded-2xl animate-scale-in">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <TrendingUp className="w-6 h-6 text-primary-400" />
+                {t('levelSystem')}
+              </h2>
+              <button
+                onClick={() => setShowLevelInfo(false)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-white/60" />
+              </button>
+            </div>
+            
+            {/* Current Level */}
+            {(() => {
+              const currentLevel = getLevelInfo(myAllSpots.length);
+              const progress = getLevelProgress(myAllSpots.length);
+              return (
+                <div className={`p-6 rounded-xl ${currentLevel.bgColor} border-2 ${currentLevel.borderColor} mb-6`}>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="text-5xl">{currentLevel.icon}</div>
+                    <div className="flex-1">
+                      <h3 className={`text-2xl font-bold ${currentLevel.textColor}`}>{currentLevel.name}</h3>
+                      <p className="text-white/80 text-sm">{t('currentLevel')}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="relative w-full h-3 bg-white/20 rounded-full overflow-hidden mb-2">
+                    <div 
+                      className={`absolute top-0 left-0 h-full ${currentLevel.bgColor.replace('/20', '/80')} transition-all duration-500`}
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-white/80">
+                      {myAllSpots.length} / {currentLevel.spotsForNext || currentLevel.spotsRequired} {t('spots')}
+                    </span>
+                    <span className={`font-bold ${currentLevel.textColor}`}>
+                      {progress.toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+            
+            {/* All Levels */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-bold text-white mb-4">{t('allLevels')}</h3>
+              
+              {[1, 2, 3, 4, 5].map((level) => {
+                // Calculate spots needed for each level
+                const spotsForLevel = level === 1 ? 0 : level === 2 ? 3 : level === 3 ? 10 : level === 4 ? 15 : 20;
+                const levelInfo = getLevelInfo(spotsForLevel);
+                const isUnlocked = level <= getLevelInfo(myAllSpots.length).level;
+                
+                return (
+                  <div 
+                    key={level} 
+                    className={`p-5 rounded-xl border-2 transition-all ${
+                      isUnlocked 
+                        ? `${levelInfo.bgColor} ${levelInfo.borderColor}` 
+                        : 'bg-white/5 border-white/10 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="text-4xl">{levelInfo.icon}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className={`text-xl font-bold ${isUnlocked ? levelInfo.textColor : 'text-white/60'}`}>
+                            {level}. {levelInfo.name}
+                          </h4>
+                          {isUnlocked && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 font-medium">
+                              {t('unlocked')} ✓
+                            </span>
+                          )}
+                        </div>
+                        
+                        <p className="text-white/70 text-sm mb-3">
+                          {t('requiredSpots')}: <span className="font-bold">{levelInfo.spotsRequired}</span>
+                        </p>
+                        
+                        {/* Perks */}
+                        <div className="space-y-2">
+                          <p className="text-white/90 text-sm font-semibold">{t('benefits')}:</p>
+                          <ul className="space-y-1 text-white/70 text-sm">
+                            {level >= 3 && (
+                              <li className="flex items-center gap-2">
+                                <span className="text-base">✨</span>
+                                {level === 3 && t('highlightOneSpot')}
+                                {level >= 4 && t('highlightTwoSpots')}
+                              </li>
+                            )}
+                            {level >= 4 && (
+                              <li className="flex items-center gap-2">
+                                <span className="text-base">🎨</span>
+                                {' '}
+                                {t('useCustomIcons')}
+                              </li>
+                            )}
+                            {level >= 5 && (
+                              <li className="flex items-center gap-2">
+                                <span className="text-base">💎</span>
+                                {' '}
+                                {t('customizeNameStyle')}
+                              </li>
+                            )}
+                            {level < 3 && (
+                              <li className="text-white/50 italic">{t('noSpecialBenefits')}</li>
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Motivational Message */}
+            <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-primary-500/20 to-purple-500/20 border border-primary-500/30">
+              <p className="text-white/90 text-sm text-center">
+                {t('keepExploringMessage')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

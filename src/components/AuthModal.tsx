@@ -21,7 +21,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
   // Form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
 
   if (!isOpen) return null;
 
@@ -35,13 +35,13 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       signInDesc: 'Jelentkezz be az email címeddel',
       signUpDesc: 'Hozz létre új fiókot',
       signingIn: 'Bejelentkezés...',
-      googleWith: 'Google-lel',
+      googleWith: 'Google',
       or: 'vagy',
       emailWith: 'Email címmel',
-      name: 'Név',
+      username: 'Felhasználónév',
       email: 'Email',
       password: 'Jelszó',
-      namePlaceholder: 'Neved',
+      usernamePlaceholder: '@felhasználóneved',
       emailPlaceholder: 'email@pelda.com',
       passwordPlaceholder: '••••••••',
       passwordHint: 'Legalább 6 karakter',
@@ -51,7 +51,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       terms: 'A bejelentkezéssel elfogadod az Általános Szerződési Feltételeket és az Adatvédelmi Szabályzatot',
       errors: {
         google: 'Google bejelentkezés sikertelen. Próbáld újra.',
-        name: 'Add meg a neved!',
+        username: 'Add meg a felhasználónevedet!',
         invalidEmail: 'Érvénytelen email cím.',
         wrongPassword: 'Hibás email vagy jelszó.',
         emailInUse: 'Ez az email cím már használatban van.',
@@ -69,13 +69,13 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       signInDesc: 'Melde dich mit deiner E-Mail an',
       signUpDesc: 'Erstelle ein neues Konto',
       signingIn: 'Anmeldung...',
-      googleWith: 'Mit Google',
+      googleWith: 'Google',
       or: 'oder',
       emailWith: 'Mit E-Mail',
-      name: 'Name',
+      username: 'Benutzername',
       email: 'E-Mail',
       password: 'Passwort',
-      namePlaceholder: 'Dein Name',
+      usernamePlaceholder: '@benutzername',
       emailPlaceholder: 'email@beispiel.de',
       passwordPlaceholder: '••••••••',
       passwordHint: 'Mindestens 6 Zeichen',
@@ -85,7 +85,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       terms: 'Mit der Anmeldung akzeptierst du die Allgemeinen Geschäftsbedingungen und die Datenschutzerklärung',
       errors: {
         google: 'Google-Anmeldung fehlgeschlagen. Bitte versuche es erneut.',
-        name: 'Bitte gib deinen Namen ein!',
+        username: 'Bitte gib deinen Benutzernamen ein!',
         invalidEmail: 'Ungültige E-Mail-Adresse.',
         wrongPassword: 'Falsche E-Mail oder Passwort.',
         emailInUse: 'Diese E-Mail-Adresse wird bereits verwendet.',
@@ -103,13 +103,13 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       signInDesc: 'Sign in with your email',
       signUpDesc: 'Create a new account',
       signingIn: 'Signing in...',
-      googleWith: 'With Google',
+      googleWith: 'Google',
       or: 'or',
       emailWith: 'With Email',
-      name: 'Name',
+      username: 'Username',
       email: 'Email',
       password: 'Password',
-      namePlaceholder: 'Your name',
+      usernamePlaceholder: '@yourusername',
       emailPlaceholder: 'email@example.com',
       passwordPlaceholder: '••••••••',
       passwordHint: 'At least 6 characters',
@@ -119,7 +119,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       terms: 'By signing in, you agree to our Terms of Service and Privacy Policy',
       errors: {
         google: 'Google sign in failed. Please try again.',
-        name: 'Please enter your name!',
+        username: 'Please enter your username!',
         invalidEmail: 'Invalid email address.',
         wrongPassword: 'Wrong email or password.',
         emailInUse: 'This email address is already in use.',
@@ -153,6 +153,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       onClose();
       resetForm();
     } catch (err) {
+      console.error('Google sign-in error:', err);
       setError(t.errors.google);
     } finally {
       setLoading(false);
@@ -168,12 +169,12 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       if (mode === 'signin') {
         await signInWithEmail(email, password);
       } else {
-        if (!name.trim()) {
-          setError(t.errors.name);
+        if (!username.trim() || username.length < 3) {
+          setError(t.errors.username);
           setLoading(false);
           return;
         }
-        await signUpWithEmail(email, password, name);
+        await signUpWithEmail(email, password, username);
       }
       onClose();
       resetForm();
@@ -200,7 +201,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
   const resetForm = () => {
     setEmail('');
     setPassword('');
-    setName('');
+    setUsername('');
     setError(null);
     setShowEmailForm(false);
     setMode('signin');
@@ -267,27 +268,30 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
         {showEmailForm ? (
           // Email form view
           <form onSubmit={handleEmailAuth} className="space-y-4">
-            {/* Name field (only for signup) */}
+            {/* Username field (only for signup) */}
             {mode === 'signup' && (
               <div>
-                <label htmlFor="name" className="block text-white/80 text-sm font-medium mb-2">
-                  {t.name}
+                <label htmlFor="username" className="block text-white/80 text-sm font-medium mb-2">
+                  {t.username}
                 </label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                   <input
-                    id="name"
-                    name="name"
+                    id="username"
+                    name="username"
                     type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t.namePlaceholder}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replaceAll(/[^a-z0-9_]/g, ''))}
+                    placeholder={t.usernamePlaceholder}
                     className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 
                       text-white placeholder-white/50 focus:outline-none focus:ring-2 
                       focus:ring-primary-500 focus:border-transparent transition-all"
                     required={mode === 'signup'}
+                    minLength={3}
+                    maxLength={20}
                   />
                 </div>
+                <p className="text-white/50 text-xs mt-1">3-20 karakter, csak kisbetű, szám és _</p>
               </div>
             )}
 

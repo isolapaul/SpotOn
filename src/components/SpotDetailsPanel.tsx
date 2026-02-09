@@ -8,7 +8,10 @@ import { useLanguageStore } from '@/store/useLanguageStore';
 import { useSpotStore, isAdmin as checkIsAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
-import { useState } from 'react';
+import { getUserNameColor } from '@/lib/levelUtils';
+import { useState, useEffect } from 'react';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface SpotDetailsPanelProps {
   spot: Spot | null;
@@ -28,11 +31,26 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [userSpotsCount, setUserSpotsCount] = useState(0);
   
   // Swipe to Dismiss - Horizontal
   const [dragStartX, setDragStartX] = useState(0);
   const [dragCurrentX, setDragCurrentX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Fetch user's spots count for level calculation
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchUserSpotsCount = async () => {
+      const spotsRef = collection(db, 'spots');
+      const q = query(spotsRef, where('createdBy', '==', user.uid));
+      const snapshot = await getDocs(q);
+      setUserSpotsCount(snapshot.size);
+    };
+    
+    fetchUserSpotsCount();
+  }, [user]);
 
   if (!spot) return null;
 
@@ -48,6 +66,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       await toggleFavorite(spot.id);
       setIsFavorite(!isFavorite);
     } catch (error) {
+      console.error('Failed to toggle favorite:', error);
     }
   };
 
@@ -65,16 +84,20 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     try {
       await addReview(spot.id, {
         userId: user.uid,
-        userName: user.username || user.name || t('anonymous'),
+        userName: user.username || t('anonymous'),
         userEmail: user.email,
         userPhoto: user.profilePictureURL || user.photoURL,
         rating,
         comment,
+        userSpotsCount, // Add spots count for level color
+        customNameColor: user.customNameColor, // Level 5 custom color
+        customNameFont: user.customNameFont, // Level 5 custom font
       });
       showToast(t('reviewAdded'), 'success');
       setRating(0);
       setComment('');
     } catch (error) {
+      console.error('Failed to submit review:', error);
       showToast(t('reviewError'), 'error');
     } finally {
       setIsSubmitting(false);
@@ -89,6 +112,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       showToast(t('spotApproved'), 'success');
       setTimeout(() => onClose(), 1000);
     } catch (error) {
+      console.error('Failed to approve spot:', error);
       showToast(t('approveError'), 'error');
     } finally {
       setIsApproving(false);
@@ -106,6 +130,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       } catch (err) {
         // User cancelled sharing, this is expected behavior
         if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Share error:', err);
         }
       }
     }
@@ -137,7 +162,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
     const currentX = e.touches[0].clientX;
-    const diff = currentX - dragStartX;
     
     // Allow both left and right drag
     setDragCurrentX(currentX);
@@ -187,12 +211,20 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         {/* Hero Image */}
         <div className="relative w-full h-[40vh] flex-shrink-0 pointer-events-auto">
           <Image
-            src={spot.imageUrl}
+            src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
             alt={spot.name}
             fill
+            sizes="100vw"
             className="object-cover"
             priority
           />
+          
+          {/* Image count badge */}
+          {spot.imageUrls && spot.imageUrls.length > 1 && (
+            <div className="absolute bottom-4 right-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full flex items-center gap-1">
+              📸 {spot.imageUrls.length}
+            </div>
+          )}
           
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/80" />
@@ -349,7 +381,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                 <div className="flex items-center gap-2">
                   {spot.createdByPhoto && (
                     <div className="relative w-6 h-6 rounded-full overflow-hidden">
-                      <Image src={spot.createdByPhoto} alt="User" fill className="object-cover" />
+                      <Image src={spot.createdByPhoto} alt="User" fill sizes="24px" className="object-cover" />
                     </div>
                   )}
                   <p className="text-white font-medium">
@@ -370,11 +402,11 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                 <div className="flex items-center gap-3 mb-3">
                   {(user.profilePictureURL || user.photoURL) && (
                     <div className="relative w-10 h-10 rounded-full overflow-hidden">
-                      <Image src={user.profilePictureURL || user.photoURL || ''} alt={user.username || user.name || 'User'} fill className="object-cover" />
+                      <Image src={user.profilePictureURL || user.photoURL || ''} alt={user.username || 'User'} fill sizes="40px" className="object-cover" />
                     </div>
                   )}
                   <div>
-                    <p className="text-white font-medium">@{user.username || user.name}</p>
+                    <p className="text-white font-medium">@{user.username}</p>
                     <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -430,13 +462,15 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                     <div className="flex items-start gap-3">
                       {review.userPhoto && (
                         <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                          <Image src={review.userPhoto} alt={review.userName} fill className="object-cover" />
+                          <Image src={review.userPhoto} alt={review.userName} fill sizes="40px" className="object-cover" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
-                            <p className="text-white font-medium">@{review.userName}</p>
+                            <p className={`font-medium ${review.customNameFont || 'font-sans'} ${review.customNameColor || getUserNameColor(review.userSpotsCount || 0)}`}>
+                              @{review.userName}
+                            </p>
                             {checkIsAdmin(review.userEmail) && (
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">
                                 <Shield className="w-3 h-3 text-amber-400" />

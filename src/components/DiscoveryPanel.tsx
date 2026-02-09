@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { X, Star, MapPin, ArrowUpDown, Filter, Loader2 } from 'lucide-react';
+import { X, Star, MapPin, Filter } from 'lucide-react';
 import Image from 'next/image';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { categoryEmojis, categoryTranslationKeys } from '@/lib/spotUtils';
+import { categoryEmojis } from '@/lib/spotUtils';
 import type { Spot, SpotCategory } from '@/store/useSpotStore';
 
 interface DiscoveryPanelProps {
@@ -206,7 +206,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                 sortBy === 'nearest'
                   ? 'bg-primary-500/30 border border-primary-500/60 text-white'
                   : 'bg-white/5 border border-white/10 text-white/60'
-              } ${!userLocation ? 'opacity-50' : ''}`}
+              } ${userLocation ? '' : 'opacity-50'}`}
             >
               📍 {t('nearestToMe')}
             </button>
@@ -286,7 +286,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                     {/* Thumbnail */}
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                       <Image
-                        src={spot.imageUrl}
+                        src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
                         alt={spot.name}
                         fill
                         className="object-cover"
@@ -352,11 +352,13 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                 >
                   {t('loadMore')} ({sortedSpots.length - visibleCount} {t('spots')})
                 </button>
-              ) : displayedSpots.length > 0 ? (
-                <p className="text-center text-white/40 text-sm py-4">
-                  {t('noMoreSpots')}
-                </p>
-              ) : null}
+              ) : (
+                displayedSpots.length > 0 && (
+                  <p className="text-center text-white/40 text-sm py-4">
+                    {t('noMoreSpots')}
+                  </p>
+                )
+              )}
             </div>
           )}
         </div>

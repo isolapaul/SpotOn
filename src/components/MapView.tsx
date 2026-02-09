@@ -49,9 +49,6 @@ const getCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rej
     case 'park':
       emoji = '🌳';
       break;
-    case 'other':
-      emoji = '📍';
-      break;
   }
   
   // Color based on status (for admin view)
@@ -164,14 +161,35 @@ export default function MapView({
     }
   }, [isLoaded, loadError, onMapLoad]);
 
-  // Get user's current location
+  // Get user's current location (only once when map loads)
   useEffect(() => {
-    if (navigator.geolocation && isLoaded) {
+    if (navigator.geolocation && isLoaded && !userLocation) {
+      // Check cached location first (10 minutes cache)
+      const cachedLocation = sessionStorage.getItem('userLocation');
+      const cachedTime = sessionStorage.getItem('userLocationTime');
+      
+      if (cachedLocation && cachedTime) {
+        const age = Date.now() - Number.parseInt(cachedTime, 10);
+        if (age < 10 * 60 * 1000) { // 10 minutes
+          const cached = JSON.parse(cachedLocation);
+          setUserLocation(cached);
+          if (map) {
+            map.panTo(cached);
+            map.setZoom(13);
+          }
+          return;
+        }
+      }
+      
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           const newLocation = { lat: latitude, lng: longitude };
           setUserLocation(newLocation);
+          
+          // Cache location
+          sessionStorage.setItem('userLocation', JSON.stringify(newLocation));
+          sessionStorage.setItem('userLocationTime', Date.now().toString());
           
           // Fly to user location if map is loaded
           if (map) {
@@ -183,13 +201,13 @@ export default function MapView({
           setUserLocation(defaultCenter);
         },
         {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0,
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 600000, // 10 minutes
         }
       );
     }
-  }, [isLoaded, map]);
+  }, [isLoaded, map, userLocation]);
 
   // Handle map click for adding spots or closing spot details
   const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {

@@ -38,6 +38,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
       await toggleFavorite(spot.id);
       setIsFavorite(!isFavorite);
     } catch (error) {
+      console.error('Failed to toggle favorite:', error);
     }
   };
 
@@ -48,6 +49,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
       showToast(t('spotApproved'), 'success');
       onClose();
     } catch (error) {
+      console.error('Failed to approve spot:', error);
       showToast(t('approveError'), 'error');
     } finally {
       setIsApproving(false);
@@ -70,7 +72,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
       {/* Image */}
       <div className="relative w-full h-40">
         <Image
-          src={spot.imageUrl}
+          src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
           alt={spot.name}
           fill
           className="object-cover"
