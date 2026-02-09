@@ -104,7 +104,7 @@ export default function BottomNavigation({
                 }`}>
                   <Image 
                     src={user.photoURL || ''} 
-                    alt={user?.name || 'Profile'}
+                    alt={user?.username || 'Profile'}
                     fill
                     className="object-cover"
                     sizes="36px"
