@@ -1,11 +1,10 @@
 'use client';
 
-import { X, MapPin, Heart, Settings, Shield, Clock, UserPlus, Trash2, Bell, BellOff, Pencil, Star, Plus, TrendingUp } from 'lucide-react';
+import { X, MapPin, Heart, Settings, Shield, Clock, UserPlus, Trash2, Pencil, Star, Plus, TrendingUp } from 'lucide-react';
 import Image from 'next/image';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin, isSuperAdmin } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -13,7 +12,6 @@ import type { Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { getLevelInfo, getLevelProgress, getSpotsRemainingText, CUSTOM_NAME_COLORS, CUSTOM_NAME_FONTS } from '@/lib/levelUtils';
 import SettingsPanel from './SettingsPanel';
-import { NotificationSettingsModal } from './NotificationSettingsModal';
 
 interface ProfilePanelProps {
   isOpen: boolean;
@@ -25,7 +23,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const { spots, approveSpot } = useSpotStore();
   const { t } = useLanguageStore();
   const { showToast } = useToastStore();
-  const { isPermissionGranted, isLoading: isNotificationLoading, requestPermission, disableNotifications } = usePushNotifications();
   const [activeTab, setActiveTab] = useState<'my-spots' | 'favorites' | 'pending' | 'admin'>('my-spots');
   const [myAllSpots, setMyAllSpots] = useState<Spot[]>([]);
   const [adminEmailInput, setAdminEmailInput] = useState('');
@@ -44,7 +41,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showLevelInfo, setShowLevelInfo] = useState(false);
-  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
   // iOS Swipe-to-Close Gesture
   const [dragStartX, setDragStartX] = useState(0);
@@ -515,37 +511,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
           {activeTab === 'my-spots' && (
             <div className="space-y-6">
-              {/* Notification Settings */}
-              <div className="glass-card p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    {isPermissionGranted ? (
-                      <Bell className="w-5 h-5 text-green-400" />
-                    ) : (
-                      <BellOff className="w-5 h-5 text-white/40" />
-                    )}
-                    <div>
-                      <h3 className="text-white font-semibold text-sm">
-                        {t('notifications')}
-                      </h3>
-                      <p className="text-white/60 text-xs">
-                        {isPermissionGranted ? t('notificationsEnabled') : t('notificationsDisabledShort')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                <button
-                  onClick={() => setShowNotificationSettings(true)}
-                  disabled={isNotificationLoading}
-                  className="w-full py-2 px-4 rounded-lg bg-blue-500/20 text-blue-400 
-                    border border-blue-500/30 font-medium text-sm hover:bg-blue-500/30 
-                    transition-all disabled:opacity-50"
-                >
-                  {t('notificationSettingsButton')}
-                </button>
-              </div>
-
               {/* Level Management Buttons */}
               {(() => {
                 const levelInfo = getLevelInfo(myAllSpots.length);
@@ -1123,17 +1088,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       
       {/* Settings Panel */}
       <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      
-      {/* Notification Settings Modal */}
-      <NotificationSettingsModal 
-        isOpen={showNotificationSettings} 
-        onClose={() => setShowNotificationSettings(false)}
-        isAdmin={userIsAdmin}
-        isEnabled={isPermissionGranted}
-        isLoading={isNotificationLoading}
-        onEnableNotifications={requestPermission}
-        onDisableNotifications={disableNotifications}
-      />
       
       {/* Level Info Modal */}
       {showLevelInfo && (

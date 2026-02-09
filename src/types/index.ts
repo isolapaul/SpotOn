@@ -6,7 +6,7 @@ export interface Spot {
   description: string;
   imageUrls: string[]; // Array of image URLs (max 15)
   primaryImageIndex?: number; // Index of the primary image to display
-  category: 'scenic' | 'smoke-spot' | 'viewpoint' | 'other';
+  category: 'scenic' | 'smoke-spot' | 'viewpoint' | 'other' | 'part';
   createdBy: string;
   status: 'pending' | 'approved';
   createdAt: Date;

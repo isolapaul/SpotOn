@@ -48,6 +48,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
     { value: 'random', label: t('categoryRandom'), emoji: '🎲' },
     { value: 'date-spot', label: t('categoryDateSpot'), emoji: '❤️' },
     { value: 'park', label: t('categoryPark'), emoji: '🌳' },
+    { value: 'part', label: t('categoryPart'), emoji: '🏖️' },
     { value: 'other', label: t('categoryOther'), emoji: '📍' },
   ];
 

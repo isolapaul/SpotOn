@@ -9,6 +9,8 @@ import Image from 'next/image';
 import imageCompression from 'browser-image-compression';
 import { translations } from '@/lib/translations';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { NotificationSettingsModal } from './NotificationSettingsModal';
+import { isAdmin } from '@/store/useSpotStore';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -19,10 +21,11 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
   const { user, signOut, updateProfilePicture, updateProfileBanner } = useUserStore();
   const { language, setLanguage } = useLanguageStore();
   const { showToast } = useToastStore();
-  const { isPermissionGranted, requestPermission } = usePushNotifications();
+  const { isPermissionGranted, isLoading: isNotificationLoading, requestPermission, disableNotifications } = usePushNotifications();
   
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
   const pictureInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -30,6 +33,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
   if (!isOpen || !user) return null;
 
   const t = translations[language as keyof typeof translations] || translations.hu;
+  const userIsAdmin = isAdmin(user.email);
 
   const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -284,6 +288,16 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
                 </>
               )}
             </button>
+
+            <button
+              onClick={() => setShowNotificationSettings(true)}
+              disabled={isNotificationLoading}
+              className="mt-3 w-full py-2.5 px-4 rounded-xl bg-blue-500/20 text-blue-400 
+                border border-blue-500/30 font-medium text-sm hover:bg-blue-500/30 
+                transition-all disabled:opacity-50"
+            >
+              {t.notificationSettingsButton}
+            </button>
           </div>
 
           {/* Sign Out */}
@@ -297,6 +311,16 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
           </button>
         </div>
       </div>
+
+      <NotificationSettingsModal
+        isOpen={showNotificationSettings}
+        onClose={() => setShowNotificationSettings(false)}
+        isAdmin={userIsAdmin}
+        isEnabled={isPermissionGranted}
+        isLoading={isNotificationLoading}
+        onEnableNotifications={requestPermission}
+        onDisableNotifications={disableNotifications}
+      />
     </>
   );
 }

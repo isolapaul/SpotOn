@@ -295,6 +295,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               <option value="random" className="bg-gray-800">🎲 {t('categoryRandom')}</option>
               <option value="date-spot" className="bg-gray-800">❤️ {t('categoryDateSpot')}</option>
               <option value="park" className="bg-gray-800">🌳 {t('categoryPark')}</option>
+              <option value="part" className="bg-gray-800">🏖️ {t('categoryPart')}</option>
               <option value="other" className="bg-gray-800">📍 {t('categoryOther')}</option>
             </select>
           </div>

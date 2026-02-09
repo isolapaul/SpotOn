@@ -49,6 +49,9 @@ const getCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rej
     case 'park':
       emoji = '🌳';
       break;
+    case 'part':
+      emoji = '🏖️';
+      break;
   }
   
   // Color based on status (for admin view)

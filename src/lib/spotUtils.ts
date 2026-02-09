@@ -10,6 +10,7 @@ export const categoryEmojis: Record<SpotCategory, string> = {
   random: '🎲',
   'date-spot': '❤️',
   park: '🌳',
+  part: '🏖️',
 };
 
 export const categoryTranslationKeys: Record<SpotCategory, TranslationKey> = {
@@ -21,6 +22,7 @@ export const categoryTranslationKeys: Record<SpotCategory, TranslationKey> = {
   random: 'categoryRandom',
   'date-spot': 'categoryDateSpot',
   park: 'categoryPark',
+  part: 'categoryPart',
 };
 
 export const getPlatform = (): 'ios' | 'android' | 'desktop' => {

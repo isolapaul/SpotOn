@@ -55,7 +55,7 @@ export interface Review {
   customNameFont?: string; // Custom name font if user is level 5
 }
 
-export type SpotCategory = 'scenic' | 'smoke-spot' | 'viewpoint' | 'other' | 'hiking' | 'random' | 'date-spot' | 'park';
+export type SpotCategory = 'scenic' | 'smoke-spot' | 'viewpoint' | 'other' | 'hiking' | 'random' | 'date-spot' | 'park' | 'part';
 
 export interface Spot {
   id: string;
