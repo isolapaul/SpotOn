@@ -415,7 +415,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     {/* Progress Bar */}
                     <div className="relative w-full h-2 bg-white/20 rounded-full overflow-hidden">
                       <div 
-                        className={`absolute top-0 left-0 h-full ${levelInfo.bgColor.replace('/20', '/80')} transition-all duration-500`}
+                        className={`absolute top-0 left-0 h-full ${levelInfo.progressColor} transition-all duration-500`}
                         style={{ width: `${progress}%` }}
                       />
                     </div>
@@ -1228,29 +1228,62 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         <div className="space-y-2">
                           <p className="text-white/90 text-sm font-semibold">{t('benefits')}:</p>
                           <ul className="space-y-1 text-white/70 text-sm">
-                            {level >= 3 && (
-                              <li className="flex items-center gap-2">
-                                <span className="text-base">✨</span>
-                                {level === 3 && t('highlightOneSpot')}
-                                {level >= 4 && t('highlightTwoSpots')}
-                              </li>
-                            )}
-                            {level >= 4 && (
-                              <li className="flex items-center gap-2">
-                                <span className="text-base">🎨</span>
-                                {' '}
-                                {t('useCustomIcons')}
-                              </li>
-                            )}
-                            {level >= 5 && (
-                              <li className="flex items-center gap-2">
-                                <span className="text-base">💎</span>
-                                {' '}
-                                {t('customizeNameStyle')}
-                              </li>
-                            )}
-                            {level < 3 && (
+                            {level === 1 && (
                               <li className="text-white/50 italic">{t('noSpecialBenefits')}</li>
+                            )}
+                            {level === 2 && (
+                              <li className="flex items-center gap-2">
+                                <span className="text-base">🥈</span>
+                                {t('silverName')}
+                              </li>
+                            )}
+                            {level === 3 && (
+                              <>
+                                <li className="flex items-center gap-2">
+                                  <span className="text-base">🥇</span>
+                                  {t('goldName')}
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <span className="text-base">✨</span>
+                                  {t('highlightOneSpot')} {t('goldAppearance')}
+                                </li>
+                              </>
+                            )}
+                            {level === 4 && (
+                              <>
+                                <li className="flex items-center gap-2">
+                                  <span className="text-base">🥇</span>
+                                  {t('goldName')}
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <span className="text-base">✨</span>
+                                  {t('highlightTwoSpots')} {t('goldAppearance')}
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <span className="text-base">🎨</span>
+                                  {t('useCustomIcons')}
+                                </li>
+                              </>
+                            )}
+                            {level === 5 && (
+                              <>
+                                <li className="flex items-center gap-2">
+                                  <span className="text-base">💎</span>
+                                  {t('diamondNameAndBadge')}
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <span className="text-base">✨</span>
+                                  {t('highlightTwoSpots')} {t('goldAppearance')}
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <span className="text-base">🎨</span>
+                                  {t('useCustomIcons')}
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <span className="text-base">🌈</span>
+                                  {t('customizeNameStyle')}
+                                </li>
+                              </>
                             )}
                           </ul>
                         </div>

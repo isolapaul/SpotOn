@@ -2,11 +2,11 @@
  * User Level System Utilities
  * 
  * Level Thresholds:
- * - Level 1: 0-2 spots (default)
- * - Level 2: 3-9 spots (silver name)
- * - Level 3: 10-14 spots (gold name, 1 highlight)
- * - Level 4: 15-19 spots (gold name, 2 highlights + custom icons)
- * - Level 5: 20+ spots (diamond name, diamond badge, custom color/font)
+ * - Level 1: 0-2 spots (no special benefits)
+ * - Level 2: 3-9 spots (silver name color)
+ * - Level 3: 10-14 spots (gold name + highlight 1 spot that appears gold to others)
+ * - Level 4: 15-19 spots (gold name + highlight 2 spots + custom icons)
+ * - Level 5: 20+ spots (diamond name + badge + custom name color/font)
  */
 
 export interface LevelInfo {
@@ -16,6 +16,7 @@ export interface LevelInfo {
   textColor: string; // For displaying username
   bgColor: string; // For badges
   borderColor: string; // For borders
+  progressColor: string; // For progress bar fill
   icon: string; // Emoji icon
   spotsRequired: number;
   spotsForNext: number | null; // null if max level
@@ -54,23 +55,28 @@ export function getLevelInfo(spotsCount: number): LevelInfo {
   let textColor = 'text-white/90'; // Level 1
   let bgColor = 'bg-gray-500/20';
   let borderColor = 'border-gray-500/30';
+  let progressColor = 'bg-gray-500';
   
   if (level === 2) {
     textColor = 'text-gray-300'; // Silver
     bgColor = 'bg-gray-400/20';
     borderColor = 'border-gray-400/30';
+    progressColor = 'bg-gray-400';
   } else if (level === 3) {
     textColor = 'text-yellow-400'; // Gold
     bgColor = 'bg-yellow-500/20';
     borderColor = 'border-yellow-500/30';
+    progressColor = 'bg-yellow-500';
   } else if (level === 4) {
-    textColor = 'text-amber-400'; // Advanced Gold
-    bgColor = 'bg-amber-500/20';
-    borderColor = 'border-amber-500/30';
+    textColor = 'text-yellow-400'; // Gold (same as level 3)
+    bgColor = 'bg-yellow-500/20';
+    borderColor = 'border-yellow-500/30';
+    progressColor = 'bg-yellow-500';
   } else if (level === 5) {
     textColor = 'text-cyan-300'; // Diamond
     bgColor = 'bg-cyan-500/20';
     borderColor = 'border-cyan-500/30';
+    progressColor = 'bg-cyan-500';
   }
 
   const maxHighlights = (() => {
@@ -86,6 +92,7 @@ export function getLevelInfo(spotsCount: number): LevelInfo {
     textColor,
     bgColor,
     borderColor,
+    progressColor,
     icon: currentThreshold.icon,
     spotsRequired: currentThreshold.spotsRequired,
     spotsForNext: nextThreshold ? nextThreshold.spotsRequired : null,
