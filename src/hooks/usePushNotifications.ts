@@ -10,10 +10,6 @@ import { useNotificationStore } from '@/store/useNotificationStore';
 // Get VAPID key from environment variables
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
-// Validate VAPID key is present
-if (!VAPID_KEY) {
-}
-
 export const usePushNotifications = () => {
   const [isPermissionGranted, setIsPermissionGranted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,96 +19,107 @@ export const usePushNotifications = () => {
   const { showToast } = useToastStore();
   const { addNotification } = useNotificationStore();
 
+  const isNotificationSupported = () => 'Notification' in globalThis;
+
   // Check if notifications are supported and permission status
   useEffect(() => {
-    if ('Notification' in window) {
-      setIsPermissionGranted(Notification.permission === 'granted');
+    if (isNotificationSupported()) {
+      setIsPermissionGranted(globalThis.Notification.permission === 'granted');
     }
   }, []);
+
+  const getMessagingToken = async () => {
+    if (!('serviceWorker' in navigator)) {
+      return null;
+    }
+
+    const registration = await navigator.serviceWorker.register('/api/firebase-messaging-sw', {
+      scope: '/',
+    });
+
+    await navigator.serviceWorker.ready;
+
+    if (!VAPID_KEY) {
+      showToast('Push notifications configuration error', 'error');
+      return null;
+    }
+
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
+
+    if (!token) {
+      return null;
+    }
+
+    return { messaging, token };
+  };
+
+  const saveUserToken = async (token: string) => {
+    if (!user) return;
+
+    const userRef = doc(db, 'users', user.uid);
+    const defaultSettings = {
+      spotApproved: true,
+      spotReviewed: true,
+      newPendingSpot: true,
+    };
+
+    await updateDoc(userRef, {
+      fcmTokens: arrayUnion(token),
+      language: language,
+      notificationsEnabled: true,
+      lastTokenUpdate: new Date().toISOString(),
+      ...(user.notificationSettings ? {} : { notificationSettings: defaultSettings }),
+    });
+  };
 
   // Initialize push notifications
   const initializePush = async (): Promise<boolean> => {
     try {
-      // Clean up existing foreground listener if any
       if (foregroundUnsubscribe) {
         foregroundUnsubscribe();
         setForegroundUnsubscribe(null);
       }
 
-      // Check if the browser supports notifications
-      if (!('Notification' in window)) {
+      if (!isNotificationSupported()) {
         return false;
       }
 
-      // Check if Firebase Messaging is supported
       const messagingSupported = await isSupported();
-      if (!messagingSupported) {
-        return false;
-      }
-
-      // Check if user is logged in
-      if (!user) {
+      if (!messagingSupported || !user) {
         return false;
       }
 
       setIsLoading(true);
 
-      // Request notification permission
-      const permission = await Notification.requestPermission();
-      
-      if (permission === 'granted') {
-        setIsPermissionGranted(true);
-        
-        // Register service worker (dynamically generated)
-        if ('serviceWorker' in navigator) {
-          const registration = await navigator.serviceWorker.register('/api/firebase-messaging-sw', {
-            scope: '/',
-          });
-
-          // Wait for service worker to be ready
-          await navigator.serviceWorker.ready;
-
-          // Validate VAPID key before requesting token
-          if (!VAPID_KEY) {
-            showToast('Push notifications configuration error', 'error');
-            setIsLoading(false);
-            return false;
-          }
-
-          // Get FCM token
-          const messaging = getMessaging(app);
-          const token = await getToken(messaging, {
-            vapidKey: VAPID_KEY,
-            serviceWorkerRegistration: registration,
-          });
-
-          if (token) {
-            // Save token to Firestore
-            const userRef = doc(db, 'users', user.uid);
-            await updateDoc(userRef, {
-              fcmTokens: arrayUnion(token),
-              language: language,
-              notificationsEnabled: true,
-              lastTokenUpdate: new Date().toISOString(),
-            });
-
-            // Setup foreground message listener
-            setupForegroundListener(messaging);
-            
-            setIsLoading(false);
-            return true;
-          }
-        }
-      } else if (permission === 'denied') {
+      const permission = await globalThis.Notification.requestPermission();
+      if (permission !== 'granted') {
         setIsPermissionGranted(false);
-        showToast('Notifications blocked. Enable them in browser settings.', 'error');
+        if (permission === 'denied') {
+          showToast('Notifications blocked. Enable them in browser settings.', 'error');
+        }
+        return false;
       }
 
-      setIsLoading(false);
-      return false;
+      setIsPermissionGranted(true);
+
+      const tokenResult = await getMessagingToken();
+      if (!tokenResult) {
+        return false;
+      }
+
+      await saveUserToken(tokenResult.token);
+      setupForegroundListener(tokenResult.messaging);
+      return true;
     } catch (error) {
-      setIsLoading(false);
+      console.error('Failed to initialize push notifications:', error);
+      showToast('Failed to enable notifications', 'error');
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -168,6 +175,8 @@ export const usePushNotifications = () => {
       setIsPermissionGranted(false);
       showToast('Notifications disabled', 'info');
     } catch (error) {
+      console.error('Failed to disable notifications:', error);
+      showToast('Failed to disable notifications', 'error');
     }
   };
 

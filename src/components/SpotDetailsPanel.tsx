@@ -211,12 +211,13 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         {/* Hero Image */}
         <div className="relative w-full h-[40vh] flex-shrink-0 pointer-events-auto">
           <Image
-            src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
+            src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
             alt={spot.name}
             fill
             sizes="100vw"
             className="object-cover"
             priority
+            unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
           />
           
           {/* Image count badge */}

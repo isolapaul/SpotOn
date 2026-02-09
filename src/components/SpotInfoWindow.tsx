@@ -72,11 +72,12 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
       {/* Image */}
       <div className="relative w-full h-40">
         <Image
-          src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
+          src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
           alt={spot.name}
           fill
           className="object-cover"
           sizes="300px"
+          unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
         />
         
         {/* Favorite Button */}

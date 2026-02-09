@@ -24,6 +24,12 @@ interface User {
   highlightedSpots?: string[]; // Array of spot IDs user highlighted (max based on level)
   customNameColor?: string; // Custom name color for level 5
   customNameFont?: string; // Custom font for level 5
+  // Notification Settings
+  notificationSettings?: {
+    spotApproved: boolean; // Get notified when spot is approved
+    spotReviewed: boolean; // Get notified when spot receives reviews or likes
+    newPendingSpot: boolean; // Get notified for new pending spots (admins only)
+  };
 }
 
 interface AdminUser {

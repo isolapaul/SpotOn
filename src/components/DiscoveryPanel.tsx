@@ -286,11 +286,12 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                     {/* Thumbnail */}
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                       <Image
-                        src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
+                        src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
                         alt={spot.name}
                         fill
                         className="object-cover"
                         sizes="80px"
+                        unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
                       />
                       {/* Category Badge */}
                       <div className="absolute bottom-1 left-1 bg-black/60 rounded-full px-1.5 py-0.5">

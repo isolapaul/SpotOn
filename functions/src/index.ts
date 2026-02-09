@@ -76,7 +76,8 @@ async function sendNotificationToUser(
   titleKey: keyof typeof translations,
   bodyKey: keyof typeof translations,
   bodyParams?: any[],
-  data?: Record<string, string>
+  data?: Record<string, string>,
+  settingsKey?: "spotApproved" | "spotReviewed" | "newPendingSpot"
 ) {
   try {
     // Get user document
@@ -94,6 +95,15 @@ async function sendNotificationToUser(
     if (userData.notificationsEnabled === false) {
       logger.info(`Notifications disabled for user ${userId}`);
       return;
+    }
+
+    // Check per-notification settings
+    if (settingsKey && userData.notificationSettings) {
+      const settingValue = userData.notificationSettings[settingsKey];
+      if (settingValue === false) {
+        logger.info(`Notification ${settingsKey} disabled for user ${userId}`);
+        return;
+      }
     }
 
     // Check if user has FCM tokens
@@ -186,7 +196,8 @@ async function sendNotificationToAdmins(
   titleKey: keyof typeof translations,
   bodyKey: keyof typeof translations,
   bodyParams?: any[],
-  data?: Record<string, string>
+  data?: Record<string, string>,
+  settingsKey?: "spotApproved" | "spotReviewed" | "newPendingSpot"
 ) {
   try {
     // Get all admin users from admins collection
@@ -210,7 +221,7 @@ async function sendNotificationToAdmins(
 
       if (!usersSnapshot.empty) {
         const userId = usersSnapshot.docs[0].id;
-        await sendNotificationToUser(userId, titleKey, bodyKey, bodyParams, data);
+        await sendNotificationToUser(userId, titleKey, bodyKey, bodyParams, data, settingsKey);
       }
     });
 
@@ -249,7 +260,8 @@ export const onSpotApproved = functions.firestore.onDocumentUpdated(
           type: "spot_approved",
           spotId: spotId,
           spotName: spotName,
-        }
+        },
+        "spotApproved"
       );
     }
   }
@@ -295,7 +307,8 @@ export const onReviewAdded = functions.firestore.onDocumentUpdated(
           spotName: spotName,
           rating: String(newReview.rating),
           reviewerName: newReview.userName,
-        }
+        },
+        "spotReviewed"
       );
     }
   }
@@ -350,7 +363,8 @@ export const onSpotFavorited = functions.firestore.onDocumentUpdated(
             type: "spot_favorited",
             spotId: newSpotId,
             spotName: spotName,
-          }
+          },
+          "spotReviewed"
         );
       }
     }
@@ -384,7 +398,8 @@ export const onNewPendingSpot = functions.firestore.onDocumentCreated(
           spotId: spotId,
           spotName: spotName,
           creatorName: creatorName,
-        }
+        },
+        "newPendingSpot"
       );
     }
   }

@@ -13,6 +13,7 @@ import type { Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { getLevelInfo, getLevelProgress, getSpotsRemainingText, CUSTOM_NAME_COLORS, CUSTOM_NAME_FONTS } from '@/lib/levelUtils';
 import SettingsPanel from './SettingsPanel';
+import { NotificationSettingsModal } from './NotificationSettingsModal';
 
 interface ProfilePanelProps {
   isOpen: boolean;
@@ -43,6 +44,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showLevelInfo, setShowLevelInfo] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
   // iOS Swipe-to-Close Gesture
   const [dragStartX, setDragStartX] = useState(0);
@@ -415,8 +417,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     {/* Progress Bar */}
                     <div className="relative w-full h-2 bg-white/20 rounded-full overflow-hidden">
                       <div 
-                        className={`absolute top-0 left-0 h-full ${levelInfo.progressColor} transition-all duration-500`}
-                        style={{ width: `${progress}%` }}
+                        className="absolute top-0 left-0 h-full transition-all duration-500"
+                        style={{ width: `${progress}%`, backgroundColor: levelInfo.progressColor }}
                       />
                     </div>
                     
@@ -524,35 +526,24 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     )}
                     <div>
                       <h3 className="text-white font-semibold text-sm">
-                        {t('enableNotifications')}
+                        {t('notifications')}
                       </h3>
                       <p className="text-white/60 text-xs">
-                        {t('notificationPromptText')}
+                        {isPermissionGranted ? t('notificationsEnabled') : t('notificationsDisabledShort')}
                       </p>
                     </div>
                   </div>
                 </div>
                 
-                {isPermissionGranted ? (
-                  <button
-                    onClick={disableNotifications}
-                    className="w-full py-2 px-4 rounded-lg bg-red-500/20 text-red-400 
-                      border border-red-500/30 font-medium text-sm hover:bg-red-500/30 
-                      transition-all"
-                  >
-                    {t('notificationsDisabled')}
-                  </button>
-                ) : (
-                  <button
-                    onClick={requestPermission}
-                    disabled={isNotificationLoading}
-                    className="w-full py-2 px-4 rounded-lg bg-green-500/20 text-green-400 
-                      border border-green-500/30 font-medium text-sm hover:bg-green-500/30 
-                      transition-all disabled:opacity-50"
-                  >
-                    {isNotificationLoading ? t('enabling') : t('enable')}
-                  </button>
-                )}
+                <button
+                  onClick={() => setShowNotificationSettings(true)}
+                  disabled={isNotificationLoading}
+                  className="w-full py-2 px-4 rounded-lg bg-blue-500/20 text-blue-400 
+                    border border-blue-500/30 font-medium text-sm hover:bg-blue-500/30 
+                    transition-all disabled:opacity-50"
+                >
+                  {t('notificationSettingsButton')}
+                </button>
               </div>
 
               {/* Level Management Buttons */}
@@ -622,11 +613,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                 <div className="flex gap-3 items-center">
                                   <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
                                     <Image
-                                      src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
+                                      src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
                                       alt={spot.name}
                                       fill
                                       sizes="56px"
                                       className="object-cover"
+                                      unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
                                     />
                                     {isHighlighted && (
                                       <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
@@ -817,11 +809,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   <div key={spot.id} className="glass-card p-4 flex gap-4">
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                       <Image
-                        src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
+                        src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
                         alt={spot.name}
                         fill
                         sizes="80px"
                         className="object-cover"
+                        unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -858,11 +851,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     <div key={spot.id} className="glass-card p-4 flex gap-4">
                       <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                         <Image
-                          src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
+                          src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
                           alt={spot.name}
                           fill
                           sizes="80px"
                           className="object-cover"
+                          unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -914,11 +908,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     <div className="flex gap-4 mb-3">
                       <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                         <Image
-                          src={spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || '/placeholder-spot.jpg'}
+                          src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
                           alt={spot.name}
                           fill
                           sizes="80px"
                           className="object-cover"
+                          unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1129,6 +1124,17 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       {/* Settings Panel */}
       <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       
+      {/* Notification Settings Modal */}
+      <NotificationSettingsModal 
+        isOpen={showNotificationSettings} 
+        onClose={() => setShowNotificationSettings(false)}
+        isAdmin={userIsAdmin}
+        isEnabled={isPermissionGranted}
+        isLoading={isNotificationLoading}
+        onEnableNotifications={requestPermission}
+        onDisableNotifications={disableNotifications}
+      />
+      
       {/* Level Info Modal */}
       {showLevelInfo && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
@@ -1193,7 +1199,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               
               {[1, 2, 3, 4, 5].map((level) => {
                 // Calculate spots needed for each level
-                const spotsForLevel = level === 1 ? 0 : level === 2 ? 3 : level === 3 ? 10 : level === 4 ? 15 : 20;
+                const spotsForLevel = [0, 0, 3, 10, 15, 20][level];
                 const levelInfo = getLevelInfo(spotsForLevel);
                 const isUnlocked = level <= getLevelInfo(myAllSpots.length).level;
                 
