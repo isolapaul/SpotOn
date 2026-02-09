@@ -291,8 +291,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Profile Banner - Larger 40vh */}
-        <div className="relative w-full h-[40vh] flex-shrink-0 bg-gradient-to-r from-primary-700 to-primary-900">
+        {/* Profile Banner - Mobile Optimized 25vh */}
+        <div className="relative w-full h-[25vh] flex-shrink-0 bg-gradient-to-r from-primary-700 to-primary-900">
           {user.profileBannerURL ? (
             <Image
               src={user.profileBannerURL}

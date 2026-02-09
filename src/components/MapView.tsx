@@ -198,9 +198,13 @@ export default function MapView({
         lat: e.latLng.lat(),
         lng: e.latLng.lng(),
       });
-    } else if (onMapClick) {
-      // Close spot details when clicking on map
-      onMapClick();
+    } else {
+      // Clear selected spot when clicking on map
+      setSelectedSpot(null);
+      // Also notify parent to close spot details
+      if (onMapClick) {
+        onMapClick();
+      }
     }
   }, [isAddingSpot, onLocationSelect, onMapClick]);
 

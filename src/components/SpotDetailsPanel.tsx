@@ -29,9 +29,9 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   
-  // PHASE 4: iOS Swipe to Dismiss
-  const [dragStartY, setDragStartY] = useState(0);
-  const [dragCurrentY, setDragCurrentY] = useState(0);
+  // Swipe to Dismiss - Horizontal
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragCurrentX, setDragCurrentX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
   if (!spot) return null;
@@ -127,40 +127,38 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
     : 0;
 
-  // PHASE 4: Touch Handlers for Swipe to Dismiss
+  // Touch Handlers for Horizontal Swipe to Dismiss
   const handleTouchStart = (e: React.TouchEvent) => {
-    setDragStartY(e.touches[0].clientY);
-    setDragCurrentY(e.touches[0].clientY);
+    setDragStartX(e.touches[0].clientX);
+    setDragCurrentX(e.touches[0].clientX);
     setIsDragging(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    const currentY = e.touches[0].clientY;
-    const diff = currentY - dragStartY;
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - dragStartX;
     
-    // Only allow downward drag
-    if (diff > 0) {
-      setDragCurrentY(currentY);
-    }
+    // Allow both left and right drag
+    setDragCurrentX(currentX);
   };
 
   const handleTouchEnd = () => {
     if (!isDragging) return;
-    const dragDistance = dragCurrentY - dragStartY;
+    const dragDistance = Math.abs(dragCurrentX - dragStartX);
     
-    // Close if dragged more than 100px down
+    // Close if dragged more than 100px horizontally
     if (dragDistance > 100) {
       onClose();
     }
     
     // Reset
     setIsDragging(false);
-    setDragStartY(0);
-    setDragCurrentY(0);
+    setDragStartX(0);
+    setDragCurrentX(0);
   };
 
-  const translateY = isDragging ? Math.max(0, dragCurrentY - dragStartY) : 0;
+  const translateX = isDragging ? (dragCurrentX - dragStartX) : 0;
 
   return (
     <div className="fixed inset-0 z-[60] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
@@ -174,19 +172,17 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         tabIndex={-1}
       />
       
-      {/* Panel - With Swipe Support */}
+      {/* Panel - With Horizontal Swipe Support */}
       <div 
         className="absolute inset-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 pointer-events-none"
         style={{ 
-          transform: `translateY(${translateY}px)`,
+          transform: `translateX(${translateX}px)`,
           transition: isDragging ? 'none' : 'transform 0.3s ease-out'
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Grabber Pill - PHASE 4 */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gray-600/50 rounded-full z-10 pointer-events-auto" />
         
         {/* Hero Image */}
         <div className="relative w-full h-[40vh] flex-shrink-0 pointer-events-auto">
