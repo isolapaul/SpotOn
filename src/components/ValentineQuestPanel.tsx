@@ -52,7 +52,9 @@ export default function ValentineQuestPanel() {
       }, 1500);
     } catch (error) {
       setClaimedRewards(false);
+      console.error('Error claiming rewards:', error);
       showToast('Failed to claim rewards', 'error');
+      throw error;
     }
   };
 

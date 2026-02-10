@@ -11,8 +11,7 @@ import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib
 import { getLevelInfo, getUserNameColor } from '@/lib/levelUtils';
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { functions } from '@/lib/firebase';
+import { db, functions } from '@/lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 
 interface SpotDetailsPanelProps {
@@ -275,7 +274,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     setIsHighlighting(true);
     try {
       const highlightSpotFunction = httpsCallable(functions, 'highlightSpot');
-      const result = await highlightSpotFunction({ spotId: spot.id });
+      await highlightSpotFunction({ spotId: spot.id });
       
       showToast(t('highlightSuccess'), 'success');
       setIsHighlightedByUser(true);

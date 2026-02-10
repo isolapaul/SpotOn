@@ -3,6 +3,7 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getMessaging, isSupported } from 'firebase/messaging';
+import { getFunctions } from 'firebase/functions';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -37,6 +38,9 @@ const initializeFirebase = () => {
 
 const { app, auth, db, storage } = initializeFirebase();
 
+// Initialize Cloud Functions
+const functions = getFunctions(app);
+
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
@@ -53,4 +57,4 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export { app, auth, db, storage, googleProvider, messaging };
+export { app, auth, db, storage, functions, googleProvider, messaging };
