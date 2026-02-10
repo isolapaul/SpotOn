@@ -5,6 +5,7 @@
 
 import * as functions from "firebase-functions/v2";
 import {setGlobalOptions} from "firebase-functions/v2";
+import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 
@@ -482,20 +483,20 @@ export const onNewPendingSpot = functions.firestore.onDocumentCreated(
 // ========================================
 // CALLABLE: Highlight a Spot
 // ========================================
-export const highlightSpot = functions.https.onCall(async (data: any, context: any) => {
+export const highlightSpot = onCall(async (request: CallableRequest) => {
   // Check authentication
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
+  if (!request.auth) {
+    throw new HttpsError(
       "unauthenticated",
       "User must be authenticated to highlight a spot"
     );
   }
 
-  const userId = context.auth.uid;
-  const { spotId } = data;
+  const userId = request.auth.uid;
+  const { spotId } = request.data;
 
   if (!spotId) {
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "invalid-argument",
       "Spot ID is required"
     );
@@ -507,7 +508,7 @@ export const highlightSpot = functions.https.onCall(async (data: any, context: a
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
-      throw new functions.https.HttpsError("not-found", "User not found");
+      throw new HttpsError("not-found", "User not found");
     }
 
     const userData = userDoc.data();
@@ -515,7 +516,7 @@ export const highlightSpot = functions.https.onCall(async (data: any, context: a
     // Check if user has highlight bonus available
     const highlightBonus = userData?.questRewards?.valentine2026?.highlightBonus ?? 0;
     if (highlightBonus <= 0) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "permission-denied",
         "No highlight bonus available"
       );
@@ -524,7 +525,7 @@ export const highlightSpot = functions.https.onCall(async (data: any, context: a
     // Count active highlights by this user
     const activeHighlights = userData?.questRewards?.valentine2026?.activeHighlights ?? [];
     if (activeHighlights.length >= highlightBonus) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "permission-denied",
         "You have reached your highlight limit"
       );
@@ -535,7 +536,7 @@ export const highlightSpot = functions.https.onCall(async (data: any, context: a
     const spotDoc = await spotRef.get();
 
     if (!spotDoc.exists) {
-      throw new functions.https.HttpsError("not-found", "Spot not found");
+      throw new HttpsError("not-found", "Spot not found");
     }
 
     // Check if user already highlighted this spot
@@ -546,7 +547,7 @@ export const highlightSpot = functions.https.onCall(async (data: any, context: a
     );
 
     if (alreadyHighlighted) {
-      throw new functions.https.HttpsError(
+      throw new HttpsError(
         "permission-denied",
         "You have already highlighted this spot"
       );
@@ -594,7 +595,7 @@ export const highlightSpot = functions.https.onCall(async (data: any, context: a
         error.code?.startsWith("UNAUTHENTICATED")) {
       throw error;
     }
-    throw new functions.https.HttpsError(
+    throw new HttpsError(
       "internal",
       "Failed to highlight spot"
     );
