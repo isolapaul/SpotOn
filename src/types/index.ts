@@ -21,6 +21,11 @@ export interface Spot {
   reviews: Review[];
   isHighlighted?: boolean; // True if the spot is highlighted by its creator (level 3+)
   customIcon?: string; // Custom emoji icon for level 4+ users
+  highlighted?: {
+    userId: string;
+    highlightedAt: string;
+    expiresAt: string; // 7 days from highlight date
+  }[]; // Array of active highlights from quest bonus
 }
 
 export interface Review {
@@ -48,6 +53,25 @@ export interface User {
   highlightedSpots?: string[]; // Array of spot IDs that user highlighted (max 1 for level 3, max 2 for level 4+)
   customNameColor?: string; // Custom name color for level 5 users
   customNameFont?: string; // Custom font style for level 5 users (font-family class name)
+  questProgress?: {
+    valentine2026?: {
+      count: number;
+      completed: boolean;
+      completedAt?: string;
+    };
+  };
+  questRewards?: {
+    valentine2026?: {
+      completedAt: string;
+      mapThemeUnlocked: boolean;
+      highlightBonus: number;
+      activeHighlights?: {
+        spotId: string;
+        highlightedAt: string;
+        expiresAt: string;
+      }[];
+    };
+  };
   // Notification Settings
   notificationSettings?: {
     spotApproved: boolean; // Get notified when spot is approved

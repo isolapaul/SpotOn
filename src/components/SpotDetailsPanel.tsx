@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle, Shield, ImagePlus } from 'lucide-react';
+import { X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle, Shield, ImagePlus, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -8,10 +8,12 @@ import { useLanguageStore } from '@/store/useLanguageStore';
 import { useSpotStore, isAdmin as checkIsAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
-import { getUserNameColor } from '@/lib/levelUtils';
+import { getLevelInfo, getUserNameColor } from '@/lib/levelUtils';
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { functions } from '@/lib/firebase';
+import { httpsCallable } from 'firebase/functions';
 
 interface SpotDetailsPanelProps {
   spot: Spot | null;
@@ -31,6 +33,8 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [isHighlighting, setIsHighlighting] = useState(false);
+  const [isHighlightedByUser, setIsHighlightedByUser] = useState(false);
   const [userSpotsCount, setUserSpotsCount] = useState(0);
   const [creatorSpotsCount, setCreatorSpotsCount] = useState<number | null>(null);
   const [creatorName, setCreatorName] = useState<string | null>(null);
@@ -97,6 +101,18 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       isMounted = false;
     };
   }, [spot?.createdBy, user?.uid, user?.username, user?.customNameColor, userSpotsCount]);
+
+  // Check if user already highlighted this spot
+  useEffect(() => {
+    if (!spot || !user) {
+      setIsHighlightedByUser(false);
+      return;
+    }
+
+    const highlighted = spot.highlighted || [];
+    const userHasHighlighted = highlighted.some((h: any) => h.userId === user.uid);
+    setIsHighlightedByUser(userHasHighlighted);
+  }, [spot, user]);
 
   useEffect(() => {
     if (!spot) return;
@@ -240,6 +256,40 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     }
   };
 
+  const handleHighlightSpot = async () => {
+    if (!user || !spot) return;
+
+    // Check highlight bonus
+    const highlightBonus = user?.questRewards?.valentine2026?.highlightBonus ?? 0;
+    if (highlightBonus <= 0) {
+      showToast(t('notEnoughHighlights'), 'error');
+      return;
+    }
+
+    // Check if already highlighted by user
+    if (isHighlightedByUser) {
+      showToast(t('youHighlightedThis'), 'error');
+      return;
+    }
+
+    setIsHighlighting(true);
+    try {
+      const highlightSpotFunction = httpsCallable(functions, 'highlightSpot');
+      const result = await highlightSpotFunction({ spotId: spot.id });
+      
+      showToast(t('highlightSuccess'), 'success');
+      setIsHighlightedByUser(true);
+      
+      // Refresh user data to update highlight bonus
+      // This would require a refetch from Firestore
+    } catch (error: any) {
+      const errorMessage = error.message || 'Error highlighting spot';
+      showToast(errorMessage, 'error');
+    } finally {
+      setIsHighlighting(false);
+    }
+  };
+
   const handleSubmitReview = async () => {
     if (!user) {
       showToast(t('mustBeLoggedIn'), 'error');
@@ -369,6 +419,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     creatorSpotsCount ?? 0,
     creatorCustomNameColor
   );
+  const creatorLevelInfo = getLevelInfo(creatorSpotsCount ?? 0);
 
   // Touch Handlers for Horizontal Swipe to Dismiss
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -472,6 +523,27 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                   />
                 </button>
               )}
+
+              {/* Highlight Button - Show if user has bonus and hasn't highlighted this spot */}
+              {user && spot.createdBy === user.uid && (user?.questRewards?.valentine2026?.highlightBonus ?? 0) > 0 && (
+                <button
+                  onClick={handleHighlightSpot}
+                  disabled={isHighlighting || isHighlightedByUser}
+                  className={`glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px] transition-all ${
+                    isHighlightedByUser
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:bg-yellow-500/20 active:scale-95'
+                  }`}
+                  aria-label={t('highlightSpot')}
+                  title={isHighlightedByUser ? t('youHighlightedThis') : t('highlightSpot')}
+                >
+                  <Sparkles
+                    className={`w-5 h-5 ${
+                      isHighlightedByUser ? 'text-yellow-500 fill-yellow-500' : 'text-white'
+                    }`}
+                  />
+                </button>
+              )}
               
               <button
                 onClick={handleShare}
@@ -531,7 +603,12 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
 
           {/* Title & Rating */}
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">{spot.name}</h1>
+            <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-2">
+              {spot.name}
+              {isHighlightedByUser && (
+                <span className="text-yellow-400 animate-pulse" title={t('spotHasHighlight')}>⭐</span>
+              )}
+            </h1>
             
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
@@ -640,9 +717,14 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                 <User className="w-4 h-4" />
                 <span className="text-xs uppercase">{t('by')}</span>
               </div>
-              <p className="font-medium" style={{ color: creatorNameColor }}>
-                {creatorDisplayName}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="font-medium" style={{ color: creatorNameColor }}>
+                  {creatorDisplayName}
+                </p>
+                <span className={`text-xs px-2 py-0.5 rounded-full border ${creatorLevelInfo.bgColor} ${creatorLevelInfo.borderColor} ${creatorLevelInfo.textColor}`}>
+                  {creatorLevelInfo.icon} {creatorLevelInfo.level}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -764,6 +846,15 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                             >
                               {reviewerMeta[review.userId]?.username || review.userName || t('anonymous')}
                             </p>
+                            {(() => {
+                              const reviewSpotsCount = review.userSpotsCount ?? reviewerMeta[review.userId]?.spotsCount ?? 0;
+                              const reviewLevelInfo = getLevelInfo(reviewSpotsCount);
+                              return (
+                                <span className={`text-xs px-2 py-0.5 rounded-full border ${reviewLevelInfo.bgColor} ${reviewLevelInfo.borderColor} ${reviewLevelInfo.textColor}`}>
+                                  {reviewLevelInfo.icon} {reviewLevelInfo.level}
+                                </span>
+                              );
+                            })()}
                             {checkIsAdmin(review.userEmail) && (
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">
                                 <Shield className="w-3 h-3 text-amber-400" />

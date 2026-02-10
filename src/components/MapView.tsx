@@ -22,7 +22,7 @@ interface MapViewProps {
 }
 
 // Category emoji markers
-const getCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rejected') => {
+const getCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rejected', isHighlighted: boolean = false) => {
   const baseUrl = 'data:image/svg+xml;charset=UTF-8,';
   
   // Get emoji based on category
@@ -55,11 +55,17 @@ const getCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rej
   }
   
   // Color based on status (for admin view)
-  const bgColor = status === 'approved' ? '#10b981' : '#eab308'; // green vs yellow
+  let bgColor = status === 'approved' ? '#10b981' : '#eab308'; // green vs yellow
+  
+  // If highlighted, use gold/yellow color
+  if (isHighlighted) {
+    bgColor = '#f59e0b'; // amber for highlighted
+  }
   
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
     <circle cx="24" cy="24" r="20" fill="${bgColor}" opacity="0.9"/>
     <text x="24" y="30" font-size="20" text-anchor="middle" fill="white">${emoji}</text>
+    ${isHighlighted ? '<text x="38" y="12" font-size="16">⭐</text>' : ''}
   </svg>`;
   
   return baseUrl + encodeURIComponent(svg);
@@ -305,13 +311,15 @@ export default function MapView({
         {/* Real spots from Firestore */}
         {spots.map((spot) => {
           const markerSize = getMarkerSize(zoomLevel);
+          // Check if spot has active highlights
+          const isHighlighted = (spot.highlighted || []).length > 0;
           return (
             <MarkerF
               key={spot.id}
               position={spot.location}
               title={spot.name}
               icon={{
-                url: getCategoryIcon(spot.category, spot.status),
+                url: getCategoryIcon(spot.category, spot.status, isHighlighted),
                 scaledSize: new google.maps.Size(markerSize, markerSize),
                 anchor: new google.maps.Point(markerSize / 2, markerSize / 2),
               }}

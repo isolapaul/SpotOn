@@ -24,6 +24,25 @@ interface User {
   highlightedSpots?: string[]; // Array of spot IDs user highlighted (max based on level)
   customNameColor?: string; // Custom name color for level 5
   customNameFont?: string; // Custom font for level 5
+  questProgress?: {
+    valentine2026?: {
+      count: number;
+      completed: boolean;
+      completedAt?: string;
+    };
+  };
+  questRewards?: {
+    valentine2026?: {
+      completedAt: string;
+      mapThemeUnlocked: boolean;
+      highlightBonus: number;
+      activeHighlights?: {
+        spotId: string;
+        highlightedAt: string;
+        expiresAt: string;
+      }[];
+    };
+  };
   // Notification Settings
   notificationSettings?: {
     spotApproved: boolean; // Get notified when spot is approved
@@ -156,6 +175,8 @@ export const useUserStore = create<UserStore>()(
             profilePictureURL,
             profileBannerURL,
             savedSpots: userSnap.exists() ? userSnap.data().savedSpots : [],
+            questProgress: userSnap.exists() ? userSnap.data().questProgress : undefined,
+            questRewards: userSnap.exists() ? userSnap.data().questRewards : undefined,
           };
           
           set({ user: userData, loading: false });
@@ -184,6 +205,8 @@ export const useUserStore = create<UserStore>()(
               profilePictureURL: data.profilePictureURL || data.photoURL || '',
               profileBannerURL: data.profileBannerURL || '',
               savedSpots: data.savedSpots || [],
+              questProgress: data.questProgress,
+              questRewards: data.questRewards,
             };
             
             // Check if username needs to be set
@@ -264,6 +287,8 @@ export const useUserStore = create<UserStore>()(
                   profilePictureURL: data.profilePictureURL || data.photoURL || firebaseUser.photoURL || '',
                   profileBannerURL: data.profileBannerURL || '',
                   savedSpots: data.savedSpots || [],
+                  questProgress: data.questProgress,
+                  questRewards: data.questRewards,
                 };
                 
                 // Check if username needs to be set
@@ -376,6 +401,8 @@ export const useUserStore = create<UserStore>()(
                 profilePictureURL: userData.profilePictureURL || userData.photoURL || '',
                 profileBannerURL: userData.profileBannerURL || '',
                 savedSpots: userData.savedSpots || [],
+                questProgress: userData.questProgress,
+                questRewards: userData.questRewards,
               };
             }
           });

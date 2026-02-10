@@ -85,6 +85,11 @@ export interface Spot {
   createdAt: any;
   reviews?: Review[];
   averageRating?: number;
+  highlighted?: {
+    userId: string;
+    highlightedAt: string;
+    expiresAt: string; // 7 days from highlight date
+  }[]; // Array of active highlights from quest bonus
 }
 
 interface SpotStore {

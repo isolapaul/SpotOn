@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import { Palette, Check } from 'lucide-react';
 import { useMapThemeStore, type MapTheme } from '@/store/useMapThemeStore';
+import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 
 export default function MapThemeSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const { theme, setTheme } = useMapThemeStore();
   const { t } = useLanguageStore();
+  const { user } = useUserStore();
+  const hasValentineTheme = Boolean(user?.questRewards?.valentine2026?.mapThemeUnlocked);
 
   const themes: { id: MapTheme; name: string; preview: string }[] = [
     { id: 'standard', name: t('themeStandard'), preview: 'bg-gradient-to-br from-blue-100 to-green-100' },
@@ -18,6 +21,9 @@ export default function MapThemeSwitcher() {
     { id: 'silver', name: t('themeSilver'), preview: 'bg-gradient-to-br from-gray-200 to-gray-400' },
     { id: 'retro', name: t('themeRetro'), preview: 'bg-gradient-to-br from-amber-100 to-orange-200' },
     { id: 'purple', name: t('themePurple'), preview: 'bg-gradient-to-br from-purple-900 to-blue-900' },
+    ...(hasValentineTheme
+      ? [{ id: 'valentine' as MapTheme, name: t('themeValentine'), preview: 'bg-gradient-to-br from-pink-300 to-rose-500' }]
+      : []),
   ];
 
   const handleThemeSelect = (themeId: MapTheme) => {

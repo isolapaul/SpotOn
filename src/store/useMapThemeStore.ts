@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type MapTheme = 'standard' | 'dark' | 'light' | 'night' | 'silver' | 'retro' | 'purple';
+export type MapTheme = 'standard' | 'dark' | 'light' | 'night' | 'silver' | 'retro' | 'purple' | 'valentine';
 
 interface MapThemeStore {
   theme: MapTheme;
@@ -220,6 +220,58 @@ export const mapThemes = {
       featureType: "water",
       elementType: "geometry",
       stylers: [{ color: "#050505" }],
+    },
+  ],
+
+  valentine: [
+    { elementType: 'geometry', stylers: [{ color: '#fde2ea' }] },
+    { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#9b4f6c' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#fde2ea' }] },
+    {
+      featureType: 'poi',
+      elementType: 'geometry',
+      stylers: [{ color: '#f9c9d9' }],
+    },
+    {
+      featureType: 'poi',
+      elementType: 'labels.text.fill',
+      stylers: [{ color: '#9b4f6c' }],
+    },
+    {
+      featureType: 'poi.park',
+      elementType: 'geometry',
+      stylers: [{ color: '#f6b7cc' }],
+    },
+    {
+      featureType: 'road',
+      elementType: 'geometry',
+      stylers: [{ color: '#fbd1de' }],
+    },
+    {
+      featureType: 'road.arterial',
+      elementType: 'labels.text.fill',
+      stylers: [{ color: '#9b4f6c' }],
+    },
+    {
+      featureType: 'road.highway',
+      elementType: 'geometry',
+      stylers: [{ color: '#f8b6cd' }],
+    },
+    {
+      featureType: 'road.highway',
+      elementType: 'labels.text.fill',
+      stylers: [{ color: '#9b4f6c' }],
+    },
+    {
+      featureType: 'water',
+      elementType: 'geometry',
+      stylers: [{ color: '#f59bbf' }],
+    },
+    {
+      featureType: 'water',
+      elementType: 'labels.text.fill',
+      stylers: [{ color: '#8a3e59' }],
     },
   ],
 

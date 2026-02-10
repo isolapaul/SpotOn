@@ -66,6 +66,16 @@ const translations = {
     de: (spotName: string, userName: string) =>
       `"${spotName}" hochgeladen von ${userName}`,
   },
+  valentineQuestCompleted: {
+    hu: "Valentin napi quest befejezve! 💝",
+    en: "Valentine quest completed! 💝",
+    de: "Valentin Quest abgeschlossen! 💝",
+  },
+  valentineQuestCompletedBody: {
+    hu: "Sikerult! Feloldottad a limitált térképatemát és 1 felhívást",
+    en: "You unlocked the limited Valentine map theme and 1 spot highlight!",
+    de: "Du hast das begrenzte Valentins Kartenstil und 1 Spot Hervorhebung freigeschaltet!",
+  },
 };
 
 // ========================================
@@ -77,7 +87,7 @@ async function sendNotificationToUser(
   bodyKey: keyof typeof translations,
   bodyParams?: any[],
   data?: Record<string, string>,
-  settingsKey?: "spotApproved" | "spotReviewed" | "newPendingSpot"
+  settingsKey?: "spotApproved" | "spotReviewed" | "newPendingSpot" | "valentineQuestCompleted"
 ) {
   try {
     // Get user document
@@ -263,6 +273,70 @@ export const onSpotApproved = functions.firestore.onDocumentUpdated(
         },
         "spotApproved"
       );
+
+      // ========================================
+      // VALENTINE QUEST TRACKING
+      // ========================================
+      // Check if quest is active (2026-02-10 to 2026-02-24)
+      const now = new Date();
+      const questStart = new Date("2026-02-10");
+      const questEnd = new Date("2026-02-24");
+
+      if (now >= questStart && now < questEnd) {
+        try {
+          const userRef = db.collection("users").doc(creatorId);
+          const userDoc = await userRef.get();
+
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            const currentProgress = userData?.questProgress?.valentine2026?.count ?? 0;
+            const questCompleted = userData?.questProgress?.valentine2026?.completed ?? false;
+
+            // Only increment if quest not already completed
+            if (!questCompleted && currentProgress < 5) {
+              const newProgress = Math.min(currentProgress + 1, 5);
+
+              // Update user's quest progress
+              await userRef.update({
+                "questProgress.valentine2026.count": newProgress,
+              });
+
+              logger.info(
+                `Updated Valentine quest progress for user ${creatorId}: ${newProgress}/5`
+              );
+
+              // Check if quest is now complete (reached 5 approved spots)
+              if (newProgress >= 5) {
+                // Mark quest as completed and unlock rewards
+                const now = new Date();
+                await userRef.update({
+                  "questProgress.valentine2026.completed": true,
+                  "questProgress.valentine2026.completedAt": now.toISOString(),
+                  "questRewards.valentine2026.mapThemeUnlocked": true,
+                  "questRewards.valentine2026.highlightBonus": 1,
+                  "questRewards.valentine2026.completedAt": now.toISOString(),
+                });
+
+                logger.info(`Valentine quest completed for user ${creatorId}!`);
+
+                // Send quest completion notification
+                await sendNotificationToUser(
+                  creatorId,
+                  "valentineQuestCompleted",
+                  "valentineQuestCompletedBody",
+                  [],
+                  {
+                    type: "valentine_quest_completed",
+                  },
+                  "valentineQuestCompleted"
+                );
+              }
+            }
+          }
+        } catch (error) {
+          logger.error("Error updating Valentine quest progress:", error);
+        }
+      }
     }
   }
 );
@@ -404,3 +478,125 @@ export const onNewPendingSpot = functions.firestore.onDocumentCreated(
     }
   }
 );
+
+// ========================================
+// CALLABLE: Highlight a Spot
+// ========================================
+export const highlightSpot = functions.https.onCall(async (data: any, context: any) => {
+  // Check authentication
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "User must be authenticated to highlight a spot"
+    );
+  }
+
+  const userId = context.auth.uid;
+  const { spotId } = data;
+
+  if (!spotId) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Spot ID is required"
+    );
+  }
+
+  try {
+    // Get user document
+    const userRef = db.collection("users").doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError("not-found", "User not found");
+    }
+
+    const userData = userDoc.data();
+
+    // Check if user has highlight bonus available
+    const highlightBonus = userData?.questRewards?.valentine2026?.highlightBonus ?? 0;
+    if (highlightBonus <= 0) {
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "No highlight bonus available"
+      );
+    }
+
+    // Count active highlights by this user
+    const activeHighlights = userData?.questRewards?.valentine2026?.activeHighlights ?? [];
+    if (activeHighlights.length >= highlightBonus) {
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "You have reached your highlight limit"
+      );
+    }
+
+    // Check if spot exists
+    const spotRef = db.collection("spots").doc(spotId);
+    const spotDoc = await spotRef.get();
+
+    if (!spotDoc.exists) {
+      throw new functions.https.HttpsError("not-found", "Spot not found");
+    }
+
+    // Check if user already highlighted this spot
+    const spotData = spotDoc.data();
+    const highlighted = spotData?.highlighted || [];
+    const alreadyHighlighted = highlighted.some(
+      (h: any) => h.userId === userId
+    );
+
+    if (alreadyHighlighted) {
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "You have already highlighted this spot"
+      );
+    }
+
+    // Create highlight entry (expires in 7 days)
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+
+    // Add highlight to spot
+    await spotRef.update({
+      highlighted: [...highlighted, {
+        userId: userId,
+        highlightedAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+      }],
+    });
+
+    // Update user's active highlights and decrement bonus
+    await userRef.update({
+      "questRewards.valentine2026.activeHighlights": [
+        ...activeHighlights,
+        {
+          spotId: spotId,
+          highlightedAt: now.toISOString(),
+          expiresAt: expiresAt.toISOString(),
+        },
+      ],
+    });
+
+    logger.info(
+      `User ${userId} highlighted spot ${spotId}. Expires: ${expiresAt.toISOString()}`
+    );
+
+    return {
+      success: true,
+      message: "Spot highlighted successfully",
+      expiresAt: expiresAt.toISOString(),
+    };
+  } catch (error: any) {
+    logger.error("Error highlighting spot:", error);
+    if (error.code?.startsWith("PERMISSION_DENIED") ||
+        error.code?.startsWith("NOT_FOUND") ||
+        error.code?.startsWith("INVALID_ARGUMENT") ||
+        error.code?.startsWith("UNAUTHENTICATED")) {
+      throw error;
+    }
+    throw new functions.https.HttpsError(
+      "internal",
+      "Failed to highlight spot"
+    );
+  }
+});

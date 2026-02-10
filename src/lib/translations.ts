@@ -153,6 +153,19 @@ export const translations = {
     themeSilver: 'Ezüst',
     themeRetro: 'Retro',
     themePurple: 'Lila',
+    themeValentine: 'Valentin',
+
+    // Valentine Quest
+    valentineQuestTitle: 'Valentin napi quest',
+    valentineQuestSubtitle: 'Rakj fel 5 spotot a maphoz a jutalmak begyujtesehez',
+    valentineQuestDuration: 'Idotartam: 2026.02.10 - 2026.02.24',
+    valentineQuestRewards: 'Jutalmak',
+    valentineQuestRewardTheme: 'Uj limitált valentin napi terkep tema',
+    valentineQuestRewardHighlight: '1 hely kiemelese',
+    valentineQuestProgress: '{count} / {total} teljesitve',
+    valentineQuestCompleted: 'Sikerult! Feloldottad a jutalmakat',
+    daysRemaining: 'nap van hátra',
+    questEnded: 'A quest véget ért',
 
     // Admin Panel
     pendingApproval: 'Jóváhagyásra vár',
@@ -258,6 +271,16 @@ export const translations = {
     levelMaster: 'Felfedező',
     levelLegend: 'Spotmester',
     levelDiamond: 'Világutazó',
+
+    // Spot Highlight
+    highlightSpot: 'Spot kiemeléése',
+    spotHasHighlight: '⭐ Ez a spot ki van emelve',
+    highlightExpires: 'Kiemeléés lejár: {date}',
+    youHighlightedThis: 'Te emeltél ki ezt',
+    notEnoughHighlights: 'Nincs több kiemeléési bónuszod',
+    highlightSuccess: 'Spot kiemelt! 7 napig lesz látható',
+    highlightError: 'Hiba a kiemeléés során',
+    highlightBonus: 'Kiemeléési bónusz: {count}',
 
     // Settings
     settings: 'Beállítások',
@@ -426,6 +449,19 @@ export const translations = {
     themeSilver: 'Silver',
     themeRetro: 'Retro',
     themePurple: 'Purple',
+    themeValentine: 'Valentine',
+
+    // Valentine Quest
+    valentineQuestTitle: 'Valentine quest',
+    valentineQuestSubtitle: 'Add 5 spots to the map to claim the rewards',
+    valentineQuestDuration: 'Duration: 2026-02-10 - 2026-02-24',
+    valentineQuestRewards: 'Rewards',
+    valentineQuestRewardTheme: 'Limited Valentine map theme',
+    valentineQuestRewardHighlight: '1 spot highlight',
+    valentineQuestProgress: '{count} / {total} completed',
+    valentineQuestCompleted: 'Success! Rewards unlocked',
+    daysRemaining: 'days left',
+    questEnded: 'Quest ended',
 
     // Admin Panel
     pendingApproval: 'Pending Approval',
@@ -531,6 +567,16 @@ export const translations = {
     levelMaster: 'Explorer',
     levelLegend: 'Spot Master',
     levelDiamond: 'World Traveler',
+
+    // Spot Highlight
+    highlightSpot: 'Highlight this spot',
+    spotHasHighlight: '⭐ This spot is highlighted',
+    highlightExpires: 'Highlight expires: {date}',
+    youHighlightedThis: 'You highlighted this',
+    notEnoughHighlights: 'No more highlight bonuses available',
+    highlightSuccess: 'Spot highlighted! Visible for 7 days',
+    highlightError: 'Error highlighting spot',
+    highlightBonus: 'Highlight bonus: {count}',
 
     // Settings
     settings: 'Settings',
@@ -690,6 +736,19 @@ export const translations = {
     themeSilver: 'Silber',
     themeRetro: 'Retro',
     themePurple: 'Lila',
+    themeValentine: 'Valentin',
+
+    // Valentine Quest
+    valentineQuestTitle: 'Valentin Quest',
+    valentineQuestSubtitle: 'Fuge 5 Orte zur Karte hinzu, um die Belohnungen zu erhalten',
+    valentineQuestDuration: 'Zeitraum: 2026-02-10 - 2026-02-24',
+    valentineQuestRewards: 'Belohnungen',
+    valentineQuestRewardTheme: 'Limitiertes Valentin Karten-Theme',
+    valentineQuestRewardHighlight: '1 Ort hervorheben',
+    valentineQuestProgress: '{count} / {total} abgeschlossen',
+    valentineQuestCompleted: 'Geschafft! Belohnungen freigeschaltet',
+    daysRemaining: 'Tage verbleibend',
+    questEnded: 'Quest beendet',
     
     distance: 'Entfernung',
     anyDistance: 'Beliebige Entfernung',
@@ -805,6 +864,16 @@ export const translations = {
     levelMaster: 'Entdecker',
     levelLegend: 'Spotmeister',
     levelDiamond: 'Weltreisender',
+
+    // Spot Highlight
+    highlightSpot: 'Ort hervorheben',
+    spotHasHighlight: '⭐ Dieser Ort ist hervorgehoben',
+    highlightExpires: 'Hervorhebung endet: {date}',
+    youHighlightedThis: 'Du hast dies hervorgehoben',
+    notEnoughHighlights: 'Keine weiteren Hervorhebungs-Boni verfügbar',
+    highlightSuccess: 'Ort hervorgehoben! Sichtbar für 7 Tage',
+    highlightError: 'Fehler beim Hervorheben des Ortes',
+    highlightBonus: 'Hervorhebungs-Bonus: {count}',
 
     // Settings
     settings: 'Einstellungen',
