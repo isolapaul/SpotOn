@@ -4,8 +4,8 @@ import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db, app } from '@/lib/firebase';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { useToastStore } from '@/store/useToastStore';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { translations } from '@/lib/translations';
 
 // Get VAPID key from environment variables
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
@@ -16,8 +16,10 @@ export const usePushNotifications = () => {
   const [foregroundUnsubscribe, setForegroundUnsubscribe] = useState<(() => void) | null>(null);
   const { user } = useUserStore();
   const { language } = useLanguageStore();
-  const { showToast } = useToastStore();
   const { addNotification } = useNotificationStore();
+  
+  // Helper to get translation
+  const t = (key: keyof typeof translations.hu) => translations[language || 'hu'][key] || key;
 
   const isNotificationSupported = () => 'Notification' in globalThis;
 
@@ -40,7 +42,7 @@ export const usePushNotifications = () => {
     await navigator.serviceWorker.ready;
 
     if (!VAPID_KEY) {
-      showToast('Push notifications configuration error', 'error');
+      console.error('VAPID_KEY not configured');
       return null;
     }
 
@@ -99,7 +101,12 @@ export const usePushNotifications = () => {
       if (permission !== 'granted') {
         setIsPermissionGranted(false);
         if (permission === 'denied') {
-          showToast('Notifications blocked. Enable them in browser settings.', 'error');
+          // Route to notification center instead of toast
+          addNotification({
+            title: t('notificationsBlocked'),
+            body: t('notificationsBlockedDesc'),
+            type: 'warning',
+          });
         }
         return false;
       }
@@ -116,7 +123,11 @@ export const usePushNotifications = () => {
       return true;
     } catch (error) {
       console.error('Failed to initialize push notifications:', error);
-      showToast('Failed to enable notifications', 'error');
+      addNotification({
+        title: t('notificationsBlocked'),
+        body: String(error),
+        type: 'warning',
+      });
       return false;
     } finally {
       setIsLoading(false);
@@ -128,11 +139,10 @@ export const usePushNotifications = () => {
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('Foreground message received:', payload);
       
-      // Show toast notification when app is in foreground
       const title = payload.notification?.title || 'New Notification';
       const body = payload.notification?.body || '';
       
-      // Add to notification center
+      // Add to notification center only (no toast to avoid stacking)
       const notificationType = payload.data?.type || 'general';
       addNotification({
         title,
@@ -140,9 +150,7 @@ export const usePushNotifications = () => {
         type: notificationType as any,
       });
       
-      showToast(`${title}: ${body}`, 'info');
-      
-      // You can also show a native notification if desired
+      // Show native browser notification if permitted
       if (Notification.permission === 'granted') {
         new Notification(title, {
           body: body,
@@ -173,10 +181,18 @@ export const usePushNotifications = () => {
         notificationsEnabled: false,
       });
       setIsPermissionGranted(false);
-      showToast('Notifications disabled', 'info');
+      addNotification({
+        title: t('notificationsDisabled'),
+        body: '',
+        type: 'system',
+      });
     } catch (error) {
       console.error('Failed to disable notifications:', error);
-      showToast('Failed to disable notifications', 'error');
+      addNotification({
+        title: t('errorSavingSettings'),
+        body: String(error),
+        type: 'warning',
+      });
     }
   };
 

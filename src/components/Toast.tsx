@@ -24,7 +24,7 @@ const colors = {
   info: 'from-blue-500 to-cyan-600',
 };
 
-export default function Toast({ message, type, onClose, duration = 3000 }: Readonly<ToastProps>) {
+export default function Toast({ message, type, onClose, duration = 4000 }: Readonly<ToastProps>) {
   const Icon = icons[type];
 
   useEffect(() => {

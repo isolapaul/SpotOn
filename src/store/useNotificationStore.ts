@@ -7,7 +7,7 @@ export interface Notification {
   body: string;
   timestamp: number;
   read: boolean;
-  type: 'spot_approved' | 'new_review' | 'new_like' | 'new_pending_spot' | 'general';
+  type: 'spot_approved' | 'new_review' | 'new_like' | 'new_pending_spot' | 'general' | 'success' | 'warning' | 'system';
 }
 
 interface NotificationStore {

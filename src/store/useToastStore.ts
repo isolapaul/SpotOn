@@ -21,9 +21,8 @@ export const useToastStore = create<ToastStore>((set) => ({
   
   showToast: (message, type) => {
     const id = ++toastId;
-    set((state) => ({
-      toasts: [...state.toasts, { id, message, type }],
-    }));
+    // Only keep one toast at a time - replace existing
+    set({ toasts: [{ id, message, type }] });
   },
   
   removeToast: (id) => {

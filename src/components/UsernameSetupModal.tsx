@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { User, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { useToastStore } from '@/store/useToastStore';
+import { useNotificationStore } from '@/store/useNotificationStore';
 
 interface UsernameSetupModalProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ interface UsernameSetupModalProps {
 export default function UsernameSetupModal({ isOpen, onClose }: Readonly<UsernameSetupModalProps>) {
   const { user, updateUsername, checkUsernameAvailable, setNeedsUsername } = useUserStore();
   const { t } = useLanguageStore();
-  const { showToast } = useToastStore();
+  const { addNotification } = useNotificationStore();
   const [username, setUsername] = useState(user?.username || '');
   const [isChecking, setIsChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
@@ -68,7 +68,11 @@ export default function UsernameSetupModal({ isOpen, onClose }: Readonly<Usernam
     setError(null);
     try {
       await updateUsername(trimmed);
-      showToast(t('usernameSaved'), 'success');
+      addNotification({
+        title: t('usernameSaved'),
+        body: `@${trimmed}`,
+        type: 'success',
+      });
       onClose();
     } catch (err: any) {
       setError(err.message || t('usernameSaveError'));

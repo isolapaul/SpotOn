@@ -133,6 +133,8 @@ export const translations = {
     notificationSettingsSaved: 'Beállítások mentve',
     errorSavingSettings: 'Hiba a mentés során',
     saveSettings: 'Beállítások mentése',
+    notificationsBlocked: 'Értesítések blokkolva',
+    notificationsBlockedDesc: 'Az értesítések blokkolva vannak. Engedélyezd a böngésző beállításaiban.',
     
     // Notification Center
     notifications: 'Értesítések',
@@ -434,6 +436,8 @@ export const translations = {
     notificationSettingsSaved: 'Settings saved',
     errorSavingSettings: 'Error saving settings',
     saveSettings: 'Save Settings',
+    notificationsBlocked: 'Notifications blocked',
+    notificationsBlockedDesc: 'Notifications are blocked. Enable them in browser settings.',
     
     // Notification Center
     notifications: 'Notifications',
@@ -726,6 +730,8 @@ export const translations = {
     notificationSettingsSaved: 'Einstellungen gespeichert',
     errorSavingSettings: 'Fehler beim Speichern',
     saveSettings: 'Einstellungen speichern',
+    notificationsBlocked: 'Benachrichtigungen blockiert',
+    notificationsBlockedDesc: 'Benachrichtigungen sind blockiert. Aktiviere sie in den Browsereinstellungen.',
     
     // Notification Center
     notifications: 'Benachrichtigungen',

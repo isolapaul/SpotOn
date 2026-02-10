@@ -39,6 +39,12 @@ export default function NotificationCenter() {
         return '❤️';
       case 'new_pending_spot':
         return '🛡️';
+      case 'success':
+        return '✅';
+      case 'warning':
+        return '⚠️';
+      case 'system':
+        return '⚙️';
       default:
         return '📢';
     }

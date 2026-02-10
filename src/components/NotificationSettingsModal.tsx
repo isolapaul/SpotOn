@@ -7,7 +7,7 @@ import { translations } from '@/lib/translations';
 import { useUserStore } from '@/store/useUserStore';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useToastStore } from '@/store/useToastStore';
+import { useNotificationStore } from '@/store/useNotificationStore';
 
 interface NotificationSettingsModalProps {
   isOpen: boolean;
@@ -86,7 +86,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 }) => {
   const { language } = useLanguageStore();
   const { user, setUser } = useUserStore();
-  const { showToast } = useToastStore();
+  const { addNotification } = useNotificationStore();
   const t = (key: keyof typeof translations.hu) => translations[language || 'hu'][key] || key;
 
   // Default settings if none exist
@@ -131,11 +131,19 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         notificationSettings: settings
       });
 
-      showToast(t('notificationSettingsSaved'), 'success');
+      addNotification({
+        title: t('notificationSettingsSaved'),
+        body: t('notificationSettingsInfo'),
+        type: 'success',
+      });
       onClose();
     } catch (error) {
       console.error('Error saving notification settings:', error);
-      showToast(t('errorSavingSettings'), 'error');
+      addNotification({
+        title: t('errorSavingSettings'),
+        body: '',
+        type: 'warning',
+      });
     } finally {
       setIsSaving(false);
     }
