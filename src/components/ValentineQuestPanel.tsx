@@ -128,19 +128,21 @@ export default function ValentineQuestPanel() {
   // ═══════════════════════════════════════════════════════════════════════════
   return (
     <>
-      {/* Backdrop - eslint-disable for accessibility since this is a non-essential close action */}
+      {/* Backdrop + Modal Container - flexbox centering is more reliable on mobile */}
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div 
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 animate-fade-in cursor-pointer"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in"
         onClick={handleClose}
-      />
-      
-      {/* Modal */}
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50
-        w-[calc(100%-2rem)] max-w-sm animate-scale-in">
-        <div className="bg-gradient-to-br from-pink-500/15 via-slate-900/95 to-rose-500/15
-          backdrop-blur-2xl rounded-3xl p-5 space-y-4
-          border border-pink-300/20 shadow-2xl shadow-pink-500/20">
+      >
+        {/* Modal */}
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+        <div 
+          className="w-full max-w-sm animate-scale-in"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="bg-gradient-to-br from-pink-500/15 via-slate-900/95 to-rose-500/15
+            backdrop-blur-2xl rounded-3xl p-5 space-y-4
+            border border-pink-300/20 shadow-2xl shadow-pink-500/20">
           
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
@@ -241,6 +243,7 @@ export default function ValentineQuestPanel() {
               ✓ {t('valentineQuestCompleted')}
             </div>
           )}
+          </div>
         </div>
       </div>
     </>
