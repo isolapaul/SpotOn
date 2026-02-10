@@ -157,13 +157,18 @@ export const translations = {
 
     // Valentine Quest
     valentineQuestTitle: 'Valentin napi quest',
-    valentineQuestSubtitle: 'Rakj fel 5 spotot a maphoz a jutalmak begyujtesehez',
-    valentineQuestDuration: 'Idotartam: 2026.02.10 - 2026.02.24',
+    valentineQuestSubtitle: 'Rakj fel 5 spotot a térképhez a jutalmak begyűjtéséhez',
+    valentineQuestDuration: 'Időtartam: 2026.02.10 - 2026.02.24',
     valentineQuestRewards: 'Jutalmak',
-    valentineQuestRewardTheme: 'Uj limitált valentin napi terkep tema',
-    valentineQuestRewardHighlight: '1 hely kiemelese',
-    valentineQuestProgress: '{count} / {total} teljesitve',
-    valentineQuestCompleted: 'Sikerult! Feloldottad a jutalmakat',
+    valentineQuestRewardTheme: 'Limitált valentin napi térkép téma',
+    valentineQuestRewardHighlight: '1 spot kiemelése',
+    valentineQuestProgress: '{count} / {total} teljesítve',
+    valentineQuestCompleted: 'Sikerült! Feloldottad a jutalmakat',
+    questInProgress: 'Folyamatban',
+    questDone: 'Kész',
+    claimRewards: 'Jutalmak átvétele',
+    claimingRewards: 'Átvétel...',
+    claimError: 'Hiba történt',
     daysRemaining: 'nap van hátra',
     questEnded: 'A quest véget ért',
 
@@ -452,7 +457,7 @@ export const translations = {
     themeValentine: 'Valentine',
 
     // Valentine Quest
-    valentineQuestTitle: 'Valentine quest',
+    valentineQuestTitle: 'Valentine Quest',
     valentineQuestSubtitle: 'Add 5 spots to the map to claim the rewards',
     valentineQuestDuration: 'Duration: 2026-02-10 - 2026-02-24',
     valentineQuestRewards: 'Rewards',
@@ -460,6 +465,11 @@ export const translations = {
     valentineQuestRewardHighlight: '1 spot highlight',
     valentineQuestProgress: '{count} / {total} completed',
     valentineQuestCompleted: 'Success! Rewards unlocked',
+    questInProgress: 'In Progress',
+    questDone: 'Done',
+    claimRewards: 'Claim Rewards',
+    claimingRewards: 'Claiming...',
+    claimError: 'Error occurred',
     daysRemaining: 'days left',
     questEnded: 'Quest ended',
 
@@ -740,13 +750,18 @@ export const translations = {
 
     // Valentine Quest
     valentineQuestTitle: 'Valentin Quest',
-    valentineQuestSubtitle: 'Fuge 5 Orte zur Karte hinzu, um die Belohnungen zu erhalten',
+    valentineQuestSubtitle: 'Füge 5 Orte zur Karte hinzu, um die Belohnungen zu erhalten',
     valentineQuestDuration: 'Zeitraum: 2026-02-10 - 2026-02-24',
     valentineQuestRewards: 'Belohnungen',
     valentineQuestRewardTheme: 'Limitiertes Valentin Karten-Theme',
     valentineQuestRewardHighlight: '1 Ort hervorheben',
     valentineQuestProgress: '{count} / {total} abgeschlossen',
     valentineQuestCompleted: 'Geschafft! Belohnungen freigeschaltet',
+    questInProgress: 'In Bearbeitung',
+    questDone: 'Fertig',
+    claimRewards: 'Belohnungen einlösen',
+    claimingRewards: 'Einlösen...',
+    claimError: 'Fehler aufgetreten',
     daysRemaining: 'Tage verbleibend',
     questEnded: 'Quest beendet',
     
