@@ -10,7 +10,7 @@ import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'f
 import { db } from '@/lib/firebase';
 import type { Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
-import { getLevelInfo, getLevelProgress, getSpotsRemainingText, CUSTOM_NAME_COLORS, CUSTOM_NAME_FONTS } from '@/lib/levelUtils';
+import { getLevelInfo, getLevelProgress, getSpotsRemainingText, CUSTOM_NAME_COLORS, CUSTOM_NAME_FONTS, getCustomNameColorValue } from '@/lib/levelUtils';
 import SettingsPanel from './SettingsPanel';
 
 interface ProfilePanelProps {
@@ -749,7 +749,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                           )}
                         </div>
                         <div>
-                          <p className={`font-medium ${user?.customNameFont || 'font-sans'} ${user?.customNameColor || 'text-cyan-300'}`}>
+                          <p
+                            className={`font-medium ${user?.customNameFont || 'font-sans'}`}
+                            style={{
+                              color: getCustomNameColorValue(user?.customNameColor) || '#67e8f9',
+                            }}
+                          >
                             {user?.username || 'username'}
                           </p>
                           <p className="text-white/60 text-xs">Így fog megjelenni másoknak</p>

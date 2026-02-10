@@ -365,7 +365,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     '/placeholder-spot.jpg';
 
   const creatorDisplayName = creatorName || spot.createdByName || t('anonymous');
-  const creatorNameColorClass = getUserNameColor(
+  const creatorNameColor = getUserNameColor(
     creatorSpotsCount ?? 0,
     creatorCustomNameColor
   );
@@ -640,7 +640,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                 <User className="w-4 h-4" />
                 <span className="text-xs uppercase">{t('by')}</span>
               </div>
-              <p className={`font-medium ${creatorNameColorClass}`}>
+              <p className="font-medium" style={{ color: creatorNameColor }}>
                 {creatorDisplayName}
               </p>
             </div>
@@ -753,7 +753,15 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
-                            <p className={`font-medium ${review.customNameFont || 'font-sans'} ${getUserNameColor(review.userSpotsCount ?? reviewerMeta[review.userId]?.spotsCount ?? 0, review.customNameColor ?? reviewerMeta[review.userId]?.customNameColor)}`}>
+                            <p
+                              className={`font-medium ${review.customNameFont || 'font-sans'}`}
+                              style={{
+                                color: getUserNameColor(
+                                  review.userSpotsCount ?? reviewerMeta[review.userId]?.spotsCount ?? 0,
+                                  review.customNameColor ?? reviewerMeta[review.userId]?.customNameColor
+                                ),
+                              }}
+                            >
                               {reviewerMeta[review.userId]?.username || review.userName || t('anonymous')}
                             </p>
                             {checkIsAdmin(review.userEmail) && (

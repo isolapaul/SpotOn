@@ -123,11 +123,38 @@ export function getLevelProgress(spotsCount: number): number {
  * Get the user's name color based on their level
  * If user has custom color (level 5), return that instead
  */
+const LEVEL_NAME_COLORS: Record<number, string> = {
+  1: '#cd7f32', // bronze
+  2: '#c0c0c0', // silver
+  3: '#f5c542', // gold
+  4: '#f5c542', // gold
+  5: '#06b6d4', // fallback
+};
+
+const CUSTOM_NAME_COLOR_VALUES: Record<string, string> = {
+  'text-cyan-300': '#67e8f9',
+  'text-purple-400': '#c084fc',
+  'text-emerald-400': '#34d399',
+  'text-rose-400': '#fb7185',
+  'text-yellow-300': '#fde047',
+  'text-slate-300': '#cbd5e1',
+  'text-orange-400': '#fb923c',
+};
+
+export function getCustomNameColorValue(customColor?: string): string | undefined {
+  if (!customColor) return undefined;
+  if (customColor.startsWith('#') || customColor.startsWith('rgb') || customColor.startsWith('hsl')) {
+    return customColor;
+  }
+  return CUSTOM_NAME_COLOR_VALUES[customColor];
+}
+
 export function getUserNameColor(spotsCount: number, customColor?: string): string {
-  if (customColor) return customColor;
-  
-  const levelInfo = getLevelInfo(spotsCount);
-  return levelInfo.textColor;
+  const resolvedCustom = getCustomNameColorValue(customColor);
+  if (resolvedCustom) return resolvedCustom;
+
+  const level = calculateLevel(spotsCount);
+  return LEVEL_NAME_COLORS[level] || LEVEL_NAME_COLORS[1];
 }
 
 /**

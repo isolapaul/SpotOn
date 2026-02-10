@@ -102,7 +102,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
   }, [spot?.createdBy, user?.uid, user?.username, user?.customNameColor]);
 
   const creatorDisplayName = creatorName || spot.createdByName || t('anonymous');
-  const creatorNameColorClass = getUserNameColor(
+  const creatorNameColor = getUserNameColor(
     creatorSpotsCount ?? 0,
     creatorCustomNameColor
   );
@@ -185,7 +185,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
 
         {/* Creator */}
         <div>
-          <span className={`text-sm font-medium ${creatorNameColorClass}`}>
+          <span className="text-sm font-medium" style={{ color: creatorNameColor }}>
             {creatorDisplayName}
           </span>
         </div>
