@@ -30,7 +30,7 @@ export const LEVEL_THRESHOLDS = [
   { level: 2, spotsRequired: 3, name: 'Haladó', icon: '🥈' },
   { level: 3, spotsRequired: 10, name: 'Felfedező', icon: '🥇' },
   { level: 4, spotsRequired: 15, name: 'Spotmester', icon: '⭐' },
-  { level: 5, spotsRequired: 20, name: 'Vilagutazo', icon: '💎' },
+  { level: 5, spotsRequired: 20, name: 'Világutazó', icon: '💎' },
 ];
 
 /**
@@ -125,7 +125,7 @@ export function getLevelProgress(spotsCount: number): number {
  */
 const LEVEL_NAME_COLORS: Record<number, string> = {
   1: '#cd7f32', // bronze
-  2: '#c0c0c0', // silver
+  2: '#aeb4bf', // silver
   3: '#f5c542', // gold
   4: '#f5c542', // gold
   5: '#06b6d4', // fallback

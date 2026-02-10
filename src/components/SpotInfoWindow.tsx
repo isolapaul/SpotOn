@@ -183,13 +183,6 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
           </p>
         )}
 
-        {/* Creator */}
-        <div>
-          <span className="text-sm font-medium" style={{ color: creatorNameColor }}>
-            {creatorDisplayName}
-          </span>
-        </div>
-
         {/* Rating */}
         {reviewCount > 0 ? (
           <div className="flex items-center gap-1">

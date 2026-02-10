@@ -257,7 +257,7 @@ export const translations = {
     levelExplorer: 'Haladó',
     levelMaster: 'Felfedező',
     levelLegend: 'Spotmester',
-    levelDiamond: 'Vilagutazo',
+    levelDiamond: 'Világutazó',
 
     // Settings
     settings: 'Beállítások',
