@@ -5,6 +5,14 @@ export interface Spot {
   name: string;
   description: string;
   imageUrls: string[]; // Array of image URLs (max 20)
+  spotImages?: {
+    id: string;
+    url: string;
+    addedBy?: string;
+    addedAt: Date;
+    likes: number;
+    likedBy: string[];
+  }[];
   primaryImageIndex?: number; // Index of the primary image to display
   category: 'scenic' | 'smoke-spot' | 'viewpoint' | 'other' | 'part';
   createdBy: string;

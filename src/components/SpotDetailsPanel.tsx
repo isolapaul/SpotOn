@@ -22,7 +22,7 @@ interface SpotDetailsPanelProps {
 export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Readonly<SpotDetailsPanelProps>) {
   const { user, toggleFavorite } = useUserStore();
   const { language, t } = useLanguageStore();
-  const { addReview, approveSpot, addSpotImages } = useSpotStore();
+  const { addReview, approveSpot, addSpotImages, migrateSpotImages, toggleSpotImageLike } = useSpotStore();
   const { showToast } = useToastStore();
   const [isFavorite, setIsFavorite] = useState(
     spot ? user?.savedSpots?.includes(spot.id) || false : false
@@ -38,6 +38,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [reviewerMeta, setReviewerMeta] = useState<Record<string, { spotsCount?: number; customNameColor?: string; username?: string }>>({});
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [uploaderNames, setUploaderNames] = useState<Record<string, string>>({});
   
   // Swipe to Dismiss - Horizontal
   const [dragStartX, setDragStartX] = useState(0);
@@ -96,6 +97,61 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       isMounted = false;
     };
   }, [spot?.createdBy, user?.uid, user?.username, user?.customNameColor, userSpotsCount]);
+
+  useEffect(() => {
+    if (!spot) return;
+    if (!spot.spotImages || spot.spotImages.length === 0) {
+      if (spot.imageUrls && spot.imageUrls.length > 0) {
+        migrateSpotImages(spot.id).catch((error) => {
+          console.error('Failed to migrate spot images:', error);
+        });
+      }
+      return;
+    }
+
+    const missingUploaderIds = Array.from(
+      new Set(
+        spot.spotImages
+          .map((image) => image.addedBy)
+          .filter((id): id is string => Boolean(id))
+          .filter((id) => !uploaderNames[id])
+      )
+    );
+
+    if (missingUploaderIds.length === 0) return;
+
+    let isMounted = true;
+    const fetchUploaderNames = async () => {
+      try {
+        const results = await Promise.all(
+          missingUploaderIds.map(async (userId) => {
+            const userSnap = await getDoc(doc(db, 'users', userId));
+            const data = userSnap.exists()
+              ? (userSnap.data() as { username?: string })
+              : undefined;
+            return { userId, username: data?.username || t('anonymous') };
+          })
+        );
+
+        if (!isMounted) return;
+        setUploaderNames((prev) => {
+          const next = { ...prev };
+          results.forEach((result) => {
+            next[result.userId] = result.username;
+          });
+          return next;
+        });
+      } catch (error) {
+        console.error('Failed to fetch uploader names:', error);
+      }
+    };
+
+    fetchUploaderNames();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [spot, uploaderNames, migrateSpotImages, t]);
 
   useEffect(() => {
     if (!spot?.reviews || spot.reviews.length === 0) return;
@@ -264,7 +320,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
 
     setIsUploadingPhotos(true);
     try {
-      await addSpotImages(spot.id, files);
+      await addSpotImages(spot.id, files, user.uid);
       showToast(t('spotPhotosAdded'), 'success');
     } catch (error: any) {
       const message =
@@ -291,6 +347,22 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const averageRating = spot.reviews && spot.reviews.length > 0
     ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
     : 0;
+
+  const sortedSpotImages = (spot.spotImages || [])
+    .filter((image) => image.url !== '/placeholder-spot.jpg')
+    .sort((a, b) => {
+      if (b.likes !== a.likes) return b.likes - a.likes;
+      return a.addedAt?.toMillis?.() && b.addedAt?.toMillis?.()
+        ? b.addedAt.toMillis() - a.addedAt.toMillis()
+        : 0;
+    });
+
+  const heroImageUrl =
+    sortedSpotImages[0]?.url ||
+    spot.imageUrls?.[spot.primaryImageIndex || 0] ||
+    spot.imageUrls?.[0] ||
+    (spot as any).imageUrl ||
+    '/placeholder-spot.jpg';
 
   const creatorDisplayName = creatorName || spot.createdByName || t('anonymous');
   const creatorNameColorClass = getUserNameColor(
@@ -357,7 +429,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         {/* Hero Image */}
         <div className="relative w-full h-[40vh] flex-shrink-0 pointer-events-auto">
           <Image
-            src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
+            src={heroImageUrl}
             alt={spot.name}
             fill
             sizes="100vw"
@@ -506,6 +578,50 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
             <div>
               <h2 className="text-xl font-bold text-white mb-3">{t('description')}</h2>
               <p className="text-white/80 leading-relaxed">{spot.description}</p>
+            </div>
+          )}
+
+          {/* Photos */}
+          {sortedSpotImages.length > 0 && (
+            <div>
+              <h2 className="text-xl font-bold text-white mb-3">{t('spotPhotos')}</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {sortedSpotImages.map((image) => {
+                  const isLiked = user ? image.likedBy.includes(user.uid) : false;
+                  return (
+                    <div key={image.id} className="relative rounded-xl overflow-hidden border border-white/10">
+                      <Image
+                        src={image.url}
+                        alt={spot.name}
+                        fill
+                        sizes="200px"
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-2 flex items-end justify-between gap-2">
+                        <div className="text-white/80 text-xs">
+                          {image.addedBy ? uploaderNames[image.addedBy] || t('anonymous') : t('anonymous')}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!user) {
+                              showToast(t('mustBeLoggedIn'), 'error');
+                              return;
+                            }
+                            toggleSpotImageLike(spot.id, image.id, user.uid).catch((error) => {
+                              console.error('Failed to toggle image like:', error);
+                            });
+                          }}
+                          className="flex items-center gap-1 text-xs font-medium text-white/90"
+                        >
+                          <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+                          <span>{image.likes}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 

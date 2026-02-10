@@ -1,15 +1,15 @@
 import { create } from 'zustand';
-import { 
-  collection, 
-  addDoc, 
-  serverTimestamp, 
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
   onSnapshot,
   query,
   orderBy,
   doc,
   updateDoc,
   arrayUnion,
-  Timestamp
+  Timestamp,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
@@ -55,6 +55,15 @@ export interface Review {
   customNameFont?: string; // Custom name font if user is level 5
 }
 
+export interface SpotImage {
+  id: string;
+  url: string;
+  addedBy?: string;
+  addedAt: Timestamp;
+  likes: number;
+  likedBy: string[];
+}
+
 export type SpotCategory = 'scenic' | 'smoke-spot' | 'viewpoint' | 'other' | 'hiking' | 'random' | 'date-spot' | 'park' | 'part';
 
 export interface Spot {
@@ -63,6 +72,7 @@ export interface Spot {
   category: SpotCategory;
   description: string;
   imageUrls: string[]; // Changed to array
+  spotImages?: SpotImage[];
   primaryImageIndex?: number; // Index of primary image
   location: {
     lat: number;
@@ -85,7 +95,9 @@ interface SpotStore {
   fetchSpots: () => Promise<void>;
   addSpot: (spotData: Omit<Spot, 'id' | 'imageUrls' | 'createdAt' | 'status' | 'primaryImageIndex'>, imageFiles: File[], primaryIndex: number, userId: string, userEmail?: string) => Promise<void>;
   addReview: (spotId: string, review: Omit<Review, 'id' | 'createdAt'>) => Promise<void>;
-  addSpotImages: (spotId: string, imageFiles: File[]) => Promise<void>;
+  addSpotImages: (spotId: string, imageFiles: File[], userId: string) => Promise<void>;
+  migrateSpotImages: (spotId: string) => Promise<void>;
+  toggleSpotImageLike: (spotId: string, imageId: string, userId: string) => Promise<void>;
   approveSpot: (spotId: string) => Promise<void>;
 }
 
@@ -148,6 +160,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       set({ isLoading: true, error: null });
 
       const imageUrls: string[] = [];
+      const spotImages: SpotImage[] = [];
 
       // Compress and upload all images
       if (imageFiles && imageFiles.length > 0) {
@@ -169,10 +182,26 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
           await uploadBytes(imageRef, compressedFile);
           const imageUrl = await getDownloadURL(imageRef);
           imageUrls.push(imageUrl);
+          spotImages.push({
+            id: `${timestamp}_${random}`,
+            url: imageUrl,
+            addedBy: userId,
+            addedAt: Timestamp.now(),
+            likes: 0,
+            likedBy: [],
+          });
         }
       } else {
         // No images provided - use placeholder
         imageUrls.push('/placeholder-spot.jpg');
+        spotImages.push({
+          id: `${Date.now()}_placeholder`,
+          url: '/placeholder-spot.jpg',
+          addedBy: userId,
+          addedAt: Timestamp.now(),
+          likes: 0,
+          likedBy: [],
+        });
       }
       
       // Check if user is admin - admins get instant approval
@@ -182,6 +211,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       const spotDoc = {
         ...spotData,
         imageUrls,
+        spotImages,
         primaryImageIndex: imageUrls.length > 0 ? primaryIndex : 0,
         createdBy: userId,
         status: spotStatus,
@@ -232,7 +262,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
     }
   },
 
-  addSpotImages: async (spotId, imageFiles) => {
+  addSpotImages: async (spotId, imageFiles, userId) => {
     if (!imageFiles || imageFiles.length === 0) return;
 
     try {
@@ -243,6 +273,9 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         existingUrls.length === 1 && existingUrls[0] === '/placeholder-spot.jpg'
           ? []
           : existingUrls;
+      const baseSpotImages = (spot?.spotImages || []).filter(
+        (image) => image.url !== '/placeholder-spot.jpg'
+      );
 
       if (baseUrls.length + imageFiles.length > maxImages) {
         throw new Error('MAX_SPOT_IMAGES');
@@ -255,6 +288,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       };
 
       const newUrls: string[] = [];
+      const newSpotImages: SpotImage[] = [];
       for (const imageFile of imageFiles) {
         const compressedFile = await imageCompression(imageFile, options);
         const timestamp = Date.now();
@@ -264,12 +298,25 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         await uploadBytes(imageRef, compressedFile);
         const imageUrl = await getDownloadURL(imageRef);
         newUrls.push(imageUrl);
+        newSpotImages.push({
+          id: `${timestamp}_${random}`,
+          url: imageUrl,
+          addedBy: userId,
+          addedAt: Timestamp.now(),
+          likes: 0,
+          likedBy: [],
+        });
       }
 
       const updatedImageUrls = [...baseUrls, ...newUrls];
+      const updatedSpotImages = [...baseSpotImages, ...newSpotImages];
       const updatePayload: { imageUrls: string[]; primaryImageIndex?: number } = {
         imageUrls: updatedImageUrls,
       };
+
+      if (updatedSpotImages.length > 0) {
+        (updatePayload as { spotImages?: SpotImage[] }).spotImages = updatedSpotImages;
+      }
 
       if (!baseUrls.length) {
         updatePayload.primaryImageIndex = 0;
@@ -284,6 +331,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
             ? {
                 ...item,
                 imageUrls: updatedImageUrls,
+                spotImages: updatedSpotImages,
                 primaryImageIndex: updatePayload.primaryImageIndex ?? item.primaryImageIndex,
               }
             : item
@@ -293,6 +341,57 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       console.error('Error adding spot images:', error);
       throw error;
     }
+  },
+
+  migrateSpotImages: async (spotId) => {
+    const spot = get().spots.find((item) => item.id === spotId);
+    if (!spot || spot.spotImages?.length) return;
+
+    const urls = spot.imageUrls || [];
+    if (urls.length === 0) return;
+
+    const spotImages: SpotImage[] = urls.map((url, index) => ({
+      id: `${spotId}_${index}`,
+      url,
+      addedAt: Timestamp.now(),
+      likes: 0,
+      likedBy: [],
+    }));
+
+    const spotRef = doc(db, 'spots', spotId);
+    await updateDoc(spotRef, { spotImages });
+
+    set((state) => ({
+      spots: state.spots.map((item) =>
+        item.id === spotId ? { ...item, spotImages } : item
+      ),
+    }));
+  },
+
+  toggleSpotImageLike: async (spotId, imageId, userId) => {
+    const spot = get().spots.find((item) => item.id === spotId);
+    if (!spot || !spot.spotImages || spot.spotImages.length === 0) return;
+
+    const updatedImages = spot.spotImages.map((image) => {
+      if (image.id !== imageId) return image;
+      const alreadyLiked = image.likedBy.includes(userId);
+      return {
+        ...image,
+        likes: Math.max(0, image.likes + (alreadyLiked ? -1 : 1)),
+        likedBy: alreadyLiked
+          ? image.likedBy.filter((id) => id !== userId)
+          : [...image.likedBy, userId],
+      };
+    });
+
+    const spotRef = doc(db, 'spots', spotId);
+    await updateDoc(spotRef, { spotImages: updatedImages });
+
+    set((state) => ({
+      spots: state.spots.map((item) =>
+        item.id === spotId ? { ...item, spotImages: updatedImages } : item
+      ),
+    }));
   },
 
   approveSpot: async (spotId) => {
