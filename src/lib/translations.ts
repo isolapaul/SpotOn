@@ -72,6 +72,12 @@ export const translations = {
     noReviews: 'Még nincsenek értékelések',
     beFirstToReview: 'Légy az első, aki értékeli ezt a helyet!',
     openInMaps: 'Megnyitás Térképen',
+    addSpotPhotos: 'Képek hozzáadása a helyhez',
+    addPhotos: 'Képek hozzáadása',
+    uploadingPhotos: 'Képek feltöltése...',
+    spotPhotosAdded: 'Képek hozzáadva!',
+    spotPhotoAddError: 'Hiba a képek hozzáadásakor',
+    maxSpotImages: 'Legfeljebb 20 képet tölthetsz fel egy helyhez.',
     
     // Empty States
     noSpotsFound: '🗺️ Még nincsenek helyek. Légy az első, aki hozzáad egyet!',
@@ -338,6 +344,12 @@ export const translations = {
     noReviews: 'No reviews yet',
     beFirstToReview: 'Be the first to review this spot!',
     openInMaps: 'Open in Maps',
+    addSpotPhotos: 'Add photos to this spot',
+    addPhotos: 'Add photos',
+    uploadingPhotos: 'Uploading photos...',
+    spotPhotosAdded: 'Photos added!',
+    spotPhotoAddError: 'Error adding photos',
+    maxSpotImages: 'You can upload up to 20 photos per spot.',
     
     // Empty States
     noSpotsFound: '🗺️ No spots found yet. Be the first to add one!',
@@ -604,6 +616,12 @@ export const translations = {
     noReviews: 'Noch keine Bewertungen',
     beFirstToReview: 'Seien Sie der Erste, der diesen Ort bewertet!',
     openInMaps: 'In Karten öffnen',
+    addSpotPhotos: 'Fotos zu diesem Ort hinzufügen',
+    addPhotos: 'Fotos hinzufügen',
+    uploadingPhotos: 'Fotos werden hochgeladen...',
+    spotPhotosAdded: 'Fotos hinzugefügt!',
+    spotPhotoAddError: 'Fehler beim Hinzufügen der Fotos',
+    maxSpotImages: 'Maximal 20 Fotos pro Ort erlaubt.',
     
     // Empty States
     noSpotsFound: '🗺️ Noch keine Orte gefunden. Seien Sie der Erste, der einen hinzufügt!',

@@ -43,9 +43,9 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Check if adding these files would exceed the 15 image limit
-    if (imageFiles.length + files.length > 15) {
-      setError(`Maximum 15 képet tölthetsz fel. Jelenleg ${imageFiles.length} kép van feltöltve.`);
+    // Check if adding these files would exceed the 20 image limit
+    if (imageFiles.length + files.length > 20) {
+      setError(t('maxSpotImages'));
       return;
     }
 

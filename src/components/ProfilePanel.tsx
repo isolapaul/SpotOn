@@ -320,7 +320,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               <div className="flex items-center gap-2 mb-2 flex-wrap justify-center">
                 {isEditingUsername ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-white/50 text-3xl font-bold">@</span>
                     <input
                       id="edit-username"
                       name="editUsername"
@@ -347,7 +346,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   </div>
                 ) : (
                   <>
-                    <h2 className="text-3xl font-bold text-white text-center">@{user.username}</h2>
+                    <h2 className="text-3xl font-bold text-white text-center">{user.username}</h2>
                     <button
                       onClick={() => {
                         setNewUsername(user.username || '');
@@ -681,7 +680,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                 {colorOption.name}
                               </div>
                               <div className={`text-xs ${colorOption.value} opacity-70`}>
-                                @{user?.username || 'username'}
+                                {user?.username || 'username'}
                               </div>
                               {isSelected && (
                                 <div className="mt-1 text-xs text-green-400">✓ Aktív</div>
@@ -723,7 +722,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                 {fontOption.name}
                               </div>
                               <div className={`text-xs text-white/60 ${fontOption.value}`}>
-                                @{user?.username || 'username'}
+                                {user?.username || 'username'}
                               </div>
                               {isSelected && (
                                 <div className="mt-1 text-xs text-green-400">✓ Aktív</div>
@@ -751,7 +750,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         </div>
                         <div>
                           <p className={`font-medium ${user?.customNameFont || 'font-sans'} ${user?.customNameColor || 'text-cyan-300'}`}>
-                            @{user?.username || 'username'}
+                            {user?.username || 'username'}
                           </p>
                           <p className="text-white/60 text-xs">Így fog megjelenni másoknak</p>
                         </div>
@@ -960,7 +959,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                           />
                         </div>
                         <div>
-                          <h4 className="text-white font-semibold">@{searchedUser.username}</h4>
+                          <h4 className="text-white font-semibold">{searchedUser.username}</h4>
                           <p className="text-white/60 text-sm">{searchedUser.email}</p>
                         </div>
                       </div>
