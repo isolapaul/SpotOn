@@ -27,10 +27,10 @@ export interface LevelInfo {
 
 export const LEVEL_THRESHOLDS = [
   { level: 1, spotsRequired: 0, name: 'Kezdő', icon: '🌱' },
-  { level: 2, spotsRequired: 3, name: 'Felfedező', icon: '🥈' },
-  { level: 3, spotsRequired: 10, name: 'Mester', icon: '🥇' },
-  { level: 4, spotsRequired: 15, name: 'Legenda', icon: '⭐' },
-  { level: 5, spotsRequired: 20, name: 'Gyémánt', icon: '💎' },
+  { level: 2, spotsRequired: 3, name: 'Haladó', icon: '🥈' },
+  { level: 3, spotsRequired: 10, name: 'Felfedező', icon: '🥇' },
+  { level: 4, spotsRequired: 15, name: 'Spotmester', icon: '⭐' },
+  { level: 5, spotsRequired: 20, name: 'Vilagutazo', icon: '💎' },
 ];
 
 /**

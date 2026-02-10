@@ -247,10 +247,10 @@ export const translations = {
     noSpecialBenefits: 'Még nincsenek különleges előnyök',
     keepExploringMessage: '💪 Folytasd a felfedezést és érj el magasabb szinteket!',
     levelBeginner: 'Kezdő',
-    levelExplorer: 'Felfedező',
-    levelMaster: 'Mester',
-    levelLegend: 'Legenda',
-    levelDiamond: 'Gyémánt',
+    levelExplorer: 'Haladó',
+    levelMaster: 'Felfedező',
+    levelLegend: 'Spotmester',
+    levelDiamond: 'Vilagutazo',
 
     // Settings
     settings: 'Beállítások',
@@ -513,10 +513,10 @@ export const translations = {
     noSpecialBenefits: 'No special benefits yet',
     keepExploringMessage: '💪 Keep exploring and reach higher levels!',
     levelBeginner: 'Beginner',
-    levelExplorer: 'Explorer',
-    levelMaster: 'Master',
-    levelLegend: 'Legend',
-    levelDiamond: 'Diamond',
+    levelExplorer: 'Advanced',
+    levelMaster: 'Explorer',
+    levelLegend: 'Spot Master',
+    levelDiamond: 'World Traveler',
 
     // Settings
     settings: 'Settings',
@@ -780,10 +780,10 @@ export const translations = {
     noSpecialBenefits: 'Noch keine besonderen Vorteile',
     keepExploringMessage: '💪 Entdecke weiter und erreiche höhere Level!',
     levelBeginner: 'Anfänger',
-    levelExplorer: 'Entdecker',
-    levelMaster: 'Meister',
-    levelLegend: 'Legende',
-    levelDiamond: 'Diamant',
+    levelExplorer: 'Fortgeschritten',
+    levelMaster: 'Entdecker',
+    levelLegend: 'Spotmeister',
+    levelDiamond: 'Weltreisender',
 
     // Settings
     settings: 'Einstellungen',

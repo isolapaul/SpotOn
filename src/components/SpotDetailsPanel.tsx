@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle, Shield } from 'lucide-react';
+import { X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle, Shield, ImagePlus } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -9,8 +9,8 @@ import { useSpotStore, isAdmin as checkIsAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { getUserNameColor } from '@/lib/levelUtils';
-import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface SpotDetailsPanelProps {
@@ -22,7 +22,7 @@ interface SpotDetailsPanelProps {
 export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Readonly<SpotDetailsPanelProps>) {
   const { user, toggleFavorite } = useUserStore();
   const { language, t } = useLanguageStore();
-  const { addReview, approveSpot } = useSpotStore();
+  const { addReview, approveSpot, addSpotImages } = useSpotStore();
   const { showToast } = useToastStore();
   const [isFavorite, setIsFavorite] = useState(
     spot ? user?.savedSpots?.includes(spot.id) || false : false
@@ -32,6 +32,12 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [userSpotsCount, setUserSpotsCount] = useState(0);
+  const [creatorSpotsCount, setCreatorSpotsCount] = useState<number | null>(null);
+  const [creatorName, setCreatorName] = useState<string | null>(null);
+  const [creatorCustomNameColor, setCreatorCustomNameColor] = useState<string | undefined>();
+  const [reviewerMeta, setReviewerMeta] = useState<Record<string, { spotsCount?: number; customNameColor?: string; username?: string }>>({});
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   
   // Swipe to Dismiss - Horizontal
   const [dragStartX, setDragStartX] = useState(0);
@@ -51,6 +57,114 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     
     fetchUserSpotsCount();
   }, [user]);
+
+  useEffect(() => {
+    if (!spot?.createdBy) return;
+    let isMounted = true;
+
+    const fetchCreatorInfo = async () => {
+      try {
+        const userRef = doc(db, 'users', spot.createdBy);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists() && isMounted) {
+          const data = userSnap.data() as { username?: string; customNameColor?: string };
+          setCreatorName(data.username || null);
+          setCreatorCustomNameColor(data.customNameColor);
+        }
+
+        const spotsRef = collection(db, 'spots');
+        const q = query(spotsRef, where('createdBy', '==', spot.createdBy));
+        const snapshot = await getDocs(q);
+        if (isMounted) {
+          setCreatorSpotsCount(snapshot.size);
+        }
+      } catch (error) {
+        console.error('Failed to fetch creator info:', error);
+      }
+    };
+
+    if (spot.createdBy === user?.uid) {
+      setCreatorName(user.username || null);
+      setCreatorCustomNameColor(user.customNameColor);
+      setCreatorSpotsCount(userSpotsCount);
+      return;
+    }
+
+    fetchCreatorInfo();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [spot?.createdBy, user?.uid, user?.username, user?.customNameColor, userSpotsCount]);
+
+  useEffect(() => {
+    if (!spot?.reviews || spot.reviews.length === 0) return;
+    let isMounted = true;
+
+    const missingUserIds = Array.from(
+      new Set(
+        spot.reviews
+          .filter((review) => review.userId)
+          .filter((review) => {
+            const cached = reviewerMeta[review.userId];
+            return (
+              !cached ||
+              review.userSpotsCount === undefined ||
+              review.customNameColor === undefined ||
+              !review.userName
+            );
+          })
+          .map((review) => review.userId)
+      )
+    ).filter((userId) => !reviewerMeta[userId]);
+
+    if (missingUserIds.length === 0) return;
+
+    const fetchReviewerMeta = async () => {
+      try {
+        const results = await Promise.all(
+          missingUserIds.map(async (userId) => {
+            const [userSnap, spotsSnap] = await Promise.all([
+              getDoc(doc(db, 'users', userId)),
+              getDocs(query(collection(db, 'spots'), where('createdBy', '==', userId))),
+            ]);
+
+            const userData = userSnap.exists()
+              ? (userSnap.data() as { username?: string; customNameColor?: string })
+              : undefined;
+
+            return {
+              userId,
+              username: userData?.username,
+              customNameColor: userData?.customNameColor,
+              spotsCount: spotsSnap.size,
+            };
+          })
+        );
+
+        if (!isMounted) return;
+        setReviewerMeta((prev) => {
+          const next = { ...prev };
+          for (const result of results) {
+            next[result.userId] = {
+              username: result.username,
+              customNameColor: result.customNameColor,
+              spotsCount: result.spotsCount,
+            };
+          }
+          return next;
+        });
+      } catch (error) {
+        console.error('Failed to fetch reviewer meta:', error);
+      }
+    };
+
+    fetchReviewerMeta();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [spot?.reviews, reviewerMeta]);
 
   if (!spot) return null;
 
@@ -138,6 +252,32 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
 
   const navigationUrl = getNavigationUrl(spot.location.lat, spot.location.lng);
 
+  const handleAddPhotos = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    if (!user) {
+      showToast(t('mustBeLoggedIn'), 'error');
+      event.target.value = '';
+      return;
+    }
+
+    setIsUploadingPhotos(true);
+    try {
+      await addSpotImages(spot.id, files);
+      showToast(t('spotPhotosAdded'), 'success');
+    } catch (error: any) {
+      const message =
+        error?.message === 'MAX_SPOT_IMAGES'
+          ? t('maxSpotImages')
+          : error?.message || t('spotPhotoAddError');
+      showToast(message, 'error');
+    } finally {
+      setIsUploadingPhotos(false);
+      event.target.value = '';
+    }
+  };
+
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'Unknown';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -151,6 +291,12 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const averageRating = spot.reviews && spot.reviews.length > 0
     ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
     : 0;
+
+  const creatorDisplayName = creatorName || spot.createdByName || t('anonymous');
+  const creatorNameColorClass = getUserNameColor(
+    creatorSpotsCount ?? 0,
+    creatorCustomNameColor
+  );
 
   // Touch Handlers for Horizontal Swipe to Dismiss
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -364,7 +510,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
           )}
 
           {/* Meta Info */}
-          <div className={`grid ${isAdmin ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="glass-card p-4">
               <div className="flex items-center gap-2 text-white/60 mb-1">
                 <Calendar className="w-4 h-4" />
@@ -373,24 +519,15 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
               <p className="text-white font-medium">{formatDate(spot.createdAt)}</p>
             </div>
             
-            {isAdmin && (
-              <div className="glass-card p-4">
-                <div className="flex items-center gap-2 text-white/60 mb-1">
-                  <User className="w-4 h-4" />
-                  <span className="text-xs uppercase">{t('by')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {spot.createdByPhoto && (
-                    <div className="relative w-6 h-6 rounded-full overflow-hidden">
-                      <Image src={spot.createdByPhoto} alt="User" fill sizes="24px" className="object-cover" />
-                    </div>
-                  )}
-                  <p className="text-white font-medium">
-                    {spot.createdByName || t('anonymous')}
-                  </p>
-                </div>
+            <div className="glass-card p-4">
+              <div className="flex items-center gap-2 text-white/60 mb-1">
+                <User className="w-4 h-4" />
+                <span className="text-xs uppercase">{t('by')}</span>
               </div>
-            )}
+              <p className={`font-medium ${creatorNameColorClass}`}>
+                {creatorDisplayName}
+              </p>
+            </div>
           </div>
 
           {/* Reviews Section */}
@@ -407,7 +544,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                     </div>
                   )}
                   <div>
-                    <p className="text-white font-medium">@{user.username}</p>
+                    <p className="text-white font-medium">{user.username}</p>
                     <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -449,6 +586,37 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
               </div>
             )}
 
+            {/* Add Photos */}
+            <div className="glass-card p-4 mb-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-white font-medium">{t('addSpotPhotos')}</p>
+                  <p className="text-white/50 text-xs">{t('maxSpotImages')}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={isUploadingPhotos}
+                  className="px-4 py-2 rounded-xl font-medium text-sm
+                    bg-white/10 text-white border border-white/20
+                    hover:bg-white/20 active:scale-98 transition-all duration-200
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    flex items-center gap-2"
+                >
+                  <ImagePlus className="w-4 h-4" />
+                  <span>{isUploadingPhotos ? t('uploadingPhotos') : t('addPhotos')}</span>
+                </button>
+              </div>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleAddPhotos}
+                className="hidden"
+              />
+            </div>
+
             {/* Reviews List */}
             <div className="space-y-3">
               {!spot.reviews || spot.reviews.length === 0 ? (
@@ -469,8 +637,8 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
-                            <p className={`font-medium ${review.customNameFont || 'font-sans'} ${review.customNameColor || getUserNameColor(review.userSpotsCount || 0)}`}>
-                              @{review.userName}
+                            <p className={`font-medium ${review.customNameFont || 'font-sans'} ${getUserNameColor(review.userSpotsCount ?? reviewerMeta[review.userId]?.spotsCount ?? 0, review.customNameColor ?? reviewerMeta[review.userId]?.customNameColor)}`}>
+                              {reviewerMeta[review.userId]?.username || review.userName || t('anonymous')}
                             </p>
                             {checkIsAdmin(review.userEmail) && (
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">

@@ -59,7 +59,10 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
   const navigationUrl = getNavigationUrl(spot.location.lat, spot.location.lng);
 
   return (
-    <div className="w-[300px] overflow-hidden animate-slide-up bg-slate-900/95 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl">
+      import { useState, useEffect } from 'react';
+      import { getUserNameColor } from '@/lib/levelUtils';
+      import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+      import { db } from '@/lib/firebase';
       {/* Close Button */}
       <button
         onClick={onClose}
@@ -77,6 +80,9 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
           fill
           className="object-cover"
           sizes="300px"
+        const [creatorSpotsCount, setCreatorSpotsCount] = useState<number | null>(null);
+        const [creatorName, setCreatorName] = useState<string | null>(null);
+        const [creatorCustomNameColor, setCreatorCustomNameColor] = useState<string | undefined>();
           unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
         />
         
@@ -108,6 +114,49 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
           </div>
           <p className="text-white/60 text-xs">
             {t(categoryTranslationKeys[spot.category])}
+
+        useEffect(() => {
+          if (!spot?.createdBy) return;
+          let isMounted = true;
+
+          const fetchCreatorInfo = async () => {
+            try {
+              const userRef = doc(db, 'users', spot.createdBy);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists() && isMounted) {
+                const data = userSnap.data() as { username?: string; customNameColor?: string };
+                setCreatorName(data.username || null);
+                setCreatorCustomNameColor(data.customNameColor);
+              }
+
+              const spotsRef = collection(db, 'spots');
+              const q = query(spotsRef, where('createdBy', '==', spot.createdBy));
+              const snapshot = await getDocs(q);
+              if (isMounted) {
+                setCreatorSpotsCount(snapshot.size);
+              }
+            } catch (error) {
+              console.error('Failed to fetch creator info:', error);
+            }
+          };
+
+          if (spot.createdBy === user?.uid) {
+            setCreatorName(user.username || null);
+            setCreatorCustomNameColor(user.customNameColor);
+          }
+
+          fetchCreatorInfo();
+
+          return () => {
+            isMounted = false;
+          };
+        }, [spot?.createdBy, user?.uid, user?.username, user?.customNameColor]);
+
+        const creatorDisplayName = creatorName || spot.createdByName || t('anonymous');
+        const creatorNameColorClass = getUserNameColor(
+          creatorSpotsCount ?? 0,
+          creatorCustomNameColor
+        );
           </p>
         </div>
 
@@ -168,6 +217,13 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
         {isAdmin && (
           <div className="mb-2">
             <span className={`text-xs px-2 py-1 rounded-full ${
+
+              {/* Creator */}
+              <div>
+                <span className={`text-sm font-medium ${creatorNameColorClass}`}>
+                  {creatorDisplayName}
+                </span>
+              </div>
               spot.status === 'approved' 
                 ? 'bg-green-500/20 text-green-400'
                 : 'bg-yellow-500/20 text-yellow-400'

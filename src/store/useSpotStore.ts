@@ -85,6 +85,7 @@ interface SpotStore {
   fetchSpots: () => Promise<void>;
   addSpot: (spotData: Omit<Spot, 'id' | 'imageUrls' | 'createdAt' | 'status' | 'primaryImageIndex'>, imageFiles: File[], primaryIndex: number, userId: string, userEmail?: string) => Promise<void>;
   addReview: (spotId: string, review: Omit<Review, 'id' | 'createdAt'>) => Promise<void>;
+  addSpotImages: (spotId: string, imageFiles: File[]) => Promise<void>;
   approveSpot: (spotId: string) => Promise<void>;
 }
 
@@ -227,6 +228,69 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       }));
     } catch (error: any) {
       console.error('Error adding review:', error);
+      throw error;
+    }
+  },
+
+  addSpotImages: async (spotId, imageFiles) => {
+    if (!imageFiles || imageFiles.length === 0) return;
+
+    try {
+      const maxImages = 20;
+      const spot = get().spots.find((item) => item.id === spotId);
+      const existingUrls = spot?.imageUrls || [];
+      const baseUrls =
+        existingUrls.length === 1 && existingUrls[0] === '/placeholder-spot.jpg'
+          ? []
+          : existingUrls;
+
+      if (baseUrls.length + imageFiles.length > maxImages) {
+        throw new Error('MAX_SPOT_IMAGES');
+      }
+
+      const options = {
+        maxSizeMB: 0.3,
+        maxWidthOrHeight: 1280,
+        useWebWorker: false,
+      };
+
+      const newUrls: string[] = [];
+      for (const imageFile of imageFiles) {
+        const compressedFile = await imageCompression(imageFile, options);
+        const timestamp = Date.now();
+        const random = Math.floor(Math.random() * 10000);
+        const fileName = `${timestamp}_${random}_${imageFile.name}`;
+        const imageRef = ref(storage, `spot-images/${fileName}`);
+        await uploadBytes(imageRef, compressedFile);
+        const imageUrl = await getDownloadURL(imageRef);
+        newUrls.push(imageUrl);
+      }
+
+      const updatedImageUrls = [...baseUrls, ...newUrls];
+      const updatePayload: { imageUrls: string[]; primaryImageIndex?: number } = {
+        imageUrls: updatedImageUrls,
+      };
+
+      if (!baseUrls.length) {
+        updatePayload.primaryImageIndex = 0;
+      }
+
+      const spotRef = doc(db, 'spots', spotId);
+      await updateDoc(spotRef, updatePayload);
+
+      set((state) => ({
+        spots: state.spots.map((item) =>
+          item.id === spotId
+            ? {
+                ...item,
+                imageUrls: updatedImageUrls,
+                primaryImageIndex: updatePayload.primaryImageIndex ?? item.primaryImageIndex,
+              }
+            : item
+        ),
+      }));
+    } catch (error: any) {
+      console.error('Error adding spot images:', error);
       throw error;
     }
   },
