@@ -9,7 +9,7 @@ import { useSpotStore, isAdmin as checkIsAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { getLevelInfo, getUserNameColor } from '@/lib/levelUtils';
-import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { useState, useEffect, useRef, ChangeEvent, useCallback } from 'react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db, functions } from '@/lib/firebase';
 import { httpsCallable } from 'firebase/functions';
@@ -23,7 +23,7 @@ interface SpotDetailsPanelProps {
 export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Readonly<SpotDetailsPanelProps>) {
   const { user, toggleFavorite } = useUserStore();
   const { language, t } = useLanguageStore();
-  const { addReview, approveSpot, addSpotImages, migrateSpotImages, toggleSpotImageLike } = useSpotStore();
+  const { addReview, approveSpot, addSpotImages, migrateSpotImages } = useSpotStore();
   const { showToast } = useToastStore();
   const [isFavorite, setIsFavorite] = useState(
     spot ? user?.savedSpots?.includes(spot.id) || false : false
@@ -43,10 +43,64 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [uploaderNames, setUploaderNames] = useState<Record<string, string>>({});
   
+  // Fullscreen Gallery State
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  
+  // Gallery swipe state
+  const [galleryDragStartX, setGalleryDragStartX] = useState(0);
+  const [galleryDragCurrentX, setGalleryDragCurrentX] = useState(0);
+  const [isGalleryDragging, setIsGalleryDragging] = useState(false);
+  
   // Swipe to Dismiss - Horizontal
   const [dragStartX, setDragStartX] = useState(0);
   const [dragCurrentX, setDragCurrentX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Calculate gallery images early (safe for null spot) - Moved up to avoid conditional hooks
+  const sortedSpotImages = (spot?.spotImages || [])
+    .filter((image) => image.url !== '/placeholder-spot.jpg')
+    .sort((a, b) => {
+      if (b.likes !== a.likes) return b.likes - a.likes;
+      return a.addedAt?.toMillis?.() && b.addedAt?.toMillis?.()
+        ? b.addedAt.toMillis() - a.addedAt.toMillis()
+        : 0;
+    });
+
+  const allGalleryImages = spot ? [
+    ...sortedSpotImages.map(img => img.url),
+    ...(spot.imageUrls || []).filter(url => !sortedSpotImages.some(img => img.url === url)),
+  ].filter((url, index, self) => url !== '/placeholder-spot.jpg' && self.indexOf(url) === index) : [];
+
+  // Gallery navigation callbacks - must be defined before any early returns
+  const openGallery = useCallback((index: number) => {
+    setGalleryIndex(index);
+    setGalleryOpen(true);
+  }, []);
+
+  const nextImage = useCallback(() => {
+    if (allGalleryImages.length === 0) return;
+    setGalleryIndex((prev) => (prev + 1) % allGalleryImages.length);
+  }, [allGalleryImages.length]);
+
+  const prevImage = useCallback(() => {
+    if (allGalleryImages.length === 0) return;
+    setGalleryIndex((prev) => (prev - 1 + allGalleryImages.length) % allGalleryImages.length);
+  }, [allGalleryImages.length]);
+
+  // Keyboard navigation for gallery - must be defined before any early returns
+  useEffect(() => {
+    if (!galleryOpen) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') nextImage();
+      if (e.key === 'ArrowLeft') prevImage();
+      if (e.key === 'Escape') setGalleryOpen(false);
+    };
+    
+    globalThis.addEventListener('keydown', handleKeyDown);
+    return () => globalThis.removeEventListener('keydown', handleKeyDown);
+  }, [galleryOpen, nextImage, prevImage]);
 
   // Fetch user's spots count for level calculation
   useEffect(() => {
@@ -397,15 +451,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
     : 0;
 
-  const sortedSpotImages = (spot.spotImages || [])
-    .filter((image) => image.url !== '/placeholder-spot.jpg')
-    .sort((a, b) => {
-      if (b.likes !== a.likes) return b.likes - a.likes;
-      return a.addedAt?.toMillis?.() && b.addedAt?.toMillis?.()
-        ? b.addedAt.toMillis() - a.addedAt.toMillis()
-        : 0;
-    });
-
   const heroImageUrl =
     sortedSpotImages[0]?.url ||
     spot.imageUrls?.[spot.primaryImageIndex || 0] ||
@@ -476,8 +521,14 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         onTouchEnd={handleTouchEnd}
       >
         
-        {/* Hero Image */}
-        <div className="relative w-full h-[40vh] flex-shrink-0 pointer-events-auto">
+        {/* Hero Image - Clickable to open gallery */}
+        <div 
+          className="relative w-full h-[40vh] flex-shrink-0 pointer-events-auto cursor-pointer"
+          onClick={() => allGalleryImages.length > 0 && openGallery(0)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && allGalleryImages.length > 0 && openGallery(0)}
+        >
           <Image
             src={heroImageUrl}
             alt={spot.name}
@@ -489,9 +540,9 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
           />
           
           {/* Image count badge */}
-          {spot.imageUrls && spot.imageUrls.length > 1 && (
+          {allGalleryImages.length > 1 && (
             <div className="absolute bottom-4 right-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full flex items-center gap-1">
-              📸 {spot.imageUrls.length}
+              📸 {allGalleryImages.length}
             </div>
           )}
           
@@ -654,50 +705,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
             <div>
               <h2 className="text-xl font-bold text-white mb-3">{t('description')}</h2>
               <p className="text-white/80 leading-relaxed">{spot.description}</p>
-            </div>
-          )}
-
-          {/* Photos */}
-          {sortedSpotImages.length > 0 && (
-            <div>
-              <h2 className="text-xl font-bold text-white mb-3">{t('spotPhotos')}</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {sortedSpotImages.map((image) => {
-                  const isLiked = user ? image.likedBy.includes(user.uid) : false;
-                  return (
-                    <div key={image.id} className="relative rounded-xl overflow-hidden border border-white/10">
-                      <Image
-                        src={image.url}
-                        alt={spot.name}
-                        fill
-                        sizes="200px"
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-2 flex items-end justify-between gap-2">
-                        <div className="text-white/80 text-xs">
-                          {image.addedBy ? uploaderNames[image.addedBy] || t('anonymous') : t('anonymous')}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!user) {
-                              showToast(t('mustBeLoggedIn'), 'error');
-                              return;
-                            }
-                            toggleSpotImageLike(spot.id, image.id, user.uid).catch((error) => {
-                              console.error('Failed to toggle image like:', error);
-                            });
-                          }}
-                          className="flex items-center gap-1 text-xs font-medium text-white/90"
-                        >
-                          <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
-                          <span>{image.likes}</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           )}
 
@@ -913,6 +920,100 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Gallery Modal - Mobile Swipe */}
+      {galleryOpen && allGalleryImages.length > 0 && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black"
+          onTouchStart={(e) => {
+            setGalleryDragStartX(e.touches[0].clientX);
+            setGalleryDragCurrentX(e.touches[0].clientX);
+            setIsGalleryDragging(true);
+          }}
+          onTouchMove={(e) => {
+            if (!isGalleryDragging) return;
+            setGalleryDragCurrentX(e.touches[0].clientX);
+          }}
+          onTouchEnd={() => {
+            if (!isGalleryDragging) return;
+            const dragDistance = galleryDragCurrentX - galleryDragStartX;
+            const threshold = 50;
+            
+            if (dragDistance > threshold && allGalleryImages.length > 1) {
+              // Swiped right - previous image
+              prevImage();
+            } else if (dragDistance < -threshold && allGalleryImages.length > 1) {
+              // Swiped left - next image
+              nextImage();
+            }
+            
+            setIsGalleryDragging(false);
+            setGalleryDragStartX(0);
+            setGalleryDragCurrentX(0);
+          }}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setGalleryOpen(false)}
+            className="absolute top-4 right-4 z-20 p-3 rounded-full bg-black/50 active:bg-black/70 transition-colors touch-manipulation"
+            style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+
+          {/* Image counter */}
+          {allGalleryImages.length > 1 && (
+            <div 
+              className="absolute top-4 left-4 z-20 text-white text-sm bg-black/50 px-3 py-1.5 rounded-full"
+              style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
+            >
+              {galleryIndex + 1} / {allGalleryImages.length}
+            </div>
+          )}
+
+          {/* Image with swipe transform */}
+          <div 
+            className="absolute inset-0 flex items-center justify-center"
+            style={{
+              transform: isGalleryDragging 
+                ? `translateX(${galleryDragCurrentX - galleryDragStartX}px)` 
+                : 'translateX(0)',
+              transition: isGalleryDragging ? 'none' : 'transform 0.2s ease-out',
+            }}
+          >
+            <Image
+              src={allGalleryImages[galleryIndex]}
+              alt={`${spot.name} - Image ${galleryIndex + 1}`}
+              fill
+              sizes="100vw"
+              className="object-contain"
+              priority
+              draggable={false}
+            />
+          </div>
+
+          {/* Dot indicators at bottom */}
+          {allGalleryImages.length > 1 && (
+            <div 
+              className="absolute bottom-8 left-0 right-0 flex justify-center gap-2 z-20"
+              style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+            >
+              {allGalleryImages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setGalleryIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-all touch-manipulation ${
+                    index === galleryIndex 
+                      ? 'bg-white w-6' 
+                      : 'bg-white/40'
+                  }`}
+                  aria-label={`Go to image ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

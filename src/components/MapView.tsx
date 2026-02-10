@@ -57,21 +57,35 @@ const getCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rej
   // Color based on status (for admin view)
   let bgColor = status === 'approved' ? '#10b981' : '#eab308'; // green vs yellow
   
-  // If highlighted, use gold/yellow color
+  // If highlighted, use prominent gold color with glow effect
   if (isHighlighted) {
-    bgColor = '#f59e0b'; // amber for highlighted
+    bgColor = '#FFD700'; // bright gold for highlighted
   }
   
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-    <circle cx="24" cy="24" r="20" fill="${bgColor}" opacity="0.9"/>
-    <text x="24" y="30" font-size="20" text-anchor="middle" fill="white">${emoji}</text>
-    ${isHighlighted ? '<text x="38" y="12" font-size="16">⭐</text>' : ''}
-  </svg>`;
+  const svg = isHighlighted
+    ? `<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <circle cx="28" cy="28" r="24" fill="${bgColor}" stroke="#FFA500" stroke-width="3" filter="url(#glow)"/>
+        <text x="28" y="35" font-size="22" text-anchor="middle">${emoji}</text>
+        <text x="46" y="14" font-size="18">⭐</text>
+      </svg>`
+    : `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+        <circle cx="24" cy="24" r="20" fill="${bgColor}" opacity="0.9"/>
+        <text x="24" y="30" font-size="20" text-anchor="middle" fill="white">${emoji}</text>
+      </svg>`;
   
   return baseUrl + encodeURIComponent(svg);
 };
 
-// Clean/Simple map style additions - removes POIs and unnecessary labels
+// Clean/Simple map style additions - removes POIs and unnecessary labels, shows country borders
 const baseMapStyles = [
   {
     featureType: 'poi',
@@ -87,8 +101,15 @@ const baseMapStyles = [
     elementType: 'labels.icon',
     stylers: [{ visibility: 'off' }],
   },
+  // Show country borders
   {
-    featureType: 'administrative',
+    featureType: 'administrative.country',
+    elementType: 'geometry.stroke',
+    stylers: [{ visibility: 'on' }, { weight: 1.5 }, { color: '#888888' }],
+  },
+  // Hide other admin boundaries
+  {
+    featureType: 'administrative.province',
     elementType: 'geometry',
     stylers: [{ visibility: 'off' }],
   },
@@ -311,8 +332,14 @@ export default function MapView({
         {/* Real spots from Firestore */}
         {spots.map((spot) => {
           const markerSize = getMarkerSize(zoomLevel);
-          // Check if spot has active highlights
-          const isHighlighted = (spot.highlighted || []).length > 0;
+          // Check if spot has active (non-expired) highlights
+          const now = new Date().toISOString();
+          const activeHighlights = (spot.highlighted || []).filter(
+            (h) => h.expiresAt > now
+          );
+          const isHighlighted = activeHighlights.length > 0;
+          // Highlighted spots get a bigger marker
+          const finalMarkerSize = isHighlighted ? markerSize * 1.2 : markerSize;
           return (
             <MarkerF
               key={spot.id}
@@ -320,8 +347,8 @@ export default function MapView({
               title={spot.name}
               icon={{
                 url: getCategoryIcon(spot.category, spot.status, isHighlighted),
-                scaledSize: new google.maps.Size(markerSize, markerSize),
-                anchor: new google.maps.Point(markerSize / 2, markerSize / 2),
+                scaledSize: new google.maps.Size(finalMarkerSize, finalMarkerSize),
+                anchor: new google.maps.Point(finalMarkerSize / 2, finalMarkerSize / 2),
               }}
               onClick={() => setSelectedSpot(spot)}
             />

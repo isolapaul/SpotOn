@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db, app } from '@/lib/firebase';
@@ -10,16 +10,20 @@ import { translations } from '@/lib/translations';
 // Get VAPID key from environment variables
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
+// Singleton: Module-level variable to track foreground listener
+// This ensures only ONE listener is active across all hook instances
+let globalForegroundUnsubscribe: (() => void) | null = null;
+let listenerSetup = false;
+
 export const usePushNotifications = () => {
   const [isPermissionGranted, setIsPermissionGranted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [foregroundUnsubscribe, setForegroundUnsubscribe] = useState<(() => void) | null>(null);
   const { user } = useUserStore();
   const { language } = useLanguageStore();
   const { addNotification } = useNotificationStore();
   
   // Helper to get translation
-  const t = (key: keyof typeof translations.hu) => translations[language || 'hu'][key] || key;
+  const t = useCallback((key: keyof typeof translations.hu) => translations[language || 'hu'][key] || key, [language]);
 
   const isNotificationSupported = () => 'Notification' in globalThis;
 
@@ -81,11 +85,6 @@ export const usePushNotifications = () => {
   // Initialize push notifications
   const initializePush = async (): Promise<boolean> => {
     try {
-      if (foregroundUnsubscribe) {
-        foregroundUnsubscribe();
-        setForegroundUnsubscribe(null);
-      }
-
       if (!isNotificationSupported()) {
         return false;
       }
@@ -119,7 +118,11 @@ export const usePushNotifications = () => {
       }
 
       await saveUserToken(tokenResult.token);
-      setupForegroundListener(tokenResult.messaging);
+      
+      // Singleton: Only setup listener if not already done
+      if (!listenerSetup) {
+        setupForegroundListener(tokenResult.messaging);
+      }
       return true;
     } catch (error) {
       console.error('Failed to initialize push notifications:', error);
@@ -134,8 +137,16 @@ export const usePushNotifications = () => {
     }
   };
 
-  // Setup foreground message listener (when app is open)
+  // Setup foreground message listener (when app is open) - SINGLETON
   const setupForegroundListener = (messaging: any) => {
+    // Prevent duplicate listeners
+    if (listenerSetup) {
+      console.log('Foreground listener already set up, skipping...');
+      return;
+    }
+    
+    listenerSetup = true;
+    
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log('Foreground message received:', payload);
       
@@ -144,7 +155,8 @@ export const usePushNotifications = () => {
       
       // Add to notification center only (no toast to avoid stacking)
       const notificationType = payload.data?.type || 'general';
-      addNotification({
+      // Use the store directly to avoid stale closure issues
+      useNotificationStore.getState().addNotification({
         title,
         body,
         type: notificationType as any,
@@ -162,8 +174,8 @@ export const usePushNotifications = () => {
       }
     });
     
-    // Store unsubscribe function for cleanup
-    setForegroundUnsubscribe(() => unsubscribe);
+    // Store unsubscribe function globally
+    globalForegroundUnsubscribe = unsubscribe;
   };
 
   // Request permission explicitly (for button click)
