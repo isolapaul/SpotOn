@@ -22,7 +22,7 @@ export default function MapThemeSwitcher() {
     { id: 'retro', name: t('themeRetro'), preview: 'bg-gradient-to-br from-amber-100 to-orange-200' },
     { id: 'purple', name: t('themePurple'), preview: 'bg-gradient-to-br from-purple-900 to-blue-900' },
     ...(hasValentineTheme
-      ? [{ id: 'valentine' as MapTheme, name: t('themeValentine'), preview: 'bg-gradient-to-br from-pink-300 to-rose-500' }]
+      ? [{ id: 'valentine' as MapTheme, name: t('themeValentine'), preview: 'bg-gradient-to-br from-pink-200 via-rose-300 to-pink-400 relative overflow-hidden' }]
       : []),
   ];
 

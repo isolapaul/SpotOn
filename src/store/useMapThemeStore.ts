@@ -224,54 +224,54 @@ export const mapThemes = {
   ],
 
   valentine: [
-    { elementType: 'geometry', stylers: [{ color: '#fde2ea' }] },
+    { elementType: 'geometry', stylers: [{ color: '#fef2f7' }] },
     { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#9b4f6c' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#fde2ea' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#be185d' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#fef2f7' }, { weight: 1 }] },
     {
       featureType: 'poi',
       elementType: 'geometry',
-      stylers: [{ color: '#f9c9d9' }],
+      stylers: [{ color: '#fce7f3' }],
     },
     {
       featureType: 'poi',
       elementType: 'labels.text.fill',
-      stylers: [{ color: '#9b4f6c' }],
+      stylers: [{ color: '#be185d' }],
     },
     {
       featureType: 'poi.park',
       elementType: 'geometry',
-      stylers: [{ color: '#f6b7cc' }],
+      stylers: [{ color: '#fce7f3' }],
     },
     {
       featureType: 'road',
       elementType: 'geometry',
-      stylers: [{ color: '#fbd1de' }],
+      stylers: [{ color: '#fce7f3' }],
     },
     {
       featureType: 'road.arterial',
       elementType: 'labels.text.fill',
-      stylers: [{ color: '#9b4f6c' }],
+      stylers: [{ color: '#be185d' }],
     },
     {
       featureType: 'road.highway',
       elementType: 'geometry',
-      stylers: [{ color: '#f8b6cd' }],
+      stylers: [{ color: '#f9a8d4' }],
     },
     {
       featureType: 'road.highway',
       elementType: 'labels.text.fill',
-      stylers: [{ color: '#9b4f6c' }],
+      stylers: [{ color: '#be185d' }],
     },
     {
       featureType: 'water',
       elementType: 'geometry',
-      stylers: [{ color: '#f59bbf' }],
+      stylers: [{ color: '#f472b6' }],
     },
     {
       featureType: 'water',
       elementType: 'labels.text.fill',
-      stylers: [{ color: '#8a3e59' }],
+      stylers: [{ color: '#831843' }],
     },
   ],
 

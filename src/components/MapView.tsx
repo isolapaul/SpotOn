@@ -285,6 +285,21 @@ export default function MapView({
 
   return (
     <div className="absolute inset-0 w-full h-full z-0">
+      {/* Valentine Theme Overlay - Floating Hearts */}
+      {theme === 'valentine' && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+          {/* Floating hearts animation */}
+          <div className="absolute top-1/4 left-1/4 text-4xl animate-float-1 text-pink-400 drop-shadow-lg">💖</div>
+          <div className="absolute top-1/3 right-1/3 text-3xl animate-float-2 text-rose-500 drop-shadow-lg">💕</div>
+          <div className="absolute bottom-1/4 left-1/3 text-5xl animate-float-3 text-pink-300 drop-shadow-lg">💗</div>
+          <div className="absolute bottom-1/3 right-1/4 text-4xl animate-float-1 text-rose-400 drop-shadow-lg">💓</div>
+          <div className="absolute top-1/2 left-1/2 text-3xl animate-float-2 text-pink-500 drop-shadow-lg">💘</div>
+          <div className="absolute top-1/6 right-1/6 text-4xl animate-float-3 text-rose-300 drop-shadow-lg">💝</div>
+          <div className="absolute bottom-1/6 left-1/6 text-3xl animate-float-1 text-pink-600 drop-shadow-lg">💞</div>
+          <div className="absolute top-2/3 right-1/5 text-5xl animate-float-2 text-rose-500 drop-shadow-lg">💟</div>
+        </div>
+      )}
+
       {/* Instructions overlay when adding spot */}
       {isAddingSpot && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1000] glass-card px-6 py-3 pointer-events-none animate-fade-in">
