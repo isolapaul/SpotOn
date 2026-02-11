@@ -484,8 +484,11 @@ export const onNewPendingSpot = functions.firestore.onDocumentCreated(
 // CALLABLE: Highlight a Spot
 // ========================================
 export const highlightSpot = onCall(async (request: CallableRequest) => {
+  logger.info("highlightSpot called", {auth: !!request.auth, data: request.data});
+  
   // Check authentication
   if (!request.auth) {
+    logger.warn("Highlight attempt without authentication");
     throw new HttpsError(
       "unauthenticated",
       "User must be authenticated to highlight a spot"
@@ -493,111 +496,111 @@ export const highlightSpot = onCall(async (request: CallableRequest) => {
   }
 
   const userId = request.auth.uid;
-  const { spotId } = request.data;
+  const spotId = request.data?.spotId;
+
+  logger.info(`Highlight request from user ${userId} for spot ${spotId}`);
 
   if (!spotId) {
+    logger.warn("No spotId provided");
     throw new HttpsError(
       "invalid-argument",
       "Spot ID is required"
     );
   }
 
-  try {
-    // Get user document
-    const userRef = db.collection("users").doc(userId);
-    const userDoc = await userRef.get();
+  // Get user document
+  const userRef = db.collection("users").doc(userId);
+  const userDoc = await userRef.get();
 
-    if (!userDoc.exists) {
-      throw new HttpsError("not-found", "User not found");
-    }
+  if (!userDoc.exists) {
+    logger.warn(`User ${userId} not found`);
+    throw new HttpsError("not-found", "User not found");
+  }
 
-    const userData = userDoc.data();
+  const userData = userDoc.data();
+  logger.info("User data", {questRewards: userData?.questRewards});
 
-    // Check if user has highlight bonus available
-    const highlightBonus = userData?.questRewards?.valentine2026?.highlightBonus ?? 0;
-    if (highlightBonus <= 0) {
-      throw new HttpsError(
-        "permission-denied",
-        "No highlight bonus available"
-      );
-    }
-
-    // Count active highlights by this user
-    const activeHighlights = userData?.questRewards?.valentine2026?.activeHighlights ?? [];
-    if (activeHighlights.length >= highlightBonus) {
-      throw new HttpsError(
-        "permission-denied",
-        "You have reached your highlight limit"
-      );
-    }
-
-    // Check if spot exists
-    const spotRef = db.collection("spots").doc(spotId);
-    const spotDoc = await spotRef.get();
-
-    if (!spotDoc.exists) {
-      throw new HttpsError("not-found", "Spot not found");
-    }
-
-    // Check if user already highlighted this spot
-    const spotData = spotDoc.data();
-    const highlighted = spotData?.highlighted || [];
-    const alreadyHighlighted = highlighted.some(
-      (h: any) => h.userId === userId
-    );
-
-    if (alreadyHighlighted) {
-      throw new HttpsError(
-        "permission-denied",
-        "You have already highlighted this spot"
-      );
-    }
-
-    // Create highlight entry (expires in 7 days)
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
-
-    // Add highlight to spot
-    await spotRef.update({
-      highlighted: [...highlighted, {
-        userId: userId,
-        highlightedAt: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-      }],
-    });
-
-    // Update user's active highlights and decrement bonus
-    await userRef.update({
-      "questRewards.valentine2026.activeHighlights": [
-        ...activeHighlights,
-        {
-          spotId: spotId,
-          highlightedAt: now.toISOString(),
-          expiresAt: expiresAt.toISOString(),
-        },
-      ],
-    });
-
-    logger.info(
-      `User ${userId} highlighted spot ${spotId}. Expires: ${expiresAt.toISOString()}`
-    );
-
-    return {
-      success: true,
-      message: "Spot highlighted successfully",
-      expiresAt: expiresAt.toISOString(),
-    };
-  } catch (error: any) {
-    logger.error("Error highlighting spot:", error);
-    if (error.code?.startsWith("PERMISSION_DENIED") ||
-        error.code?.startsWith("NOT_FOUND") ||
-        error.code?.startsWith("INVALID_ARGUMENT") ||
-        error.code?.startsWith("UNAUTHENTICATED")) {
-      throw error;
-    }
+  // Check if user has highlight bonus available
+  const highlightBonus = userData?.questRewards?.valentine2026?.highlightBonus ?? 0;
+  logger.info(`User highlight bonus: ${highlightBonus}`);
+  
+  if (highlightBonus <= 0) {
+    logger.warn("No highlight bonus available");
     throw new HttpsError(
-      "internal",
-      "Failed to highlight spot"
+      "permission-denied",
+      "No highlight bonus available"
     );
   }
+
+  // Count active highlights by this user (filter out expired ones)
+  const now = new Date();
+  const allHighlights = userData?.questRewards?.valentine2026?.activeHighlights ?? [];
+  const activeHighlights = allHighlights.filter((h: any) => {
+    const expiry = new Date(h.expiresAt);
+    return expiry > now;
+  });
+  
+  logger.info(`Active highlights: ${activeHighlights.length}/${highlightBonus}`);
+  
+  if (activeHighlights.length >= highlightBonus) {
+    throw new HttpsError(
+      "permission-denied",
+      "You have reached your highlight limit"
+    );
+  }
+
+  // Check if spot exists
+  const spotRef = db.collection("spots").doc(spotId);
+  const spotDoc = await spotRef.get();
+
+  if (!spotDoc.exists) {
+    logger.warn(`Spot ${spotId} not found`);
+    throw new HttpsError("not-found", "Spot not found");
+  }
+
+  // Check if user already highlighted this spot
+  const spotData = spotDoc.data();
+  const highlighted = spotData?.highlighted || [];
+  const alreadyHighlighted = highlighted.some(
+    (h: any) => h.userId === userId
+  );
+
+  if (alreadyHighlighted) {
+    logger.warn("User already highlighted this spot");
+    throw new HttpsError(
+      "permission-denied",
+      "You have already highlighted this spot"
+    );
+  }
+
+  // Create highlight entry (expires in 7 days)
+  const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  // Add highlight to spot using arrayUnion for safety
+  await spotRef.update({
+    highlighted: admin.firestore.FieldValue.arrayUnion({
+      userId: userId,
+      highlightedAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+    }),
+  });
+
+  // Update user's active highlights
+  await userRef.update({
+    "questRewards.valentine2026.activeHighlights": admin.firestore.FieldValue.arrayUnion({
+      spotId: spotId,
+      highlightedAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+    }),
+  });
+
+  logger.info(
+    `SUCCESS: User ${userId} highlighted spot ${spotId}. Expires: ${expiresAt.toISOString()}`
+  );
+
+  return {
+    success: true,
+    message: "Spot highlighted successfully",
+    expiresAt: expiresAt.toISOString(),
+  };
 });

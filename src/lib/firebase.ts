@@ -38,8 +38,8 @@ const initializeFirebase = () => {
 
 const { app, auth, db, storage } = initializeFirebase();
 
-// Initialize Cloud Functions
-const functions = getFunctions(app);
+// Initialize Cloud Functions (europe-west3 region)
+const functions = getFunctions(app, 'europe-west3');
 
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();

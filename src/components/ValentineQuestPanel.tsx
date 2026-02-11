@@ -5,10 +5,7 @@ import { Heart, Gift, X, Clock, Sparkles } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useToastStore } from '@/store/useToastStore';
-
-const QUEST_START = new Date('2026-02-10').getTime();
-const QUEST_END = new Date('2026-02-24').getTime();
-const QUEST_REQUIREMENT = 5;
+import { useQuestProgress, QUEST_END, QUEST_REQUIREMENT, isQuestActive } from '@/hooks/useQuestProgress';
 
 export default function ValentineQuestPanel() {
   const [isVisible, setIsVisible] = useState(false);
@@ -18,18 +15,16 @@ export default function ValentineQuestPanel() {
   const { t } = useLanguageStore();
   const { showToast } = useToastStore();
 
+  // Get live quest progress from Firestore query
+  const { count: questProgress, isLoading, isCompleted: questCompleted } = useQuestProgress();
+  
   // Check if quest is active
-  const now = Date.now();
-  const isQuestActive = now >= QUEST_START && now < QUEST_END;
-
-  // Get quest progress from user data
-  const questProgress = user?.questProgress?.valentine2026?.count ?? 0;
-  const questCompleted = questProgress >= QUEST_REQUIREMENT;
+  const questActive = isQuestActive();
   const rewardsClaimed = user?.questRewards?.valentine2026?.mapThemeUnlocked;
 
   // Show panel if quest is active
   useEffect(() => {
-    if (!user || !isQuestActive) {
+    if (!user || !questActive || isLoading) {
       setIsVisible(false);
       return;
     }
@@ -38,7 +33,7 @@ export default function ValentineQuestPanel() {
     if (!rewardsClaimed) {
       setIsVisible(true);
     }
-  }, [user, isQuestActive, rewardsClaimed]);
+  }, [user, questActive, rewardsClaimed, isLoading]);
 
   const handleClaimRewards = async () => {
     if (!user || !questCompleted) return;
@@ -71,7 +66,8 @@ export default function ValentineQuestPanel() {
   if (!isVisible || !user) return null;
 
   // Calculate remaining days
-  const daysRemaining = Math.ceil((QUEST_END - now) / (1000 * 60 * 60 * 24));
+  const now = Date.now();
+  const daysRemaining = Math.ceil((QUEST_END.getTime() - now) / (1000 * 60 * 60 * 24));
   const progressPercent = (questProgress / QUEST_REQUIREMENT) * 100;
 
   // ═══════════════════════════════════════════════════════════════════════════

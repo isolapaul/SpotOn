@@ -328,7 +328,8 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     setIsHighlighting(true);
     try {
       const highlightSpotFunction = httpsCallable(functions, 'highlightSpot');
-      await highlightSpotFunction({ spotId: spot.id });
+      const result = await highlightSpotFunction({ spotId: spot.id });
+      console.log('Highlight result:', result);
       
       showToast(t('highlightSuccess'), 'success');
       setIsHighlightedByUser(true);
@@ -336,7 +337,9 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       // Refresh user data to update highlight bonus
       // This would require a refetch from Firestore
     } catch (error: any) {
-      const errorMessage = error.message || 'Error highlighting spot';
+      console.error('Highlight error:', error);
+      // Firebase callable functions put error details in different places
+      const errorMessage = error?.details?.message || error?.message || error?.code || 'Error highlighting spot';
       showToast(errorMessage, 'error');
     } finally {
       setIsHighlighting(false);

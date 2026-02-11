@@ -345,6 +345,7 @@ export default function MapView({
               key={spot.id}
               position={spot.location}
               title={spot.name}
+              zIndex={isHighlighted ? 999 : 1}
               icon={{
                 url: getCategoryIcon(spot.category, spot.status, isHighlighted),
                 scaledSize: new google.maps.Size(finalMarkerSize, finalMarkerSize),

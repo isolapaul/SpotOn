@@ -41,6 +41,10 @@ export default function NotificationCenter() {
         return '🛡️';
       case 'success':
         return '✅';
+      case 'error':
+        return '❌';
+      case 'info':
+        return 'ℹ️';
       case 'warning':
         return '⚠️';
       case 'system':

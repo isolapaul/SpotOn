@@ -11,7 +11,6 @@ import ProfilePanel from '@/components/ProfilePanel';
 import FilterPanel from '@/components/FilterPanel';
 import DistanceSelector from '@/components/DistanceSelector';
 import DiscoveryPanel from '@/components/DiscoveryPanel';
-import Toast from '@/components/Toast';
 import LoadingScreen from '@/components/LoadingScreen';
 import NotificationPrompt from '@/components/NotificationPrompt';
 import NotificationCenter from '@/components/NotificationCenter';
@@ -60,7 +59,6 @@ export default function Home() {
   
   const { user, needsUsername, setNeedsUsername, initAuth, initAdminListener } = useUserStore();
   const { spots, fetchSpots, unsubscribeSpots } = useSpotStore();
-  const { toasts, removeToast } = useToastStore();
   const { t } = useLanguageStore();
   const { showToast } = useToastStore();
 
@@ -384,15 +382,7 @@ export default function Home() {
         onExploreClick={handleExploreClick}
       />
 
-      {/* Toast Notifications */}
-      {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
+      {/* Toast notifications are now redirected silently to NotificationCenter */}
       </main>
     </>
   );

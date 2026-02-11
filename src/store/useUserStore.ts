@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { 
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -122,35 +124,65 @@ export const useUserStore = create<UserStore>()(
       
       signInWithGoogle: async () => {
         try {
-          const result = await signInWithPopup(auth, googleProvider);
+          let result;
+          
+          // Try popup first, fallback to redirect for mobile browsers
+          try {
+            result = await signInWithPopup(auth, googleProvider);
+          } catch (popupError: any) {
+            // If popup blocked or fails on mobile, try redirect
+            if (popupError.code === 'auth/popup-blocked' || 
+                popupError.code === 'auth/popup-closed-by-user' ||
+                popupError.code === 'auth/cancelled-popup-request') {
+              // Redirect flow - user will be redirected back and handled by initAuth
+              await signInWithRedirect(auth, googleProvider);
+              return;
+            }
+            throw popupError;
+          }
+          
+          if (!result) return;
+          
           const firebaseUser = result.user;
           
-          // Create or update user document in Firestore
+          // Create or update user document in Firestore (idempotent)
           const userRef = doc(db, 'users', firebaseUser.uid);
           const userSnap = await getDoc(userRef);
           
           let username: string | undefined;
           let profilePictureURL: string | undefined;
           let profileBannerURL: string | undefined;
+          let needsUsernameSetup = false;
           
           if (userSnap.exists()) {
+            // EXISTING USER: Only update lastLoginAt, preserve all other data
             const data = userSnap.data();
             username = data.username;
             profilePictureURL = data.profilePictureURL || data.photoURL || firebaseUser.photoURL || '';
             profileBannerURL = data.profileBannerURL || '';
             
-            // If no custom username, prompt to set one
+            // If no custom username, set one and prompt to change it
             if (!username) {
               username = generateUsername(firebaseUser.displayName || 'user');
-              await updateDoc(userRef, { username });
-              set({ needsUsername: true });
+              await updateDoc(userRef, { 
+                username,
+                lastLoginAt: serverTimestamp() 
+              });
+              needsUsernameSetup = true;
+            } else {
+              // Just update the login timestamp for existing user
+              await updateDoc(userRef, {
+                lastLoginAt: serverTimestamp()
+              });
             }
           } else {
-            // Generate a unique username for new users
+            // NEW USER: Create the document with initial data
             username = generateUsername(firebaseUser.displayName || 'user');
             profilePictureURL = firebaseUser.photoURL || '';
+            profileBannerURL = '';
+            needsUsernameSetup = true;
             
-            // Create new user document
+            // Create new user document with merge option for safety
             await setDoc(userRef, {
               uid: firebaseUser.uid,
               username,
@@ -160,10 +192,8 @@ export const useUserStore = create<UserStore>()(
               profileBannerURL: '',
               savedSpots: [],
               createdAt: serverTimestamp(),
-            });
-            
-            // New user needs to set username
-            set({ needsUsername: true });
+              lastLoginAt: serverTimestamp(),
+            }, { merge: true });
           }
           
           // Set user in store
@@ -175,12 +205,14 @@ export const useUserStore = create<UserStore>()(
             profilePictureURL,
             profileBannerURL,
             savedSpots: userSnap.exists() ? userSnap.data().savedSpots : [],
+            highlightedSpots: userSnap.exists() ? userSnap.data().highlightedSpots : [],
             questProgress: userSnap.exists() ? userSnap.data().questProgress : undefined,
             questRewards: userSnap.exists() ? userSnap.data().questRewards : undefined,
           };
           
-          set({ user: userData, loading: false });
+          set({ user: userData, loading: false, needsUsername: needsUsernameSetup });
         } catch (error) {
+          console.error('Google Sign-In error:', error);
           set({ loading: false });
           throw error;
         }
@@ -197,6 +229,12 @@ export const useUserStore = create<UserStore>()(
           
           if (userSnap.exists()) {
             const data = userSnap.data();
+            
+            // Update lastLoginAt for existing user
+            await updateDoc(userRef, {
+              lastLoginAt: serverTimestamp()
+            });
+            
             const userData: User = {
               uid: firebaseUser.uid,
               username: data.username || 'user',
@@ -205,6 +243,7 @@ export const useUserStore = create<UserStore>()(
               profilePictureURL: data.profilePictureURL || data.photoURL || '',
               profileBannerURL: data.profileBannerURL || '',
               savedSpots: data.savedSpots || [],
+              highlightedSpots: data.highlightedSpots || [],
               questProgress: data.questProgress,
               questRewards: data.questRewards,
             };
@@ -238,7 +277,8 @@ export const useUserStore = create<UserStore>()(
             profileBannerURL: '',
             savedSpots: [],
             createdAt: serverTimestamp(),
-          });
+            lastLoginAt: serverTimestamp(),
+          }, { merge: true });
           
           // Set user in store
           const userData: User = {
@@ -249,6 +289,7 @@ export const useUserStore = create<UserStore>()(
             profilePictureURL: '',
             profileBannerURL: '',
             savedSpots: [],
+            highlightedSpots: [],
           };
           
           set({ user: userData, loading: false });
@@ -267,7 +308,41 @@ export const useUserStore = create<UserStore>()(
         }
       },
       
-      initAuth: () => {
+      initAuth: async () => {
+        // Check for redirect result first (handles signInWithRedirect flow)
+        try {
+          const redirectResult = await getRedirectResult(auth);
+          if (redirectResult) {
+            // User signed in via redirect, handle the same way as popup
+            const firebaseUser = redirectResult.user;
+            const userRef = doc(db, 'users', firebaseUser.uid);
+            const userSnap = await getDoc(userRef);
+            
+            if (userSnap.exists()) {
+              // Existing user - just update lastLoginAt
+              await updateDoc(userRef, {
+                lastLoginAt: serverTimestamp()
+              });
+            } else {
+              // New user from redirect - create document
+              const username = generateUsername(firebaseUser.displayName || 'user');
+              await setDoc(userRef, {
+                uid: firebaseUser.uid,
+                username,
+                email: firebaseUser.email || '',
+                photoURL: firebaseUser.photoURL || '',
+                profilePictureURL: firebaseUser.photoURL || '',
+                profileBannerURL: '',
+                savedSpots: [],
+                createdAt: serverTimestamp(),
+                lastLoginAt: serverTimestamp(),
+              }, { merge: true });
+            }
+          }
+        } catch (error) {
+          console.error('Error handling redirect result:', error);
+        }
+        
         return new Promise<void>((resolve) => {
           let isFirstCall = true;
           
@@ -287,6 +362,7 @@ export const useUserStore = create<UserStore>()(
                   profilePictureURL: data.profilePictureURL || data.photoURL || firebaseUser.photoURL || '',
                   profileBannerURL: data.profileBannerURL || '',
                   savedSpots: data.savedSpots || [],
+                  highlightedSpots: data.highlightedSpots || [],
                   questProgress: data.questProgress,
                   questRewards: data.questRewards,
                 };
@@ -298,7 +374,33 @@ export const useUserStore = create<UserStore>()(
                 
                 set({ user: userData, loading: false });
               } else {
-                set({ user: null, loading: false });
+                // User document doesn't exist yet (shouldn't happen normally)
+                // Create it now to prevent issues
+                const username = generateUsername(firebaseUser.displayName || 'user');
+                await setDoc(userRef, {
+                  uid: firebaseUser.uid,
+                  username,
+                  email: firebaseUser.email || '',
+                  photoURL: firebaseUser.photoURL || '',
+                  profilePictureURL: firebaseUser.photoURL || '',
+                  profileBannerURL: '',
+                  savedSpots: [],
+                  createdAt: serverTimestamp(),
+                  lastLoginAt: serverTimestamp(),
+                }, { merge: true });
+                
+                const userData: User = {
+                  uid: firebaseUser.uid,
+                  username,
+                  email: firebaseUser.email || '',
+                  photoURL: firebaseUser.photoURL || '',
+                  profilePictureURL: firebaseUser.photoURL || '',
+                  profileBannerURL: '',
+                  savedSpots: [],
+                  highlightedSpots: [],
+                };
+                
+                set({ user: userData, loading: false, needsUsername: true });
               }
             } else {
               // User is signed out
@@ -587,14 +689,26 @@ export const useUserStore = create<UserStore>()(
         }
 
         try {
+          // Create highlight entry (expires in 7 days for level-based highlights)
+          const now = new Date();
+          const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+          const highlightEntry = {
+            userId: user.uid,
+            highlightedAt: now.toISOString(),
+            expiresAt: expiresAt.toISOString(),
+          };
+
           const userRef = doc(db, 'users', user.uid);
           await updateDoc(userRef, { 
             highlightedSpots: arrayUnion(spotId) 
           });
           
-          // Also update the spot document
+          // Update the spot document with highlight entry in the highlighted array
           const spotRef = doc(db, 'spots', spotId);
-          await updateDoc(spotRef, { isHighlighted: true });
+          await updateDoc(spotRef, { 
+            isHighlighted: true,
+            highlighted: arrayUnion(highlightEntry)
+          });
           
           set({ 
             user: { 
@@ -603,6 +717,7 @@ export const useUserStore = create<UserStore>()(
             } 
           });
         } catch (error) {
+          console.error('Error highlighting spot:', error);
           throw error;
         }
       },
@@ -618,9 +733,29 @@ export const useUserStore = create<UserStore>()(
             highlightedSpots: arrayRemove(spotId) 
           });
           
-          // Also update the spot document
+          // Get the current spot data to find and remove the highlight entry
           const spotRef = doc(db, 'spots', spotId);
-          await updateDoc(spotRef, { isHighlighted: false });
+          const spotSnap = await getDoc(spotRef);
+          
+          if (spotSnap.exists()) {
+            const spotData = spotSnap.data();
+            const highlighted = spotData.highlighted || [];
+            
+            // Find the user's highlight entry
+            const userHighlight = highlighted.find((h: any) => h.userId === user.uid);
+            
+            if (userHighlight) {
+              await updateDoc(spotRef, { 
+                highlighted: arrayRemove(userHighlight)
+              });
+            }
+            
+            // Check if there are any remaining highlights
+            const remainingHighlights = highlighted.filter((h: any) => h.userId !== user.uid);
+            if (remainingHighlights.length === 0) {
+              await updateDoc(spotRef, { isHighlighted: false });
+            }
+          }
           
           const currentHighlights = user.highlightedSpots || [];
           set({ 
@@ -630,6 +765,7 @@ export const useUserStore = create<UserStore>()(
             } 
           });
         } catch (error) {
+          console.error('Error unhighlighting spot:', error);
           throw error;
         }
       },
