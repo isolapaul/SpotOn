@@ -8,6 +8,7 @@ import {
   orderBy,
   doc,
   updateDoc,
+  deleteDoc,
   arrayUnion,
   Timestamp,
 } from 'firebase/firestore';
@@ -104,6 +105,11 @@ interface SpotStore {
   migrateSpotImages: (spotId: string) => Promise<void>;
   toggleSpotImageLike: (spotId: string, imageId: string, userId: string) => Promise<void>;
   approveSpot: (spotId: string) => Promise<void>;
+  deleteSpot: (spotId: string) => Promise<void>;
+  updateSpotDescription: (spotId: string, description: string) => Promise<void>;
+  updateSpotName: (spotId: string, name: string) => Promise<void>;
+  deleteSpotImage: (spotId: string, imageUrl: string) => Promise<void>;
+  setPrimaryImage: (spotId: string, imageIndex: number) => Promise<void>;
 }
 
 export const useSpotStore = create<SpotStore>((set, get) => ({
@@ -421,6 +427,104 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       }));
     } catch (error: any) {
       console.error('Error approving spot:', error);
+      throw error;
+    }
+  },
+
+  deleteSpot: async (spotId) => {
+    try {
+      const spotRef = doc(db, 'spots', spotId);
+      await deleteDoc(spotRef);
+      set((state) => ({
+        spots: state.spots.filter((spot) => spot.id !== spotId),
+      }));
+    } catch (error: any) {
+      console.error('Error deleting spot:', error);
+      throw error;
+    }
+  },
+
+  updateSpotDescription: async (spotId, description) => {
+    try {
+      const spotRef = doc(db, 'spots', spotId);
+      await updateDoc(spotRef, { description });
+      set((state) => ({
+        spots: state.spots.map((spot) =>
+          spot.id === spotId ? { ...spot, description } : spot
+        ),
+      }));
+    } catch (error: any) {
+      console.error('Error updating spot description:', error);
+      throw error;
+    }
+  },
+
+  updateSpotName: async (spotId, name) => {
+    try {
+      const spotRef = doc(db, 'spots', spotId);
+      await updateDoc(spotRef, { name });
+      set((state) => ({
+        spots: state.spots.map((spot) =>
+          spot.id === spotId ? { ...spot, name } : spot
+        ),
+      }));
+    } catch (error: any) {
+      console.error('Error updating spot name:', error);
+      throw error;
+    }
+  },
+
+  deleteSpotImage: async (spotId, imageUrl) => {
+    try {
+      const spot = get().spots.find((item) => item.id === spotId);
+      if (!spot) throw new Error('Spot not found');
+
+      const updatedImageUrls = (spot.imageUrls || []).filter((url) => url !== imageUrl);
+      const updatedSpotImages = (spot.spotImages || []).filter((img) => img.url !== imageUrl);
+
+      // If we deleted the primary image, reset to 0
+      let newPrimaryIndex = spot.primaryImageIndex || 0;
+      if (newPrimaryIndex >= updatedImageUrls.length) {
+        newPrimaryIndex = 0;
+      }
+
+      // If no images left, add placeholder
+      if (updatedImageUrls.length === 0) {
+        updatedImageUrls.push('/placeholder-spot.jpg');
+        newPrimaryIndex = 0;
+      }
+
+      const spotRef = doc(db, 'spots', spotId);
+      await updateDoc(spotRef, {
+        imageUrls: updatedImageUrls,
+        spotImages: updatedSpotImages,
+        primaryImageIndex: newPrimaryIndex,
+      });
+
+      set((state) => ({
+        spots: state.spots.map((item) =>
+          item.id === spotId
+            ? { ...item, imageUrls: updatedImageUrls, spotImages: updatedSpotImages, primaryImageIndex: newPrimaryIndex }
+            : item
+        ),
+      }));
+    } catch (error: any) {
+      console.error('Error deleting spot image:', error);
+      throw error;
+    }
+  },
+
+  setPrimaryImage: async (spotId, imageIndex) => {
+    try {
+      const spotRef = doc(db, 'spots', spotId);
+      await updateDoc(spotRef, { primaryImageIndex: imageIndex });
+      set((state) => ({
+        spots: state.spots.map((spot) =>
+          spot.id === spotId ? { ...spot, primaryImageIndex: imageIndex } : spot
+        ),
+      }));
+    } catch (error: any) {
+      console.error('Error setting primary image:', error);
       throw error;
     }
   },

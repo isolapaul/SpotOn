@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle, Shield, ImagePlus, Sparkles } from 'lucide-react';
+import { X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle, Shield, ImagePlus, Sparkles, Pencil, Trash2, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -23,7 +23,7 @@ interface SpotDetailsPanelProps {
 export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Readonly<SpotDetailsPanelProps>) {
   const { user, toggleFavorite } = useUserStore();
   const { language, t } = useLanguageStore();
-  const { addReview, approveSpot, addSpotImages, migrateSpotImages } = useSpotStore();
+  const { addReview, approveSpot, addSpotImages, migrateSpotImages, deleteSpot, updateSpotDescription, updateSpotName, deleteSpotImage, setPrimaryImage } = useSpotStore();
   const { showToast } = useToastStore();
   const [isFavorite, setIsFavorite] = useState(
     spot ? user?.savedSpots?.includes(spot.id) || false : false
@@ -42,6 +42,12 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [uploaderNames, setUploaderNames] = useState<Record<string, string>>({});
+  
+  // Editing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [showManageImages, setShowManageImages] = useState(false);
   
   // Fullscreen Gallery State
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -458,14 +464,69 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     });
   };
 
+  // Can user edit this spot?
+  const userIsAdmin = checkIsAdmin(user?.email);
+  const isOwner = user && spot.createdBy === user.uid;
+  const canEdit = userIsAdmin || (isOwner && spot.status === 'approved');
+
+  const handleDeleteSpot = async () => {
+    if (!confirm(t('confirmDeleteSpot'))) return;
+    try {
+      await deleteSpot(spot.id);
+      showToast(t('spotDeleted'), 'success');
+      onClose();
+    } catch (error) {
+      console.error('Failed to delete spot:', error);
+      showToast(t('spotDeleteError'), 'error');
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      if (editName.trim() && editName.trim() !== spot.name) {
+        await updateSpotName(spot.id, editName.trim());
+        showToast(t('nameUpdated'), 'success');
+      }
+      if (editDescription.trim() !== spot.description) {
+        await updateSpotDescription(spot.id, editDescription.trim());
+        showToast(t('descriptionUpdated'), 'success');
+      }
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update spot:', error);
+      showToast(t('updateError'), 'error');
+    }
+  };
+
+  const handleSetPrimaryImage = async (index: number) => {
+    try {
+      await setPrimaryImage(spot.id, index);
+      showToast(t('primaryImageSet'), 'success');
+    } catch (error) {
+      console.error('Failed to set primary image:', error);
+      showToast(t('updateError'), 'error');
+    }
+  };
+
+  const handleDeleteImage = async (imageUrl: string) => {
+    if (!confirm(t('confirmDeleteSpot').replace('helyet', 'képet'))) return;
+    try {
+      await deleteSpotImage(spot.id, imageUrl);
+      showToast(t('imageDeleted'), 'success');
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+      showToast(t('updateError'), 'error');
+    }
+  };
+
   const averageRating = spot.reviews && spot.reviews.length > 0
     ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
     : 0;
 
   const heroImageUrl =
-    sortedSpotImages[0]?.url ||
     spot.imageUrls?.[spot.primaryImageIndex || 0] ||
     spot.imageUrls?.[0] ||
+    sortedSpotImages[0]?.url ||
     (spot as any).imageUrl ||
     '/placeholder-spot.jpg';
 
@@ -664,12 +725,32 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
 
           {/* Title & Rating */}
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-2">
-              {spot.name}
-              {isHighlightedByUser && (
-                <span className="text-yellow-400 animate-pulse" title={t('spotHasHighlight')}>⭐</span>
+            <div className="flex items-center justify-between mb-2">
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="text-2xl font-bold text-white bg-white/10 border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-1 mr-2"
+                />
+              ) : (
+                <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+                  {spot.name}
+                  {isHighlightedByUser && (
+                    <span className="text-yellow-400 animate-pulse" title={t('spotHasHighlight')}>⭐</span>
+                  )}
+                </h1>
               )}
-            </h1>
+              {canEdit && !isEditing && (
+                <button
+                  onClick={() => { setEditName(spot.name); setEditDescription(spot.description); setIsEditing(true); }}
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors flex-shrink-0"
+                  aria-label={t('editSpot')}
+                >
+                  <Pencil className="w-4 h-4 text-white/70" />
+                </button>
+              )}
+            </div>
             
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
@@ -712,11 +793,94 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
           </div>
 
           {/* Description */}
-          {spot.description && (
+          {isEditing ? (
+            <div>
+              <h2 className="text-xl font-bold text-white mb-3">{t('editDescription')}</h2>
+              <textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
+                rows={4}
+              />
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleSaveEdit}
+                  className="flex-1 py-2.5 rounded-xl font-medium text-sm bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 active:scale-98 transition-all flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {t('save')}
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="flex-1 py-2.5 rounded-xl font-medium text-sm bg-white/10 text-white/70 border border-white/20 hover:bg-white/20 active:scale-98 transition-all"
+                >
+                  {t('cancel')}
+                </button>
+              </div>
+            </div>
+          ) : spot.description ? (
             <div>
               <h2 className="text-xl font-bold text-white mb-3">{t('description')}</h2>
               <p className="text-white/80 leading-relaxed">{spot.description}</p>
             </div>
+          ) : null}
+
+          {/* Manage Images - for owners & admins */}
+          {canEdit && (
+            <div>
+              <button
+                onClick={() => setShowManageImages(!showManageImages)}
+                className="w-full glass-card p-4 flex items-center justify-between hover:bg-white/10 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-primary-400" />
+                  <span className="text-white font-medium">{t('manageImages')}</span>
+                </div>
+                <span className="text-white/40 text-sm">{allGalleryImages.length} 📸</span>
+              </button>
+              
+              {showManageImages && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {(spot.imageUrls || []).filter(url => url !== '/placeholder-spot.jpg').map((url, index) => (
+                    <div key={url} className="relative group rounded-xl overflow-hidden aspect-square">
+                      <Image src={url} alt={`Image ${index + 1}`} fill sizes="120px" className="object-cover" />
+                      {(spot.primaryImageIndex || 0) === index && (
+                        <div className="absolute top-1 left-1 bg-primary-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                          ★
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                        <button
+                          onClick={() => handleSetPrimaryImage(index)}
+                          className="p-1.5 rounded-full bg-primary-500/80 text-white hover:bg-primary-500 transition-colors"
+                          title={t('setPrimaryImage')}
+                        >
+                          <Star className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteImage(url)}
+                          className="p-1.5 rounded-full bg-red-500/80 text-white hover:bg-red-500 transition-colors"
+                          title={t('deleteImage')}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Delete Spot - for admins */}
+          {userIsAdmin && (
+            <button
+              onClick={handleDeleteSpot}
+              className="w-full py-3 rounded-xl font-medium text-sm bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              {t('deleteSpot')}
+            </button>
           )}
 
           {/* Meta Info */}
