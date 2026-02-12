@@ -347,12 +347,20 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   };
 
   const handleSubmitReview = async () => {
-    if (!user) {
+    if (!spot || !user) {
       showToast(t('mustBeLoggedIn'), 'error');
       return;
     }
     if (rating === 0) {
       showToast(t('ratingRequired'), 'error');
+      return;
+    }
+    if (isSubmitting) return;
+
+    // Check if user already reviewed this spot
+    const alreadyReviewed = spot.reviews?.some(r => r.userId === user.uid);
+    if (alreadyReviewed) {
+      showToast('Már értékelted ezt a helyet!', 'error');
       return;
     }
 
@@ -365,9 +373,9 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         userPhoto: user.profilePictureURL || user.photoURL,
         rating,
         comment,
-        userSpotsCount, // Add spots count for level color
-        customNameColor: user.customNameColor, // Level 5 custom color
-        customNameFont: user.customNameFont, // Level 5 custom font
+        userSpotsCount,
+        customNameColor: user.customNameColor,
+        customNameFont: user.customNameFont,
       });
       showToast(t('reviewAdded'), 'success');
       setRating(0);

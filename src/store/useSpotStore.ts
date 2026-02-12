@@ -241,9 +241,14 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         createdAt: Timestamp.now(),
       };
 
+      // Remove undefined values that Firestore doesn't accept
+      const cleanReview = Object.fromEntries(
+        Object.entries(reviewWithTimestamp).filter(([, v]) => v !== undefined)
+      );
+
       // Send to Firebase
       await updateDoc(spotRef, {
-        reviews: arrayUnion(reviewWithTimestamp),
+        reviews: arrayUnion(cleanReview),
       });
 
       // Update local state immediately for better UX
