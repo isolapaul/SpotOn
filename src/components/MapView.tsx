@@ -285,18 +285,11 @@ export default function MapView({
 
   return (
     <div className="absolute inset-0 w-full h-full z-0">
-      {/* Valentine Theme Overlay - Floating Hearts */}
+      {/* Valentine Theme Overlay - Subtle gradient edges */}
       {theme === 'valentine' && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
-          {/* Floating hearts animation */}
-          <div className="absolute top-1/4 left-1/4 text-4xl animate-float-1 text-pink-400 drop-shadow-lg">💖</div>
-          <div className="absolute top-1/3 right-1/3 text-3xl animate-float-2 text-rose-500 drop-shadow-lg">💕</div>
-          <div className="absolute bottom-1/4 left-1/3 text-5xl animate-float-3 text-pink-300 drop-shadow-lg">💗</div>
-          <div className="absolute bottom-1/3 right-1/4 text-4xl animate-float-1 text-rose-400 drop-shadow-lg">💓</div>
-          <div className="absolute top-1/2 left-1/2 text-3xl animate-float-2 text-pink-500 drop-shadow-lg">💘</div>
-          <div className="absolute top-1/6 right-1/6 text-4xl animate-float-3 text-rose-300 drop-shadow-lg">💝</div>
-          <div className="absolute bottom-1/6 left-1/6 text-3xl animate-float-1 text-pink-600 drop-shadow-lg">💞</div>
-          <div className="absolute top-2/3 right-1/5 text-5xl animate-float-2 text-rose-500 drop-shadow-lg">💟</div>
+        <div className="absolute inset-0 pointer-events-none z-10">
+          <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-pink-200/20 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-rose-200/20 to-transparent" />
         </div>
       )}
 
