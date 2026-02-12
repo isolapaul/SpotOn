@@ -251,8 +251,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Profile Banner - Mobile Optimized 25vh */}
-        <div className="relative w-full h-[25vh] flex-shrink-0 bg-gradient-to-r from-primary-700 to-primary-900">
+        {/* Profile Banner */}
+        <div className="relative w-full h-[18vh] flex-shrink-0 bg-gradient-to-r from-primary-700 to-primary-900">
           {user.profileBannerURL ? (
             <Image
               src={user.profileBannerURL}
@@ -776,19 +776,19 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               ) : (
                 myAllSpots.map((spot) => (
                   <div key={spot.id} className="glass-card p-4 flex gap-4">
-                    <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+                    <div className="relative w-28 h-28 rounded-xl overflow-hidden flex-shrink-0">
                       <Image
                         src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
                         alt={spot.name}
                         fill
-                        sizes="80px"
+                        sizes="112px"
                         className="object-cover"
                         unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold line-clamp-1">{spot.name}</h3>
-                      <p className="text-white/60 text-sm line-clamp-2">{spot.description}</p>
+                      <h3 className="text-white font-semibold text-base line-clamp-1">{spot.name}</h3>
+                      <p className="text-white/60 text-sm line-clamp-3 mt-1">{spot.description}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <span className={`text-xs px-2 py-1 rounded-full ${getStatusClassName(spot.status)}`}>
                           {getStatusText(spot.status)}
@@ -818,19 +818,19 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   const reviewCount = spot.reviews?.length || 0;
                   return (
                     <div key={spot.id} className="glass-card p-4 flex gap-4">
-                      <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+                      <div className="relative w-28 h-28 rounded-xl overflow-hidden flex-shrink-0">
                         <Image
                           src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
                           alt={spot.name}
                           fill
-                          sizes="80px"
+                          sizes="112px"
                           className="object-cover"
                           unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-semibold line-clamp-1">{spot.name}</h3>
-                        <p className="text-white/60 text-sm line-clamp-2">{spot.description}</p>
+                        <h3 className="text-white font-semibold text-base line-clamp-1">{spot.name}</h3>
+                        <p className="text-white/60 text-sm line-clamp-3 mt-1">{spot.description}</p>
                         <div className="flex items-center gap-1 mt-2">
                           {avgRating > 0 ? (
                             <>
