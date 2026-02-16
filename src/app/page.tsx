@@ -17,7 +17,6 @@ import NotificationCenter from '@/components/NotificationCenter';
 import MapThemeSwitcher from '@/components/MapThemeSwitcher';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
 import ValentineQuestPanel from '@/components/ValentineQuestPanel';
-import { useInstallGate } from '@/components/InstallGate';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, isAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
@@ -34,9 +33,6 @@ const MapView = dynamic(
 );
 
 export default function Home() {
-  // Check if InstallGate is blocking the app
-  const { shouldBlock, isChecking } = useInstallGate();
-  
   const [isClient, setIsClient] = useState(false);
   const [isAppReady, setIsAppReady] = useState(false);
   const [loadingStates, setLoadingStates] = useState({
@@ -117,9 +113,6 @@ export default function Home() {
   }, [loadingStates, isAppReady]);
 
   useEffect(() => {
-    // Don't initialize anything if InstallGate is blocking
-    if (shouldBlock || isChecking) return;
-    
     setIsClient(true);
     
     // Initialize Firebase auth listener
@@ -168,7 +161,7 @@ export default function Home() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldBlock, isChecking]);
+  }, []);
 
   // Handle map load callback
   const handleMapLoad = () => {
