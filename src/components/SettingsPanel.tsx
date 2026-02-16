@@ -3,8 +3,8 @@
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useToastStore } from '@/store/useToastStore';
-import { X, Camera, Image as ImageIcon, LogOut, Globe, Bell, BellOff } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { X, Camera, Image as ImageIcon, LogOut, Globe, Bell, BellOff, MapPin } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import imageCompression from 'browser-image-compression';
 import { translations } from '@/lib/translations';
@@ -26,9 +26,27 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  const [locationPermissionState, setLocationPermissionState] = useState<'unknown' | 'granted' | 'denied' | 'prompt'>('unknown');
   
   const pictureInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  // Check current location permission state
+  useEffect(() => {
+    if (!isOpen) return;
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        setLocationPermissionState(result.state as 'granted' | 'denied' | 'prompt');
+        result.onchange = () => {
+          setLocationPermissionState(result.state as 'granted' | 'denied' | 'prompt');
+        };
+      }).catch(() => {
+        // Permissions API not fully supported, try geolocation directly
+        setLocationPermissionState('unknown');
+      });
+    }
+  }, [isOpen]);
 
   if (!isOpen || !user) return null;
 
@@ -116,6 +134,37 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
     } else {
       await requestPermission();
     }
+  };
+
+  const handleRequestLocation = async () => {
+    if (!navigator.geolocation) {
+      showToast(t.locationUnavailable, 'error');
+      return;
+    }
+
+    setIsRequestingLocation(true);
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setIsRequestingLocation(false);
+        setLocationPermissionState('granted');
+        // Update session storage cache so MapView picks it up
+        const newLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+        sessionStorage.setItem('userLocation', JSON.stringify(newLocation));
+        sessionStorage.setItem('userLocationTime', Date.now().toString());
+        showToast(t.locationSuccess, 'success');
+      },
+      (error) => {
+        setIsRequestingLocation(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationPermissionState('denied');
+          showToast(t.locationDenied, 'error');
+        } else {
+          showToast(t.locationUnavailable, 'error');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   return (
@@ -298,6 +347,55 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
             >
               {t.notificationSettingsButton}
             </button>
+          </div>
+
+          {/* Location Permission */}
+          <div className="glass-card p-5">
+            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              {t.locationHeader}
+            </h3>
+            
+            <button
+              onClick={handleRequestLocation}
+              disabled={isRequestingLocation}
+              className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                locationPermissionState === 'granted'
+                  ? 'bg-green-600/20 text-green-400 border border-green-500/30'
+                  : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700'
+              }`}
+            >
+              {(() => {
+                if (isRequestingLocation) {
+                  return (
+                    <>
+                      <MapPin className="w-5 h-5 animate-pulse" />
+                      {t.locationRequesting}
+                    </>
+                  );
+                }
+                if (locationPermissionState === 'granted') {
+                  return (
+                    <>
+                      <MapPin className="w-5 h-5" />
+                      {t.locationGranted}
+                    </>
+                  );
+                }
+                return (
+                  <>
+                    <MapPin className="w-5 h-5" />
+                    {t.requestLocationPermission}
+                  </>
+                );
+              })()}
+            </button>
+            
+            {locationPermissionState === 'denied' && (
+              <p className="mt-3 text-xs text-yellow-400/80 text-center">
+                {t.locationDenied}
+              </p>
+            )}
           </div>
 
           {/* Sign Out */}

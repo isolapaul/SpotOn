@@ -316,6 +316,13 @@ export const translations = {
     languageChanged: 'Nyelv: {language}',
     enabled: 'Engedélyezve',
     enableAction: 'Engedélyezés',
+    locationHeader: 'Helymeghatározás',
+    requestLocationPermission: 'Helymeghatározás engedélyezése',
+    locationGranted: 'Helymeghatározás engedélyezve',
+    locationSuccess: 'Helymeghatározás sikeresen engedélyezve!',
+    locationDenied: 'A helymeghatározás meg lett tagadva. Kérlek engedélyezd a böngésző beállításaiban.',
+    locationUnavailable: 'A helymeghatározás nem elérhető ezen az eszközön.',
+    locationRequesting: 'Engedély kérése...',
   },
   en: {
     // Navigation
@@ -634,6 +641,13 @@ export const translations = {
     languageChanged: 'Language: {language}',
     enabled: 'Enabled',
     enableAction: 'Enable',
+    locationHeader: 'Location',
+    requestLocationPermission: 'Enable Location Access',
+    locationGranted: 'Location access enabled',
+    locationSuccess: 'Location access successfully enabled!',
+    locationDenied: 'Location access was denied. Please enable it in your browser settings.',
+    locationUnavailable: 'Location is not available on this device.',
+    locationRequesting: 'Requesting permission...',
   },
   de: {
     // Navigation
@@ -953,6 +967,13 @@ export const translations = {
     languageChanged: 'Sprache: {language}',
     enabled: 'Aktiviert',
     enableAction: 'Aktivieren',
+    locationHeader: 'Standort',
+    requestLocationPermission: 'Standortzugriff aktivieren',
+    locationGranted: 'Standortzugriff aktiviert',
+    locationSuccess: 'Standortzugriff erfolgreich aktiviert!',
+    locationDenied: 'Standortzugriff wurde verweigert. Bitte aktiviere ihn in den Browsereinstellungen.',
+    locationUnavailable: 'Standort ist auf diesem Gerät nicht verfügbar.',
+    locationRequesting: 'Berechtigung wird angefordert...',
   },
 };
 

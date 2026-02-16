@@ -110,6 +110,10 @@ function generateUsername(displayName: string): string {
   return `${base || 'user'}${suffix}`;
 }
 
+// Module-level variable to track the onAuthStateChanged unsubscribe function
+// This prevents duplicate listeners when initAuth is called multiple times
+let authListenerUnsub: (() => void) | null = null;
+
 export const useUserStore = create<UserStore>()(
   persist(
     (set, get) => ({
@@ -133,7 +137,8 @@ export const useUserStore = create<UserStore>()(
             // If popup blocked or fails on mobile, try redirect
             if (popupError.code === 'auth/popup-blocked' || 
                 popupError.code === 'auth/popup-closed-by-user' ||
-                popupError.code === 'auth/cancelled-popup-request') {
+                popupError.code === 'auth/cancelled-popup-request' ||
+                popupError.code === 'auth/operation-not-supported-in-this-environment') {
               // Redirect flow - user will be redirected back and handled by initAuth
               await signInWithRedirect(auth, googleProvider);
               return;
@@ -309,6 +314,12 @@ export const useUserStore = create<UserStore>()(
       },
       
       initAuth: async () => {
+        // Clean up existing listener to prevent duplicates
+        if (authListenerUnsub) {
+          authListenerUnsub();
+          authListenerUnsub = null;
+        }
+
         // Check for redirect result first (handles signInWithRedirect flow)
         try {
           const redirectResult = await getRedirectResult(auth);
@@ -346,7 +357,7 @@ export const useUserStore = create<UserStore>()(
         return new Promise<void>((resolve) => {
           let isFirstCall = true;
           
-          const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          authListenerUnsub = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
               // User is signed in
               const userRef = doc(db, 'users', firebaseUser.uid);
@@ -413,8 +424,6 @@ export const useUserStore = create<UserStore>()(
               resolve();
             }
           });
-          
-          return unsubscribe;
         });
       },
 
@@ -803,6 +812,16 @@ export const useUserStore = create<UserStore>()(
     {
       name: 'spoton-user',
       partialize: (state) => ({ user: state.user }),
+      // When store rehydrates from localStorage, ensure loading stays true
+      // so the app waits for initAuth/onAuthStateChanged to set the real state.
+      // This prevents stale cached user data from causing issues on multi-device login.
+      onRehydrateStorage: () => {
+        return (state) => {
+          if (state) {
+            state.loading = true;
+          }
+        };
+      },
     }
   )
 );

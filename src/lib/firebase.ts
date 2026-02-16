@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getMessaging, isSupported } from 'firebase/messaging';
@@ -37,6 +37,13 @@ const initializeFirebase = () => {
 };
 
 const { app, auth, db, storage } = initializeFirebase();
+
+// Explicitly set persistence to browserLocalPersistence
+// This ensures auth state persists across tabs, windows, and page reloads
+// Critical for multi-device support - each device maintains its own independent session
+if (globalThis.window !== undefined) {
+  void setPersistence(auth, browserLocalPersistence);
+}
 
 // Initialize Cloud Functions (europe-west3 region)
 const functions = getFunctions(app, 'europe-west3');
