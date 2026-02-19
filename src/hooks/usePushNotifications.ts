@@ -23,7 +23,7 @@ export const usePushNotifications = () => {
   const { addNotification } = useNotificationStore();
   
   // Helper to get translation
-  const t = useCallback((key: keyof typeof translations.hu) => translations[language || 'hu'][key] || key, [language]);
+  const t = useCallback((key: string) => (translations[language || 'hu'] as any)[key] || key, [language]);
 
   const isNotificationSupported = () => 'Notification' in globalThis;
 

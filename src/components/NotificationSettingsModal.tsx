@@ -87,7 +87,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
   const { language } = useLanguageStore();
   const { user, setUser } = useUserStore();
   const { addNotification } = useNotificationStore();
-  const t = (key: keyof typeof translations.hu) => translations[language || 'hu'][key] || key;
+  const t = (key: string) => (translations[language || 'hu'] as any)[key] || key;
 
   // Default settings if none exist
   const defaultSettings: NotificationSettingsState = {
