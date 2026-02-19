@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell, X } from 'lucide-react';
+import { Bell, X, MessageSquare } from 'lucide-react';
+import FeedbackPanel from './FeedbackPanel';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 
 export default function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { notifications, markAsRead, markAllAsRead, clearAll, getUnreadCount } = useNotificationStore();
   const { t } = useLanguageStore();
   const unreadCount = getUnreadCount();
@@ -84,6 +86,23 @@ export default function NotificationCenter() {
             {unreadCount > 9 ? '9+' : unreadCount}
           </div>
         )}
+      </button>
+
+      {/* Feedback Button - Top Left, next to Notifications */}
+      <button
+        onClick={() => setIsFeedbackOpen(true)}
+        className="fixed z-[1500] w-12 h-12 rounded-full 
+          bg-black/40 backdrop-blur-md border border-white/10
+          active:scale-95 transition-all duration-200 shadow-glass-lg
+          hover:bg-black/50
+          touch-manipulation select-none flex items-center justify-center"
+        style={{
+          top: 'calc(1rem + env(safe-area-inset-top))',
+          left: 'calc(max(1rem, env(safe-area-inset-left)) + 56px)'
+        }}
+        aria-label="Feedback"
+      >
+        <MessageSquare className="w-6 h-6 text-white" strokeWidth={2} />
       </button>
 
       {/* Notification Modal - Centered */}
@@ -216,6 +235,7 @@ export default function NotificationCenter() {
           </div>
         </div>
       )}
+      <FeedbackPanel open={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </>
   );
 }
