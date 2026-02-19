@@ -32,10 +32,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // PHASE 4: iOS Swipe to Dismiss
-  const [dragStartY, setDragStartY] = useState(0);
-  const [dragCurrentY, setDragCurrentY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  // Swipe-to-dismiss intentionally disabled to prevent accidental dismissal on iOS
 
   if (!isOpen) return null;
 
@@ -157,40 +154,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     }
   };
 
-  // PHASE 4: Touch Handlers for Swipe to Dismiss
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setDragStartY(e.touches[0].clientY);
-    setDragCurrentY(e.touches[0].clientY);
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const currentY = e.touches[0].clientY;
-    const diff = currentY - dragStartY;
-    
-    // Only allow downward drag
-    if (diff > 0) {
-      setDragCurrentY(currentY);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDragging) return;
-    const dragDistance = dragCurrentY - dragStartY;
-    
-    // Close if dragged more than 100px down
-    if (dragDistance > 100) {
-      handleClose();
-    }
-    
-    // Reset
-    setIsDragging(false);
-    setDragStartY(0);
-    setDragCurrentY(0);
-  };
-
-  const translateY = isDragging ? Math.max(0, dragCurrentY - dragStartY) : 0;
+  // Swipe-to-dismiss intentionally disabled to prevent accidental dismissal on iOS
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
@@ -204,21 +168,14 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
         tabIndex={-1}
       />
       
-      {/* Modal - With Swipe Support */}
+      {/* Modal */}
       <div 
         className="relative glass-card max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6 animate-slide-up"
         style={{ 
           marginTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-          marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)',
-          transform: `translateY(${translateY}px)`,
-          transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+          marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
         }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       >
-        {/* Grabber Pill - PHASE 4 */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-gray-600/50 rounded-full" />
         
         {/* Close Button */}
         <button

@@ -6,14 +6,20 @@ import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useQuestProgress, QUEST_END, QUEST_REQUIREMENT, isQuestActive } from '@/hooks/useQuestProgress';
+import { useUiStore } from '@/store/useUiStore';
 
-export default function ValentineQuestPanel() {
+interface ValentineQuestPanelProps {
+  hidden?: boolean;
+}
+
+export default function ValentineQuestPanel({ hidden = false }: Readonly<ValentineQuestPanelProps>) {
   const [isVisible, setIsVisible] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [claimedRewards, setClaimedRewards] = useState(false);
   const { user } = useUserStore();
   const { t } = useLanguageStore();
   const { showToast } = useToastStore();
+  const { notificationPromptVisible } = useUiStore();
 
   // Get live quest progress from Firestore query
   const { count: questProgress, isLoading, isCompleted: questCompleted } = useQuestProgress();
@@ -63,7 +69,8 @@ export default function ValentineQuestPanel() {
     setIsExpanded(false);
   };
 
-  if (!isVisible || !user) return null;
+  // If explicitly hidden or notification prompt is visible, don't render
+  if (!isVisible || !user || hidden || notificationPromptVisible) return null;
 
   // Calculate remaining days
   const now = Date.now();

@@ -52,6 +52,9 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   // Fullscreen Gallery State
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+
+  // Prevent accidental hero-image clicks immediately after opening the panel
+  const [ignoreHeroClicks, setIgnoreHeroClicks] = useState(true);
   
   // Gallery swipe state
   const [galleryDragStartX, setGalleryDragStartX] = useState(0);
@@ -83,6 +86,13 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     setGalleryIndex(index);
     setGalleryOpen(true);
   }, []);
+
+  // When spot changes (panel opens), briefly ignore hero clicks to avoid the initial tap triggering gallery
+  useEffect(() => {
+    setIgnoreHeroClicks(true);
+    const id = setTimeout(() => setIgnoreHeroClicks(false), 300);
+    return () => clearTimeout(id);
+  }, [spot?.id]);
 
   const nextImage = useCallback(() => {
     if (allGalleryImages.length === 0) return;
@@ -596,10 +606,10 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         {/* Hero Image - Clickable to open gallery */}
         <div 
           className="relative w-full h-[40vh] flex-shrink-0 pointer-events-auto cursor-pointer"
-          onClick={() => allGalleryImages.length > 0 && openGallery(0)}
+          onClick={() => !ignoreHeroClicks && allGalleryImages.length > 0 && openGallery(0)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && allGalleryImages.length > 0 && openGallery(0)}
+          onKeyDown={(e) => !ignoreHeroClicks && e.key === 'Enter' && allGalleryImages.length > 0 && openGallery(0)}
         >
           <Image
             src={heroImageUrl}

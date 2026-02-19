@@ -249,7 +249,7 @@ export default function Home() {
       <NotificationPrompt />
       
       {/* Valentine Quest Panel */}
-      <ValentineQuestPanel />
+      <ValentineQuestPanel hidden={addSpotModalOpen || isSelectingLocation || (!!user && needsUsername)} />
       
       {/* Top Buttons - Hidden when modals are open */}
       {!profilePanelOpen && !discoveryPanelOpen && !selectedSpot && (

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { useUiStore } from '@/store/useUiStore';
 
 export default function NotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -11,6 +12,7 @@ export default function NotificationPrompt() {
   const { user } = useUserStore();
   const { t } = useLanguageStore();
   const { isPermissionGranted, isLoading, initializePush } = usePushNotifications();
+  const { setNotificationPromptVisible } = useUiStore();
 
   useEffect(() => {
     // Check if we should show the prompt
@@ -41,10 +43,17 @@ export default function NotificationPrompt() {
     checkPrompt();
   }, [user, isPermissionGranted]);
 
+  // Sync visibility with global UI store so other components can react
+  useEffect(() => {
+    setNotificationPromptVisible(!!showPrompt && !isDismissed);
+    return () => setNotificationPromptVisible(false);
+  }, [showPrompt, isDismissed, setNotificationPromptVisible]);
+
   const handleEnable = async () => {
     const success = await initializePush();
     if (success) {
       setShowPrompt(false);
+      setNotificationPromptVisible(false);
     }
   };
 
@@ -52,6 +61,7 @@ export default function NotificationPrompt() {
     setShowPrompt(false);
     setIsDismissed(true);
     sessionStorage.setItem('notification-prompt-dismissed', 'true');
+    setNotificationPromptVisible(false);
   };
 
   if (!showPrompt || !user || isDismissed) {
