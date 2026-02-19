@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type MapTheme = 'standard' | 'dark' | 'light' | 'night' | 'silver' | 'retro' | 'purple' | 'valentine';
+export type MapTheme = 'standard' | 'dark' | 'light' | 'night' | 'silver' | 'retro' | 'purple' | 'valentine' | 'satellite';
 
 interface MapThemeStore {
   theme: MapTheme;
@@ -246,6 +246,9 @@ export const mapThemes = {
     { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#fdf2f8' }] },
     { featureType: 'landscape.man_made', elementType: 'geometry', stylers: [{ color: '#fce7f3' }] },
   ],
+
+  // Satellite uses Google Maps' built-in satellite imagery (no style overrides)
+  satellite: [],
 
   silver: [
     { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },

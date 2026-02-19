@@ -18,6 +18,7 @@ import MapThemeSwitcher from '@/components/MapThemeSwitcher';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
 import ValentineQuestPanel from '@/components/ValentineQuestPanel';
 import { useUserStore } from '@/store/useUserStore';
+import { useMapThemeStore, type MapTheme } from '@/store/useMapThemeStore';
 import { useSpotStore, isAdmin } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
@@ -54,9 +55,12 @@ export default function Home() {
   const [discoveryPanelOpen, setDiscoveryPanelOpen] = useState(false);
   
   const { user, needsUsername, setNeedsUsername, initAuth, initAdminListener } = useUserStore();
+  const { theme: currentMapTheme, setTheme } = useMapThemeStore();
   const { spots, fetchSpots, unsubscribeSpots } = useSpotStore();
   const { t } = useLanguageStore();
   const { showToast } = useToastStore();
+
+  const [prevMapTheme, setPrevMapTheme] = useState<MapTheme | null>(null);
 
   // Check if current user is admin
   const userIsAdmin = useMemo(() => isAdmin(user?.email), [user?.email]);
@@ -170,7 +174,9 @@ export default function Home() {
 
   const handleAddSpotClick = () => {
     if (user) {
-      // Start location selection mode
+      // Start location selection mode and switch to satellite map for accuracy
+      setPrevMapTheme(currentMapTheme);
+      setTheme('satellite');
       setIsSelectingLocation(true);
       setSelectedLocation(null);
     } else {
@@ -186,6 +192,15 @@ export default function Home() {
     }
   };
 
+  const handleCancelSelecting = () => {
+    setIsSelectingLocation(false);
+    // Restore previous theme if we switched to satellite
+    if (prevMapTheme) {
+      setTheme(prevMapTheme);
+      setPrevMapTheme(null);
+    }
+  };
+
   const handleLocationSelect = (location: { lat: number; lng: number }) => {
     setSelectedLocation(location);
     setIsSelectingLocation(false);
@@ -197,6 +212,11 @@ export default function Home() {
     setAddSpotModalOpen(false);
     setSelectedLocation(null);
     setIsSelectingLocation(false);
+    // Restore previous map theme if we changed it for adding
+    if (prevMapTheme) {
+      setTheme(prevMapTheme);
+      setPrevMapTheme(null);
+    }
   };
 
   const handleClearFilters = () => {
@@ -359,7 +379,7 @@ export default function Home() {
             {t('clickMapToSelect')}
           </p>
           <button
-            onClick={() => setIsSelectingLocation(false)}
+            onClick={handleCancelSelecting}
             className="w-full py-3 px-4 rounded-xl glass-button text-white font-medium
               hover:bg-white/10 active:scale-95 transition-all touch-manipulation min-h-[48px]"
           >

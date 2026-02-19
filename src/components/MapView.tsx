@@ -146,8 +146,9 @@ export default function MapView({
   // Combine base styles with theme-specific styles
   const mapStyles = [...baseMapStyles, ...mapThemes[theme]];
   
-  const mapOptions = {
-    styles: mapStyles,
+  const mapOptions: google.maps.MapOptions = {
+    // If satellite theme selected, use satellite mapType and don't apply styles
+    styles: theme === 'satellite' ? undefined : mapStyles,
     disableDefaultUI: true,
     zoomControl: false,
     mapTypeControl: false,
@@ -157,6 +158,7 @@ export default function MapView({
     fullscreenControl: false,
     clickableIcons: false,
     gestureHandling: 'greedy' as const,
+    mapTypeId: theme === 'satellite' ? google.maps.MapTypeId.SATELLITE : undefined,
   };
 
   // Calculate marker size based on zoom level
