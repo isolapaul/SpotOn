@@ -13,7 +13,7 @@ function base64ToBuffer(dataUrl: string) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { message, attachments = [] } = body || {};
+    const { message, attachments = [], senderName = null, senderEmail = null } = body || {};
 
     // Ensure SMTP config
     const host = process.env.SMTP_HOST;
@@ -42,11 +42,14 @@ export async function POST(req: Request) {
       };
     });
 
+    const mailText = `Sender: ${senderName || 'anonymous'} ${senderEmail ? `<${senderEmail}>` : ''}\n\nMessage:\n${message || '(empty message)'}`;
+
     const info = await transporter.sendMail({
       from: user,
       to: RECIPIENT,
-      subject: `SpotOn Feedback`,
-      text: message || '(empty message)',
+      subject: `SpotOn_feedback`,
+      text: mailText,
+      replyTo: senderEmail || undefined,
       attachments: mailAttachments,
     });
 

@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { X, Camera, Send } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { useUserStore } from '@/store/useUserStore';
 
 interface Props {
   open: boolean;
@@ -12,6 +13,7 @@ interface Props {
 
 export default function FeedbackPanel({ open, onClose }: Props) {
   const { t } = useLanguageStore();
+  const user = useUserStore((s) => s.user);
   const [message, setMessage] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
@@ -55,7 +57,12 @@ export default function FeedbackPanel({ open, onClose }: Props) {
         })
       );
 
-      const payload = { message, attachments };
+      const payload = {
+        message,
+        attachments,
+        senderName: user?.username || null,
+        senderEmail: user?.email || null,
+      };
 
       const res = await fetch('/api/feedback', {
         method: 'POST',
