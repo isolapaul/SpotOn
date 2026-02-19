@@ -161,6 +161,15 @@ export const translations = {
     minutesAgo: 'perce',
     hoursAgo: 'órája',
     daysAgo: 'napja',
+
+    // Feedback
+    feedback: 'Visszajelzések',
+    attachImages: 'Képek hozzáadása',
+    feedbackPlaceholder: 'Írd le részletesen a visszajelzésed...',
+    feedbackSendError: 'Hiba a visszajelzés küldésekor',
+    sendFeedback: 'Küldés',
+    sending: 'Küldés...',
+    patchNotes: 'Frissítési megjegyzések',
     
     // Map Themes
     mapTheme: 'Térkép Téma',
@@ -487,6 +496,15 @@ export const translations = {
     minutesAgo: 'min ago',
     hoursAgo: 'hr ago',
     daysAgo: 'days ago',
+
+    // Feedback
+    feedback: 'Feedback',
+    attachImages: 'Attach images',
+    feedbackPlaceholder: 'Describe your feedback in detail...',
+    feedbackSendError: 'Failed to send feedback.',
+    sendFeedback: 'Send',
+    sending: 'Sending...',
+    patchNotes: 'Patch Notes',
     
     // Map Themes
     mapTheme: 'Map Theme',

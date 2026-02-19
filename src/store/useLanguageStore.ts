@@ -19,7 +19,7 @@ export const useLanguageStore = create<LanguageStore>()(
       setLanguage: (lang: Language) => set({ language: lang, hasSelectedLanguage: true }),
       t: (key: TranslationKey) => {
         const lang = get().language || 'hu';
-        return translations[lang][key] || key;
+        return (translations[lang] as any)[key] || key;
       },
     }),
     {
