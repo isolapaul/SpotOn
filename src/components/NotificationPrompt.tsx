@@ -27,8 +27,8 @@ export default function NotificationPrompt() {
       if (dismissed) return;
       
       // Check notification permission status
-      if ('Notification' in window) {
-        const permission = Notification.permission;
+      if ('Notification' in globalThis) {
+        const permission = globalThis.Notification.permission;
         
         // Only show if permission is 'default' (not asked yet)
         if (permission === 'default') {

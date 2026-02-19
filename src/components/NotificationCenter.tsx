@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell, X, Check } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 
@@ -132,11 +132,8 @@ export default function NotificationCenter() {
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium 
-                      text-white/80 hover:text-white bg-white/5 hover:bg-white/10 
-                      rounded-lg transition-all touch-manipulation"
+                    className="px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-all touch-manipulation"
                   >
-                    <Check className="w-3.5 h-3.5" strokeWidth={2} />
                     {t('markAllRead')}
                   </button>
                 )}

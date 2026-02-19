@@ -162,16 +162,9 @@ export const usePushNotifications = () => {
         type: notificationType as any,
       });
       
-      // Show native browser notification if permitted
-      if (Notification.permission === 'granted') {
-        new Notification(title, {
-          body: body,
-          icon: '/icon-192x192.png',
-          badge: '/icon-192x192.png',
-          tag: payload.data?.tag || 'spoton-foreground',
-          data: payload.data,
-        });
-      }
+      // Do NOT show a native browser Notification here to avoid duplicates
+      // (the service worker will display notifications when the app is backgrounded,
+      // and in-foreground we add items to the in-app NotificationCenter instead).
     });
     
     // Store unsubscribe function globally
