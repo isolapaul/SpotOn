@@ -146,6 +146,9 @@ export default function MapView({
   // Combine base styles with theme-specific styles
   const mapStyles = [...baseMapStyles, ...mapThemes[theme]];
   
+  // Guard access to global google (avoid SSR / before API loaded runtime errors)
+  const googleObj = typeof window !== 'undefined' ? (window as any).google : undefined;
+
   const mapOptions: google.maps.MapOptions = {
     // If satellite theme selected, use satellite mapType and don't apply styles
     styles: theme === 'satellite' ? undefined : mapStyles,
@@ -158,7 +161,7 @@ export default function MapView({
     fullscreenControl: false,
     clickableIcons: false,
     gestureHandling: 'greedy' as const,
-    mapTypeId: theme === 'satellite' ? google.maps.MapTypeId.SATELLITE : undefined,
+    mapTypeId: theme === 'satellite' && googleObj ? googleObj.maps.MapTypeId.SATELLITE : undefined,
   };
 
   // Calculate marker size based on zoom level
@@ -319,14 +322,18 @@ export default function MapView({
         {userLocation && (
           <MarkerF
             position={userLocation}
-            icon={{
-              path: google.maps.SymbolPath.CIRCLE,
-              fillColor: '#007AFF',
-              fillOpacity: 1,
-              strokeColor: '#FFFFFF',
-              strokeWeight: 3,
-              scale: 8,
-            }}
+            icon={
+              googleObj
+                ? {
+                    path: googleObj.maps.SymbolPath.CIRCLE,
+                    fillColor: '#007AFF',
+                    fillOpacity: 1,
+                    strokeColor: '#FFFFFF',
+                    strokeWeight: 3,
+                    scale: 8,
+                  }
+                : undefined
+            }
             title="You are here"
           />
         )}
@@ -335,7 +342,7 @@ export default function MapView({
         {tempMarker && (
           <MarkerF
             position={tempMarker}
-            animation={google.maps.Animation.DROP}
+            animation={googleObj ? googleObj.maps.Animation.DROP : undefined}
           />
         )}
 
@@ -350,17 +357,23 @@ export default function MapView({
           const isHighlighted = activeHighlights.length > 0;
           // Highlighted spots get a bigger marker
           const finalMarkerSize = isHighlighted ? markerSize * 1.2 : markerSize;
-          return (
+                return (
             <MarkerF
               key={spot.id}
               position={spot.location}
               title={spot.name}
               zIndex={isHighlighted ? 999 : 1}
-              icon={{
-                url: getCategoryIcon(spot.category, spot.status, isHighlighted),
-                scaledSize: new google.maps.Size(finalMarkerSize, finalMarkerSize),
-                anchor: new google.maps.Point(finalMarkerSize / 2, finalMarkerSize / 2),
-              }}
+              icon={
+                googleObj
+                  ? {
+                      url: getCategoryIcon(spot.category, spot.status, isHighlighted),
+                      scaledSize: new googleObj.maps.Size(finalMarkerSize, finalMarkerSize),
+                      anchor: new googleObj.maps.Point(finalMarkerSize / 2, finalMarkerSize / 2),
+                    }
+                  : {
+                      url: getCategoryIcon(spot.category, spot.status, isHighlighted),
+                    }
+              }
               onClick={() => setSelectedSpot(spot)}
             />
           );
@@ -372,7 +385,7 @@ export default function MapView({
             position={selectedSpot.location}
             onCloseClick={() => setSelectedSpot(null)}
             options={{
-              pixelOffset: new google.maps.Size(0, -40),
+              pixelOffset: googleObj ? new googleObj.maps.Size(0, -40) : undefined,
               disableAutoPan: false,
             }}
           >

@@ -84,7 +84,15 @@ export default function FeedbackPanel({ open, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-start justify-center p-4 animate-fade-in">
+    <div
+      className="fixed inset-0 z-[2000] flex items-start justify-center animate-fade-in"
+      style={{
+        paddingTop: 'calc(1rem + env(safe-area-inset-top))',
+        paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+        paddingRight: 'max(1rem, env(safe-area-inset-right))',
+        paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))'
+      }}
+    >
       <button
         type="button"
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
