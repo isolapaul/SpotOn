@@ -23,11 +23,11 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maps.googleapis.com https://maps.gstatic.com https://*.firebaseio.com https://www.gstatic.com https://apis.google.com https://accounts.google.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.firebaseio.com https://www.gstatic.com https://apis.google.com https://accounts.google.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https: http:",
               "font-src 'self' data: https://fonts.gstatic.com",
-              "connect-src 'self' https://*.googleapis.com https://*.google.com https://*.firebaseio.com https://*.cloudfunctions.net wss://*.firebaseio.com https://fcm.googleapis.com https://apis.google.com https://accounts.google.com",
+              "connect-src 'self' https://*.googleapis.com https://*.google.com https://*.firebaseio.com https://*.cloudfunctions.net wss://*.firebaseio.com https://fcm.googleapis.com https://apis.google.com https://accounts.google.com https://*.openstreetmap.org https://*.basemaps.cartocdn.com https://tile.openstreetmap.fr https://server.arcgisonline.com",
               "frame-src 'self' https://*.google.com https://*.firebaseapp.com https://accounts.google.com",
               "worker-src 'self' blob:",
             ].join('; '),

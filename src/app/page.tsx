@@ -16,7 +16,6 @@ import NotificationPrompt from '@/components/NotificationPrompt';
 import NotificationCenter from '@/components/NotificationCenter';
 import MapThemeSwitcher from '@/components/MapThemeSwitcher';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
-import ValentineQuestPanel from '@/components/ValentineQuestPanel';
 import { useUserStore } from '@/store/useUserStore';
 import { useMapThemeStore, type MapTheme } from '@/store/useMapThemeStore';
 import { useSpotStore, isAdmin } from '@/store/useSpotStore';
@@ -267,9 +266,6 @@ export default function Home() {
       
       {/* Notification Prompt - shown after app loads */}
       <NotificationPrompt />
-      
-      {/* Valentine Quest Panel */}
-      <ValentineQuestPanel hidden={addSpotModalOpen || isSelectingLocation || (!!user && needsUsername)} />
       
       {/* Top Buttons - Hidden when modals are open */}
       {!profilePanelOpen && !discoveryPanelOpen && !selectedSpot && (

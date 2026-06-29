@@ -1,14 +1,13 @@
 'use client';
 
-import { GoogleMap, useJsApiLoader, MarkerF, InfoWindow } from '@react-google-maps/api';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import type { Spot } from '@/store/useSpotStore';
 import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import SpotInfoWindow from './SpotInfoWindow';
-
-// Define libraries as a constant to prevent unnecessary reloads
-const GOOGLE_MAPS_LIBRARIES: ('places')[] = ['places'];
 
 interface MapViewProps {
   isAddingSpot?: boolean;
@@ -21,157 +20,155 @@ interface MapViewProps {
   onMapClick?: () => void;
 }
 
-// Category emoji markers
-const getCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rejected', isHighlighted: boolean = false) => {
-  const baseUrl = 'data:image/svg+xml;charset=UTF-8,';
-  
-  // Get emoji based on category
+const getCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rejected', isHighlighted: boolean = false, size = 48) => {
   let emoji = '📍';
   switch (category) {
-    case 'scenic':
-      emoji = '🌅';
-      break;
-    case 'smoke-spot':
-      emoji = '💨';
-      break;
-    case 'viewpoint':
-      emoji = '🏔️';
-      break;
-    case 'hiking':
-      emoji = '🥾';
-      break;
-    case 'random':
-      emoji = '🎲';
-      break;
-    case 'date-spot':
-      emoji = '❤️';
-      break;
-    case 'park':
-      emoji = '🌳';
-      break;
-    case 'part':
-      emoji = '🏖️';
-      break;
+    case 'scenic': emoji = '🌅'; break;
+    case 'smoke-spot': emoji = '💨'; break;
+    case 'viewpoint': emoji = '🏔️'; break;
+    case 'hiking': emoji = '🥾'; break;
+    case 'random': emoji = '🎲'; break;
+    case 'date-spot': emoji = '❤️'; break;
+    case 'park': emoji = '🌳'; break;
+    case 'part': emoji = '🏖️'; break;
   }
-  
-  // Color based on status (for admin view)
-  let bgColor = status === 'approved' ? '#10b981' : '#eab308'; // green vs yellow
-  
-  // If highlighted, use prominent gold color with glow effect
-  if (isHighlighted) {
-    bgColor = '#FFD700'; // bright gold for highlighted
-  }
-  
+
+  let bgColor = status === 'approved' ? '#10b981' : '#eab308';
+  if (isHighlighted) bgColor = '#FFD700';
+
   const svg = isHighlighted
-    ? `<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
+    ? `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 56 56">
         <defs>
           <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
+            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
         <circle cx="28" cy="28" r="24" fill="${bgColor}" stroke="#FFA500" stroke-width="3" filter="url(#glow)"/>
         <text x="28" y="35" font-size="22" text-anchor="middle">${emoji}</text>
         <text x="46" y="14" font-size="18">⭐</text>
       </svg>`
-    : `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+    : `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 48 48">
         <circle cx="24" cy="24" r="20" fill="${bgColor}" opacity="0.9"/>
         <text x="24" y="30" font-size="20" text-anchor="middle" fill="white">${emoji}</text>
       </svg>`;
-  
-  return baseUrl + encodeURIComponent(svg);
+
+  return L.divIcon({
+    html: svg,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  });
 };
 
-// Clean/Simple map style additions - removes POIs and unnecessary labels, shows country borders
-const baseMapStyles = [
-  {
-    featureType: 'poi',
-    elementType: 'labels',
-    stylers: [{ visibility: 'off' }],
-  },
-  {
-    featureType: 'poi.business',
-    stylers: [{ visibility: 'off' }],
-  },
-  {
-    featureType: 'transit',
-    elementType: 'labels.icon',
-    stylers: [{ visibility: 'off' }],
-  },
-  // Show country borders
-  {
-    featureType: 'administrative.country',
-    elementType: 'geometry.stroke',
-    stylers: [{ visibility: 'on' }, { weight: 1.5 }, { color: '#888888' }],
-  },
-  // Hide other admin boundaries
-  {
-    featureType: 'administrative.province',
-    elementType: 'geometry',
-    stylers: [{ visibility: 'off' }],
-  },
-  {
-    featureType: 'administrative.land_parcel',
-    stylers: [{ visibility: 'off' }],
-  },
-  {
-    featureType: 'administrative.neighborhood',
-    stylers: [{ visibility: 'off' }],
-  },
-];
+const userLocationIcon = L.divIcon({
+  html: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8" fill="#007AFF" stroke="white" stroke-width="3"/>
+  </svg>`,
+  className: '',
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
 
-export default function MapView({ 
-  isAddingSpot = false, 
-  onLocationSelect, 
+const tempMarkerIcon = L.divIcon({
+  html: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+    <circle cx="16" cy="16" r="12" fill="#f59e0b" stroke="white" stroke-width="3"/>
+    <text x="16" y="21" font-size="14" text-anchor="middle">📍</text>
+  </svg>`,
+  className: '',
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
+// Fires onMapLoad once after the map is ready
+function MapReadyNotifier({ onMapLoad }: { onMapLoad?: () => void }) {
+  const notified = useRef(false);
+  useMap(); // ensures we're inside MapContainer context
+  useEffect(() => {
+    if (!notified.current && onMapLoad) {
+      notified.current = true;
+      const timer = setTimeout(onMapLoad, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [onMapLoad]);
+  return null;
+}
+
+// Handles map click events and zoom tracking
+function MapEventHandler({
+  isAddingSpot,
+  onLocationSelect,
+  onMapClick,
+  onZoomChange,
+}: {
+  isAddingSpot: boolean;
+  onLocationSelect?: (loc: { lat: number; lng: number }) => void;
+  onMapClick?: () => void;
+  onZoomChange: (zoom: number) => void;
+}) {
+  useMapEvents({
+    click(e) {
+      if (isAddingSpot && onLocationSelect) {
+        onLocationSelect({ lat: e.latlng.lat, lng: e.latlng.lng });
+      } else if (onMapClick) {
+        onMapClick();
+      }
+    },
+    zoomend(e) {
+      onZoomChange(e.target.getZoom());
+    },
+  });
+  return null;
+}
+
+// Pans map to user location when it becomes available
+function LocationPanner({ userLocation }: { userLocation: { lat: number; lng: number } | null }) {
+  const map = useMap();
+  const panned = useRef(false);
+
+  useEffect(() => {
+    if (userLocation && !panned.current) {
+      panned.current = true;
+      map.setView([userLocation.lat, userLocation.lng], 13, { animate: true });
+    }
+  }, [userLocation, map]);
+
+  return null;
+}
+
+// Swaps tile layer when theme changes without remounting map
+function TileLayerSwitcher({ theme }: { theme: string }) {
+  const config = mapThemes[theme as keyof typeof mapThemes] ?? mapThemes.standard;
+  return (
+    <TileLayer
+      key={theme}
+      url={config.url}
+      attribution={config.attribution}
+      className={config.className}
+    />
+  );
+}
+
+export default function MapView({
+  isAddingSpot = false,
+  onLocationSelect,
   tempMarker,
   spots = [],
   isAdmin = false,
   onSpotDetailsOpen,
   onMapLoad,
-  onMapClick
+  onMapClick,
 }: Readonly<MapViewProps>) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [zoomLevel, setZoomLevel] = useState(13);
-  const defaultCenter = { lat: 47.4979, lng: 19.0402 }; // Budapest, Hungary
-  
-  // Get current map theme
+  const defaultCenter: [number, number] = [47.4979, 19.0402];
+
   const { theme } = useMapThemeStore();
   const { t } = useLanguageStore();
-  
-  // Combine base styles with theme-specific styles
-  const mapStyles = [...baseMapStyles, ...mapThemes[theme]];
-  
-  // Guard access to global google (avoid SSR / before API loaded runtime errors)
-  const googleObj = typeof window !== 'undefined' ? (window as any).google : undefined;
 
-  const mapOptions: google.maps.MapOptions = {
-    // If satellite theme selected, use satellite mapType and don't apply styles
-    styles: theme === 'satellite' ? undefined : mapStyles,
-    disableDefaultUI: true,
-    zoomControl: false,
-    mapTypeControl: false,
-    scaleControl: false,
-    streetViewControl: false,
-    rotateControl: false,
-    fullscreenControl: false,
-    clickableIcons: false,
-    gestureHandling: 'greedy' as const,
-    mapTypeId: theme === 'satellite' && googleObj ? googleObj.maps.MapTypeId.SATELLITE : undefined,
-  };
-
-  // Calculate marker size based on zoom level
   const getMarkerSize = useCallback((zoom: number) => {
-    // Zoom levels: 1-22
-    // At zoom 1-5: tiny (24px)
-    // At zoom 6-10: small (32px)
-    // At zoom 11-14: medium (48px)
-    // At zoom 15-18: large (64px)
-    // At zoom 19-22: extra large (80px)
     if (zoom <= 5) return 24;
     if (zoom <= 10) return 32;
     if (zoom <= 14) return 48;
@@ -179,126 +176,35 @@ export default function MapView({
     return 80;
   }, []);
 
-  // Load Google Maps API
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries: GOOGLE_MAPS_LIBRARIES,
-  });
-
-  // Notify parent when map is loaded
   useEffect(() => {
-    if (isLoaded && !loadError && onMapLoad) {
-      // Give it a moment to ensure everything is ready
-      const timer = setTimeout(() => {
-        onMapLoad();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoaded, loadError, onMapLoad]);
+    if (!navigator.geolocation) return;
 
-  // Get user's current location (only once when map loads)
-  useEffect(() => {
-    if (navigator.geolocation && isLoaded && !userLocation) {
-      // Check cached location first (10 minutes cache)
-      const cachedLocation = sessionStorage.getItem('userLocation');
-      const cachedTime = sessionStorage.getItem('userLocationTime');
-      
-      if (cachedLocation && cachedTime) {
-        const age = Date.now() - Number.parseInt(cachedTime, 10);
-        if (age < 10 * 60 * 1000) { // 10 minutes
-          const cached = JSON.parse(cachedLocation);
-          setUserLocation(cached);
-          if (map) {
-            map.panTo(cached);
-            map.setZoom(13);
-          }
-          return;
-        }
-      }
-      
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const newLocation = { lat: latitude, lng: longitude };
-          setUserLocation(newLocation);
-          
-          // Cache location
-          sessionStorage.setItem('userLocation', JSON.stringify(newLocation));
-          sessionStorage.setItem('userLocationTime', Date.now().toString());
-          
-          // Fly to user location if map is loaded
-          if (map) {
-            map.panTo(newLocation);
-            map.setZoom(13);
-          }
-        },
-        (error) => {
-          setUserLocation(defaultCenter);
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 600000, // 10 minutes
-        }
-      );
-    }
-  }, [isLoaded, map, userLocation]);
+    const cachedLocation = sessionStorage.getItem('userLocation');
+    const cachedTime = sessionStorage.getItem('userLocationTime');
 
-  // Handle map click for adding spots or closing spot details
-  const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
-    if (isAddingSpot && onLocationSelect && e.latLng) {
-      onLocationSelect({
-        lat: e.latLng.lat(),
-        lng: e.latLng.lng(),
-      });
-    } else {
-      // Clear selected spot when clicking on map
-      setSelectedSpot(null);
-      // Also notify parent to close spot details
-      if (onMapClick) {
-        onMapClick();
+    if (cachedLocation && cachedTime) {
+      const age = Date.now() - Number.parseInt(cachedTime, 10);
+      if (age < 10 * 60 * 1000) {
+        setUserLocation(JSON.parse(cachedLocation));
+        return;
       }
     }
-  }, [isAddingSpot, onLocationSelect, onMapClick]);
 
-  const onLoad = useCallback((map: google.maps.Map) => {
-    setMap(map);
-    // Listen to zoom changes
-    map.addListener('zoom_changed', () => {
-      const zoom = map.getZoom() || 13;
-      setZoomLevel(zoom);
-    });
-  }, []);
-
-  const onUnmount = useCallback(() => {
-    setMap(null);
-  }, []);
-
-  if (loadError) {
-    return (
-      <div className="w-full h-[100dvh] bg-slate-900 flex items-center justify-center">
-        <div className="glass-card px-8 py-4">
-          <p className="text-white font-medium">{t('mapLoadError')}</p>
-        </div>
-      </div>
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setUserLocation(loc);
+        sessionStorage.setItem('userLocation', JSON.stringify(loc));
+        sessionStorage.setItem('userLocationTime', Date.now().toString());
+      },
+      () => setUserLocation({ lat: defaultCenter[0], lng: defaultCenter[1] }),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
     );
-  }
-
-  if (!isLoaded) {
-    return null; // Return nothing, LoadingScreen handles this
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="absolute inset-0 w-full h-full z-0">
-      {/* Valentine Theme Overlay - Subtle gradient edges */}
-      {theme === 'valentine' && (
-        <div className="absolute inset-0 pointer-events-none z-10">
-          <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-pink-200/20 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-rose-200/20 to-transparent" />
-        </div>
-      )}
-
-      {/* Instructions overlay when adding spot */}
       {isAddingSpot && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1000] glass-card px-6 py-3 pointer-events-none animate-fade-in">
           <p className="text-white font-medium text-center">
@@ -307,100 +213,75 @@ export default function MapView({
         </div>
       )}
 
-      <GoogleMap
-        mapContainerStyle={{ width: '100%', height: '100%' }}
-        center={userLocation || defaultCenter}
-        zoom={userLocation ? 13 : 6}
-        options={{
-          ...mapOptions,
-        }}
-        onClick={handleMapClick}
-        onLoad={onLoad}
-        onUnmount={onUnmount}
+      {/* Purple theme CSS filter */}
+      <style>{`
+        .map-purple-filter { filter: hue-rotate(200deg) saturate(0.7) brightness(0.6); }
+      `}</style>
+
+      <MapContainer
+        center={defaultCenter}
+        zoom={6}
+        style={{ width: '100%', height: '100%' }}
+        zoomControl={false}
+        attributionControl={false}
       >
-        {/* User location marker - blue dot */}
+        <MapReadyNotifier onMapLoad={onMapLoad} />
+        <LocationPanner userLocation={userLocation} />
+        <TileLayerSwitcher theme={theme} />
+        <MapEventHandler
+          isAddingSpot={isAddingSpot}
+          onLocationSelect={onLocationSelect}
+          onMapClick={() => {
+            setSelectedSpot(null);
+            onMapClick?.();
+          }}
+          onZoomChange={setZoomLevel}
+        />
+
+        {/* User location dot */}
         {userLocation && (
-          <MarkerF
-            position={userLocation}
-            icon={
-              googleObj
-                ? {
-                    path: googleObj.maps.SymbolPath.CIRCLE,
-                    fillColor: '#007AFF',
-                    fillOpacity: 1,
-                    strokeColor: '#FFFFFF',
-                    strokeWeight: 3,
-                    scale: 8,
-                  }
-                : undefined
-            }
-            title="You are here"
-          />
+          <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon} />
         )}
 
-        {/* Temporary marker when selecting location */}
+        {/* Temporary marker during spot creation */}
         {tempMarker && (
-          <MarkerF
-            position={tempMarker}
-            animation={googleObj ? googleObj.maps.Animation.DROP : undefined}
-          />
+          <Marker position={[tempMarker.lat, tempMarker.lng]} icon={tempMarkerIcon} />
         )}
 
-        {/* Real spots from Firestore */}
+        {/* Spot markers */}
         {spots.map((spot) => {
-          const markerSize = getMarkerSize(zoomLevel);
-          // Check if spot has active (non-expired) highlights
           const now = new Date().toISOString();
-          const activeHighlights = (spot.highlighted || []).filter(
-            (h) => h.expiresAt > now
-          );
-          const isHighlighted = activeHighlights.length > 0;
-          // Highlighted spots get a bigger marker
-          const finalMarkerSize = isHighlighted ? markerSize * 1.2 : markerSize;
-                return (
-            <MarkerF
+          const isHighlighted = (spot.highlighted || []).some((h) => h.expiresAt > now);
+          const size = getMarkerSize(zoomLevel) * (isHighlighted ? 1.2 : 1);
+          return (
+            <Marker
               key={spot.id}
-              position={spot.location}
-              title={spot.name}
-              zIndex={isHighlighted ? 999 : 1}
-              icon={
-                googleObj
-                  ? {
-                      url: getCategoryIcon(spot.category, spot.status, isHighlighted),
-                      scaledSize: new googleObj.maps.Size(finalMarkerSize, finalMarkerSize),
-                      anchor: new googleObj.maps.Point(finalMarkerSize / 2, finalMarkerSize / 2),
-                    }
-                  : {
-                      url: getCategoryIcon(spot.category, spot.status, isHighlighted),
-                    }
-              }
-              onClick={() => setSelectedSpot(spot)}
+              position={[spot.location.lat, spot.location.lng]}
+              icon={getCategoryIcon(spot.category, spot.status, isHighlighted, Math.round(size))}
+              zIndexOffset={isHighlighted ? 1000 : 0}
+              eventHandlers={{
+                click: () => setSelectedSpot(spot),
+              }}
             />
           );
         })}
+      </MapContainer>
 
-        {/* InfoWindow for selected spot */}
-        {selectedSpot && (
-          <InfoWindow
-            position={selectedSpot.location}
-            onCloseClick={() => setSelectedSpot(null)}
-            options={{
-              pixelOffset: googleObj ? new googleObj.maps.Size(0, -40) : undefined,
-              disableAutoPan: false,
+      {/* Info popup rendered outside MapContainer (avoids Leaflet popup styling conflicts) */}
+      {selectedSpot && (
+        <div className="absolute left-1/2 -translate-x-1/2 z-[1000] animate-fade-in"
+          style={{ bottom: '100px' }}>
+          <SpotInfoWindow
+            spot={selectedSpot}
+            isAdmin={isAdmin}
+            onClose={() => setSelectedSpot(null)}
+            onViewDetails={() => {
+              onSpotDetailsOpen?.(selectedSpot);
+              setSelectedSpot(null);
             }}
-          >
-            <SpotInfoWindow
-              spot={selectedSpot}
-              isAdmin={isAdmin}
-              onClose={() => setSelectedSpot(null)}
-              onViewDetails={() => {
-                onSpotDetailsOpen?.(selectedSpot);
-                setSelectedSpot(null);
-              }}
-            />
-          </InfoWindow>
-        )}
-      </GoogleMap>
+          />
+        </div>
+      )}
     </div>
   );
 }

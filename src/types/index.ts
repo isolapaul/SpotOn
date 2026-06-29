@@ -53,25 +53,6 @@ export interface User {
   highlightedSpots?: string[]; // Array of spot IDs that user highlighted (max 1 for level 3, max 2 for level 4+)
   customNameColor?: string; // Custom name color for level 5 users
   customNameFont?: string; // Custom font style for level 5 users (font-family class name)
-  questProgress?: {
-    valentine2026?: {
-      count: number;
-      completed: boolean;
-      completedAt?: string;
-    };
-  };
-  questRewards?: {
-    valentine2026?: {
-      completedAt: string;
-      mapThemeUnlocked: boolean;
-      highlightBonus: number;
-      activeHighlights?: {
-        spotId: string;
-        highlightedAt: string;
-        expiresAt: string;
-      }[];
-    };
-  };
   // Notification Settings
   notificationSettings?: {
     spotApproved: boolean; // Get notified when spot is approved

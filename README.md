@@ -1,71 +1,72 @@
-# 🌍 SpotOn - Discover & Share Hidden Gems
+# SpotOn - Discover & Share Hidden Gems
 
 > **Live Demo:** [https://spot-on-rho.vercel.app/](https://spot-on-rho.vercel.app/)
 
-SpotOn is a Progressive Web App (PWA) that enables users to discover and share their favorite locations on an interactive map. Features Google Maps integration, real-time data synchronization with Firebase, and modern glassmorphism design.
+SpotOn is a Progressive Web App (PWA) that enables users to discover and share their favorite locations on an interactive map. Features OpenStreetMap integration, real-time data synchronization with Firebase, and modern glassmorphism design.
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 🗺️ **Map Display**
-- Google Maps integration with custom category-based markers (🌅🏔️💨🌳)
+### Map Display
+- OpenStreetMap integration with custom category-based emoji markers
 - GPS-based location detection
 - Real-time spot updates from Firebase Firestore
 - Status-based marker coloring (green=approved, yellow=pending)
+- 8 map themes (Standard, Light, Dark, Night, Silver, Retro, Purple, Satellite)
 
-### 🔍 **Filtering & Discovery**
+### Filtering & Discovery
 - Distance-based filtering (1-50 km radius)
-- Category filtering (Scenic View, Hidden Spot, Viewpoint, Park)
+- Category filtering (Scenic, Smoke Spot, Viewpoint, Hiking, Park, Date Spot, Random, Other)
 - Random location generator with distance selection
 - Admin/user-based visibility
 
-### 📍 **Spot Management**
+### Spot Management
 - Add new locations with image upload (automatic compression)
-- Optional photo support
-- Category selection (scenic, smoke-spot, viewpoint, other)
-- Auto-approval for admins, pending approval for users
+- Category selection with 9 types
+- Auto-approval for admins, pending approval for regular users
 
-### ⭐ **Rating System**
+### Rating System
 - 5-star rating
-- Comments with photo and name
+- Text comments with user photo and name
 - Average rating calculation
 - Real-time synchronization
 
-### 👤 **User Accounts**
+### User Accounts
 - Google Sign-in with Firebase Auth
-- Profile photo and name display
+- Profile photo, banner, and username
 - List your own spots by status (approved/pending)
-- Favorites management (coming soon)
+- Favorites management
+- Level system based on spots created (levels 1-5)
 
-### 🌐 **Multilingual Support**
-- Hungarian 🇭🇺
-- English 🇬🇧
-- German 🇩🇪
+### Multilingual Support
+- Hungarian
+- English
+- German
 - Language selector on first launch
 
-### 👨‍💼 **Admin System**
-- Email-based admin permissions
+### Admin System
+- Email-based admin permissions stored in Firestore
 - Approve pending locations
 - View all spots (approved + pending)
 - Status badges and admin controls
 
-### 📱 **PWA Features**
+### PWA Features
 - Installable on mobile and desktop
-- Offline functionality (service worker)
+- Service worker support
 - iOS safe area support
-- Platform-specific navigation (Google Maps/Apple Maps)
-- Push notification support (coming soon)
+- Platform-specific navigation (Google Maps / Apple Maps)
+- Push notification support
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Framework:** Next.js 14+ (App Router)
+- **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS + Custom Glassmorphism
-- **Maps:** Google Maps API (@react-google-maps/api)
-- **Backend:** Firebase (Auth, Firestore, Storage)
+- **Maps:** OpenStreetMap via react-leaflet
+- **Backend:** Firebase (Auth, Firestore, Storage, Cloud Functions, FCM)
 - **State Management:** Zustand
 - **Image Processing:** browser-image-compression
 - **Icons:** Lucide React
@@ -73,20 +74,20 @@ SpotOn is a Progressive Web App (PWA) that enables users to discover and share t
 
 ---
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
-### 1. **Clone Repository**
+### 1. Clone Repository
 ```bash
 git clone https://github.com/yourusername/SpotOn.git
 cd SpotOn
 ```
 
-### 2. **Install Dependencies**
+### 2. Install Dependencies
 ```bash
 npm install
 ```
 
-### 3. **Environment Variables Setup**
+### 3. Environment Variables Setup
 Create a `.env.local` file in the project root:
 
 ```env
@@ -97,38 +98,35 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=your_vapid_key
 
-# Google Maps API Key
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_key
+# Admin email (the account that gets admin privileges)
+NEXT_PUBLIC_ADMIN_EMAIL=your_email@gmail.com
+
+# Email sending (for feedback form)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=your_smtp_user@gmail.com
+SMTP_PASS=your_app_password
 ```
 
-### 4. **Create Firebase Project**
+### 4. Create Firebase Project
 1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Create a new project
 3. Enable the following:
-   - **Authentication** → Google Sign-in
-   - **Firestore Database** → Production mode
-   - **Storage** → Default rules
+   - **Authentication** — Google Sign-in
+   - **Firestore Database** — Production mode
+   - **Storage** — Default rules
+   - **Cloud Functions** — for highlight and notification features
 4. Copy the config values to `.env.local`
 
-### 5. **Get Google Maps API Key**
-1. Visit [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable Maps JavaScript API
-3. Generate API key and copy to `.env.local`
-
-### 6. **Set Admin Email**
-Open `src/store/useSpotStore.ts` and add your admin email:
-```typescript
-const ADMIN_EMAILS = ['your-email@gmail.com'];
-```
-
-### 7. **Start Development Server**
+### 5. Start Development Server
 ```bash
 npm run dev
 ```
 Open browser: [http://localhost:3000](http://localhost:3000)
 
-### 8. **Production Build**
+### 6. Production Build
 ```bash
 npm run build
 npm start
@@ -136,27 +134,29 @@ npm start
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 SpotOn/
 ├── src/
-│   ├── app/                 # Next.js App Router pages
+│   ├── app/                 # Next.js App Router pages and API routes
 │   ├── components/          # React components
-│   │   ├── AddSpotModal.tsx
-│   │   ├── BottomNavigation.tsx
-│   │   ├── FilterPanel.tsx
 │   │   ├── MapView.tsx
 │   │   ├── SpotDetailsPanel.tsx
+│   │   ├── ProfilePanel.tsx
+│   │   ├── DiscoveryPanel.tsx
 │   │   └── ...
 │   ├── store/               # Zustand state management
 │   │   ├── useSpotStore.ts
 │   │   ├── useUserStore.ts
 │   │   └── ...
-│   ├── lib/                 # Utilities & Firebase config
+│   ├── lib/                 # Utilities and Firebase config
 │   │   ├── firebase.ts
-│   │   └── translations.ts
-│   └── hooks/               # Custom React hooks
+│   │   ├── translations.ts
+│   │   └── spotUtils.ts
+│   ├── hooks/               # Custom React hooks
+│   └── types/               # TypeScript type definitions
+├── functions/               # Firebase Cloud Functions
 ├── public/                  # Static assets
 │   ├── manifest.json
 │   └── icons/
@@ -165,17 +165,17 @@ SpotOn/
 
 ---
 
-## 🎨 Design System
+## Design System
 
 ### Glassmorphism Components
 - `.glass` - Basic glass effect
 - `.glass-card` - Cards with glass effect
 - `.glass-button` - Interactive buttons
 - `.glass-nav` - Navigation bar
-- Custom animations (slide-up, slide-left, fade-in)
+- Custom animations: slide-up, slide-left, fade-in, scale-in
 
 ### Color Palette
-- **Primary:** Blue-purple gradient (#3b82f6 → #8b5cf6)
+- **Primary:** Blue-purple gradient (#3b82f6 to #8b5cf6)
 - **Success:** Green (#10b981)
 - **Warning:** Yellow (#eab308)
 - **Error:** Red (#ef4444)
@@ -183,56 +183,40 @@ SpotOn/
 
 ---
 
-## 📱 PWA Installation
+## PWA Installation
 
 ### iOS (Safari)
 1. Open the website in Safari
 2. Tap the "Share" button
-3. "Add to Home Screen"
-4. The app will appear on your home screen
+3. Select "Add to Home Screen"
 
 ### Android (Chrome)
 1. Open the website in Chrome
-2. "Add to Home screen" prompt
-3. Or: Menu → "Install app"
+2. Accept the "Add to Home screen" prompt, or use Menu > "Install app"
 
 ### Desktop (Chrome/Edge)
-1. "Install" icon in address bar
-2. Or: Menu → "Install SpotOn"
+1. Click the "Install" icon in the address bar, or use Menu > "Install SpotOn"
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
-- Configure Firebase Security Rules
-- Store API keys in environment variables
-- Admin permissions based on email
-- Image upload size limit (5MB)
-- HTTPS required in production (handled automatically by Vercel)
-
----
-
-## 🚧 Future Development
-
-- [ ] Implement favorites functionality
-- [ ] Full offline mode support
-- [ ] Push notifications for new spots
-- [ ] Spot deletion/editing feature
-- [ ] Image gallery with multiple photos
-- [ ] Social sharing (Facebook, Instagram)
-- [ ] Gamification (badges, achievements)
-- [ ] Dark/Light mode toggle
+- Configure Firebase Security Rules for Firestore and Storage
+- Store all API keys in environment variables, never in source code
+- Admin permissions are email-based and stored in Firestore
+- Image uploads are limited and compressed client-side
+- HTTPS enforced in production via Vercel
 
 ---
 
-## 📄 License
+## License
 
 MIT License - Free to use and modify
 
 ---
 
-## 👨‍💻 Created By
+## Created By
 
 **Isola Paul Luka**
 
-🌐 Live: [SpotOn](https://spot-on-rho.vercel.app/)
+Live: [SpotOn](https://spot-on-rho.vercel.app/)
