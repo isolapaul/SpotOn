@@ -213,11 +213,6 @@ export default function MapView({
         </div>
       )}
 
-      {/* Purple theme CSS filter */}
-      <style>{`
-        .map-purple-filter { filter: hue-rotate(200deg) saturate(0.7) brightness(0.6); }
-      `}</style>
-
       <MapContainer
         center={defaultCenter}
         zoom={6}

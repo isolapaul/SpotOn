@@ -13,7 +13,7 @@ SpotOn is a Progressive Web App (PWA) that enables users to discover and share t
 - GPS-based location detection
 - Real-time spot updates from Firebase Firestore
 - Status-based marker coloring (green=approved, yellow=pending)
-- 8 map themes (Standard, Light, Dark, Night, Silver, Retro, Purple, Satellite)
+- 5 map themes (Standard, Light, Dark, Silver, Satellite)
 
 ### Filtering & Discovery
 - Distance-based filtering (1-50 km radius)

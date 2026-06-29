@@ -15,10 +15,7 @@ export default function MapThemeSwitcher() {
     { id: 'satellite', name: t('themeSatellite') || 'Műhold', preview: 'bg-gradient-to-br from-gray-700 to-black' },
     { id: 'light', name: t('themeLight'), preview: 'bg-gradient-to-br from-gray-50 to-blue-50' },
     { id: 'dark', name: t('themeDark'), preview: 'bg-gradient-to-br from-gray-800 to-gray-900' },
-    { id: 'night', name: t('themeNight'), preview: 'bg-gradient-to-br from-black to-gray-900' },
     { id: 'silver', name: t('themeSilver'), preview: 'bg-gradient-to-br from-gray-200 to-gray-400' },
-    { id: 'retro', name: t('themeRetro'), preview: 'bg-gradient-to-br from-amber-100 to-orange-200' },
-    { id: 'purple', name: t('themePurple'), preview: 'bg-gradient-to-br from-purple-900 to-blue-900' },
   ];
 
   const handleThemeSelect = (themeId: MapTheme) => {
