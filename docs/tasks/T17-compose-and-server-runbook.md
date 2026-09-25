@@ -34,14 +34,14 @@ Other facts:
 - Cloudflare features that inject scripts into HTML break the CSP (T15): Rocket Loader, Email Address Obfuscation, Web Analytics / Browser Insights auto-injection, and Zaraz.
 
 ## Files
-- Create: `deploy/docker-compose.yml`, `deploy/.env.example`, `docs/deploy.md`
-- Modify: `.github/dependabot.yml` (add a docker-compose entry)
+- Create: `deploy/docker-compose.yml`, `deploy/.env.example`, `deploy/update.sh` (committed executable, mode 0755), `docs/deploy.md`
+- Modify: none. (`.github/dependabot.yml` is **not** changed; see step 3.)
 
 ## Steps
 1. **`deploy/docker-compose.yml`**, exactly this content. The header comment explains the digest placeholder.
    ```yaml
    # SpotOn — /srv/docker/spoton/docker-compose.yml. Runbook: docs/deploy.md
-   # Pin BOTH tag and digest; update only after `cosign verify` (docs/deploy.md §Update).
+   # Pin BOTH tag and digest; update only with ./update.sh, which runs `cosign verify` first (docs/deploy.md §Update).
    name: spoton
    services:
      spoton:
@@ -82,7 +82,7 @@ Other facts:
        labels:
          com.centurylinklabs.watchtower.enable: "false"
        networks: [edge]
-       # NO ports: — reachable only by cloudflared on the "edge" network
+       # No published host ports; reachable only by cloudflared on "edge"
    networks:
      edge:
        external: true
@@ -97,20 +97,46 @@ Other facts:
    SMTP_PORT=465
    SMTP_USER=
    # App password / SMTP password. Keep this file chmod 600.
+   # If the password contains "$", wrap the whole value in single quotes ('...'): Compose interpolates $ in env_file values.
    SMTP_PASS=
    # Where feedback is delivered. Required: without it /api/feedback answers 503.
    FEEDBACK_RECIPIENT=
    ```
-3. **`.github/dependabot.yml`.** Add this and keep the existing entries:
+3. **Dependabot for the compose file: not added now** (ROADMAP Q4). Do **not** change `.github/dependabot.yml` in this task. The entry only works once a `DEPENDABOT_GHCR_TOKEN` secret exists **and** `deploy/docker-compose.yml` holds a real first release digest instead of the all-zero placeholder. Document it in `docs/deploy.md` §3 as a later, optional manual step for Paul, with this snippet:
    ```yaml
    - package-ecosystem: docker-compose
      directory: /deploy
      schedule: { interval: weekly }
      registries: [ghcr]
    ```
-   Add a top-level `registries.ghcr: { type: docker-registry, url: ghcr.io, username: isolapaul, password: "${{secrets.DEPENDABOT_GHCR_TOKEN}}" }`. Document the Dependabot secret `DEPENDABOT_GHCR_TOKEN` (a classic PAT, `read:packages`) in `docs/deploy.md`.
-   - Dependabot PRs only propose a new tag and digest. Paul still verifies the signature before deploying.
-4. **`docs/deploy.md`.** Write these sections, in this order, with the commands verbatim. Adapt the prose, not the commands.
+   plus a top-level `registries.ghcr: { type: docker-registry, url: ghcr.io, username: isolapaul, password: "${{secrets.DEPENDABOT_GHCR_TOKEN}}" }`, and the secret `DEPENDABOT_GHCR_TOKEN` (a classic PAT, `read:packages`).
+   - Dependabot PRs only propose a new tag and digest. Paul still deploys with `./update.sh`, which verifies the signature.
+4. **`deploy/update.sh`**, exactly this content. It is fail-safe: any failed check stops it before the compose file is touched.
+   ```bash
+   #!/usr/bin/env bash
+   # /srv/docker/spoton/update.sh — verify, pin and roll out a SpotOn release. Usage: ./update.sh v2.1.0
+   set -euo pipefail
+   cd "$(dirname "$0")"
+   TAG=${1:?usage: ./update.sh vX.Y.Z}
+   [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "final release tags only (vX.Y.Z)" >&2; exit 1; }
+   IMAGE=ghcr.io/isolapaul/spoton
+   ID='^https://github\.com/isolapaul/SpotOn/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'
+   ISSUER=https://token.actions.githubusercontent.com
+   OUT=$(docker buildx imagetools inspect "$IMAGE:$TAG")
+   DIGEST=$(awk '/^Digest:/{print $2; exit}' <<<"$OUT")
+   [[ $DIGEST =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "could not resolve a digest for $TAG" >&2; exit 1; }
+   echo "$TAG -> $DIGEST (must equal the digest in the release job summary)"
+   cosign verify "$IMAGE@$DIGEST" --certificate-identity-regexp "$ID" --certificate-oidc-issuer "$ISSUER" > /dev/null
+   echo "signature OK"
+   cosign verify-attestation --type cyclonedx "$IMAGE@$DIGEST" --certificate-identity-regexp "$ID" --certificate-oidc-issuer "$ISSUER" > /dev/null
+   echo "SBOM attestation OK"
+   cp docker-compose.yml "docker-compose.yml.$(date +%F-%H%M%S).bak"
+   sed -i -E "s#^(\s*image: ghcr\.io/isolapaul/spoton):[^@]+@sha256:[0-9a-f]{64}#\1:$TAG@$DIGEST#" docker-compose.yml
+   grep -qF "image: $IMAGE:$TAG@$DIGEST" docker-compose.yml || { echo "image line not updated" >&2; exit 1; }
+   docker compose pull
+   docker compose up -d
+   ```
+5. **`docs/deploy.md`.** Write these sections, in this order, with the commands verbatim. Adapt the prose, not the commands.
    1. **Overview.** A text diagram: `Browser → Cloudflare edge (TLS) → tunnel → cloudflared (docker net "edge") → http://spoton:3000 → Firebase (Auth/Firestore/Storage/FCM/Functions)`. The container is stateless.
    2. **Prerequisites.** Docker ≥ 29 and Compose v5; the `edge` network exists (`docker network inspect edge`); cosign v3 (§5); Paul's GitHub account with access to the private package.
    3. **GitHub repository variables** (Settings → Secrets and variables → Actions → *Variables*; not secrets, because they are public config compiled into the bundle):
@@ -122,7 +148,8 @@ Other facts:
       - `NEXT_PUBLIC_FIREBASE_APP_ID`
       - `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
 
-      Any change requires a new tag or release (ROADMAP trap 5). Also add the Dependabot secret `DEPENDABOT_GHCR_TOKEN`. Check that the package is **Private**: Profile → Packages → `spoton` → Package settings.
+      Any change requires a new tag or release (ROADMAP trap 5). Check that the package is **Private**: Profile → Packages → `spoton` → Package settings.
+      - *Optional, later* (after the first real release is deployed): the Dependabot compose entry from step 3, with its `DEPENDABOT_GHCR_TOKEN` secret.
    4. **GHCR login on the server** (as `brvpaul`):
       - Create a classic PAT: GitHub → Settings → Developer settings → Tokens (classic), scope **only** `read:packages`, expiry 1 year, with a calendar reminder.
       - Log in and lock down the credential file:
@@ -145,27 +172,16 @@ Other facts:
       # from a local checkout of the release tag:
       scp deploy/docker-compose.yml brvpaul@<server>:/srv/docker/spoton/docker-compose.yml
       scp deploy/.env.example      brvpaul@<server>:/srv/docker/spoton/.env
-      ssh brvpaul@<server> 'chmod 600 /srv/docker/spoton/.env && ${EDITOR:-nano} /srv/docker/spoton/.env'
+      scp deploy/update.sh         brvpaul@<server>:/srv/docker/spoton/update.sh
+      ssh -t brvpaul@<server> 'chmod 600 /srv/docker/spoton/.env && chmod 750 /srv/docker/spoton/update.sh && ${EDITOR:-nano} /srv/docker/spoton/.env'
       ```
-      Then **§Update**, steps 1–4.
+      Then **§Update**.
    7. **Update (every release):**
       ```bash
       cd /srv/docker/spoton
-      TAG=v2.1.0                                   # from the release / Dependabot PR
-      DIGEST=$(docker buildx imagetools inspect ghcr.io/isolapaul/spoton:$TAG | awk '/^Digest:/{print $2; exit}')
-      echo "$DIGEST"                               # must equal the digest in the release job summary
-      cosign verify "ghcr.io/isolapaul/spoton@$DIGEST" \
-        --certificate-identity-regexp '^https://github\.com/isolapaul/SpotOn/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$' \
-        --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null && echo "signature OK"
-      cosign verify-attestation --type cyclonedx "ghcr.io/isolapaul/spoton@$DIGEST" \
-        --certificate-identity-regexp '^https://github\.com/isolapaul/SpotOn/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$' \
-        --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null && echo "SBOM attestation OK"
-      cp docker-compose.yml "docker-compose.yml.$(date +%F-%H%M).bak"
-      sed -i -E "s#^(\s*image: ghcr\.io/isolapaul/spoton):[^@]+@sha256:[0-9a-f]{64}#\1:$TAG@$DIGEST#" docker-compose.yml
-      grep 'image:' docker-compose.yml
-      docker compose pull && docker compose up -d
+      ./update.sh v2.1.0                           # tag from the release / Dependabot PR
       ```
-      **Never** deploy if either cosign command fails. The regexp above accepts final tags only; `-rc` images are for testing.
+      The script (`deploy/update.sh`, step 4) resolves the digest, runs both cosign verifications, and only then backs up `docker-compose.yml`, pins `tag@digest`, pulls and restarts. It stops at the first failed check, before touching the compose file. Compare the printed digest with the release job summary. **Never** deploy by hand if the script fails. It accepts final tags only; `-rc` images are for testing. If `update.sh` changes in a release, copy the new version to the server first.
    8. **Health and logs:**
       ```bash
       docker inspect --format '{{.State.Health.Status}}' spoton      # healthy (within ~60 s)
@@ -214,7 +230,11 @@ Other facts:
 ## Acceptance
 ```bash
 cd deploy && cp .env.example .env && docker compose -f docker-compose.yml config -q && echo CONFIG_OK; rm -f .env; cd ..
-grep -nE "ports:|privileged|network_mode" deploy/docker-compose.yml && exit 1 || true
+grep -nE '^\s*(ports|privileged|network_mode):' deploy/docker-compose.yml && exit 1 || true
+bash -n deploy/update.sh && test -x deploy/update.sh
+(cd deploy && ./update.sh); test $? -ne 0                        # no tag → refuses, before any network call
+(cd deploy && ./update.sh 'v1.0.0#x'); test $? -ne 0             # malformed tag → refuses
+git diff --quiet HEAD -- .github/dependabot.yml                  # not changed by this task
 grep -nE "SMTP_PASS=.+|FEEDBACK_RECIPIENT=.+@" deploy/.env.example && exit 1 || true   # no real values
 git check-ignore -q deploy/.env && echo "deploy/.env ignored"
 # If the private daemon from T16 runs (DOCKER_HOST=unix:///tmp/dockerd.sock) and T16's image exists:
@@ -238,4 +258,4 @@ Manual: the reviewer reads `docs/deploy.md` end to end and checks that:
 - GitHub now supports fine-grained PATs for GHCR pulls. Prefer that and update §4.
 - The server is not amd64 (the cosign binary name and the image platform change).
 - Paul's Cloudflare plan or dashboard differs from the paths described, e.g. the tunnel is not dashboard-managed.
-- Dependabot cannot authenticate to the private package. Drop the docker-compose entry rather than widen the token scope.
+- Paul later adds the Dependabot compose entry and Dependabot cannot authenticate to the private package. Leave the entry out rather than widen the token scope.
