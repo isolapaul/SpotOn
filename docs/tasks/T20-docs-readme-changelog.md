@@ -85,8 +85,10 @@ Users get a short patch note about the new address.
       | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | runtime | `SMTP_PASS` yes | `.env.local` / `/srv/docker/spoton/.env` (chmod 600) / Vercel env | `/api/feedback` |
       | `FEEDBACK_RECIPIENT` | runtime | no (personal) | same as SMTP; required, else 503 | `/api/feedback` |
       | `APP_URL` (functions param) | functions deploy | no | Firebase functions params | notification links |
+      | `NEXT_DIST_DIR` | build | no | E2E only (T04, `.next-e2e`) | `next.config.mjs` `distDir` |
+      | `VERCEL` | runtime | no | set automatically by Vercel only; switches `/api/feedback` IP source to `x-real-ip` (T14). Read via the `env` object passed to `getClientIp`, so the grep below does not see it — list it anyway | `src/app/api/feedback/route.ts` |
 
-      Add a note: changing any build-phase variable needs a new image or tag (ROADMAP trap 5). Only list variables that exist in the code at the time: `grep -rhoE "process\.env\.[A-Z_]+" src functions/src next.config.mjs | sort -u` must equal the rows (plus `NODE_ENV`).
+      Add a note: changing any build-phase variable needs a new image or tag (ROADMAP trap 5). Only list variables that exist in the code at the time: `grep -rhoE "process\.env\.[A-Z_]+" src functions/src next.config.mjs | sort -u` must equal the rows (plus `NODE_ENV`). Tooling variables that the code reads (such as `NEXT_DIST_DIR`) get a row too, marked as test/tooling only.
    7. **Deployment**: 5 lines. Tag `vX.Y.Z` → `release.yml` (Trivy, SBOM, cosign) → private GHCR → `docs/deploy.md` (verify, pull, up). Link Vercel "Leaving Vercel" in `docs/deploy.md`.
    8. **Security**: link `docs/audit/security-review.md` and `docs/security-rollout.md`, plus one paragraph on the posture: rules and functions are the boundary; CSP; the hardened container; signed images. Report vulnerabilities privately to Paul via GitHub (no personal email in the README).
    9. **Contributing / agents**: "Read `CLAUDE.md` first"; `docs/ROADMAP.md`; `docs/tasks/`; the gates `npm run verify`, `verify:fn`, `test:rules`, `test:e2e`.
@@ -138,8 +140,10 @@ node -e "if(require('./package.json').version!=='2.1.0')process.exit(1)"
 # every process.env var used in code appears in the README matrix
 for v in $(grep -rhoE "process\.env\.[A-Z_]+" src next.config.mjs | sed 's/process.env.//' | sort -u | grep -v '^NODE_ENV$'); do
   grep -q "$v\|${v#NEXT_PUBLIC_FIREBASE_}" README.md || { echo "missing in README: $v"; exit 1; }; done
-# functions table lists every export
-for f in $(grep -oE "^export const [A-Za-z0-9_]+" functions/src/*.ts | awk '{print $3}'); do grep -q "\`$f\`" functions/README.md || { echo "missing: $f"; exit 1; }; done
+# functions table lists every export (T08 made index.ts re-exports only, so read the compiled module, not the source)
+npm --prefix functions run build
+for f in $(GCLOUD_PROJECT=demo-spoton node -e "console.log(Object.keys(require('./functions/lib/index.js')).join('\n'))"); do
+  grep -q "\`$f\`" functions/README.md || { echo "missing: $f"; exit 1; }; done
 ```
 Manual:
 - Check that the Mermaid block renders in the GitHub preview.

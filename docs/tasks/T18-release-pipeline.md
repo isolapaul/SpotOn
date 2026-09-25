@@ -26,8 +26,12 @@ Pushing a tag `vX.Y.Z` builds the image once, as an OCI layout. The pipeline the
   | aquasecurity/trivy-action | v0.36.0 | `ed142fd0673e97e23eac54620cfb913e5ce36c25` (tag object `a9c7b0f…`; pin the **commit**) |
   | anchore/sbom-action | v0.24.2 | `3ad7283483fc7af8ff2b4ea19663c2d5ca935e26` (tag object `006b7ce…`; pin the commit) |
   | sigstore/cosign-installer | v4.1.2 | `6f9f17788090df1f26f669e9d70d6ae9567deba6` (default `cosign-release: v3.0.6`) |
+  | actions/setup-node | v7.0.0 | `820762786026740c76f36085b0efc47a31fe5020` (same pin as T02's `ci.yml`) |
+  | actions/upload-artifact | v7.0.1 | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` (lightweight tag) |
+  | actions/download-artifact | v8.0.1 | `3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c` (lightweight tag) |
 
 - Trivy binary: the latest is `v0.74.0`. trivy-action v0.36.0 defaults to v0.70.0, so set `version: v0.74.0` explicitly. trivy-action inputs used: `scan-type`, `input`, `image-ref`, `severity`, `ignore-unfixed`, `exit-code`, `scanners`, `trivyignores`, `version`. Scanner actions have been targets of tag-repointing attacks, which is why everything is pinned by full commit SHA.
+- Both scanner actions receive `github.token` by default (trivy-action's `token-setup-trivy` input, sbom-action's `github-token` input; checked in their `action.yml` at the pinned commits). They therefore run only in a job whose token is `contents: read`. The write-scoped job (`packages: write`, `id-token: write`) contains no third-party scanner code.
 - `.trivyignore` supports `CVE-XXXX-YYYY exp:YYYY-MM-DD` (verified in the Trivy docs, `guide/configuration/filtering.md`). An expired entry stops being ignored, and the gate fails again. That is intended (D11).
 - Tag filter: GitHub `on.push.tags` patterns support `[0-9]+`. Tags are **never overwritten**: rollback relies on old digests, and the workflow refuses to push an existing tag.
 
@@ -45,7 +49,9 @@ Pushing a tag `vX.Y.Z` builds the image once, as an OCI layout. The pipeline the
    # Format: <ID> exp:YYYY-MM-DD   # reason, link, who accepted
    # Example (do not uncomment): CVE-2099-00000 exp:2099-01-31  # no fix upstream; not reachable (no shell in distroless)
    ```
-2. **`.github/workflows/release.yml`:**
+2. **`.github/workflows/release.yml`.** Two jobs, so that no third-party scanner action ever runs with a write-scoped token:
+   - `build` (`contents: read` only): build the OCI layout, read the digest, `npm audit`, Trivy, SBOM, smoke test; upload `oci-image/` and `sbom.cdx.json` as a workflow artifact; output the digest.
+   - `publish` (`needs: build`, tag pushes only; `packages: write`, `id-token: write`): download the artifact, re-check the digest, push with skopeo, sign with cosign. **No scanner action runs in `publish`.**
    ```yaml
    name: release
    on:
@@ -53,21 +59,30 @@ Pushing a tag `vX.Y.Z` builds the image once, as an OCI layout. The pipeline the
        tags: ['v[0-9]+.[0-9]+.[0-9]+', 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+']
      workflow_dispatch: {}          # dry run: build + scan + SBOM + smoke, no push/sign
    permissions: {}
-   concurrency: { group: release-${{ github.ref }}, cancel-in-progress: false }
+   concurrency:                     # block style: an unquoted ${{ }} inside a {…} flow mapping is invalid YAML
+     group: release-${{ github.ref }}
+     cancel-in-progress: false
    env:
      IMAGE: ghcr.io/isolapaul/spoton
    jobs:
-     release:
+     build:
        runs-on: ubuntu-24.04
        timeout-minutes: 40
        permissions:
          contents: read
-         packages: write
-         id-token: write
+       outputs:
+         digest: ${{ steps.img.outputs.digest }}
        steps:
          - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
            with: { persist-credentials: false }
+         - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+           with: { node-version-file: .nvmrc }
+         - name: npm audit (production deps; not bypassable)
+           run: npm ci --ignore-scripts && npm audit --omit=dev --audit-level=high
          - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+           with:
+             # Pinned BuildKit; resolve at implementation time, bump manually (Dependabot does not track it).
+             driver-opts: image=moby/buildkit:v<x.y.z>@sha256:<digest>
          - name: Build OCI layout (not pushed)
            uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
            with:
@@ -109,7 +124,7 @@ Pushing a tag `vX.Y.Z` builds the image once, as an OCI layout. The pipeline the
              image: oci-dir:oci-image
              format: cyclonedx-json
              output-file: sbom.cdx.json
-             upload-artifact: true
+             upload-artifact: false       # uploaded below together with the OCI layout
              dependency-snapshot: false
          - name: Container smoke test (production flags)
            run: |
@@ -126,32 +141,59 @@ Pushing a tag `vX.Y.Z` builds the image once, as an OCI layout. The pipeline the
              sleep 35; test "$(docker inspect -f '{{.State.Health.Status}}' spoton-ci)" = healthy
              if docker logs spoton-ci 2>&1 | grep -qiE 'EROFS|EACCES'; then docker logs spoton-ci; exit 1; fi
              docker rm -f spoton-ci
+         - name: Upload image and SBOM for publish
+           uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+           with:
+             name: release-image
+             path: |
+               oci-image/
+               sbom.cdx.json
+             if-no-files-found: error
+             retention-days: 1
          - name: Dry-run summary
            if: github.event_name != 'push'
            run: echo "Dry run OK — digest ${{ steps.img.outputs.digest }} (not pushed)" >> "$GITHUB_STEP_SUMMARY"
+     publish:
+       needs: build
+       if: github.event_name == 'push'
+       runs-on: ubuntu-24.04
+       timeout-minutes: 20
+       permissions:
+         contents: read
+         packages: write
+         id-token: write
+       env:
+         DIGEST: ${{ needs.build.outputs.digest }}
+       steps:
+         - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+           with: { name: release-image, path: . }
+         - name: Re-check digest of the downloaded layout
+           run: test "$(jq -r '.manifests[0].digest' oci-image/index.json)" = "$DIGEST"
          - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-           if: github.event_name == 'push'
            with:
              registry: ghcr.io
              username: ${{ github.actor }}
              password: ${{ secrets.GITHUB_TOKEN }}
          - name: Push same digest (never overwrite a tag)
-           if: github.event_name == 'push'
-           env: { DIGEST: "${{ steps.img.outputs.digest }}" }
            run: |
-             if skopeo inspect --raw --authfile "$HOME/.docker/config.json" "docker://$IMAGE:$GITHUB_REF_NAME" >/dev/null 2>&1; then
+             skopeo --version || { sudo apt-get update && sudo apt-get install -y skopeo; }
+             AUTH="$HOME/.docker/config.json"
+             if skopeo inspect --raw --authfile "$AUTH" "docker://$IMAGE:$GITHUB_REF_NAME" >/dev/null 2>&1; then
                echo "::error::$IMAGE:$GITHUB_REF_NAME already exists"; exit 1; fi
-             for t in "$GITHUB_REF_NAME" "sha-${GITHUB_SHA::7}"; do
-               skopeo copy --preserve-digests --digestfile pushed.digest --authfile "$HOME/.docker/config.json" \
-                 oci:oci-image "docker://$IMAGE:$t"
+             skopeo copy --preserve-digests --digestfile pushed.digest --authfile "$AUTH" \
+               oci:oci-image "docker://$IMAGE:$GITHUB_REF_NAME"
+             test "$(cat pushed.digest)" = "$DIGEST"
+             SHA_TAG="sha-${GITHUB_SHA::7}"
+             if skopeo inspect --raw --authfile "$AUTH" "docker://$IMAGE:$SHA_TAG" >/dev/null 2>&1; then
+               echo "::notice::$SHA_TAG already exists (commit tagged before); left unchanged"
+             else
+               skopeo copy --preserve-digests --digestfile pushed.digest --authfile "$AUTH" \
+                 oci:oci-image "docker://$IMAGE:$SHA_TAG"
                test "$(cat pushed.digest)" = "$DIGEST"
-             done
+             fi
          - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-           if: github.event_name == 'push'
            with: { cosign-release: 'v3.0.6' }   # bump deliberately; keep docs/deploy.md §5 in sync
          - name: Sign, attest, self-verify
-           if: github.event_name == 'push'
-           env: { DIGEST: "${{ steps.img.outputs.digest }}" }
            run: |
              cosign sign --yes "$IMAGE@$DIGEST"
              cosign attest --yes --type cyclonedx --predicate sbom.cdx.json "$IMAGE@$DIGEST"
@@ -161,18 +203,20 @@ Pushing a tag `vX.Y.Z` builds the image once, as an OCI layout. The pipeline the
              cosign verify-attestation --type cyclonedx "$IMAGE@$DIGEST" --certificate-identity-regexp "$ID" \
                --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
          - name: Job summary
-           if: github.event_name == 'push'
-           env: { DIGEST: "${{ steps.img.outputs.digest }}" }
            run: |
              {
                echo "### SpotOn ${GITHUB_REF_NAME}"
                echo "- Image: \`$IMAGE:$GITHUB_REF_NAME@$DIGEST\`"
-               echo "- Also tagged: \`sha-${GITHUB_SHA::7}\`"
-               echo "- Trivy: HIGH/CRITICAL (fixed) = 0 · SBOM: CycloneDX attested · Signed: keyless cosign"
+               echo "- Also tagged: \`sha-${GITHUB_SHA::7}\` (only if that tag did not exist yet)"
+               echo "- npm audit (prod, high) = 0 · Trivy: HIGH/CRITICAL (fixed) = 0 · SBOM: CycloneDX attested · Signed: keyless cosign"
                echo "- Deploy: see docs/deploy.md §Update"
              } >> "$GITHUB_STEP_SUMMARY"
    ```
    The `\\.` escapes above belong to YAML-in-shell. Make sure the resulting regexp string is `^https://github\.com/isolapaul/SpotOn/…`, and test it.
+   - **BuildKit pin.** Resolve `v<x.y.z>` (latest `moby/buildkit` release tag was v0.33.0 on 2026-09-25; use the newest) and its digest with `docker buildx imagetools inspect moby/buildkit:v<x.y.z>` at implementation time. Dependabot does not update `driver-opts`, so bump it manually, together with the other action pins.
+   - **`npm audit` gate.** The standalone output keeps `nodemailer` and `jose` as real packages (T16 `serverExternalPackages`), but other server code is still bundled into chunks that Trivy and Syft cannot attribute. The audit of the lockfile covers those. It has no `continue-on-error` and no `if`, so it cannot be skipped. If it fails on an advisory without a fix, stop and ask Paul (see below); do not weaken the level.
+   - **Partial push.** If `publish` fails after the version tag was pushed (e.g. at signing), a re-run is blocked by "already exists" by design. Do not delete or overwrite the tag in GHCR: cut a new tag (e.g. the next patch or `-rc` number) instead. An unsigned digest can never be deployed, because `update.sh` (T17) verifies the signature.
+   - **Recommendation for Paul:** a GitHub tag ruleset (Settings → Rules → Rulesets → New tag ruleset, target `v*`) that restricts tag creation, update and deletion to Paul, because a `v*` tag push is what triggers a signed release.
 3. **`.github/workflows/image-rescan.yml`:**
    ```yaml
    name: image-rescan
@@ -197,6 +241,7 @@ Pushing a tag `vX.Y.Z` builds the image once, as an OCI layout. The pipeline the
            if: steps.tag.outputs.tag != ''
            with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
          - name: Trivy re-scan of latest release
+           id: trivy
            if: steps.tag.outputs.tag != ''
            uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
            with:
@@ -208,16 +253,27 @@ Pushing a tag `vX.Y.Z` builds the image once, as an OCI layout. The pipeline the
              exit-code: '1'
              scanners: vuln
              trivyignores: .trivyignore
+         - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+           if: ${{ !cancelled() && steps.tag.outputs.tag != '' }}
+           with: { ref: "refs/tags/${{ steps.tag.outputs.tag }}", path: release-src, persist-credentials: false }
+         - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+           if: ${{ !cancelled() && steps.tag.outputs.tag != '' }}
+           with: { node-version-file: release-src/.nvmrc }
+         - name: npm audit of the release tag (production deps)
+           id: audit
+           if: ${{ !cancelled() && steps.tag.outputs.tag != '' }}
+           working-directory: release-src
+           run: npm ci --ignore-scripts && npm audit --omit=dev --audit-level=high
          - name: Open or update issue
-           if: failure() && steps.tag.outputs.tag != ''
-           env: { GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}", TAG: "${{ steps.tag.outputs.tag }}" }
+           if: ${{ !cancelled() && (steps.trivy.outcome == 'failure' || steps.audit.outcome == 'failure') }}
+           env: { GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}", TAG: "${{ steps.tag.outputs.tag }}", TRIVY: "${{ steps.trivy.outcome }}", AUDIT: "${{ steps.audit.outcome }}" }
            run: |
              gh label create image-cve --color B60205 --force
              N=$(gh issue list --label image-cve --state open --json number -q '.[0].number')
-             BODY="Weekly Trivy re-scan found fixable HIGH/CRITICAL vulnerabilities in ghcr.io/isolapaul/spoton:$TAG. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID — fix via dependency/base-image bump + new release, or add a dated .trivyignore entry with reason."
-             if [ -n "$N" ]; then gh issue comment "$N" --body "$BODY"; else gh issue create --title "Trivy: fixable HIGH/CRITICAL in $TAG" --label image-cve --body "$BODY"; fi
+             BODY="Weekly re-scan of ghcr.io/isolapaul/spoton:$TAG found fixable HIGH/CRITICAL vulnerabilities (Trivy: $TRIVY, npm audit: $AUDIT). Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID — fix via dependency/base-image bump + new release, or add a dated .trivyignore entry with reason."
+             if [ -n "$N" ]; then gh issue comment "$N" --body "$BODY"; else gh issue create --title "Re-scan: fixable HIGH/CRITICAL in $TAG" --label image-cve --body "$BODY"; fi
    ```
-   The job stays failed, so GitHub also notifies Paul by email. The image must be readable by this repo's `GITHUB_TOKEN`: the `org.opencontainers.image.source` label from T16 links the package to the repo.
+   The issue step runs on the outcome of either scan (`steps.<id>.outcome`), not on `failure()` of an unrelated step, and the `!cancelled()` guards make the audit run even when Trivy failed. `.trivyignore` is read from the default branch; the audit uses the release tag's lockfile. The job stays failed, so GitHub also notifies Paul by email. The image must be readable by this repo's `GITHUB_TOKEN`: the `org.opencontainers.image.source` label from T16 links the package to the repo.
 4. If Trivy DB downloads hit rate limits (`TOOMANYREQUESTS`), add `env: TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db,ghcr.io/aquasecurity/trivy-db` to the Trivy steps, and note why in a comment.
 
 ## Must NOT change
@@ -234,6 +290,11 @@ bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scr
 grep -nE "uses: [^ ]+@(v[0-9]|main|master)" .github/workflows/*.yml && exit 1 || true    # all actions pinned by SHA
 grep -n "permissions: {}" .github/workflows/release.yml .github/workflows/image-rescan.yml
 grep -nE "^[A-Z0-9-]+ exp:[0-9]{4}-[0-9]{2}-[0-9]{2}" .trivyignore || echo "no active ignores (ok)"
+grep -c "npm audit --omit=dev --audit-level=high" .github/workflows/release.yml .github/workflows/image-rescan.yml   # 1 each
+awk '/^  publish:/{p=1} p' .github/workflows/release.yml | grep -nE 'trivy-action|sbom-action' && exit 1 || true  # no scanner in publish
+awk '/^  build:/{b=1} /^  publish:/{b=0} b' .github/workflows/release.yml | grep -nE 'packages: write|id-token: write' && exit 1 || true
+grep -q 'driver-opts: image=moby/buildkit:v[0-9.]*@sha256:[0-9a-f]\{64\}' .github/workflows/release.yml
+grep -n '# syntax=' Dockerfile && exit 1 || true
 ```
 Then the end-to-end run, done by the orchestrator **after Paul has set the 7 repository variables** (see `docs/deploy.md` §3):
 ```bash
@@ -247,7 +308,7 @@ cosign verify ghcr.io/isolapaul/spoton@$D --certificate-identity-regexp "$ID" \
 cosign verify-attestation --type cyclonedx ghcr.io/isolapaul/spoton@$D --certificate-identity-regexp "$ID" \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com | jq -r '.payload' | base64 -d | jq '.predicateType'
 test "$D" = "$(docker buildx imagetools inspect ghcr.io/isolapaul/spoton:sha-$(git rev-parse --short=7 v0.0.0-rc.1) | awk '/^Digest:/{print $2; exit}')"
-gh run rerun "$(gh run list --workflow release.yml -L1 --json databaseId -q '.[0].databaseId')"   # re-run on same tag must FAIL at "already exists"
+gh run rerun "$(gh run list --workflow release.yml -L1 --json databaseId -q '.[0].databaseId')"   # re-run on same tag: publish must FAIL at "already exists"
 gh workflow run image-rescan.yml && gh run watch                  # green, or an issue labelled image-cve is opened
 ```
 Check that the GHCR package `spoton` is **Private**.
@@ -259,6 +320,7 @@ Check that the GHCR package `spoton` is **Private**.
 
 ## Stop and ask Paul if…
 - The repository variables are not set yet. Do not push a tag, and do not put real values anywhere else.
+- `npm audit --omit=dev --audit-level=high` fails on an advisory that a dependency bump cannot resolve. Do not lower the level or add `continue-on-error`.
 - Trivy fails on a HIGH/CRITICAL finding with a fix available that T16's base images or dependency bumps cannot resolve. Do not add `.trivyignore` entries without Paul's OK; every entry needs an expiry and a reason.
 - GHCR rejects the cosign v3 signature or attestation storage (the referrers API). Pinning `cosign-release` to the last v2.x is the fallback, and the server's cosign must then match.
 - The server is not amd64 (`platforms:` would change).

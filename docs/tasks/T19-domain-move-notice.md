@@ -11,10 +11,12 @@ Paul's words, which are binding: *"308 redirect, but please show it somehow on t
 So the notice is:
 - a single slim banner, not a modal, and never blocking the map;
 - no emoji, no gradient or glow, no exclamation marks, no marketing tone;
-- the only thing asking for attention on the old domain.
+- the only thing asking for attention on the old domain;
+- **dismissed for good**: one tap on Hide hides it permanently on that device (orchestrator decision, ROADMAP Q10). Stage B's 308 later catches everyone who dismissed it.
 
 ## Context
 - The banner exists only in the **Vercel** build: `NEXT_PUBLIC_MOVED_TO` is set only there (CLAUDE.md env table). The Docker build cannot receive it: T16's Dockerfile has no such ARG, and `check-public-env.mjs --production` rejects it.
+- Inlining pitfall (T04 Context, verified for `NEXT_PUBLIC_USE_EMULATORS`): if a `NEXT_PUBLIC_*` var is **unset** at build time, Next/Turbopack leaves `process.env.X` in the bundle instead of inlining it. So `next.config.mjs` `env` must always define `NEXT_PUBLIC_MOVED_TO` (`''` when unset), exactly like T04 does for `NEXT_PUBLIC_USE_EMULATORS`. The container bundle then contains the constant `''` instead of a runtime `process.env` lookup, so `getMovedTo()` is always `null` there.
 - Other things that can appear on app open, all verified:
   - `InstallGate` (`src/app/layout.tsx:49`; `src/components/InstallGate.tsx:63-85`): a full-screen `z-[9999]` overlay for every non-standalone visitor who has not ticked "don't show again". On the old domain it would ask people to install the **old** origin, which is wrong. **Decision: suppress it when `NEXT_PUBLIC_MOVED_TO` is set.**
   - `LanguageSelector` (`page.tsx:288`; `LanguageSelector.tsx:216-237`): a modal while `!useLanguageStore.hasSelectedLanguage`. It stays, because first-time visitors must still choose a language. The banner waits until it is closed.
@@ -38,6 +40,7 @@ So the notice is:
   - `deploy/vercel-stage-b.json`
   - `docs/screenshots/moved-banner-hu.png`, `docs/screenshots/moved-banner-en.png` (generated)
 - Modify:
+  - `next.config.mjs` (one `env` entry only)
   - `src/app/page.tsx` (render the banner; hide the empty-state pill while it shows)
   - `src/store/useUiStore.ts`
   - `src/components/InstallGate.tsx` (effect guard only)
@@ -48,20 +51,20 @@ So the notice is:
 ## Steps
 1. **`src/lib/movedTo.ts`** (pure):
    ```ts
-   export const MOVED_BANNER_DISMISS_KEY = 'spoton-moved-banner-dismissed-at';
-   export const MOVED_BANNER_SNOOZE_MS = 3 * 24 * 60 * 60 * 1000;
+   export const MOVED_BANNER_DISMISS_KEY = 'spoton-moved-banner-dismissed';
    export function parseMovedTo(raw: string | undefined): URL | null      // https only, else null
    export function getMovedTo(): URL | null { return parseMovedTo(process.env.NEXT_PUBLIC_MOVED_TO); }
-   export function isBannerSnoozed(dismissedAt: string | null, now: number): boolean  // true if 0 <= now-ts < SNOOZE
+   export function isBannerDismissed(stored: string | null): boolean     // true only if stored === '1'; permanent, no expiry
    export function movedTarget(base: URL, pathname: string, search: string): string  // new URL(pathname+search, base).href
    ```
    Write `process.env.NEXT_PUBLIC_MOVED_TO` literally, so that Next inlines it.
+   - **`next.config.mjs`**: add `NEXT_PUBLIC_MOVED_TO: process.env.NEXT_PUBLIC_MOVED_TO ?? ''` to the existing `env` object (next to T04's `NEXT_PUBLIC_USE_EMULATORS`). Change nothing else there.
 2. **`useUiStore`.** Add `movedBannerVisible: boolean` (default `false`) and `setMovedBannerVisible(v)`.
 3. **`MovedBanner.tsx`** (`'use client'`):
    - Render `null` unless all of these hold:
      - `getMovedTo()` is non-null;
      - `hasSelectedLanguage` is true;
-     - the banner is mounted (client) and the snooze check has passed.
+     - the banner is mounted (client) and `isBannerDismissed(stored)` is false.
    - On mount, read `localStorage[MOVED_BANNER_DISMISS_KEY]` inside `try/catch`. On error, treat it as not dismissed.
    - Sync `setMovedBannerVisible(visible)` in an effect, with cleanup back to `false`.
    - Detect standalone mode with the same test InstallGate uses (`matchMedia('(display-mode: standalone)')` or `navigator.standalone`) to choose the hint line.
@@ -88,7 +91,7 @@ So the notice is:
      - Width: full width minus the safe-area margins, capped at `max-w-md` and centred.
      - It sits one row (56 px) below the top buttons, above the map (`z-[1500]`), and below every panel and modal (`z-[2000]`+).
      - No icon other than the close ×, and the link opens in the same tab.
-   - `dismiss()`: write `String(Date.now())` in `try/catch`, then hide.
+   - `dismiss()`: write `'1'` to `localStorage[MOVED_BANNER_DISMISS_KEY]` in `try/catch`, then hide. The banner never comes back on that device (if storage fails, it is hidden for this page view only).
 4. **`page.tsx`:**
    - Render `{isAppReady && !isSelectingLocation && <MovedBanner />}` inside the existing top-buttons condition block (`page.tsx:271-279`). The banner then hides whenever a panel covers the screen, and during location picking.
    - Hide the empty-state pill while `useUiStore.movedBannerVisible` is true (they share the same vertical slot).
@@ -107,7 +110,7 @@ So the notice is:
    | `movedBannerDismiss` | Elrejtés | Hide | Ausblenden |
 7. **Unit tests (`movedTo.test.ts`):**
    - `parseMovedTo`: `undefined`, `''`, `'http://x'` and `'not a url'` give null; `'https://spoton.isolapaul.hu'` gives a URL.
-   - `isBannerSnoozed`: `null` → false; now → true; now − 3 d + 1 ms → true; now − 3 d → false; a future timestamp → false; `'abc'` → false.
+   - `isBannerDismissed`: `null` → false; `'1'` → true; `''`, `'0'`, `'true'` and a timestamp string such as `'1700000000000'` → false.
    - `movedTarget` keeps the path and query.
 8. **`e2e/moved-banner.spec.ts`.** Use a 390×844 viewport (deviceScaleFactor 2). Seed `localStorage['spoton-language']` = `{"state":{"language":"hu","hasSelectedLanguage":true},"version":0}` (or `en`) with `addInitScript`.
    - When `process.env.NEXT_PUBLIC_MOVED_TO` is set:
@@ -115,8 +118,8 @@ So the notice is:
      - the Open link `href` starts with the env value;
      - screenshot the full page to `docs/screenshots/moved-banner-${lang}.png` for hu and en;
      - no InstallGate text ("SpotOn Élmény" / "SpotOn Experience") is present;
-     - click Hide → the banner is gone; reload → still gone; `localStorage[key]` is set;
-     - set the key to `Date.now() - 3*864e5 - 1000` and reload → the banner is back.
+     - click Hide → the banner is gone; `localStorage['spoton-moved-banner-dismissed']` is `'1'`; reload twice → still gone (permanent);
+     - remove the key and reload → the banner is back.
    - Otherwise: `expect(page.getByText('spoton.isolapaul.hu')).toHaveCount(0)`.
 9. **`deploy/vercel-stage-b.json`:**
    ```json
@@ -148,6 +151,8 @@ So the notice is:
 ```bash
 npm run verify
 npx vitest run src/lib/movedTo.test.ts
+grep -n "NEXT_PUBLIC_MOVED_TO: process.env.NEXT_PUBLIC_MOVED_TO ?? ''" next.config.mjs
+grep -rl "NEXT_PUBLIC_MOVED_TO" .next/static && exit 1 || true    # after verify's build (flag unset): always inlined, never a runtime lookup
 grep -nE "movedBanner[A-Za-z]*: ['\"].*!" src/lib/translations.ts && exit 1 || true          # no exclamation marks in copy
 grep -nP "gradient|glow|animate-(pulse|bounce|ping)|[\x{1F300}-\x{1FAFF}]" src/components/MovedBanner.tsx && exit 1 || true
 node -e "const j=require('./deploy/vercel-stage-b.json'); if(j.redirects[0].permanent!==true) process.exit(1)"
@@ -174,5 +179,6 @@ Manual checks by the reviewer and Paul, on the screenshots:
 
 ## Stop and ask Paul if…
 - He does **not** want InstallGate or NotificationPrompt suppressed on the old domain. Both are decisions made in this spec to honour "no 5 pop-ups".
+- He wants the banner to come back after a dismissal. Permanent dismissal is the default (ROADMAP Q10).
 - The copy needs changes (show him the two screenshots).
 - The banner would need to appear somewhere other than below the top button row, for example because of a conflict with an element added after T19 was written.

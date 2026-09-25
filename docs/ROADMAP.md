@@ -146,12 +146,13 @@ Additional review gates:
 | Q1 | T14: feedback now needs at least 1 character of text. Image-only feedback is no longer possible. | accept |
 | Q2 | T19: on the **old** Vercel domain only, the install prompt and the notification prompt are suppressed while the move banner exists. | accept |
 | Q3 | T17: GHCR pulls use a **classic** PAT with only `read:packages`, because GitHub Packages officially supports only classic tokens. | accept |
-| Q4 | T17: Dependabot can bump the private GHCR image in compose if a `DEPENDABOT_GHCR_TOKEN` secret is added. Otherwise that entry is dropped. | drop the entry until the token exists |
+| Q4 | T17: Dependabot can bump the private GHCR image in compose only with a `DEPENDABOT_GHCR_TOKEN` secret and a real first digest in the compose file. T17 does not add the entry; `docs/deploy.md` §3 describes it as a later manual step. | add it later, once the token and the first release exist |
 | Q5 | T09/T22: legacy or non-allowlisted custom name colours fall back to the level colour. | accept |
 | Q6 | T22: aria-labels and alt texts stay in English for now, because E2E selectors depend on them. | accept, translate later |
 | Q7 | T30: a pending spot that someone else favourited disappears from their favourites. | accept |
 | Q8 | Server CPU architecture is assumed to be amd64 (i5-8500T). | accept |
 | Q9 | T15: the auth proxy upstream is `<projectId>.firebaseapp.com`. Paul confirms his current `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` has that form. | confirm at deploy |
+| Q10 | T19: move banner dismissal is permanent per device (not re-shown); Stage B's 308 redirect catches remaining users. | accept |
 
 ## 7. Progress
 
