@@ -149,7 +149,7 @@ So the notice is:
 npm run verify
 npx vitest run src/lib/movedTo.test.ts
 grep -nE "movedBanner[A-Za-z]*: ['\"].*!" src/lib/translations.ts && exit 1 || true          # no exclamation marks in copy
-grep -nE "gradient|glow|animate-(pulse|bounce|ping)|[\x{1F300}-\x{1FAFF}]" -P src/components/MovedBanner.tsx && exit 1 || true
+grep -nP "gradient|glow|animate-(pulse|bounce|ping)|[\x{1F300}-\x{1FAFF}]" src/components/MovedBanner.tsx && exit 1 || true
 node -e "const j=require('./deploy/vercel-stage-b.json'); if(j.redirects[0].permanent!==true) process.exit(1)"
 test ! -e vercel.json
 # with banner

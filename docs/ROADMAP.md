@@ -29,7 +29,7 @@ Firebase stays the backend. Only the Next.js app moves off Vercel.
 | D14 | Node 22 for both the container and functions. Upgrade to 24 before April 2027. | default |
 | D15 | Reviews stay an embedded array. Rules make them append-only. No subcollection migration. | default |
 | D16 | `NEXT_PUBLIC_*` values are Docker build args, taken from GitHub **variables**. One image per environment. | default |
-| D17 | Base images: build on `node:22-bookworm-slim`, run on `gcr.io/distroless/nodejs22-debian12:nonroot`, both pinned by digest. | default |
+| D17 | Base images: build on `node:22-trixie-slim`, run on `gcr.io/distroless/nodejs22-debian13:nonroot`, both pinned by digest. Debian 13 matches the server. Never mix Debian releases between the two stages. | default |
 
 A "default" decision can be overridden by Paul at any time. If one changes, update this table and every task spec that depends on it.
 
@@ -138,7 +138,21 @@ Additional review gates:
 
 ---
 
-## 6. Progress
+## 6. Open questions for Paul (defaults apply unless Paul overrides)
+
+| # | Question | Default |
+|---|---|---|
+| Q1 | T14: feedback now needs at least 1 character of text. Image-only feedback is no longer possible. | accept |
+| Q2 | T19: on the **old** Vercel domain only, the install prompt and the notification prompt are suppressed while the move banner exists. | accept |
+| Q3 | T17: GHCR pulls use a **classic** PAT with only `read:packages`, because GitHub Packages officially supports only classic tokens. | accept |
+| Q4 | T17: Dependabot can bump the private GHCR image in compose if a `DEPENDABOT_GHCR_TOKEN` secret is added. Otherwise that entry is dropped. | drop the entry until the token exists |
+| Q5 | T09/T22: legacy or non-allowlisted custom name colours fall back to the level colour. | accept |
+| Q6 | T22: aria-labels and alt texts stay in English for now, because E2E selectors depend on them. | accept, translate later |
+| Q7 | T30: a pending spot that someone else favourited disappears from their favourites. | accept |
+| Q8 | Server CPU architecture is assumed to be amd64 (i5-8500T). | accept |
+| Q9 | T15: the auth proxy upstream is `<projectId>.firebaseapp.com`. Paul confirms his current `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` has that form. | confirm at deploy |
+
+## 7. Progress
 
 | Task | Status | Commit |
 |---|---|---|
