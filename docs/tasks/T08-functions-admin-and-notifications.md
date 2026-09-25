@@ -7,7 +7,7 @@
 Split `functions/src/index.ts` into small modules. Admin identity moves to the server: a user is an admin when `admins/{uid}` exists, and the super admin is the one whose doc has `role == 'super'`. Admin management runs through super-admin-only callables. Notifications reach admins by uid. FCM tokens are pruned only when FCM says they are dead. The notification link comes from a parameter, and the functions stop logging tokens and payloads. Every exported function name stays the same.
 
 ## Context
-- **Orchestrator note (from T07):** `firebase-admin` 14 removed the namespaced `admin.firestore()` / `admin.messaging()` / `admin.firestore.FieldValue` style. T07 already converted `functions/src/index.ts` to the modular imports (`firebase-admin/app`, `firebase-admin/firestore`, `firebase-admin/messaging`, `firebase-admin/auth`). All new code in this task and in T09–T10 must use those modular imports (`getFirestore()`, `FieldValue` from `firebase-admin/firestore`, `getMessaging()`, `getAuth()`).
+- **Orchestrator note (from T07):** `firebase-admin` 14 removed the namespaced `admin.firestore()` / `admin.messaging()` / `admin.firestore.FieldValue` style. T07 already converted `functions/src/index.ts` to the modular imports (`firebase-admin/app`, `firebase-admin/firestore`, `firebase-admin/messaging`). T08 adds `getAuth` from `firebase-admin/auth`. All new code in this task and in T09–T10 must use those modular imports (`getFirestore()`, `FieldValue` from `firebase-admin/firestore`, `getMessaging()`, `getAuth()`).
 - `functions/src/index.ts` is 606 lines: translations (`:23-80`, where `:70-79` are Valentine), `sendNotificationToUser` (`:85-201`), `sendNotificationToAdmins` (`:206-244`), and the triggers `onSpotApproved` (`:249-343`, with Valentine tracking at `:278-340`), `onReviewAdded` (`:348-390`), `onSpotFavorited` (`:395-447`) and `onNewPendingSpot` (`:452-481`), plus the callable `highlightSpot` (`:486-606`).
 - `:161` hardcodes the link `https://spoton-app.web.app` (BUG-21, SEC-18).
 - `:178-196` prunes **every** failed token and `:182` logs the full token (SEC-14, SEC-19). `:487` logs `request.data`, and `:521` logs `questRewards` (SEC-19).
@@ -175,8 +175,9 @@ npm --prefix functions ci
 npm run verify:fn                       # build + lint + unit tests
 npm --prefix functions test             # tokens / i18n / admin tests green
 npm run verify
-# no tokens, payloads, emails or Valentine code left in functions:
-! grep -rnE "valentine|spot_favorited|spoton-app\.web\.app|request\.data\}|tokens\[idx\]" functions/src
+# no tokens, payloads, emails or Valentine quest code left in functions
+# (`valentine2026` in callables/highlightSpot.ts is the D9 bonus and stays):
+! grep -rnE "valentineQuest|Valentine|spot_favorited|spoton-app\.web\.app|request\.data\}|tokens\[idx\]" functions/src
 ! grep -rn "where(\"email\"" functions/src
 grep -n "new_like" functions/src/triggers/users.ts
 # export surface (built output):
