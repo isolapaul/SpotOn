@@ -1,8 +1,8 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-import { getFunctions } from 'firebase/functions';
+import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -46,6 +46,14 @@ if (globalThis.window !== undefined) {
 
 // Initialize Cloud Functions (europe-west3 region)
 const functions = getFunctions(app, 'europe-west3');
+// Emulators (tests only). next.config.mjs always inlines '1' or '0', so production
+// bundles constant-fold this branch away (see T04).
+if (process.env.NEXT_PUBLIC_USE_EMULATORS === '1') {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+  connectStorageEmulator(storage, '127.0.0.1', 9199);
+  connectFunctionsEmulator(functions, '127.0.0.1', 5001);
+}
 
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();

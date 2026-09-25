@@ -161,4 +161,5 @@ Additional review gates:
 | Docs (CLAUDE.md, audits, roadmap, specs) | done; independently reviewed (T01–T13, T21–T32); T14–T20 review and T29 re-review pending | |
 | T01 Tooling baseline | done, review PASS | 9635939 |
 | T02 CI + Dependabot | done, review PASS | 5f34814 |
-| T03 Remove dead client code | done, review PASS | (this commit) |
+| T03 Remove dead client code | done, review PASS | 456bd39 |
+| T04 Emulator harness + e2e | done, review PASS | (this commit) |

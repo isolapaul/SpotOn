@@ -6,7 +6,7 @@ export default defineConfig([
   ...nextCoreWebVitals,
   ...nextTypescript,
   globalIgnores([
-    '.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'functions/**',
+    '.next/**', '.next-e2e/**', 'out/**', 'build/**', 'next-env.d.ts', 'functions/**',
     'coverage/**', 'playwright-report/**', 'test-results/**',
     'postcss.config.cjs', // CommonJS config; not covered by the Next/react-hooks plugin globs
   ]),

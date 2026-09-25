@@ -22,3 +22,8 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 .env.local
+
+# E2E (T04)
+.next-e2e/
+test-results/
+playwright-report/

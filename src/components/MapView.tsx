@@ -86,11 +86,12 @@ function MapReadyNotifier({ onMapLoad }: { onMapLoad?: () => void }) {
   const notified = useRef(false);
   useMap(); // ensures we're inside MapContainer context
   useEffect(() => {
-    if (!notified.current && onMapLoad) {
+    if (notified.current || !onMapLoad) return;
+    const timer = setTimeout(() => {
       notified.current = true;
-      const timer = setTimeout(onMapLoad, 100);
-      return () => clearTimeout(timer);
-    }
+      onMapLoad();
+    }, 100);
+    return () => clearTimeout(timer);
   }, [onMapLoad]);
   return null;
 }
