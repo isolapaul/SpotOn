@@ -27,20 +27,29 @@ async function seed(): Promise<void> {
   const db = getFirestore();
   const t = Timestamp.fromDate(new Date('2025-06-01T12:00:00Z'));
 
-  for (const account of [E2E.user, E2E.admin, E2E.superAdmin]) {
+  const userDoc = (uid: string, username: string, email: string) => ({
+    uid,
+    username,
+    email,
+    photoURL: '',
+    profilePictureURL: '',
+    profileBannerURL: '',
+    savedSpots: [],
+    createdAt: t,
+    lastLoginAt: t,
+  });
+
+  for (const account of [E2E.user, E2E.admin, E2E.superAdmin, E2E.level5]) {
     await auth.createUser({ uid: account.uid, email: account.email, password: E2E.password });
-    await db.doc(`users/${account.uid}`).set({
-      uid: account.uid,
-      username: account.username,
-      email: account.email,
-      photoURL: '',
-      profilePictureURL: '',
-      profileBannerURL: '',
-      savedSpots: [],
-      createdAt: t,
-      lastLoginAt: t,
-    });
+    await db.doc(`users/${account.uid}`).set(userDoc(account.uid, account.username, account.email));
   }
+
+  // Backfill fixtures (T09), users docs only (no Auth users): a duplicate username pair and an
+  // invalid legacy username. The backfill must report them and never rewrite them.
+  for (const uid of ['e2e-dup-a', 'e2e-dup-b']) {
+    await db.doc(`users/${uid}`).set(userDoc(uid, 'dup_name', ''));
+  }
+  await db.doc('users/e2e-invalid').set(userDoc('e2e-invalid', 'Béla', ''));
 
   // Legacy admin shape: no `role`.
   await db.doc(`admins/${E2E.admin.uid}`).set({
@@ -116,6 +125,29 @@ async function seed(): Promise<void> {
     imageUrls: ['/placeholder-spot.jpg'],
     reviews: [],
   });
+
+  // Level-5 owner (T09): 20 spots, category `random` (unused by other fixtures). Only spot-01 is
+  // approved (near the map centre, apart from the other fixtures); spots 02-20 are pending and
+  // sit ~2.5 km away. spotsCount is not seeded (the functions/backfill compute it).
+  for (let i = 1; i <= 20; i++) {
+    const nn = String(i).padStart(2, '0');
+    const id = `e2e-level5-spot-${nn}`;
+    const approved = id === E2E.level5.approvedSpot.id;
+    await db.doc(`spots/${id}`).set({
+      name: approved ? E2E.level5.approvedSpot.name : `E2E Level5 Pending ${nn}`,
+      category: 'random',
+      description: approved ? 'Level 5 approved fixture' : 'Level 5 pending fixture',
+      location: approved
+        ? { lat: 47.4930, lng: 19.0470 }
+        : { lat: 47.4800 + Math.floor((i - 2) / 5) * 0.002, lng: 19.0600 + ((i - 2) % 5) * 0.002 },
+      createdBy: E2E.level5.uid,
+      createdByName: E2E.level5.username,
+      status: approved ? 'approved' : 'pending',
+      createdAt: t,
+      imageUrls: ['/placeholder-spot.jpg'],
+      reviews: [],
+    });
+  }
 
   console.log(`Seeded emulator project ${PROJECT_ID}`);
 }

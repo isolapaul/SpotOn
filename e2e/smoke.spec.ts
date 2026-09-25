@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { E2E } from './fixtures';
+import { E2E, EXPECTED_APPROVED_MARKERS } from './fixtures';
 import { blockMapTiles, openApp, signInWithEmail, skipFirstRunOverlays, spotMarker } from './helpers';
 
 test.beforeEach(async ({ page }) => {
@@ -16,7 +16,7 @@ test('app loads past overlays', async ({ page }) => {
 
 test('approved markers only', async ({ page }) => {
   await openApp(page);
-  await expect(page.locator('.leaflet-marker-icon circle[fill="#10b981"]')).toHaveCount(2);
+  await expect(page.locator('.leaflet-marker-icon circle[fill="#10b981"]')).toHaveCount(EXPECTED_APPROVED_MARKERS);
   await expect(spotMarker(page, E2E.legacySpot.emoji)).toHaveCount(1);
   await expect(spotMarker(page, E2E.modernSpot.emoji)).toHaveCount(1);
   await expect(spotMarker(page, E2E.pendingSpot.emoji)).toHaveCount(0);
