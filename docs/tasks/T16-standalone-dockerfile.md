@@ -28,6 +28,7 @@ Build the Next.js app into a small, shell-less, non-root image that runs with a 
   - Re-resolve both digests at implementation time:
     - `docker buildx imagetools inspect node:22-trixie-slim`
     - `docker buildx imagetools inspect gcr.io/distroless/nodejs22-debian13:nonroot`
+- **Standalone bundles server dependencies into `.next/server` chunks** unless they are listed in `serverExternalPackages` (or on Next's built-in list, which has neither `nodemailer` nor `jose`; checked in `node_modules/next/dist/lib/server-external-packages.jsonc`). A bundled package has no `node_modules/<pkg>/package.json` in the image, so Trivy and the SBOM (T18) cannot see it. `nodemailer` (SMTP) and `jose` (token verification) are the security-relevant server dependencies, so both are made external.
 - Install scripts in the lockfile (checked `hasInstallScript`): `sharp` (optional; prebuilt `@img/*` binaries come in as optional dependencies, so no script is needed), `protobufjs` (a postinstall version notice only) and `fsevents` (macOS only). Next's SWC binary comes through optional dependencies, with no script.
   - **Decision:** `npm ci --ignore-scripts`, so no third-party install code runs in the build.
 - User and ownership:
@@ -38,10 +39,15 @@ Build the Next.js app into a small, shell-less, non-root image that runs with a 
 - Docker **does** run in this sandbox. A private daemon was verified working (pull, run, user networks, port publish):
   ```bash
   (nohup dockerd --host=unix:///tmp/dockerd.sock --data-root=/tmp/docker-data --exec-root=/tmp/docker-exec \
-     --pidfile=/tmp/dockerd.pid > /tmp/dockerd.log 2>&1 &)
+     --pidfile=/tmp/dockerd.pid --registry-mirror=https://mirror.gcr.io > /tmp/dockerd.log 2>&1 &)
   export DOCKER_HOST=unix:///tmp/dockerd.sock; for i in $(seq 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
   ```
-  Docker Hub may answer **429** on anonymous pulls from the sandbox; `gcr.io` pulls were fine. If `node:*` cannot be pulled, run the acceptance in CI (T18) and say so in the report.
+  Docker Hub may answer **429** on anonymous pulls from the sandbox; `gcr.io` pulls were fine. `--registry-mirror=https://mirror.gcr.io` serves Docker Hub images (`node:*`) without that limit. If `node:*` still cannot be pulled, run the acceptance in CI (T18) and say so in the report.
+- **Sandbox-only TLS workaround.** The sandbox intercepts outbound TLS, so `npm ci` inside `docker build` fails with `SELF_SIGNED_CERT_IN_CHAIN`. Never change the real `Dockerfile` for this. For the local acceptance only:
+  - copy the sandbox CA (`/root/.ccr/ca-bundle.crt`) into the build context under an already-gitignored path that `.dockerignore` does not exclude: `build/sandbox-ca.crt` (`build` is in `.gitignore`);
+  - build from an uncommitted override Dockerfile (e.g. `/tmp/Dockerfile.sandbox`, passed with `-f`) that differs from the real one only in the deps stage: `RUN --mount=type=bind,source=build/sandbox-ca.crt,target=/ca.crt NODE_EXTRA_CA_CERTS=/ca.crt npm ci --ignore-scripts --no-audit --no-fund`;
+  - delete both afterwards. The committed `Dockerfile` is the one CI (T18) builds.
+  - Trivy: use `ghcr.io/aquasecurity/trivy:0.74.0` (not Docker Hub's `aquasec/trivy`), or a host `trivy` v0.74.0 binary run with `SSL_CERT_FILE=/root/.ccr/ca-bundle.crt` if the DB download fails TLS verification.
 
 ## Files
 - Create:
@@ -51,13 +57,14 @@ Build the Next.js app into a small, shell-less, non-root image that runs with a 
   - `src/app/api/health/route.ts`
   - `scripts/check-public-env.mjs`
 - Modify:
-  - `next.config.mjs` (`output`, `outputFileTracingExcludes`)
+  - `next.config.mjs` (`output`, `outputFileTracingExcludes`, `serverExternalPackages`)
   - `.github/dependabot.yml` (add a docker entry)
 
 ## Steps
 1. **`next.config.mjs`:**
    - add `output: 'standalone'`;
-   - add `outputFileTracingExcludes: { '*': ['node_modules/sharp/**', 'node_modules/@img/**'] }`, with a comment: *images are unoptimized; keep libvips out of the image (SEC-07)*.
+   - add `outputFileTracingExcludes: { '*': ['node_modules/sharp/**', 'node_modules/@img/**'] }`, with a comment: *images are unoptimized; keep libvips out of the image (SEC-07)*;
+   - add `serverExternalPackages: ['nodemailer', 'jose']`, with a comment: *keep them as real node_modules packages in the standalone output, so Trivy and the SBOM see them (T18)*.
    - Leave `images` unchanged.
 2. **`src/app/api/health/route.ts`:**
    ```ts
@@ -83,7 +90,6 @@ Build the Next.js app into a small, shell-less, non-root image that runs with a 
    ```
 5. **`Dockerfile`.** Write the FROM lines literally, not through `ARG`, so Dependabot can update them. Fill in the digests re-resolved at implementation time:
    ```dockerfile
-   # syntax=docker/dockerfile:1
    FROM node:22-trixie-slim@sha256:<digest> AS deps
    WORKDIR /app
    COPY package.json package-lock.json ./
@@ -133,10 +139,12 @@ Build the Next.js app into a small, shell-less, non-root image that runs with a 
    ```
    Build with `npx next build` rather than `npm run build`, in case T01 made `build` a composite script (lint, test). If T01 kept `build` = `next build`, either form is fine.
    - `org.opencontainers.image.source` links the GHCR package to the repo, which T18's weekly rescan needs.
+   - No `# syntax=` directive: it would pull a floating `docker/dockerfile` frontend image at build time. The Dockerfile uses only features of BuildKit's built-in frontend, and T18 pins the BuildKit image itself.
 6. **`.dockerignore`:**
    ```
    **/node_modules
    .next
+   .next-e2e
    out
    coverage
    playwright-report
@@ -146,6 +154,10 @@ Build the Next.js app into a small, shell-less, non-root image that runs with a 
    .vscode
    .idea
    **/.env*
+   *.pem
+   *.key
+   *service-account*.json
+   *-firebase-adminsdk-*.json
    functions
    docs
    deploy
@@ -169,6 +181,9 @@ Build the Next.js app into a small, shell-less, non-root image that runs with a 
      directory: /
      schedule: { interval: weekly }
      groups: { base-images: { patterns: ["*"] } }
+     ignore:
+       - dependency-name: "node"
+         update-types: ["version-update:semver-major"]   # Node major is a deliberate decision (D14, D17)
    ```
 
 ## Must NOT change
@@ -179,8 +194,9 @@ Build the Next.js app into a small, shell-less, non-root image that runs with a 
 ## Acceptance
 ```bash
 npm run verify
-node scripts/check-public-env.mjs; test $? -eq 1                       # nothing set → fails, lists names
-# start the private daemon as in Context, then:
+env -i PATH="$PATH" node scripts/check-public-env.mjs; test $? -eq 1   # nothing set → fails, lists names
+# start the private daemon as in Context (with --registry-mirror), then:
+# (in the sandbox, the two `docker build` lines need the sandbox-only TLS override from Context, `-f /tmp/Dockerfile.sandbox`; never commit it)
 export DOCKER_HOST=unix:///tmp/dockerd.sock
 BA="--build-arg NEXT_PUBLIC_FIREBASE_API_KEY=demo-key --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=spoton.isolapaul.hu \
  --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-spoton --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=demo-spoton.appspot.com \
@@ -200,11 +216,14 @@ curl -s -o /dev/null -w '%{http_code} %{content_type}\n' 'http://127.0.0.1:3000/
 docker image inspect spoton:test --format '{{.Config.User}} {{json .Config.Env}} {{json .Config.Labels}}'
 #   → 65532:65532; Env has no SMTP_/NEXT_PUBLIC_; labels present
 docker image inspect spoton:test --format '{{json .Config.Env}}' | grep -E "SMTP|NEXT_PUBLIC" && exit 1 || true
-docker history --no-trunc spoton:test | grep -iE "SMTP|PASS|TOKEN" && exit 1 || true
+docker history --no-trunc --format '{{.CreatedBy}}' spoton:test | grep -E 'SMTP_|_PASS|TOKEN|FEEDBACK_RECIPIENT' && exit 1 || true
+#   (case-sensitive on purpose: the distroless base history contains `bazel build //common:passwd`)
 docker create --name x spoton:test && docker export x | tar -t | grep -E "(^|/)(\.env|node_modules/sharp|@img/sharp)" && exit 1 || true; docker rm x
+docker export $(docker create spoton:test) | tar -t | grep -q 'app/node_modules/nodemailer/package.json'   # external, visible to Trivy/SBOM
+docker export $(docker create spoton:test) | tar -t | grep -q 'app/node_modules/jose/package.json'
 docker image ls spoton:test --format '{{.Size}}'                                      # record; expect < 250MB
-docker run --rm -v /tmp/dockerd.sock:/var/run/docker.sock aquasec/trivy:0.74.0 image --severity HIGH,CRITICAL \
-  --ignore-unfixed --scanners vuln,secret spoton:test   # if Docker Hub rate-limits, CI (T18) runs this gate
+docker run --rm -v /tmp/dockerd.sock:/var/run/docker.sock ghcr.io/aquasecurity/trivy:0.74.0 image --severity HIGH,CRITICAL \
+  --ignore-unfixed --scanners vuln,secret spoton:test   # if Trivy cannot run here, CI (T18) runs this gate
 docker rm -f spoton-test
 ```
 If the daemon cannot start, or base images cannot be pulled, report it. The same checks then run in T18's smoke job and are required to pass there.
