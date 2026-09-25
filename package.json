@@ -14,8 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build",
-    "verify:fn": "npm --prefix functions run build && npm --prefix functions run lint",
-    "test:e2e": "firebase emulators:exec --only auth,firestore,storage --project demo-spoton \"tsx scripts/seed-emulator.ts && playwright test\""
+    "verify:fn": "npm --prefix functions run build && npm --prefix functions run lint && npm --prefix functions test",
+    "test:e2e": "npm --prefix functions run build && firebase emulators:exec --only auth,firestore,storage,functions --project demo-spoton \"tsx scripts/seed-emulator.ts && playwright test\""
   },
   "dependencies": {
     "@types/leaflet": "^1.9.21",

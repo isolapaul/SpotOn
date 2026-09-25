@@ -27,7 +27,7 @@ async function seed(): Promise<void> {
   const db = getFirestore();
   const t = Timestamp.fromDate(new Date('2025-06-01T12:00:00Z'));
 
-  for (const account of [E2E.user, E2E.admin]) {
+  for (const account of [E2E.user, E2E.admin, E2E.superAdmin]) {
     await auth.createUser({ uid: account.uid, email: account.email, password: E2E.password });
     await db.doc(`users/${account.uid}`).set({
       uid: account.uid,
@@ -49,6 +49,16 @@ async function seed(): Promise<void> {
     photoURL: '',
     addedAt: t,
     addedBy: 'seed',
+  });
+
+  // Super admin (T08): identified server-side by `role: 'super'`.
+  await db.doc(`admins/${E2E.superAdmin.uid}`).set({
+    email: E2E.superAdmin.email,
+    username: E2E.superAdmin.username,
+    photoURL: '',
+    addedAt: t,
+    addedBy: 'seed',
+    role: 'super',
   });
 
   // LEGACY spot: only `imageUrls`, no `spotImages`/`primaryImageIndex`; review carries `userEmail`/`userSpotsCount`.

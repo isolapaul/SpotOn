@@ -3,6 +3,7 @@ export const E2E = {
   password: 'e2e-password-123',
   user: { uid: 'e2e-user', email: 'user@spoton.test', username: 'e2e_user' },
   admin: { uid: 'e2e-admin', email: 'admin@spoton.test', username: 'e2e_admin' },
+  superAdmin: { uid: 'e2e-super', email: 'super@spoton.test', username: 'e2e_super' },
   legacySpot: {
     id: 'e2e-legacy-spot', name: 'E2E Legacy Spot', emoji: '🏔️',
     reviewComment: 'E2E legacy review comment',

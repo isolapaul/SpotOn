@@ -8,7 +8,8 @@
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test": "vitest run"
   },
   "engines": {
     "node": "22"
@@ -24,7 +25,8 @@
     "eslint": "9.39.5",
     "globals": "16.4.0",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.70.1"
+    "typescript-eslint": "8.70.1",
+    "vitest": "5.0.2"
   },
   "private": true
 }

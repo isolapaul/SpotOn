@@ -164,5 +164,6 @@ Additional review gates:
 | T03 Remove dead client code | done, review PASS | 456bd39 |
 | T04 Emulator harness + e2e | done, review PASS | b50b1dd |
 | T05 Next 16.3.6 + nodemailer 10 | done, review PASS | 52b1a87 |
-| T06 Firebase JS SDK 12 | done, review PASS | (this commit) |
+| T06 Firebase JS SDK 12 | done, review PASS | 797b7ae |
+| T08 Functions admin + notifications | done, review PASS; e2e verified in CI | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |
