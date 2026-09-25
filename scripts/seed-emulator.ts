@@ -126,6 +126,21 @@ async function seed(): Promise<void> {
     reviews: [],
   });
 
+  // T11b: LEGACY spot dedicated to spot-interactions.spec.ts: only `imageUrls`, no `spotImages`/
+  // `primaryImageIndex`, category `part` (unused by other fixtures), ~0.9 km from the map centre.
+  await db.doc(`spots/${E2E.interactionSpot.id}`).set({
+    name: E2E.interactionSpot.name,
+    category: 'part',
+    description: 'Legacy-shaped interaction fixture',
+    location: { lat: 47.5050, lng: 19.0350 },
+    createdBy: E2E.admin.uid,
+    createdByName: E2E.admin.username,
+    status: 'approved',
+    createdAt: t,
+    imageUrls: ['/icon-512x512.png'],
+    reviews: [],
+  });
+
   // Level-5 owner (T09): 20 spots, category `random` (unused by other fixtures). Only spot-01 is
   // approved (near the map centre, apart from the other fixtures); spots 02-20 are pending and
   // sit ~2.5 km away. spotsCount is not seeded (the functions/backfill compute it).

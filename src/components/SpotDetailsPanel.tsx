@@ -2,17 +2,17 @@
 
 import { X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle, Shield, ImagePlus, Sparkles, Pencil, Trash2, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
-import type { Spot } from '@/store/useSpotStore';
+import type { Review, Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { fetchPublicProfile, fetchPublicProfiles } from '@/store/publicProfiles';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
-import { getLevelInfo, getUserNameColor } from '@/lib/levelUtils';
+import { getLevelInfo, getUserNameColor, CUSTOM_NAME_FONTS } from '@/lib/levelUtils';
+import { PLACEHOLDER_URL, getSpotImages } from '@/lib/spotImages';
+import { isHighlightedBy } from '@/lib/highlights';
 import { useState, useEffect, useRef, ChangeEvent, useCallback } from 'react';
-import { functions } from '@/lib/firebase';
-import { httpsCallable } from 'firebase/functions';
 
 interface SpotDetailsPanelProps {
   spot: Spot | null;
@@ -62,27 +62,35 @@ function StarRow({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md' }
   );
 }
 
-function ReviewerBadge({ spotsCount, customNameColor, username, isAdmin, review }: {
-  spotsCount: number;
-  customNameColor?: string;
+interface ReviewerMeta {
   username?: string;
-  isAdmin: boolean;
-  review: { userName: string; userEmail: string; customNameFont?: string };
-}) {
+  spotsCount?: number;
+  customNameColor?: string;
+  customNameFont?: string;
+  isAdmin?: boolean;
+}
+
+const NAME_FONT_CLASSES: readonly string[] = CUSTOM_NAME_FONTS.map((f) => f.value);
+
+// Display style comes only from the reviewer's public profile; the review's own legacy
+// style/level fields are spoofable and never read (SEC-05).
+function ReviewerBadge({ meta, review }: { meta: ReviewerMeta; review: Review }) {
+  const spotsCount = meta.spotsCount ?? 0;
   const levelInfo = getLevelInfo(spotsCount);
-  const nameColor = getUserNameColor(spotsCount, customNameColor);
+  const nameColor = getUserNameColor(spotsCount, meta.customNameColor ?? undefined);
+  const fontClass = meta.customNameFont && NAME_FONT_CLASSES.includes(meta.customNameFont) ? meta.customNameFont : 'font-sans';
   return (
     <div className="flex items-center gap-2">
       <p
-        className={`font-medium ${review.customNameFont || 'font-sans'}`}
+        className={`font-medium ${fontClass}`}
         style={{ color: nameColor }}
       >
-        {username || review.userName}
+        {meta.username || review.userName}
       </p>
       <span className={`text-xs px-2 py-0.5 rounded-full border ${levelInfo.bgColor} ${levelInfo.borderColor} ${levelInfo.textColor}`}>
         {levelInfo.icon} {levelInfo.level}
       </span>
-      {isAdmin && (
+      {meta.isAdmin === true && (
         <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">
           <Shield className="w-3 h-3 text-amber-400" />
           <span className="text-amber-400 text-xs font-bold">Admin</span>
@@ -93,10 +101,10 @@ function ReviewerBadge({ spotsCount, customNameColor, username, isAdmin, review 
 }
 
 export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Readonly<SpotDetailsPanelProps>) {
-  const { user, toggleFavorite } = useUserStore();
+  const { user, toggleFavorite, highlightSpot } = useUserStore();
   const userIsAdmin = useUserStore((s) => s.isAdmin);
   const { language, t } = useLanguageStore();
-  const { addReview, approveSpot, addSpotImages, migrateSpotImages, deleteSpot, updateSpotDescription, updateSpotName, deleteSpotImage, setPrimaryImage } = useSpotStore();
+  const { addReview, approveSpot, addSpotImages, deleteSpot, updateSpotDescription, updateSpotName, deleteSpotImage, setPrimaryImage } = useSpotStore();
   const { showToast } = useToastStore();
 
   // Review form state
@@ -108,7 +116,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [isFavorite, setIsFavorite] = useState(spot ? user?.savedSpots?.includes(spot.id) || false : false);
   const [isApproving, setIsApproving] = useState(false);
   const [isHighlighting, setIsHighlighting] = useState(false);
-  const [isHighlightedByUser, setIsHighlightedByUser] = useState(false);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
 
   // Edit state
@@ -126,7 +133,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [creatorSpotsCount, setCreatorSpotsCount] = useState<number | null>(null);
   const [creatorName, setCreatorName] = useState<string | null>(null);
   const [creatorCustomNameColor, setCreatorCustomNameColor] = useState<string | undefined>();
-  const [reviewerMeta, setReviewerMeta] = useState<Record<string, { spotsCount?: number; customNameColor?: string; username?: string; isAdmin?: boolean }>>({});
+  const [reviewerMeta, setReviewerMeta] = useState<Record<string, ReviewerMeta>>({});
 
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -136,20 +143,27 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   // Gallery swipe (separate because threshold/behavior differs)
   const [gallerySwipe, setGallerySwipe] = useState<SwipeState>(SWIPE_INITIAL);
 
-  // Sorted gallery images (stable across renders, safe before null-check)
-  const sortedSpotImages = (spot?.spotImages || [])
-    .filter((image) => image.url !== '/placeholder-spot.jpg')
+  // Live store copy of the open spot (the `spot` prop is a snapshot, see T29). Used only for the
+  // highlight and gallery derivations.
+  const fresh = useSpotStore((s) => (spot ? s.spots.find((x) => x.id === spot.id) : undefined)) ?? spot;
+
+  // Sorted gallery images (stable across renders, safe before null-check). Legacy spots are
+  // materialised in memory only (never written on read).
+  const sortedSpotImages = (fresh ? getSpotImages(fresh) : [])
+    .filter((image) => image.url !== PLACEHOLDER_URL)
     .sort((a, b) => {
       if (b.likes !== a.likes) return b.likes - a.likes;
       return (b.addedAt?.toMillis?.() ?? 0) - (a.addedAt?.toMillis?.() ?? 0);
     });
 
-  const allGalleryImages = spot
+  const allGalleryImages = fresh
     ? [
         ...sortedSpotImages.map((img) => img.url),
-        ...(spot.imageUrls || []).filter((url) => !sortedSpotImages.some((img) => img.url === url)),
-      ].filter((url, i, self) => url !== '/placeholder-spot.jpg' && self.indexOf(url) === i)
+        ...(fresh.imageUrls || []).filter((url) => !sortedSpotImages.some((img) => img.url === url)),
+      ].filter((url, i, self) => url !== PLACEHOLDER_URL && self.indexOf(url) === i)
     : [];
+
+  const isHighlightedByUser = !!fresh && !!user && isHighlightedBy(fresh, user.uid);
 
   const nextImage = useCallback(() => {
     setGalleryIndex((prev) => (prev + 1) % allGalleryImages.length);
@@ -202,21 +216,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     return () => { isMounted = false; };
   }, [spot?.createdBy, user?.uid, user?.username, user?.customNameColor]);
 
-  // Check if user has highlighted this spot
-  useEffect(() => {
-    if (!spot || !user) { setIsHighlightedByUser(false); return; }
-    setIsHighlightedByUser((spot.highlighted || []).some((h: any) => h.userId === user.uid));
-  }, [spot, user]);
-
-  // Migrate legacy imageUrls to spotImages if needed
-  useEffect(() => {
-    if (!spot) return;
-
-    if (!spot.spotImages?.length) {
-      if (spot.imageUrls?.length) migrateSpotImages(spot.id).catch(console.error);
-    }
-  }, [spot, migrateSpotImages]);
-
   // Fetch reviewer display metadata
   useEffect(() => {
     if (!spot?.reviews?.length) return;
@@ -238,6 +237,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
           return [uid, {
             username: p?.username ?? undefined,
             customNameColor: p?.customNameColor ?? undefined,
+            customNameFont: p?.customNameFont ?? undefined,
             spotsCount: p?.spotsCount,
             isAdmin: p?.isAdmin,
           }];
@@ -290,9 +290,8 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     }
     setIsHighlighting(true);
     try {
-      await httpsCallable(functions, 'highlightSpot')({ spotId: spot.id });
+      await highlightSpot(spot.id);
       showToast(t('highlightSuccess'), 'success');
-      setIsHighlightedByUser(true);
     } catch (error: any) {
       showToast(error?.details?.message || error?.message || 'Error highlighting spot', 'error');
     } finally {
@@ -314,13 +313,9 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       await addReview(spot.id, {
         userId: user.uid,
         userName: user.username || t('anonymous'),
-        userEmail: user.email,
         userPhoto: user.profilePictureURL || user.photoURL,
         rating,
         comment,
-        userSpotsCount: user.spotsCount ?? 0,
-        customNameColor: user.customNameColor,
-        customNameFont: user.customNameFont,
       });
       showToast(t('reviewAdded'), 'success');
       setRating(0);
@@ -518,6 +513,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
+                    maxLength={100}
                     className="text-2xl font-bold text-white bg-white/10 border border-white/20 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-1 mr-2"
                   />
                 ) : (
@@ -561,6 +557,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
+                  maxLength={2000}
                   className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
                   rows={4}
                 />
@@ -679,6 +676,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder={t('writeReview')}
+                    maxLength={1000}
                     className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
                     rows={3}
                   />
@@ -734,13 +732,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                              <ReviewerBadge
-                                spotsCount={review.userSpotsCount ?? meta.spotsCount ?? 0}
-                                customNameColor={review.customNameColor ?? meta.customNameColor}
-                                username={meta.username || review.userName}
-                                isAdmin={meta.isAdmin === true}
-                                review={review}
-                              />
+                              <ReviewerBadge meta={meta} review={review} />
                               <span className="text-white/40 text-xs">
                                 {review.createdAt?.toDate
                                   ? new Date(review.createdAt.toDate()).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' })

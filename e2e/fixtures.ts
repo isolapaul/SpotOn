@@ -12,6 +12,8 @@ export const E2E = {
   },
   modernSpot: { id: 'e2e-modern-spot', name: 'E2E Modern Spot', emoji: '🌳' },
   pendingSpot: { id: 'e2e-pending-spot', name: 'E2E Pending Spot', emoji: '🥾' },
+  // T11b: legacy-shaped (only imageUrls), dedicated to spot-interactions.spec.ts (no other spec may use it).
+  interactionSpot: { id: 'e2e-interaction-spot', name: 'E2E Interaction Spot', emoji: '🏖️' },
   // T09: 20 spots (level 5); only approvedSpot is approved, the other 19 are pending.
   level5: {
     uid: 'e2e-level5',
@@ -21,4 +23,4 @@ export const E2E = {
   },
 } as const;
 
-export const EXPECTED_APPROVED_MARKERS = 3; // legacySpot + modernSpot + level5.approvedSpot; update whenever an approved fixture is added
+export const EXPECTED_APPROVED_MARKERS = 4; // legacySpot + modernSpot + level5.approvedSpot + interactionSpot; update whenever an approved fixture is added

@@ -12,6 +12,7 @@ import type { Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { getLevelInfo, getLevelProgress, getSpotsRemainingText, CUSTOM_NAME_COLORS, CUSTOM_NAME_FONTS, getCustomNameColorValue } from '@/lib/levelUtils';
 import SettingsPanel from './SettingsPanel';
+import { isHighlightedBy } from '@/lib/highlights';
 
 interface ProfilePanelProps {
   isOpen: boolean;
@@ -542,7 +543,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               {/* Highlight Panel */}
               {(() => {
                 const levelInfo = getLevelInfo(myAllSpots.length);
-                const highlightedSpots = user?.highlightedSpots || [];
+                const activeHighlightCount = user ? myAllSpots.filter(s => isHighlightedBy(s, user.uid)).length : 0;
                 
                 return showHighlightPanel && levelInfo.level >= 3 && (
                   <div className="glass-card p-5 space-y-4 animate-fade-in">
@@ -552,7 +553,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                           ✨ Helyek kiemelése
                         </h3>
                         <p className="text-white/60 text-xs mt-1">
-                          {highlightedSpots.length} / {levelInfo.maxHighlights} kiemelve
+                          {activeHighlightCount} / {levelInfo.maxHighlights} kiemelve
                         </p>
                       </div>
                     </div>
@@ -566,7 +567,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         myAllSpots
                           .filter(s => s.status === 'approved')
                           .map((spot) => {
-                            const isHighlighted = highlightedSpots.includes(spot.id);
+                            const isHighlighted = !!user && isHighlightedBy(spot, user.uid);
                             
                             return (
                               <div key={spot.id} className={`p-3 rounded-xl border transition-all ${
@@ -606,7 +607,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                           await unhighlightSpot(spot.id);
                                           showToast('Kiemelés megszüntetve', 'success');
                                         } else {
-                                          await highlightSpot(spot.id, levelInfo.maxHighlights);
+                                          await highlightSpot(spot.id);
                                           showToast('Hely kiemelve! ✨', 'success');
                                         }
                                       } catch (error: any) {
@@ -615,7 +616,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                         setIsHighlighting(false);
                                       }
                                     }}
-                                    disabled={isHighlighting || (!isHighlighted && highlightedSpots.length >= levelInfo.maxHighlights)}
+                                    disabled={isHighlighting || (!isHighlighted && activeHighlightCount >= levelInfo.maxHighlights)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                                       isHighlighted
                                         ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'

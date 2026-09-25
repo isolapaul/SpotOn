@@ -17,6 +17,7 @@ import { getMessaging, getToken, deleteToken, isSupported } from 'firebase/messa
 import { app, auth, db, functions, googleProvider, storage } from '@/lib/firebase';
 import { mapUserDoc, type User } from '@/lib/mapUserDoc';
 import { generateUsername, normalizeUsername } from '@/lib/username';
+import { extForMime } from '@/lib/spotImages';
 import imageCompression from 'browser-image-compression';
 
 export type { User } from '@/lib/mapUserDoc';
@@ -60,7 +61,7 @@ interface UserStore {
   updateProfilePicture: (file: File) => Promise<void>;
   updateProfileBanner: (file: File) => Promise<void>;
   setNeedsUsername: (needs: boolean) => void;
-  highlightSpot: (spotId: string, maxHighlights: number) => Promise<void>;
+  highlightSpot: (spotId: string) => Promise<void>;
   unhighlightSpot: (spotId: string) => Promise<void>;
   updateCustomNameColor: (color: string) => Promise<void>;
   updateCustomNameFont: (font: string) => Promise<void>;
@@ -69,14 +70,17 @@ interface UserStore {
 
 type SetState = (partial: Partial<UserStore>) => void;
 
-// Compress profile images before upload (max 1920px, ~1MB)
+// Compress profile images before upload (max 1920px, ~1MB). Output types the Storage rules
+// do not accept (e.g. GIF) are re-encoded as JPEG.
 async function compressProfileImage(file: File): Promise<File> {
   const options = {
     maxSizeMB: 1,
     maxWidthOrHeight: 1920,
     useWebWorker: false,
   };
-  return imageCompression(file, options);
+  const compressed = await imageCompression(file, options);
+  if (extForMime(compressed.type)) return compressed;
+  return imageCompression(file, { ...options, fileType: 'image/jpeg' });
 }
 
 // Callables (T08/T09, region europe-west3 via `functions`)
@@ -85,6 +89,9 @@ const lookupUserByEmailCallable = httpsCallable<{ email: string }, LookedUpUser>
 const addAdminCallable = httpsCallable<{ email: string }, unknown>(functions, 'addAdmin');
 const removeAdminCallable = httpsCallable<{ uid: string }, unknown>(functions, 'removeAdmin');
 const updateNameStyleCallable = httpsCallable<{ color?: string; font?: string }, unknown>(functions, 'updateNameStyle');
+// T10: highlights are written server-side only.
+const highlightSpotCallable = httpsCallable<{ spotId: string }, unknown>(functions, 'highlightSpot');
+const unhighlightSpotCallable = httpsCallable<{ spotId: string }, unknown>(functions, 'unhighlightSpot');
 
 function errorCode(error: unknown): unknown {
   return typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
@@ -654,7 +661,7 @@ export const useUserStore = create<UserStore>()(
           const fileName = `${timestamp}_${file.name}`;
           const imageRef = ref(storage, `profile-pictures/${user.uid}/${fileName}`);
           
-          await uploadBytes(imageRef, compressed);
+          await uploadBytes(imageRef, compressed, { contentType: compressed.type });
           const downloadURL = await getDownloadURL(imageRef);
           
           const userRef = doc(db, 'users', user.uid);
@@ -686,7 +693,7 @@ export const useUserStore = create<UserStore>()(
           const fileName = `${timestamp}_${file.name}`;
           const imageRef = ref(storage, `profile-banners/${user.uid}/${fileName}`);
           
-          await uploadBytes(imageRef, compressed);
+          await uploadBytes(imageRef, compressed, { contentType: compressed.type });
           const downloadURL = await getDownloadURL(imageRef);
           
           const userRef = doc(db, 'users', user.uid);
@@ -698,106 +705,38 @@ export const useUserStore = create<UserStore>()(
         }
       },
       
-      // Highlight a spot (level 3+)
-      highlightSpot: async (spotId: string, maxHighlights: number) => {
+      // Highlight a spot (level 3+; allowance, expiry and writes are enforced by the callable)
+      highlightSpot: async (spotId: string) => {
         const { user } = get();
         if (!user) throw new Error('Not authenticated');
 
-        const currentHighlights = user.highlightedSpots || [];
-        
-        // Check if already highlighted
-        if (currentHighlights.includes(spotId)) {
-          throw new Error('Spot is already highlighted');
-        }
-        
-        // Check max highlights limit
-        if (currentHighlights.length >= maxHighlights) {
-          throw new Error(`Maximum ${maxHighlights} spots can be highlighted`);
-        }
+        await highlightSpotCallable({ spotId });
 
-        try {
-          // Create highlight entry (expires in 7 days for level-based highlights)
-          const now = new Date();
-          const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-          const highlightEntry = {
-            userId: user.uid,
-            highlightedAt: now.toISOString(),
-            expiresAt: expiresAt.toISOString(),
-          };
-
-          const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, { 
-            highlightedSpots: arrayUnion(spotId) 
-          });
-          
-          // Update the spot document with highlight entry in the highlighted array
-          const spotRef = doc(db, 'spots', spotId);
-          await updateDoc(spotRef, { 
-            isHighlighted: true,
-            highlighted: arrayUnion(highlightEntry)
-          });
-          
-          set({ 
-            user: { 
-              ...user, 
-              highlightedSpots: [...currentHighlights, spotId] 
-            } 
-          });
-        } catch (error) {
-          console.error('Error highlighting spot:', error);
-          throw error;
-        }
+        const current = get().user ?? user;
+        set({
+          user: {
+            ...current,
+            highlightedSpots: [...new Set([...(current.highlightedSpots ?? []), spotId])],
+          },
+        });
       },
-      
-      // Unhighlight a spot
+
+      // Unhighlight a spot (server-side)
       unhighlightSpot: async (spotId: string) => {
         const { user } = get();
         if (!user) throw new Error('Not authenticated');
 
-        try {
-          const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, { 
-            highlightedSpots: arrayRemove(spotId) 
-          });
-          
-          // Get the current spot data to find and remove the highlight entry
-          const spotRef = doc(db, 'spots', spotId);
-          const spotSnap = await getDoc(spotRef);
-          
-          if (spotSnap.exists()) {
-            const spotData = spotSnap.data();
-            const highlighted = spotData.highlighted || [];
-            
-            // Find the user's highlight entry
-            const userHighlight = highlighted.find((h: any) => h.userId === user.uid);
-            
-            if (userHighlight) {
-              await updateDoc(spotRef, { 
-                highlighted: arrayRemove(userHighlight)
-              });
-            }
-            
-            // Check if there are any remaining highlights
-            const remainingHighlights = highlighted.filter((h: any) => h.userId !== user.uid);
-            if (remainingHighlights.length === 0) {
-              await updateDoc(spotRef, { isHighlighted: false });
-            }
-          }
-          
-          const currentHighlights = user.highlightedSpots || [];
-          set({ 
-            user: { 
-              ...user, 
-              highlightedSpots: currentHighlights.filter(id => id !== spotId) 
-            } 
-          });
-        } catch (error) {
-          console.error('Error unhighlighting spot:', error);
-          throw error;
-        }
+        await unhighlightSpotCallable({ spotId });
+
+        const current = get().user ?? user;
+        set({
+          user: {
+            ...current,
+            highlightedSpots: (current.highlightedSpots ?? []).filter((id) => id !== spotId),
+          },
+        });
       },
-      
-      
+
       // Update custom name color (level 5 only; enforced by the callable)
       updateCustomNameColor: async (color: string) => {
         const { user } = get();

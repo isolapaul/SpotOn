@@ -221,6 +221,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              maxLength={100}
               placeholder={t('spotNamePlaceholder')}
               className="w-full px-4 py-3 rounded-xl glass text-white placeholder-white/40
                 border border-white/10 focus:border-white/30 focus:outline-none
@@ -268,6 +269,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               name="spotDescription"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              maxLength={2000}
               placeholder={t('descriptionPlaceholder')}
               rows={3}
               className="w-full px-4 py-3 rounded-xl glass text-white placeholder-white/40
