@@ -2,7 +2,6 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { getMessaging, isSupported } from 'firebase/messaging';
 import { getFunctions } from 'firebase/functions';
 
 // Firebase configuration from environment variables
@@ -54,14 +53,4 @@ googleProvider.setCustomParameters({
   prompt: 'select_account',
 });
 
-// Initialize Firebase Messaging (client-side only)
-let messaging: any = null;
-if (typeof window !== 'undefined') {
-  isSupported().then((supported) => {
-    if (supported) {
-      messaging = getMessaging(app);
-    }
-  });
-}
-
-export { app, auth, db, storage, functions, googleProvider, messaging };
+export { app, auth, db, storage, functions, googleProvider };

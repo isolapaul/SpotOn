@@ -3,7 +3,6 @@
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { Globe, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { translations } from '@/lib/translations';
 
 export default function LanguageSelector() {
   const { setLanguage, hasSelectedLanguage } = useLanguageStore();

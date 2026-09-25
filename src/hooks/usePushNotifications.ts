@@ -12,7 +12,6 @@ const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
 // Singleton: Module-level variable to track foreground listener
 // This ensures only ONE listener is active across all hook instances
-let globalForegroundUnsubscribe: (() => void) | null = null;
 let listenerSetup = false;
 
 export const usePushNotifications = () => {
@@ -147,7 +146,7 @@ export const usePushNotifications = () => {
     
     listenerSetup = true;
     
-    const unsubscribe = onMessage(messaging, (payload) => {
+    onMessage(messaging, (payload) => {
       console.log('Foreground message received:', payload);
       
       const title = payload.notification?.title || 'New Notification';
@@ -166,9 +165,6 @@ export const usePushNotifications = () => {
       // (the service worker will display notifications when the app is backgrounded,
       // and in-foreground we add items to the in-app NotificationCenter instead).
     });
-    
-    // Store unsubscribe function globally
-    globalForegroundUnsubscribe = unsubscribe;
   };
 
   // Request permission explicitly (for button click)

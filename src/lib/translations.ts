@@ -112,16 +112,7 @@ export const translations = {
     manageImages: 'Képek kezelése',
     
     // Filters
-    filters: 'Szűrők',
-    distance: 'Távolság',
-    anyDistance: 'Bármekkora távolság',
-    within1km: '1 km-en belül',
-    within5km: '5 km-en belül',
-    within10km: '10 km-en belül',
-    within25km: '25 km-en belül',
-    within50km: '50 km-en belül',
     allCategories: 'Minden kategória',
-    clearFilters: 'Szűrők törlése',
     
     // Notifications
     enableNotifications: 'Értesítések engedélyezése',
@@ -177,13 +168,6 @@ export const translations = {
     themeDark: 'Sötét',
     themeSatellite: 'Műholdas',
     themeSilver: 'Ezüst',
-    questInProgress: 'Folyamatban',
-    questDone: 'Kész',
-    claimRewards: 'Jutalmak átvétele',
-    claimingRewards: 'Átvétel...',
-    claimError: 'Hiba történt',
-    daysRemaining: 'nap van hátra',
-    questEnded: 'A quest véget ért',
 
     // Admin Panel
     pendingApproval: 'Jóváhagyásra vár',
@@ -264,7 +248,6 @@ export const translations = {
     categoryAdded: 'Kategória hozzáadva!',
     categoryAddError: 'Hiba a kategória hozzáadásakor',
     noCategoriesYet: 'Még nincs kategória hozzáadva',
-    noSpotsInRange: 'Nincs hely {distance} km-en belül',
     mapLoadError: 'Hiba a térkép betöltésekor',
 
     // Level System
@@ -433,16 +416,7 @@ export const translations = {
     manageImages: 'Manage images',
     
     // Filters
-    filters: 'Filters',
-    distance: 'Distance',
-    anyDistance: 'Any distance',
-    within1km: 'Within 1 km',
-    within5km: 'Within 5 km',
-    within10km: 'Within 10 km',
-    within25km: 'Within 25 km',
-    within50km: 'Within 50 km',
     allCategories: 'All categories',
-    clearFilters: 'Clear filters',
     
     // Notifications
     enableNotifications: 'Enable Notifications',
@@ -498,13 +472,6 @@ export const translations = {
     themeDark: 'Dark',
     themeSatellite: 'Satellite',
     themeSilver: 'Silver',
-    questInProgress: 'In Progress',
-    questDone: 'Done',
-    claimRewards: 'Claim Rewards',
-    claimingRewards: 'Claiming...',
-    claimError: 'Error occurred',
-    daysRemaining: 'days left',
-    questEnded: 'Quest ended',
 
     // Admin Panel
     pendingApproval: 'Pending Approval',
@@ -585,7 +552,6 @@ export const translations = {
     categoryAdded: 'Category added!',
     categoryAddError: 'Error adding category',
     noCategoriesYet: 'No categories added yet',
-    noSpotsInRange: 'No spots within {distance} km',
     mapLoadError: 'Error loading maps',
 
     // Level System
@@ -754,7 +720,6 @@ export const translations = {
     manageImages: 'Bilder verwalten',
     
     // Filters
-    filters: 'Filter',
     
     // Notifications
     enableNotifications: 'Benachrichtigungen aktivieren',
@@ -801,23 +766,8 @@ export const translations = {
     themeDark: 'Dunkel',
     themeSatellite: 'Satellit',
     themeSilver: 'Silber',
-    questInProgress: 'In Bearbeitung',
-    questDone: 'Fertig',
-    claimRewards: 'Belohnungen einlösen',
-    claimingRewards: 'Einlösen...',
-    claimError: 'Fehler aufgetreten',
-    daysRemaining: 'Tage verbleibend',
-    questEnded: 'Quest beendet',
     
-    distance: 'Entfernung',
-    anyDistance: 'Beliebige Entfernung',
-    within1km: 'Innerhalb 1 km',
-    within5km: 'Innerhalb 5 km',
-    within10km: 'Innerhalb 10 km',
-    within25km: 'Innerhalb 25 km',
-    within50km: 'Innerhalb 50 km',
     allCategories: 'Alle Kategorien',
-    clearFilters: 'Filter löschen',
 
     // Admin Panel
     pendingApproval: 'Genehmigung ausstehend',
@@ -898,7 +848,6 @@ export const translations = {
     categoryAdded: 'Kategorie hinzugefügt!',
     categoryAddError: 'Fehler beim Hinzufügen der Kategorie',
     noCategoriesYet: 'Noch keine Kategorien hinzugefügt',
-    noSpotsInRange: 'Keine Orte innerhalb von {distance} km',
     mapLoadError: 'Fehler beim Laden der Karte',
 
     // Level System

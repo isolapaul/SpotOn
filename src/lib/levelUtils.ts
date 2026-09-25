@@ -184,16 +184,6 @@ export const CUSTOM_NAME_FONTS = [
 ];
 
 /**
- * Get available custom icons for level 4+ users
- */
-export const CUSTOM_SPOT_ICONS = [
-  '⭐', '💫', '✨', '🌟', '⚡', '🔥', '💎', '👑', 
-  '🎯', '🎪', '🎨', '🎭', '🎬', '🎮', '🎸', '🎺',
-  '🌈', '🌸', '🌺', '🌻', '🌼', '🌿', '🍀', '🦋',
-  '🦄', '🐉', '🦅', '🦁', '🐺', '🦊', '🦉', '🐼',
-];
-
-/**
  * Format spots remaining text for translations
  */
 export function getSpotsRemainingText(spotsCount: number, spotsForNext: number | null): string {
