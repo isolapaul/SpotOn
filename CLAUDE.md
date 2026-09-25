@@ -81,6 +81,9 @@ npm run verify:fn           # functions build + lint (+ unit tests)
 npm run test:rules          # Firestore/Storage rules tests on the emulator (Java 21 required)
 npm run test:e2e            # Playwright smoke vs emulator-seeded build (PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers)
 ```
+`next build` needs Firebase config. Without a `.env.local`, export the non-secret demo values first (T01 defines the exact list), e.g.
+`export NEXT_PUBLIC_FIREBASE_API_KEY=demo-key NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-spoton …`.
+A single e2e spec runs via `npx firebase emulators:exec … "npx tsx scripts/seed-emulator.ts && npx playwright test e2e/<file>"` (`npm run test:e2e -- <file>` does not work).
 
 ### Environment variables
 | Var | When | Where used |
@@ -101,7 +104,7 @@ Never commit `.env*` files — sole exception: `functions/.env.demo-spoton` (emu
 4. **Never touch production Firebase** (no `firebase deploy`, no scripts against real projects, no real credentials). Use the emulator (`demo-spoton` project id). Deploys are Paul's manual steps, documented in `docs/security-rollout.md` / `docs/deploy.md`.
 5. **Backward compatibility with existing data is mandatory.** Legacy spot shapes (only `imageUrls`, reviews with `userEmail`, missing optional fields) must keep rendering.
 6. **Never rename or drop an exported Cloud Function** unless the task says so — a rename deletes the deployed function.
-7. **Gates before every commit:** the acceptance commands of the task, plus `npm run verify` (and `verify:fn` if `functions/` changed). Do not commit red.
+7. **Gates before every commit:** the acceptance commands of the task, plus `npm run verify` (and `verify:fn` if `functions/` changed — `verify:fn` is expected red from T01 until T07 fixes the pre-existing functions lint errors). Do not commit red.
 8. **No secrets in git, images, logs, or client bundles.** Only `NEXT_PUBLIC_*` values may reach the browser, and those must be non-secret.
 9. **Security posture:** authorization must be enforced server-side (Firestore/Storage rules or Cloud Functions), never only in UI. UI checks are UX, not security.
 10. **Dependencies:** pin exact versions for `next` and security-relevant packages; justify every new dependency in the commit message; prefer none.

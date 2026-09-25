@@ -10,6 +10,7 @@
 - Fix the misleading edit toast and the approve error that is silently swallowed.
 
 ## Context
+- **Orchestrator note (from T03):** about 16 translation keys are unused besides the ones T03 removed (for example `levelBeginner`, `welcomeBack`). Before adding new keys, check with grep whether an existing unused key already has the right text and reuse it. The level-name keys are reused by this task. Delete keys that are still unused at the end, in all three languages, with the grep proof in the commit message.
 Line numbers are from `eee5668`; re-locate each site by the quoted text or landmark. Files deleted by T03 (FilterPanel, DistanceSelector, Toast, types) are out of scope. **AuthModal's inline `texts` object, InstallGate's `texts` and LanguageSelector's ternaries are migrated in T24, not here.**
 
 **Root cause of most missing styles (BUG-07):** `tailwind.config.ts` `content` scans only `src/pages`, `src/components` and `src/app`, **not `src/lib`**. Class strings defined only in `src/lib/levelUtils.ts` are therefore never generated. Verified by grep: none of these appear literally anywhere in the scanned dirs:

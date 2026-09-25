@@ -53,7 +53,7 @@ Remove `'unsafe-inline'` from `script-src` in production. Each page request gets
    import { buildCsp } from '@/lib/csp.mjs';
    export function proxy(request: NextRequest) {
      const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-     const csp = buildCsp({ nonce, isDev: process.env.NODE_ENV !== 'production', useEmulators: process.env.NEXT_PUBLIC_USE_EMULATORS === 'true' }); // same isDev rule as T15
+     const csp = buildCsp({ nonce, isDev: process.env.NODE_ENV !== 'production', useEmulators: process.env.NEXT_PUBLIC_USE_EMULATORS === '1' }); // same isDev rule as T15
      const requestHeaders = new Headers(request.headers);
      requestHeaders.set('x-nonce', nonce);
      requestHeaders.set('Content-Security-Policy', csp);

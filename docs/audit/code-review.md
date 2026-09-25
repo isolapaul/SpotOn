@@ -125,6 +125,7 @@ The fallback language also differs: `hu` in some places, `en` in others. The fix
 | BUG-20 | `ProfilePanel` edits usernames without the length or availability checks | `ProfilePanel.tsx:328` | T11a |
 | BUG-21 | FCM link is hardcoded to a non-existent production URL | `functions/src/index.ts:161` | T08 |
 | BUG-23 | Tailwind `content` does not scan `src/lib`, so level/name-style classes defined there are never generated | `tailwind.config.ts` | T22 |
+| BUG-24 | The loading screen can stay stuck forever: MapView's `MapReadyNotifier` 100 ms timer is cancelled by any re-render inside that window and is never restarted, so `onMapLoad` never fires. Reproduced 100% against the fast emulators. | `MapView.tsx:85-96` | T04 (minimal fix, needed for e2e) |
 | BUG-22 | SettingsPanel renders at z-40/50 inside ProfilePanel's z-60 stacking context | `SettingsPanel.tsx` | T25 (z-index scale in `lib/`) |
 
 ---

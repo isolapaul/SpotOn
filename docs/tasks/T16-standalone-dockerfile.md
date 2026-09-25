@@ -70,7 +70,7 @@ Build the Next.js app into a small, shell-less, non-root image that runs with a 
 3. **`scripts/check-public-env.mjs`** (Node ESM, no dependencies):
    - Loop over the 7 required names. Each must be set, non-empty, have no surrounding whitespace, and contain no quote characters.
    - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` must match `^[a-z0-9.-]+(:[0-9]+)?$`, so no scheme and no path.
-   - With `--production`, it additionally fails if `NEXT_PUBLIC_USE_EMULATORS`, `NEXT_PUBLIC_MOVED_TO` or `NEXT_PUBLIC_ADMIN_EMAIL` is set.
+   - With `--production`, it additionally fails if `NEXT_PUBLIC_USE_EMULATORS` is `1` (T04 always defines it as `'1'` or `'0'` in `next.config`, so only `1` is forbidden), or if `NEXT_PUBLIC_MOVED_TO` or `NEXT_PUBLIC_ADMIN_EMAIL` is set.
    - It prints the **names** of missing or invalid vars (never values) and exits 1; on success it prints `public env OK (7 vars)`.
    - It is **not** a `prebuild` hook, because local and CI emulator builds use demo values; the Dockerfile calls it explicitly.
 4. **`docker/healthcheck.mjs`:**

@@ -72,7 +72,7 @@ Users get a short patch note about the new address.
       - `npm ci`;
       - `.env.local` from the matrix below;
       - `npm run dev`;
-      - emulator workflow: copy the **exact** commands and scripts T04 added (the emulator start command and seed script names). Include `NEXT_PUBLIC_USE_EMULATORS=true` and the `demo-spoton` project id. Link `CLAUDE.md` §4.
+      - emulator workflow: copy the **exact** commands and scripts T04 added (the emulator start command and seed script names). Include `NEXT_PUBLIC_USE_EMULATORS=1` and the `demo-spoton` project id. Link `CLAUDE.md` §4.
    5. **Scripts**: a table of every `package.json` script with a one-line purpose, generated from the actual file (`npm run` output). Also `npm --prefix functions run …`.
    6. **Environment variables**: a matrix with exactly these columns and rows:
 

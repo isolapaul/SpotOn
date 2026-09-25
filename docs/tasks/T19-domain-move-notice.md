@@ -27,7 +27,7 @@ So the notice is:
   - Below them at `top-20 z-10` sit the empty-state pill (`page.tsx:361-368`) and the location-selection card (`page.tsx:371-385`).
   - Panels and modals use `z-[2000]` and up.
   - The button style is `bg-black/40 backdrop-blur-md border border-white/10 shadow-glass-lg`. Global CSS forces a 44 px minimum on `button`/`a` (`globals.css:61-70`).
-- `useUiStore` (`src/store/useUiStore.ts`) holds UI flags. T03 may have removed `notificationPromptVisible`; add the new flag regardless.
+- `useUiStore` (`src/store/useUiStore.ts`) holds UI flags. T03 keeps it unchanged; add the new flag.
 - Vercel `vercel.json` `redirects[].permanent: true` → **308** (false/default → 307). Confirmed by the Vercel docs via search; vercel.com itself was not reachable from the sandbox. `vercel.json` is read only by Vercel. Docker and `next build` ignore it, and T16's `.dockerignore` excludes it anyway.
 
 ## Files
@@ -153,7 +153,9 @@ grep -nP "gradient|glow|animate-(pulse|bounce|ping)|[\x{1F300}-\x{1FAFF}]" src/c
 node -e "const j=require('./deploy/vercel-stage-b.json'); if(j.redirects[0].permanent!==true) process.exit(1)"
 test ! -e vercel.json
 # with banner
-NEXT_PUBLIC_MOVED_TO=https://spoton.isolapaul.hu npm run test:e2e -- e2e/moved-banner.spec.ts
+# `npm run test:e2e -- <file>` does not work (see T04). Build with the flag, then run the single spec:
+NEXT_PUBLIC_MOVED_TO=https://spoton.isolapaul.hu npx firebase emulators:exec --only auth,firestore,storage --project demo-spoton \
+  "npx tsx scripts/seed-emulator.ts && npx playwright test e2e/moved-banner.spec.ts"
 ls -l docs/screenshots/moved-banner-hu.png docs/screenshots/moved-banner-en.png
 # without banner (normal build) — full smoke must stay green
 npm run test:e2e

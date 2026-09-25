@@ -24,7 +24,7 @@ Production gets a tight Content-Security-Policy, built from the hosts the app re
   - `src/components/SettingsPanel.tsx:53,:81` set `useWebWorker: true`.
   - T14 already set `useWebWorker: false` in FeedbackPanel.
   - The stores use `false` (`useSpotStore.ts:111`, `useUserStore.ts:79`).
-- Test builds: T04 builds with `NEXT_PUBLIC_USE_EMULATORS=true` and talks to emulators on `http://127.0.0.1:{8080,9099,9199,5001}`.
+- Test builds: T04 builds with `NEXT_PUBLIC_USE_EMULATORS=1` and talks to emulators on `http://127.0.0.1:{8080,9099,9199,5001}`.
   - Those builds must allow them.
   - `upgrade-insecure-requests` must be **off** there: it would upgrade `http://` emulator and localhost sub-resources.
 - `headers()` and `rewrites()` are evaluated at **build time** and frozen into `.next/routes-manifest.json`, so every env var they read is a build-time input.
@@ -51,7 +51,7 @@ Production gets a tight Content-Security-Policy, built from the hosts the app re
 1. **`next.config.mjs`: CSP builder.** Add a top-level function:
    ```js
    const isDev = process.env.NODE_ENV !== 'production';
-   const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === 'true';
+   const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === '1';
    function buildCsp() {
      const local = useEmulators ? ['http://127.0.0.1:*', 'http://localhost:*'] : [];
      const d = {
@@ -78,7 +78,7 @@ Production gets a tight Content-Security-Policy, built from the hosts the app re
    - **Production** (`next build`, emulators off):
      `default-src 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://firebasestorage.googleapis.com https://*.googleusercontent.com; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.cloudfunctions.net https://apis.google.com; frame-src 'self' https://*.firebaseapp.com https://apis.google.com https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests`
    - **Dev** (`next dev`, emulators off): the same, but `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com`, and **without** `; upgrade-insecure-requests`.
-   - **Emulator test build** (`NEXT_PUBLIC_USE_EMULATORS=true`): the production string without `upgrade-insecure-requests`, and with:
+   - **Emulator test build** (`NEXT_PUBLIC_USE_EMULATORS=1`): the production string without `upgrade-insecure-requests`, and with:
      - `http://127.0.0.1:* http://localhost:*` appended to `img-src`, `connect-src` and `frame-src`;
      - `ws://127.0.0.1:* ws://localhost:*` appended to `connect-src`.
    - `https://*.firebaseapp.com` stays in `frame-src`, so that the Vercel build (authDomain still `<project>.firebaseapp.com` during T19) keeps working.
