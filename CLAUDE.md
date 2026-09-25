@@ -85,6 +85,7 @@ npm run test:e2e            # Playwright smoke vs emulator-seeded build (PLAYWRI
 `export NEXT_PUBLIC_FIREBASE_API_KEY=demo-key NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-spoton …`.
 A single e2e spec runs via `npx firebase emulators:exec --only auth,firestore,storage[,functions] --project demo-spoton "npx tsx scripts/seed-emulator.ts && npx playwright test e2e/<file>"` — from T08 on, include `functions` and run `npm --prefix functions run build` first (`npm run test:e2e -- <file>` does not work).
 E2E specs must never leave a fixture that another spec uses in a mutated state.
+In the Claude Code sandbox, prefix emulator runs with `NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost` (the sandbox proxy otherwise intercepts emulator-to-emulator localhost calls). Not needed on CI or Paul's machine.
 
 ### Environment variables
 | Var | When | Where used |
