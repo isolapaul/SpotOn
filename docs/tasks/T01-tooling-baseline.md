@@ -40,6 +40,7 @@ Give every later task the same local gates: `npm run typecheck`, `npm run lint`,
      globalIgnores([
        '.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'functions/**',
        'coverage/**', 'playwright-report/**', 'test-results/**',
+        'postcss.config.cjs', // CommonJS config; not covered by the Next/react-hooks plugin globs
      ]),
      {
        files: ['**/*.{js,jsx,mjs,ts,tsx,mts,cts}'],
