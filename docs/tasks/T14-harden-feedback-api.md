@@ -4,7 +4,7 @@
 **Audit refs:** SEC-06, SEC-18 (fallback recipient)
 
 ## Goal
-`/api/feedback` stops being an open mail relay. It caps the request body while streaming, validates the message and attachments strictly, rate-limits each IP, and takes the sender identity only from a verified Firebase ID token. Anonymous feedback stays allowed (D10). The email Paul receives keeps its subject and text format.
+`/api/feedback` stops being an open mail relay. It caps the request body while streaming, validates the message and attachments strictly, rate-limits each IP (IPv6 per /64) and all traffic together, caps concurrent sends, and takes the sender identity only from a verified Firebase ID token. Anonymous feedback stays allowed (D10). The email Paul receives keeps its subject and text format.
 
 ## Context
 - `src/app/api/feedback/route.ts` (current state):
@@ -24,7 +24,10 @@
   - :182 allows sending with files only and an empty message.
 - The client uses `t()` from `useLanguageStore`. Existing feedback keys are in `src/lib/translations.ts` (hu :165-172, en :486-493). **de is missing 7 feedback keys; T22 adds them. Do not add them here.**
 - Components must not import `firebase/*` (CLAUDE.md §6). Get the ID token through a store action.
-- Trust boundary: in production the container is reachable only through the Cloudflare Tunnel, which sets `cf-connecting-ip`. On Vercel (during the T19 period) that header is absent, and `x-forwarded-for` is set by Vercel.
+- Trust boundary:
+  - In production the container is reachable only through the Cloudflare Tunnel, which sets `cf-connecting-ip`. There, `x-forwarded-for` is client-controlled and must never be used.
+  - On Vercel (Stage A of T19), `process.env.VERCEL === '1'`. Vercel sets `x-real-ip` and `x-forwarded-for`, but a client can send its own `cf-connecting-ip`, which Vercel passes through. So on Vercel `cf-connecting-ip` must be ignored.
+  - IPv6 clients usually control a whole /64, so per-address buckets are trivially bypassed. Key IPv6 addresses by their /64.
 - Firebase ID tokens:
   - Algorithm RS256.
   - Keys come from the JWKS at `https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com`.
@@ -38,7 +41,7 @@
 - Create:
   - `src/lib/feedback/validate.ts`: pure. Limits, payload parsing, magic bytes, filename sanitising.
   - `src/lib/feedback/validate.test.ts`
-  - `src/lib/feedback/rateLimit.ts`: pure. Token bucket with an injected clock, plus `getClientIp(headers)`.
+  - `src/lib/feedback/rateLimit.ts`: pure. Token bucket with an injected clock, plus `getClientIp(headers, env)`.
   - `src/lib/feedback/rateLimit.test.ts`
   - `src/lib/feedback/readLimitedBody.ts`: reads a `ReadableStream` up to N bytes.
   - `src/lib/feedback/readLimitedBody.test.ts`
@@ -84,11 +87,16 @@
    - `createTokenBucket({ capacity: 5, refillIntervalMs: 120_000, maxKeys: 10_000, now = Date.now })` returns `take(key): { allowed: boolean, retryAfterSec: number }`.
      - This is 5 requests per 10 minutes, refilling continuously.
      - When `maxKeys` is exceeded, drop the keys whose buckets are full, then the oldest.
-   - `getClientIp(h: Headers): string` returns, in order:
-     1. `cf-connecting-ip` (trimmed), if non-empty;
-     2. otherwise the first comma-separated hop of `x-forwarded-for`, trimmed;
-     3. otherwise `'unknown'`.
+   - `getClientIp(h: Headers, env: { VERCEL?: string }): string`. The route passes `process.env`.
+     - If `env.VERCEL === '1'`: `x-real-ip` (trimmed) if non-empty, otherwise the first comma-separated hop of `x-forwarded-for`, trimmed. `cf-connecting-ip` is **ignored** (client-controlled on Vercel).
+     - Otherwise: **only** `cf-connecting-ip` (trimmed). `x-forwarded-for` is never read.
+     - If nothing is found: `'unknown'`.
+   - Normalise the result into the bucket key:
+     - IPv4 (and IPv4-mapped IPv6 `::ffff:a.b.c.d`) → the dotted IPv4 address.
+     - IPv6 → its /64: expand `::`, lowercase, drop leading zeros per group, keep the first 4 groups, and append `::/64` (e.g. `2001:db8:0:1:aaaa::1` and `2001:db8:0:1::2` → `2001:db8:0:1::/64`).
+     - Anything unparseable → the raw value.
    - Cap the key at 64 chars.
+   - A **global** bucket (same `createTokenBucket`, `capacity: 20`, `refillIntervalMs: 180_000`, single key `'global'`) caps total feedback traffic at about 20 per hour across all IPs.
 4. **`src/lib/feedback/readLimitedBody.ts`.**
    - `readLimitedBody(body: ReadableStream<Uint8Array>|null, max: number): Promise<{ ok: true, bytes: Uint8Array } | { ok: false }>`.
    - Read chunk by chunk. As soon as the running total exceeds `max`, call `reader.cancel()` and return `{ok:false}`.
@@ -101,7 +109,8 @@
 6. **Rewrite `src/app/api/feedback/route.ts`.**
    - Add `export const runtime = 'nodejs'` and `export const dynamic = 'force-dynamic'`.
    - Export only `POST`; Next answers 405 for other methods. The order of checks matters:
-     1. `const bucket = take(getClientIp(req.headers))` (module-level bucket). If not allowed → **429** `{error:'rate_limited'}` with `Retry-After`.
+     1. `const bucket = take(getClientIp(req.headers, process.env))` (module-level per-IP bucket). If not allowed → **429** `{error:'rate_limited'}` with `Retry-After`. Only if the per-IP bucket allowed it, take from the module-level **global** bucket; if that is empty → **429** `{error:'rate_limited'}` with its `Retry-After`. A per-IP denial does not consume a global token.
+        - Then the in-flight cap: a module-level counter of requests currently past this point. If it is already 2 → **503** `{error:'busy'}`. Otherwise increment it, and decrement it in a `finally` that covers every later step.
      2. Read the config: `FEEDBACK_RECIPIENT`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`. If any is missing → **503** `{error:'unavailable'}`. Log `feedback: missing config` once, without values. **No fallback recipient.**
      3. `content-type` must start with `application/json`, else **415** `{error:'unsupported_media_type'}`.
      4. If a `content-length` header is present and > `maxBodyBytes` → **413** `{error:'payload_too_large'}` without reading the body.
@@ -114,8 +123,9 @@
         - With no header, the sender is anonymous.
      9. Build the mail:
         - `from: SMTP_USER`, `to: FEEDBACK_RECIPIENT`, `subject: 'SpotOn_feedback'`, **text only** (no `html`).
-        - `replyTo` is the token email **only if** `email_verified === true`.
-        - Sender display name: `claims.name` if present, else `claims.email`, else `uid`. For no token: `'anonymous'`. Strip `\r` and `\n` from it.
+        - `email` is the token email **only if** `email_verified === true`, otherwise empty. An unverified email appears nowhere in the mail.
+        - `replyTo` is `email` when non-empty.
+        - Sender display name: `claims.name` if present, else `email`, else `uid`. For no token: `'anonymous'`. Strip `\r` and `\n` from it.
         - Text: `` `Sender: ${displayName} ${email ? `<${email}>` : ''}\n\nMessage:\n${message}` ``. This keeps today's format exactly.
      10. Send with a lazily-created module-level transporter: `{ host, port, secure: port === 465, auth: {user, pass}, connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 20_000 }`. On failure → **502** `{error:'send_failed'}`.
      11. On success → **200** `{ok:true}`. Log `feedback sent` with `messageId` and the attachment count only. Never log the message, emails or tokens.
@@ -158,7 +168,10 @@
       - 5 allowed, the 6th denied with `retryAfterSec` ≈ 120.
       - After 120 s on the fake clock, 1 more is allowed.
       - Keys are independent.
-      - `getClientIp`: `cf-connecting-ip` wins; `x-forwarded-for: "1.1.1.1, 2.2.2.2"` → `1.1.1.1`; with neither → `'unknown'`.
+      - `getClientIp` (non-Vercel env `{}`): `cf-connecting-ip` is used; `x-forwarded-for: "1.1.1.1, 2.2.2.2"` alone → `'unknown'` (XFF ignored); with neither → `'unknown'`.
+      - `getClientIp` Vercel mode (`{ VERCEL: '1' }`): `x-real-ip` wins; a spoofed `cf-connecting-ip` is ignored; without `x-real-ip`, `x-forwarded-for: "1.1.1.1, 2.2.2.2"` → `1.1.1.1`.
+      - IPv6 /64 sharing: `2001:db8:0:1:aaaa::1` and `2001:db8:0:1::2` give the same key and share one bucket; `2001:db8:0:2::1` is a different key; `::ffff:203.0.113.5` → `203.0.113.5`.
+      - Global cap: with a `capacity: 20, refillIntervalMs: 180_000` bucket, 20 requests from 20 different IPs pass and the 21st is denied with `retryAfterSec` ≈ 180.
       - Eviction happens at `maxKeys`.
     - `readLimitedBody.test.ts`: a stream of 3 chunks under the limit → ok with equal bytes; over the limit → `{ok:false}`, and the stream is cancelled; `null` → empty.
     - `verifyIdToken.test.ts`: generate an RS256 pair with `jose.generateKeyPair`, and use `createLocalJWKSet` as `keySet`. Check that:
@@ -171,7 +184,8 @@
     - This is a dev/test tool only, never imported by the app.
 12. **`scripts/feedback-smoke.sh`** (bash, `set -euo pipefail`).
     - Takes `BASE=${BASE:-http://127.0.0.1:3000}` and `SINK=${SINK:-/tmp/spoton-smtp-sink.eml}`.
-    - Each case uses a **unique** `cf-connecting-ip: 203.0.113.<n>`, so that cases don't share a bucket.
+    - Each case uses a **unique** `cf-connecting-ip: 203.0.113.<n>`, so that cases don't share a per-IP bucket.
+    - The whole matrix must consume at most 20 global tokens (the global bucket's capacity): today that is 18 POSTs that pass the per-IP check. Do not add POSTs beyond that, and send the requests sequentially (the in-flight cap is 2).
     - It asserts the status code of each case in the Acceptance table, and for the success cases greps the sink file.
     - Test data:
       - PNG: `public/icon-192x192.png` base64-encoded.
@@ -196,16 +210,20 @@ export NEXT_PUBLIC_FIREBASE_API_KEY=demo-key NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=lo
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=0 NEXT_PUBLIC_FIREBASE_APP_ID=1:0:web:0 NEXT_PUBLIC_FIREBASE_VAPID_KEY=demo
 npm run build
 rm -f /tmp/spoton-smtp-sink.eml; node scripts/smtp-sink.mjs & SINK_PID=$!
+# `npx next start` spawns a next-server child that survives `kill $!` (it is reparented to pid 1).
+# So start each server in its own process group with setsid (non-interactive bash: $! is the group id),
+# stop it with `kill -- -$APP_PID`, then assert the port is free.
 SMTP_HOST=127.0.0.1 SMTP_PORT=2525 SMTP_USER=test SMTP_PASS=test FEEDBACK_RECIPIENT=feedback@example.test \
-  npx next start -p 3000 & APP_PID=$!
+  setsid npx next start -p 3000 & APP_PID=$!
 for i in $(seq 60); do curl -s -o /dev/null http://127.0.0.1:3000/ && break; sleep 1; done
 bash scripts/feedback-smoke.sh
-kill $APP_PID
-# 503 case: restart without FEEDBACK_RECIPIENT
-SMTP_HOST=127.0.0.1 SMTP_PORT=2525 SMTP_USER=test SMTP_PASS=test npx next start -p 3000 & APP_PID=$!; sleep 8
+kill -- -$APP_PID; sleep 2; ! curl -s -o /dev/null http://127.0.0.1:3000/
+# 503 case: restart without FEEDBACK_RECIPIENT, on port 3001
+SMTP_HOST=127.0.0.1 SMTP_PORT=2525 SMTP_USER=test SMTP_PASS=test setsid npx next start -p 3001 & APP_PID=$!
+for i in $(seq 60); do curl -s -o /dev/null http://127.0.0.1:3001/ && break; sleep 1; done
 test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' -H 'cf-connecting-ip: 203.0.113.99' \
-  --data '{"message":"hi"}' http://127.0.0.1:3000/api/feedback)" = 503
-kill $APP_PID $SINK_PID
+  --data '{"message":"hi"}' http://127.0.0.1:3001/api/feedback)" = 503
+kill -- -$APP_PID; kill $SINK_PID; sleep 2; ! curl -s -o /dev/null http://127.0.0.1:3001/
 grep -rn "isolapaul100\|@gmail.com" src/app/api/feedback && exit 1 || true   # no hardcoded recipient
 ```
 `scripts/feedback-smoke.sh` must assert this matrix. All cases are POST, except the method case.
@@ -233,5 +251,5 @@ Manual check: in the running app (T04 emulator build, signed out), send feedback
 
 ## Stop and ask Paul if…
 - The T04 e2e smoke sends feedback **while signed in against the Auth emulator**. Emulator tokens are unsigned and will get 401. Do not add an emulator bypass to the verifier.
-- A limit (3 images, 1.5 MB, 5000 chars, 5 per 10 min) turns out to reject real use. For example, compressed phone photos over 1.5 MB would need a client-side re-compress target change.
+- A limit (3 images, 1.5 MB, 5000 chars, 5 per 10 min per IP, about 20 per hour in total, 2 in flight) turns out to reject real use. For example, compressed phone photos over 1.5 MB would need a client-side re-compress target change.
 - Paul wants image-only feedback (an empty message) to stay possible.

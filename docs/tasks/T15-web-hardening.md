@@ -28,7 +28,7 @@ Production gets a tight Content-Security-Policy, built from the hosts the app re
   - Those builds must allow them.
   - `upgrade-insecure-requests` must be **off** there: it would upgrade `http://` emulator and localhost sub-resources.
 - `headers()` and `rewrites()` are evaluated at **build time** and frozen into `.next/routes-manifest.json`, so every env var they read is a build-time input.
-- **Headers are applied to rewritten paths too.** If the global CSP, `X-Frame-Options: DENY` and `frame-ancestors 'none'` were sent on `/__/auth/iframe`, the SDK could not embed its own iframe, and the handler page's scripts would be blocked. So the global header rule must exclude `/__/auth/` and `/__/firebase/`.
+- **Headers on external rewrites.** In Next 16.3.6 standalone, responses proxied by an **external** rewrite (`destination` on another host) get **none** of the `headers()` entries: the upstream headers pass through unchanged. We still exclude `/__/auth/` and `/__/firebase/` from the global rule as defence in depth: if a future Next version applied headers to rewritten paths, the global CSP, `X-Frame-Options: DENY` and `frame-ancestors 'none'` on `/__/auth/iframe` would stop the SDK from embedding its own iframe and would block the handler page's scripts.
 - The Firebase proxy pattern ("Best practices for using signInWithRedirect…", option 3) proxies `https://<app domain>/__/auth/` → `https://<project>.firebaseapp.com/__/auth/` transparently (not a 302). The nginx example is `location /__/auth { proxy_pass https://<project>.firebaseapp.com; }`. `authDomain` becomes the app domain. The OAuth redirect URI is `https://<app domain>/__/auth/handler`.
   - `firebase.google.com` was not reachable from the spec author's sandbox. This summary is from search results, so re-read the page (see Stop and ask).
   - We also proxy `/__/firebase/init.json`, because the hosted handler may fetch it. It is public config, so this is harmless.
@@ -92,7 +92,7 @@ Production gets a tight Content-Security-Policy, built from the hosts the app re
      - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
      - `Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=(), usb=()`
      - `Cross-Origin-Opener-Policy: same-origin-allow-popups`
-   - For `source: '/__/:path*'`: only `Strict-Transport-Security`, `X-Content-Type-Options` and `Referrer-Policy`, with the same values. The upstream Firebase headers pass through.
+   - For `source: '/__/:path*'`: only `Strict-Transport-Security`, `X-Content-Type-Options` and `Referrer-Policy`, with the same values. The upstream Firebase headers pass through. On the proxied paths Next 16.3.6 does not actually send these (see Context); the rule is kept for local `/__/` responses and future Next versions. The edge still enforces HTTPS (T17 §9).
    - Service worker: `route.ts` keeps its own `Content-Type`, `Service-Worker-Allowed: /` and `Cache-Control`. The global CSP is the worker's policy; do not add a separate one.
    - `camera=()` does not affect `<input type="file" accept="image/*">`, which uses the OS picker.
 3. **Rewrites.**
@@ -129,11 +129,12 @@ Production gets a tight Content-Security-Policy, built from the hosts the app re
 9. **`scripts/check-headers.sh BASE`.**
    - Uses `curl -sI` against `$BASE/` and `$BASE/api/firebase-messaging-sw`, and asserts every header in step 2, with the exact CSP string as `$EXPECTED_CSP`.
    - Checks that there is no `x-powered-by`.
-   - Checks that `$BASE/__/auth/handler` carries **no** `content-security-policy` and **no** `x-frame-options`.
+   - Checks that `$BASE/__/auth/handler` carries **no** `content-security-policy` and **no** `x-frame-options`. It must **not** expect HSTS (or any other `headers()` value) on `/__/*`: external-rewrite responses get none of them.
    - Checks `routes-manifest.json` for the two rewrites.
 10. **`e2e/csp.spec.ts`.**
     - Attach a violation collector before navigation: `page.on('console', m => /Content Security Policy|Refused to/.test(m.text()) && v.push(m.text()))`, plus `page.addInitScript(() => document.addEventListener('securitypolicyviolation', e => console.error('CSP violation', e.violatedDirective, e.blockedURI)))`.
-    - Run T04's smoke flow: load; pass the language selector and install gate using T04's helpers; wait for map tiles; open a seeded spot; sign in with the emulator user; open the profile panel, and in it the settings (profile image upload with a small PNG fixture if T04 has one); open the feedback panel.
+    - Call T04's `blockMapTiles(page)` in `beforeEach`, like the smoke spec: tile requests are aborted, so CI never depends on OSM/CARTO/Esri, and the test must **not** wait for map tiles. (Tile hosts stay covered by the exact CSP string check in `check-headers.sh` and by the manual checklist.)
+    - Run T04's smoke flow: load; pass the language selector and install gate using T04's helpers; open a seeded spot; sign in with the emulator user; open the profile panel, and in it the settings (profile image upload with a small PNG fixture if T04 has one); open the feedback panel.
     - Assert `v` is empty.
 
 ## Must NOT change
@@ -153,13 +154,16 @@ grep -n "useWebWorker: true" src -r && exit 1 || true
 export NEXT_PUBLIC_FIREBASE_API_KEY=demo-key NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=localhost \
   NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-spoton NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=demo-spoton.appspot.com \
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=0 NEXT_PUBLIC_FIREBASE_APP_ID=1:0:web:0 NEXT_PUBLIC_FIREBASE_VAPID_KEY=demo
-npm run build && (npx next start -p 3000 & echo $! > /tmp/next.pid)
+# `npx next start` leaves its next-server child running after `kill $!` (reparented to pid 1):
+# start it in its own process group (non-interactive bash) and kill the whole group.
+npm run build
+setsid npx next start -p 3000 & APP_PID=$!
 for i in $(seq 60); do curl -s -o /dev/null http://127.0.0.1:3000/ && break; sleep 1; done
 bash scripts/check-headers.sh http://127.0.0.1:3000
 curl -sI http://127.0.0.1:3000/ | grep -i "content-security-policy" | grep -q "unsafe-eval" && exit 1 || true
 grep -q '"/__/auth/:path\*"' .next/routes-manifest.json
 node -e "JSON.parse(require('fs').readFileSync('public/manifest.json','utf8'))"
-kill $(cat /tmp/next.pid)
+kill -- -$APP_PID; sleep 2; ! curl -s -o /dev/null http://127.0.0.1:3000/
 
 # Emulator build: zero CSP violations on the smoke flow
 npm run test:e2e        # includes e2e/csp.spec.ts
@@ -179,5 +183,6 @@ The `/__/auth/handler` upstream (`*.firebaseapp.com`) is not reachable from the 
 ## Stop and ask Paul if…
 - The re-read Firebase "redirect best practices" page (option 3) lists proxied paths other than `/__/auth/` and `/__/firebase/init.json`, or says the proxy needs special headers.
 - Paul's current `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` is **not** `<projectId>.firebaseapp.com`, for example a custom hosting site. The rewrite upstream would then be wrong.
+- The Firebase project has **reCAPTCHA Enterprise** enabled for email/password or phone sign-in (Firebase console → Authentication → Settings). The SDK would then load `https://www.google.com/recaptcha/…`, which this CSP blocks.
 - The e2e flow shows a violation for a host not listed here. Add it only with evidence of which feature needs it, never as a wildcard like `https:`.
 - A Cloudflare feature that injects scripts (Rocket Loader, Email Obfuscation, Web Analytics auto-inject) is enabled on the zone. It must be disabled, not allowed in the CSP.
