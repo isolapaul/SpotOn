@@ -42,6 +42,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showLevelInfo, setShowLevelInfo] = useState(false);
+  // Remember which src failed (no reset effect needed; a new URL is tried automatically).
+  const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
   
   // iOS Swipe-to-Close Gesture
   const [dragStartX, setDragStartX] = useState(0);
@@ -64,6 +66,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
     if (status === 'pending') return t('pending');
     return t('rejected');
   };
+
+  // Reset the avatar fallback when the picture changes
 
   // Fetch ALL user's spots (approved + pending)
   useEffect(() => {
@@ -291,7 +295,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
           <div className="flex flex-col items-center">
             {/* Large Profile Picture */}
             <div className="relative">
-              {(user.profilePictureURL || user.photoURL) ? (
+              {(user.profilePictureURL || user.photoURL) && failedAvatarSrc !== (user.profilePictureURL || user.photoURL) ? (
                 <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 shadow-2xl bg-gray-800">
                   <Image
                     src={user.profilePictureURL || user.photoURL || ''}
@@ -300,13 +304,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     sizes="128px"
                     className="object-cover"
                     priority
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      if (target.parentElement) {
-                        target.parentElement.innerHTML = `<div class="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center"><span class="text-white text-5xl font-bold">${user.username?.charAt(0).toUpperCase() || 'U'}</span></div>`;
-                      }
-                    }}
+                    onError={() => setFailedAvatarSrc(user.profilePictureURL || user.photoURL || null)}
                   />
                 </div>
               ) : (
@@ -955,15 +953,21 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   {searchedUser && (
                     <div className="bg-white/5 border border-purple-500/30 rounded-xl p-4">
                       <div className="flex items-center gap-4 mb-4">
-                        <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-purple-500/30">
-                          <Image
-                            src={searchedUser.photoURL || '/default-avatar.png'}
-                            alt={searchedUser.username}
-                            fill
-                            sizes="64px"
-                            className="object-cover"
-                          />
-                        </div>
+                        {searchedUser.photoURL ? (
+                          <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-purple-500/30">
+                            <Image
+                              src={searchedUser.photoURL}
+                              alt={searchedUser.username}
+                              fill
+                              sizes="64px"
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-purple-500/30 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                            <span className="text-white text-xl font-bold">{(searchedUser.username?.charAt(0) || 'U').toUpperCase()}</span>
+                          </div>
+                        )}
                         <div>
                           <h4 className="text-white font-semibold">{searchedUser.username}</h4>
                           <p className="text-white/60 text-sm">{searchedUser.email}</p>
@@ -999,15 +1003,21 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   ) : (
                     adminUsers.map((admin) => (
                       <div key={admin.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4">
-                        <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500/30 flex-shrink-0">
-                          <Image
-                            src={admin.photoURL || '/default-avatar.png'}
-                            alt={admin.name}
-                            fill
-                            sizes="48px"
-                            className="object-cover"
-                          />
-                        </div>
+                        {admin.photoURL ? (
+                          <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500/30 flex-shrink-0">
+                            <Image
+                              src={admin.photoURL}
+                              alt={admin.name}
+                              fill
+                              sizes="48px"
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500/30 flex-shrink-0 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                            <span className="text-white text-lg font-bold">{(admin.name?.charAt(0) || 'U').toUpperCase()}</span>
+                          </div>
+                        )}
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">

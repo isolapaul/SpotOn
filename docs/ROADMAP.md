@@ -171,5 +171,6 @@ Additional review gates:
 | T10 Spot mutation callables | done, review PASS (after D1/D2 fixes); e2e green in CI | 1c36fcf |
 | T11a Client profiles/usernames/admin | done, review + re-review PASS; e2e green in CI | bbe47d9 |
 | T11b Client spot interactions | done, review PASS; e2e 16/16 local harness, full via CI | 4069228 |
-| T14 Harden /api/feedback | done, adversarial review + re-verify PASS | (this commit) |
+| T14 Harden /api/feedback | done, adversarial review + re-verify PASS | 478c6a1 |
+| T15 Web hardening (CSP, headers, auth proxy) | done, review PASS | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |

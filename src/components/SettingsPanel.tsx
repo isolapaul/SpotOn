@@ -49,7 +49,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 800,
-        useWebWorker: true,
+        useWebWorker: false,
       };
       
       const compressedFile = await imageCompression(file, options);
@@ -77,7 +77,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
-        useWebWorker: true,
+        useWebWorker: false,
       };
       
       const compressedFile = await imageCompression(file, options);
