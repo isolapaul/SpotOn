@@ -29,7 +29,7 @@ Line numbers are from `eee5668` (T03 removed the filter and distance state and h
   - `useUiStore` has `movedBannerVisible: boolean` (default `false`) and `setMovedBannerVisible(v)`, written by `MovedBanner` in an effect with cleanup back to `false`.
   - `page.tsx` renders `{isAppReady && !isSelectingLocation && <MovedBanner />}` **inside** the top-buttons condition block, so the banner hides whenever a panel covers the screen and during location picking.
   - `page.tsx` hides the empty-state pill while `movedBannerVisible` is true (same vertical slot).
-  - `NotificationPrompt.tsx` and `InstallGate.tsx` have `getMovedTo()` guards (untouched here).
+  - `NotificationPrompt.tsx` and `InstallGate.tsx` have `getMovedTo()` guards. The guard line is untouched (NotificationPrompt may still lose its `setNotificationPromptVisible` calls, step 1).
 - **DUP-15, two banners while selecting:**
   - page `{/* Location Selection Instructions */}` (:370-385): `absolute top-20 … z-10 glass-card px-6 py-4 max-w-sm`, text `t('clickMapToSelect')` + Cancel button;
   - MapView (:208-214): `absolute top-20 … z-[1000] glass-card px-6 py-3 pointer-events-none`, text only.
@@ -37,11 +37,14 @@ Line numbers are from `eee5668` (T03 removed the filter and distance state and h
 - **DUP-14, three location sources:**
   1. page mount effect (:143-156): `getCurrentPosition` with no options. Success → `userLocation`; error → stays `null`. Used by DiscoveryPanel (distance and "nearest" sort).
   2. MapView effect (:179-204): uses the sessionStorage cache (`userLocation`, `userLocationTime`, max age 10 min) if present. Otherwise `getCurrentPosition({enableHighAccuracy:false, timeout:10000, maximumAge:600000})`; success → cache it; **error → `DEFAULT_MAP_CENTER`**. Used for the blue dot and a one-time pan (`LocationPanner`, zoom 13).
-  3. SettingsPanel "request location" button (:311-328): `{enableHighAccuracy:true, timeout:10000}`; success → toast + `location.reload()`; error → toast.
+  3. SettingsPanel "request location" button (:311-328): `{enableHighAccuracy:true, timeout:10000}`; success → toast + `location.reload()`; error → toast. Without `navigator.geolocation` it returns silently (:313): no toast, no spinner.
+- T23 constants in `src/lib/constants.ts`: `DEFAULT_MAP_CENTER: [number, number] = [47.4979, 19.0402]`, `LOCATION_CACHE_MAX_AGE_MS = 600_000`, `GEOLOCATION_TIMEOUT_MS = 10_000`.
+- **Sign-out from Settings today:** `SettingsPanel` calls `signOut()` then its own `onClose` (:97-98). The page's `profilePanelOpen` stays `true`; `ProfilePanel` renders nothing because `!user` (ProfilePanel.tsx:102), and the top buttons stay hidden. A later profile click (signed out) sets `authModalOpen` with `profilePanelOpen` still `true`, so the top buttons stay hidden behind the auth modal, and after sign-in the profile panel reappears.
+- **CLAUDE.md §3** describes `src/app/page.tsx` as "Orchestrator: loads auth/spots/map, owns panel open/close state"; after this task neither half is true.
 - `SpotDetailsPanel` receives the `selectedSpot` **snapshot**. Store updates after actions (new review, approve, edit, primary image) do not reach the open panel until it is reopened.
 
 ## Files
-- Modify: `src/store/useUiStore.ts`, `src/app/page.tsx`, `src/components/MapView.tsx`, `src/components/NotificationPrompt.tsx` (only if `notificationPromptVisible` is removed: it writes `setNotificationPromptVisible` at :48-50, :56 and :64), `src/components/SettingsPanel.tsx`, `src/components/DiscoveryPanel.tsx` (location source only), `src/components/spot-details/SpotDetailsPanel.tsx` (receive `spotId`), `src/components/profile/ProfilePanel.tsx` / `DiscoveryPanel` / `AuthModal` / `AddSpotModal` (open/close props wiring only).
+- Modify: `CLAUDE.md` (§3 `page.tsx` line only, step 8), `src/store/useUiStore.ts`, `src/app/page.tsx`, `src/components/MapView.tsx`, `src/components/NotificationPrompt.tsx` (only if `notificationPromptVisible` is removed: it writes `setNotificationPromptVisible` at :48-50, :56 and :64), `src/components/SettingsPanel.tsx`, `src/components/DiscoveryPanel.tsx` (location source only), `src/components/spot-details/SpotDetailsPanel.tsx` (receive `spotId`), `src/components/profile/ProfilePanel.tsx` / `DiscoveryPanel` / `AuthModal` / `AddSpotModal` (open/close props wiring only).
 - Create:
   - `src/hooks/useUserLocation.ts` (backed by a small store slice in `src/store/useLocationStore.ts`)
   - `src/hooks/useAppBootstrap.ts` (loading orchestration moved out of page)
@@ -60,6 +63,7 @@ Line numbers are from `eee5668` (T03 removed the filter and distance state and h
      prevMapTheme: MapTheme | null;
      openPanel(p: ActivePanel): void;           // replaces whatever is open
      closePanel(): void;                        // → 'none'
+     closeSpotPanel(spotId: string): void;      // → 'none' only if activePanel is still { type: 'spot', spotId }; otherwise no change
      startSelectingLocation(currentTheme: MapTheme): void;  // prevMapTheme = currentTheme; selecting = true; pendingLocation = null; setTheme('satellite')
      cancelSelectingLocation(): void;           // selecting = false; restore theme if prevMapTheme; prevMapTheme = null
      selectLocation(loc): void;                 // pendingLocation = loc; selecting = false; activePanel = 'addSpot'
@@ -68,12 +72,15 @@ Line numbers are from `eee5668` (T03 removed the filter and distance state and h
      // + T19's movedBannerVisible / setMovedBannerVisible, unchanged
    }
    ```
-   - Theme changes call `useMapThemeStore.getState().setTheme`. Not persisted.
+   - Theme changes call `useMapThemeStore.getState().setTheme`. `prevMapTheme` is not persisted; `setTheme` persists as today.
    - Add a selector helper `isSpotPanel(p): p is { type: 'spot'; spotId: string }`.
    - Selectors used by components must return primitives or stable references (zustand 5, T31).
 2. **`page.tsx`:**
    - replace the 7 booleans and objects with the store;
-   - move loading orchestration (the auth/spots/map flags, and the 300 and 500 ms timers with their T21 cleanups. `initAdminListener` was removed by T11a; admin listeners live in the user store) into `useAppBootstrap()`, which returns `{ isAppReady, onMapLoad }`;
+   - move loading orchestration into `useAppBootstrap()`, which returns `{ isAppReady, onMapLoad }`. The hook explicitly owns:
+     - the `initAuth()` and `fetchSpots()` calls (`initAdminListener` was removed by T11a; admin listeners live in the user store);
+     - the auth/spots/map flags and the 300 and 500 ms timers, with their T21 cleanups (clear each timer on unmount);
+     - T21's BUG-01 spots-listener cleanup, moved verbatim: `stopSpots()`, or `useSpotStore.getState().unsubscribeSpots` read at cleanup time, whichever T21 shipped. Never a render-time `unsubscribeSpots` value;
    - move the role filter into `useVisibleSpots()`;
    - the handlers become:
      - add click: `user ? startSelectingLocation(theme) : openPanel('auth')`
@@ -85,8 +92,14 @@ Line numbers are from `eee5668` (T03 removed the filter and distance state and h
    - Top buttons are hidden iff `activePanel` is `'profile'`, `'discovery'` or a spot.
    - Keep `{isAppReady && !selectingLocation && <MovedBanner />}` inside the top-buttons block (T19).
    - Empty state: `visibleSpots.length === 0 && !selectingLocation && !movedBannerVisible`.
-3. **SpotDetailsPanel** receives `spotId` and reads `useSpotStore(s => s.spots.find(x => x.id === spotId))`. If it is not found (deleted), call `closePanel()` in an effect.
+3. **SpotDetailsPanel** receives `spotId` and reads `const spot = useSpotStore(s => s.spots.find(x => x.id === spotId))`. If it is not found (deleted), close it in an effect:
+   ```ts
+   useEffect(() => { if (spotId && !spot) closeSpotPanel(spotId); }, [spotId, spot]);
+   ```
+   `closeSpotPanel` closes only if `activePanel` is still that spot, so a late effect never closes a different panel the user has opened since.
+   - Remove T11b's now-redundant live lookup (`const fresh = useSpotStore(...) ?? spot`, possibly moved by T28). `spot` is now the live copy; use it wherever `fresh` was used (highlight state, gallery images).
 4. **DUP-15:** delete MapView's `isAddingSpot &&` banner block. Keep the page banner (with Cancel). MapView still gets `isAddingSpot` for click handling.
+   - If MapView no longer uses `t` after this, remove its translation hook call and the import (`useT` after T24, or `useLanguageStore` if still present).
 5. **DUP-14, one location hook.** `useLocationStore` holds `{ status: 'idle' | 'pending' | 'granted' | 'denied', location: LatLng | null }` and `request({ highAccuracy?: boolean })`:
    - It reuses the sessionStorage cache (same keys, same 10-min rule) on the first automatic request.
    - On success it writes the cache and sets `status: 'granted'`.
