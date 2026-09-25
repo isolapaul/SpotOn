@@ -165,7 +165,8 @@ function startAdminListeners(uid: string, set: SetState) {
           (error) => {
             console.error('Admin list listener error:', error);
             adminListUnsub = null; // dead after an error; allow a restart on the next admin snapshot
-            set({ isAdmin: false, isSuperAdmin: false });
+            // Admin status is owned by the own-doc listener above; a failed list only empties the list.
+            set({ adminUsers: [] });
           },
         );
       }
