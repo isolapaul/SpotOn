@@ -16,7 +16,7 @@ import MapThemeSwitcher from '@/components/MapThemeSwitcher';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
 import { useUserStore } from '@/store/useUserStore';
 import { useMapThemeStore, type MapTheme } from '@/store/useMapThemeStore';
-import { useSpotStore, isAdmin } from '@/store/useSpotStore';
+import { useSpotStore } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import type { Spot } from '@/store/useSpotStore';
 
@@ -46,7 +46,7 @@ export default function Home() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [discoveryPanelOpen, setDiscoveryPanelOpen] = useState(false);
   
-  const { user, needsUsername, setNeedsUsername, initAuth, initAdminListener } = useUserStore();
+  const { user, needsUsername, setNeedsUsername, initAuth } = useUserStore();
   const { theme: currentMapTheme, setTheme } = useMapThemeStore();
   const { spots, fetchSpots, unsubscribeSpots } = useSpotStore();
   const { t } = useLanguageStore();
@@ -54,7 +54,7 @@ export default function Home() {
   const [prevMapTheme, setPrevMapTheme] = useState<MapTheme | null>(null);
 
   // Check if current user is admin
-  const userIsAdmin = useMemo(() => isAdmin(user?.email), [user?.email]);
+  const userIsAdmin = useUserStore((s) => s.isAdmin);
 
   // Filter spots based on user role: admins see all spots, everyone else only approved ones
   const visibleSpots = useMemo(
@@ -81,9 +81,6 @@ export default function Home() {
       await initAuth();
       setLoadingStates(prev => ({ ...prev, auth: true }));
     };
-    
-    // Initialize admin emails listener
-    const unsubscribeAdmins = initAdminListener();
     
     // Fetch spots
     const initializeSpots = async () => {
@@ -115,7 +112,6 @@ export default function Home() {
     
     // Cleanup
     return () => {
-      unsubscribeAdmins();
       // Clean up spots listener
       if (unsubscribeSpots) {
         unsubscribeSpots();

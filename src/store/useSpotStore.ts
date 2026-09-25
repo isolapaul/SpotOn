@@ -16,25 +16,6 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 import imageCompression from 'browser-image-compression';
 
-let cachedAdminEmails: string[] = [];
-
-export const setCachedAdminEmails = (emails: string[]) => {
-  cachedAdminEmails = emails;
-};
-
-export const isSuperAdmin = (email: string | undefined): boolean => {
-  if (!email) return false;
-  const superAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-  if (!superAdminEmail) return false;
-  return email.toLowerCase() === superAdminEmail.toLowerCase();
-};
-
-export const isAdmin = (email: string | undefined): boolean => {
-  if (!email) return false;
-  if (isSuperAdmin(email)) return true;
-  return cachedAdminEmails.some(adminEmail => adminEmail.toLowerCase() === email.toLowerCase());
-};
-
 export interface Review {
   id: string;
   userId: string;
@@ -92,7 +73,7 @@ interface SpotStore {
   error: string | null;
   unsubscribeSpots: (() => void) | null;
   fetchSpots: () => Promise<void>;
-  addSpot: (spotData: Omit<Spot, 'id' | 'imageUrls' | 'createdAt' | 'status' | 'primaryImageIndex'>, imageFiles: File[], primaryIndex: number, userId: string, userEmail?: string) => Promise<void>;
+  addSpot: (spotData: Omit<Spot, 'id' | 'imageUrls' | 'createdAt' | 'status' | 'primaryImageIndex'>, imageFiles: File[], primaryIndex: number, userId: string, isAdmin: boolean) => Promise<void>;
   addReview: (spotId: string, review: Omit<Review, 'id' | 'createdAt'>) => Promise<void>;
   addSpotImages: (spotId: string, imageFiles: File[], userId: string) => Promise<void>;
   migrateSpotImages: (spotId: string) => Promise<void>;
@@ -185,7 +166,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
     });
   },
 
-  addSpot: async (spotData, imageFiles, primaryIndex, userId, userEmail) => {
+  addSpot: async (spotData, imageFiles, primaryIndex, userId, isAdmin) => {
     try {
       set({ isLoading: true, error: null });
 
@@ -214,7 +195,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         spotImages,
         primaryImageIndex: imageUrls.length > 0 ? primaryIndex : 0,
         createdBy: userId,
-        status: isAdmin(userEmail) ? 'approved' : 'pending',
+        status: isAdmin ? 'approved' : 'pending',
         createdAt: serverTimestamp(),
       });
 

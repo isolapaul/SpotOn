@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db, app } from '@/lib/firebase';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
@@ -14,10 +14,13 @@ const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 // This ensures only ONE listener is active across all hook instances
 let listenerSetup = false;
 
+// Uid whose FCM token was silently refreshed this page session (once per sign-in).
+let silentRefreshUid: string | null = null;
+
 export const usePushNotifications = () => {
   const [isPermissionGranted, setIsPermissionGranted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useUserStore();
+  const { user, loading: authLoading } = useUserStore();
   const { language } = useLanguageStore();
   const { addNotification } = useNotificationStore();
   
@@ -72,14 +75,61 @@ export const usePushNotifications = () => {
       newPendingSpot: true,
     };
 
+    // Never overwrite the user's stored notification choices (BUG-02)
+    const userSnap = await getDoc(userRef);
+    const hasSettings = Boolean(userSnap.data()?.notificationSettings);
+
     await updateDoc(userRef, {
       fcmTokens: arrayUnion(token),
-      language: language,
+      language: language ?? 'hu',
       notificationsEnabled: true,
       lastTokenUpdate: new Date().toISOString(),
-      ...(user.notificationSettings ? {} : { notificationSettings: defaultSettings }),
+      ...(hasSettings ? {} : { notificationSettings: defaultSettings }),
     });
+
+    // Remembered so signOut can remove this device's token (SEC-14)
+    useUserStore.getState().rememberFcmToken(token);
   };
+
+  // After sign-in / user load: if this device already granted permission and has the FCM service
+  // worker, silently re-register its token (sign-out deletes it). Never prompts, no UI; skipped
+  // when the user turned notifications off in Settings.
+  useEffect(() => {
+    if (authLoading) return; // wait for auth: the persisted user may be stale
+    if (!user) {
+      silentRefreshUid = null;
+      return;
+    }
+    if (silentRefreshUid === user.uid) return;
+    silentRefreshUid = user.uid;
+
+    const refresh = async () => {
+      try {
+        if (!isNotificationSupported() || globalThis.Notification.permission !== 'granted') return;
+        if (!(await isSupported())) return;
+        if (!('serviceWorker' in navigator) || !VAPID_KEY) return;
+        const registration = await navigator.serviceWorker.getRegistration('/');
+        if (!registration) return;
+
+        const userSnap = await getDoc(doc(db, 'users', user.uid));
+        // Only re-register users who explicitly opted in; never opt someone in silently (shared devices).
+        if (userSnap.data()?.notificationsEnabled !== true) return;
+
+        const token = await getToken(getMessaging(app), {
+          vapidKey: VAPID_KEY,
+          serviceWorkerRegistration: registration,
+        });
+        // Bail if the user signed out (or switched) while we were awaiting.
+        if (useUserStore.getState().user?.uid !== user.uid) return;
+        if (token) await saveUserToken(token);
+      } catch (error) {
+        console.error('Silent FCM token refresh failed:', error);
+      }
+    };
+    void refresh();
+    // Runs once per signed-in uid; saveUserToken reads the current user/language from this render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid, authLoading]);
 
   // Initialize push notifications
   const initializePush = async (): Promise<boolean> => {

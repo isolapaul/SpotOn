@@ -10,8 +10,7 @@ import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { getUserNameColor } from '@/lib/levelUtils';
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { fetchPublicProfile } from '@/store/publicProfiles';
 
 interface SpotInfoWindowProps {
   spot: Spot;
@@ -68,33 +67,22 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
     if (!spot?.createdBy) return;
     let isMounted = true;
 
-    const fetchCreatorInfo = async () => {
-      try {
-        const userRef = doc(db, 'users', spot.createdBy);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists() && isMounted) {
-          const data = userSnap.data() as { username?: string; customNameColor?: string };
-          setCreatorName(data.username || null);
-          setCreatorCustomNameColor(data.customNameColor);
-        }
-
-        const spotsRef = collection(db, 'spots');
-        const q = query(spotsRef, where('createdBy', '==', spot.createdBy));
-        const snapshot = await getDocs(q);
-        if (isMounted) {
-          setCreatorSpotsCount(snapshot.size);
-        }
-      } catch (error) {
-        console.error('Failed to fetch creator info:', error);
-      }
-    };
-
-    if (spot.createdBy === user?.uid) {
+    const isSelf = spot.createdBy === user?.uid;
+    if (isSelf) {
       setCreatorName(user.username || null);
       setCreatorCustomNameColor(user.customNameColor);
     }
 
-    fetchCreatorInfo();
+    fetchPublicProfile(spot.createdBy)
+      .then((p) => {
+        if (!isMounted) return;
+        setCreatorSpotsCount(p?.spotsCount ?? 0);
+        if (!isSelf) {
+          setCreatorName(p?.username ?? null);
+          setCreatorCustomNameColor(p?.customNameColor ?? undefined);
+        }
+      })
+      .catch((error) => console.error('Failed to fetch creator info:', error));
 
     return () => {
       isMounted = false;

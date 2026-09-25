@@ -3,7 +3,7 @@
 import { X, MapPin, Heart, Settings, Shield, Clock, UserPlus, Trash2, Pencil, Star, Plus, TrendingUp } from 'lucide-react';
 import Image from 'next/image';
 import { useUserStore } from '@/store/useUserStore';
-import { useSpotStore, isAdmin, isSuperAdmin } from '@/store/useSpotStore';
+import { useSpotStore } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -19,14 +19,14 @@ interface ProfilePanelProps {
 }
 
 export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelProps>) {
-  const { user, adminUsers, addAdmin, removeAdmin, searchUserByEmail, updateUsername, highlightSpot, unhighlightSpot, updateCustomNameColor, updateCustomNameFont } = useUserStore();
+  const { user, adminUsers, addAdmin, removeAdmin, lookupUserByEmail, updateUsername, highlightSpot, unhighlightSpot, updateCustomNameColor, updateCustomNameFont } = useUserStore();
   const { spots, approveSpot } = useSpotStore();
   const { t } = useLanguageStore();
   const { showToast } = useToastStore();
   const [activeTab, setActiveTab] = useState<'my-spots' | 'favorites' | 'pending' | 'admin'>('my-spots');
   const [myAllSpots, setMyAllSpots] = useState<Spot[]>([]);
   const [adminEmailInput, setAdminEmailInput] = useState('');
-  const [searchedUser, setSearchedUser] = useState<any>(null);
+  const [searchedUser, setSearchedUser] = useState<{ uid: string; email: string; username: string; photoURL: string } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [newUsername, setNewUsername] = useState('');
@@ -47,8 +47,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const [dragCurrentX, setDragCurrentX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   
-  const userIsAdmin = isAdmin(user?.email);
-  const userIsSuperAdmin = isSuperAdmin(user?.email);
+  const userIsAdmin = useUserStore((s) => s.isAdmin);
+  const userIsSuperAdmin = useUserStore((s) => s.isSuperAdmin);
 
   // Helper function for spot status styling
   const getStatusClassName = (status: string) => {
@@ -120,7 +120,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
 
     setIsSearching(true);
     try {
-      const foundUser = await searchUserByEmail(adminEmailInput.trim());
+      const foundUser = await lookupUserByEmail(adminEmailInput.trim());
       if (foundUser) {
         setSearchedUser(foundUser);
       } else {

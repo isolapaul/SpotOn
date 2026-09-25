@@ -167,5 +167,6 @@ Additional review gates:
 | T06 Firebase JS SDK 12 | done, review PASS | 797b7ae |
 | T08 Functions admin + notifications | done, review PASS; e2e green in CI | c01fc77 |
 | T09 Profiles, usernames, spotsCount | done, review PASS; e2e green in CI | a16f7a4 |
-| T10 Spot mutation callables | done, review PASS (after D1/D2 fixes); e2e via CI | (this commit) |
+| T10 Spot mutation callables | done, review PASS (after D1/D2 fixes); e2e green in CI | 1c36fcf |
+| T11a Client profiles/usernames/admin | done, review + re-review PASS; e2e via CI | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |

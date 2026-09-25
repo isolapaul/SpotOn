@@ -39,7 +39,7 @@ async function seed(): Promise<void> {
     lastLoginAt: t,
   });
 
-  for (const account of [E2E.user, E2E.admin, E2E.superAdmin, E2E.level5]) {
+  for (const account of [E2E.user, E2E.admin, E2E.superAdmin, E2E.level5, E2E.rename]) {
     await auth.createUser({ uid: account.uid, email: account.email, password: E2E.password });
     await db.doc(`users/${account.uid}`).set(userDoc(account.uid, account.username, account.email));
   }

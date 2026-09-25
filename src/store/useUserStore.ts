@@ -7,32 +7,19 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
-  onAuthStateChanged 
+  onAuthStateChanged,
+  type User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, query, onSnapshot, deleteDoc, getDocs, where } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, db, googleProvider, storage } from '@/lib/firebase';
-import { setCachedAdminEmails, isSuperAdmin } from '@/store/useSpotStore';
+import { httpsCallable } from 'firebase/functions';
+import { getMessaging, getToken, deleteToken, isSupported } from 'firebase/messaging';
+import { app, auth, db, functions, googleProvider, storage } from '@/lib/firebase';
+import { mapUserDoc, type User } from '@/lib/mapUserDoc';
+import { generateUsername, normalizeUsername } from '@/lib/username';
 import imageCompression from 'browser-image-compression';
 
-interface User {
-  uid: string;
-  username: string; // Only username, no separate display name
-  email: string;
-  photoURL?: string;
-  profilePictureURL?: string;
-  profileBannerURL?: string;
-  savedSpots: string[];
-  highlightedSpots?: string[]; // Array of spot IDs user highlighted (max based on level)
-  customNameColor?: string; // Custom name color for level 5
-  customNameFont?: string; // Custom font for level 5
-  // Notification Settings
-  notificationSettings?: {
-    spotApproved: boolean; // Get notified when spot is approved
-    spotReviewed: boolean; // Get notified when spot receives reviews or likes
-    newPendingSpot: boolean; // Get notified for new pending spots (admins only)
-  };
-}
+export type { User } from '@/lib/mapUserDoc';
 
 interface AdminUser {
   id: string;
@@ -41,13 +28,22 @@ interface AdminUser {
   photoURL?: string;
   addedAt: any;
   addedBy: string;
+  role?: string;
+}
+
+export interface LookedUpUser {
+  uid: string;
+  email: string;
+  username: string;
+  photoURL: string;
 }
 
 interface UserStore {
   user: User | null;
   loading: boolean;
   needsUsername: boolean;
-  adminEmails: string[];
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
   adminUsers: AdminUser[];
   setUser: (user: User | null) => void;
   signInWithGoogle: () => Promise<void>;
@@ -56,10 +52,9 @@ interface UserStore {
   signOut: () => Promise<void>;
   initAuth: () => Promise<void>;
   toggleFavorite: (spotId: string) => Promise<void>;
-  initAdminListener: () => () => void;
   addAdmin: (email: string) => Promise<void>;
   removeAdmin: (adminId: string) => Promise<void>;
-  searchUserByEmail: (email: string) => Promise<User | null>;
+  lookupUserByEmail: (email: string) => Promise<LookedUpUser | null>;
   checkUsernameAvailable: (username: string) => Promise<boolean>;
   updateUsername: (username: string) => Promise<void>;
   updateProfilePicture: (file: File) => Promise<void>;
@@ -69,7 +64,10 @@ interface UserStore {
   unhighlightSpot: (spotId: string) => Promise<void>;
   updateCustomNameColor: (color: string) => Promise<void>;
   updateCustomNameFont: (font: string) => Promise<void>;
+  rememberFcmToken: (token: string) => void;
 }
+
+type SetState = (partial: Partial<UserStore>) => void;
 
 // Compress profile images before upload (max 1920px, ~1MB)
 async function compressProfileImage(file: File): Promise<File> {
@@ -81,19 +79,224 @@ async function compressProfileImage(file: File): Promise<File> {
   return imageCompression(file, options);
 }
 
-// Generate a username from display name
-function generateUsername(displayName: string): string {
-  const base = displayName
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]/g, '')
-    .slice(0, 12);
-  const suffix = Math.floor(Math.random() * 1000000);
-  return `${base || 'user'}${suffix}`;
+// Callables (T08/T09, region europe-west3 via `functions`)
+const claimUsernameCallable = httpsCallable<{ username: string }, { username: string }>(functions, 'claimUsername');
+const lookupUserByEmailCallable = httpsCallable<{ email: string }, LookedUpUser>(functions, 'lookupUserByEmail');
+const addAdminCallable = httpsCallable<{ email: string }, unknown>(functions, 'addAdmin');
+const removeAdminCallable = httpsCallable<{ uid: string }, unknown>(functions, 'removeAdmin');
+const updateNameStyleCallable = httpsCallable<{ color?: string; font?: string }, unknown>(functions, 'updateNameStyle');
+
+function errorCode(error: unknown): unknown {
+  return typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
+}
+
+function authInfoOf(firebaseUser: FirebaseUser) {
+  return { email: firebaseUser.email, photoURL: firebaseUser.photoURL };
+}
+
+/** The current client-side message for an invalid username, or null when it is valid. */
+function usernameValidationError(name: string): string | null {
+  if (name.length < 3 || name.length > 20) return 'Username must be 3-20 characters';
+  if (!/^[a-z0-9_]+$/.test(name)) return 'Username can only contain letters, numbers, and underscores';
+  return null;
 }
 
 // Module-level variable to track the onAuthStateChanged unsubscribe function
 // This prevents duplicate listeners when initAuth is called multiple times
 let authListenerUnsub: (() => void) | null = null;
+
+// > 0 while a popup/redirect/email-signup flow may be creating a user; onAuthStateChanged
+// then leaves user-doc creation and username claiming to that flow. A counter, so
+// overlapping flows never clear each other's guard.
+let newUserSetupDepth = 0;
+
+// Admin identity listeners: own admins/{uid} doc, plus the admins list while admin.
+let adminDocUnsub: (() => void) | null = null;
+let adminListUnsub: (() => void) | null = null;
+let adminListenerUid: string | null = null;
+
+function stopAdminList(set: SetState) {
+  if (adminListUnsub) {
+    adminListUnsub();
+    adminListUnsub = null;
+  }
+  set({ adminUsers: [] });
+}
+
+function stopAdminListeners(set: SetState) {
+  if (adminDocUnsub) {
+    adminDocUnsub();
+    adminDocUnsub = null;
+  }
+  adminListenerUid = null;
+  stopAdminList(set);
+  set({ isAdmin: false, isSuperAdmin: false });
+}
+
+function startAdminListeners(uid: string, set: SetState) {
+  if (adminDocUnsub && adminListenerUid === uid) return;
+  stopAdminListeners(set);
+  adminListenerUid = uid;
+  adminDocUnsub = onSnapshot(
+    doc(db, 'admins', uid),
+    (snap) => {
+      const isAdmin = snap.exists();
+      const isSuperAdmin = isAdmin && snap.data().role === 'super';
+      set({ isAdmin, isSuperAdmin });
+      if (!isAdmin) {
+        stopAdminList(set);
+      } else if (!adminListUnsub) {
+        adminListUnsub = onSnapshot(
+          collection(db, 'admins'),
+          (snapshot) => {
+            const adminUsers = snapshot.docs
+              .map((d) => ({ id: d.id, ...d.data() }) as AdminUser)
+              .filter((a) => a.role !== 'super');
+            set({ adminUsers });
+          },
+          (error) => {
+            console.error('Admin list listener error:', error);
+            adminListUnsub = null; // dead after an error; allow a restart on the next admin snapshot
+            set({ isAdmin: false, isSuperAdmin: false });
+          },
+        );
+      }
+    },
+    (error) => {
+      console.error('Admin listener error:', error);
+      set({ isAdmin: false, isSuperAdmin: false });
+    },
+  );
+}
+
+/** Creates the new user's own doc (never with a username: that goes through claimUsername). */
+async function createUserDoc(firebaseUser: FirebaseUser): Promise<Record<string, unknown>> {
+  const data = {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email || '',
+    photoURL: firebaseUser.photoURL || '',
+    profilePictureURL: firebaseUser.photoURL || '',
+    profileBannerURL: '',
+    savedSpots: [],
+  };
+  await setDoc(doc(db, 'users', firebaseUser.uid), {
+    ...data,
+    createdAt: serverTimestamp(),
+    lastLoginAt: serverTimestamp(),
+  }, { merge: true });
+  return data;
+}
+
+/** Claims a generated username, retrying with a fresh one on collision. Null on failure (logged). */
+async function claimGeneratedUsername(displayName: string): Promise<string | null> {
+  const MAX_RETRIES = 5;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result = await claimUsernameCallable({ username: generateUsername(displayName) });
+      return result.data.username;
+    } catch (error) {
+      const code = errorCode(error);
+      // invalid-argument: a rare too-short generated name (1-char base + 1-digit suffix)
+      if (code === 'functions/already-exists' || code === 'functions/invalid-argument') continue;
+      console.error('Failed to claim generated username:', error);
+      return null;
+    }
+  }
+  console.error('Failed to claim generated username: all candidates taken');
+  return null;
+}
+
+function withUsername(data: Record<string, unknown>, username: string | null): Record<string, unknown> {
+  return username ? { ...data, username } : data;
+}
+
+/** Loads the signed-in user's doc into the store, creating it (plus a generated username) if missing. */
+async function loadOrCreateUser(firebaseUser: FirebaseUser, set: SetState): Promise<void> {
+  const userSnap = await getDoc(doc(db, 'users', firebaseUser.uid));
+  if (newUserSetupDepth > 0) {
+    // A sign-in flow started meanwhile; it sets the user itself
+    return;
+  }
+
+  if (userSnap.exists()) {
+    const data = userSnap.data();
+
+    // Check if username needs to be set
+    if (!data.username) {
+      set({ needsUsername: true });
+    }
+
+    set({ user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data), loading: false });
+  } else {
+    // User document doesn't exist yet (shouldn't happen normally)
+    // Create it now to prevent issues
+    let data = await createUserDoc(firebaseUser);
+    data = withUsername(data, await claimGeneratedUsername(firebaseUser.displayName || 'user'));
+
+    set({
+      user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data),
+      loading: false,
+      needsUsername: true,
+    });
+  }
+}
+
+/**
+ * Ends a new-user flow's guard. If the flow failed after Firebase Auth signed the user in,
+ * the auth listener skipped that user, so load (or create) it now instead of leaving the
+ * UI signed out while Auth is signed in.
+ */
+function endNewUserSetup(set: SetState, getUser: () => User | null, recover = true) {
+  newUserSetupDepth = Math.max(0, newUserSetupDepth - 1);
+  const current = auth.currentUser;
+  if (recover && newUserSetupDepth === 0 && current && getUser()?.uid !== current.uid) {
+    loadOrCreateUser(current, set).catch((error) => {
+      console.error('Failed to load signed-in user:', error);
+    });
+  }
+}
+
+// This device's FCM token, remembered so sign-out can remove it (SEC-14).
+const FCM_TOKEN_KEY = 'spoton-fcm-token';
+let rememberedFcmToken: string | null = null;
+
+function readRememberedFcmToken(): string | null {
+  if (rememberedFcmToken) return rememberedFcmToken;
+  try {
+    return globalThis.localStorage?.getItem(FCM_TOKEN_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function clearRememberedFcmToken() {
+  rememberedFcmToken = null;
+  try {
+    globalThis.localStorage?.removeItem(FCM_TOKEN_KEY);
+  } catch {
+    // storage unavailable
+  }
+}
+
+/** Deletes this device's FCM registration. Never prompts for permission. */
+async function deleteDeviceFcmToken() {
+  try {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (!(await isSupported())) return;
+    if (!('serviceWorker' in navigator)) return;
+    // The FCM service worker is registered with scope '/' by usePushNotifications.
+    const registration = await navigator.serviceWorker.getRegistration('/');
+    if (!registration) return;
+    const messaging = getMessaging(app);
+    await getToken(messaging, {
+      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
+    await deleteToken(messaging);
+  } catch (error) {
+    console.error('Failed to delete FCM token:', error);
+  }
+}
 
 export const useUserStore = create<UserStore>()(
   persist(
@@ -101,13 +304,15 @@ export const useUserStore = create<UserStore>()(
       user: null,
       loading: true,
       needsUsername: false,
-      adminEmails: [],
+      isAdmin: false,
+      isSuperAdmin: false,
       adminUsers: [],
       
       setUser: (user) => set({ user, loading: false }),
       setNeedsUsername: (needs) => set({ needsUsername: needs }),
       
       signInWithGoogle: async () => {
+        newUserSetupDepth++;
         try {
           let result;
           
@@ -135,70 +340,39 @@ export const useUserStore = create<UserStore>()(
           const userRef = doc(db, 'users', firebaseUser.uid);
           const userSnap = await getDoc(userRef);
           
-          let username: string | undefined;
-          let profilePictureURL: string | undefined;
-          let profileBannerURL: string | undefined;
+          let data: Record<string, unknown>;
           let needsUsernameSetup = false;
           
           if (userSnap.exists()) {
             // EXISTING USER: Only update lastLoginAt, preserve all other data
-            const data = userSnap.data();
-            username = data.username;
-            profilePictureURL = data.profilePictureURL || data.photoURL || firebaseUser.photoURL || '';
-            profileBannerURL = data.profileBannerURL || '';
+            data = userSnap.data();
+            await updateDoc(userRef, {
+              lastLoginAt: serverTimestamp()
+            });
             
-            // If no custom username, set one and prompt to change it
-            if (!username) {
-              username = generateUsername(firebaseUser.displayName || 'user');
-              await updateDoc(userRef, { 
-                username,
-                lastLoginAt: serverTimestamp() 
-              });
+            // If no custom username, claim one and prompt to change it
+            if (!data.username) {
+              data = withUsername(data, await claimGeneratedUsername(firebaseUser.displayName || 'user'));
               needsUsernameSetup = true;
-            } else {
-              // Just update the login timestamp for existing user
-              await updateDoc(userRef, {
-                lastLoginAt: serverTimestamp()
-              });
             }
           } else {
-            // NEW USER: Create the document with initial data
-            username = generateUsername(firebaseUser.displayName || 'user');
-            profilePictureURL = firebaseUser.photoURL || '';
-            profileBannerURL = '';
+            // NEW USER: Create the document, then claim a generated username
+            data = await createUserDoc(firebaseUser);
+            data = withUsername(data, await claimGeneratedUsername(firebaseUser.displayName || 'user'));
             needsUsernameSetup = true;
-            
-            // Create new user document with merge option for safety
-            await setDoc(userRef, {
-              uid: firebaseUser.uid,
-              username,
-              email: firebaseUser.email || '',
-              photoURL: firebaseUser.photoURL || '',
-              profilePictureURL: profilePictureURL,
-              profileBannerURL: '',
-              savedSpots: [],
-              createdAt: serverTimestamp(),
-              lastLoginAt: serverTimestamp(),
-            }, { merge: true });
           }
           
-          // Set user in store
-          const userData: User = {
-            uid: firebaseUser.uid,
-            username,
-            email: firebaseUser.email || '',
-            photoURL: firebaseUser.photoURL || '',
-            profilePictureURL,
-            profileBannerURL,
-            savedSpots: userSnap.exists() ? userSnap.data().savedSpots : [],
-            highlightedSpots: userSnap.exists() ? userSnap.data().highlightedSpots : [],
-          };
-          
-          set({ user: userData, loading: false, needsUsername: needsUsernameSetup });
+          set({
+            user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data),
+            loading: false,
+            needsUsername: needsUsernameSetup,
+          });
         } catch (error) {
           console.error('Google Sign-In error:', error);
           set({ loading: false });
           throw error;
+        } finally {
+          endNewUserSetup(set, () => get().user);
         }
       },
 
@@ -219,23 +393,12 @@ export const useUserStore = create<UserStore>()(
               lastLoginAt: serverTimestamp()
             });
             
-            const userData: User = {
-              uid: firebaseUser.uid,
-              username: data.username || 'user',
-              email: firebaseUser.email || '',
-              photoURL: data.photoURL || '',
-              profilePictureURL: data.profilePictureURL || data.photoURL || '',
-              profileBannerURL: data.profileBannerURL || '',
-              savedSpots: data.savedSpots || [],
-              highlightedSpots: data.highlightedSpots || [],
-            };
-            
             // Check if username needs to be set
             if (!data.username) {
               set({ needsUsername: true });
             }
             
-            set({ user: userData, loading: false });
+            set({ user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data), loading: false });
           }
         } catch (error) {
           set({ loading: false });
@@ -244,50 +407,64 @@ export const useUserStore = create<UserStore>()(
       },
 
       signUpWithEmail: async (email: string, password: string, username: string) => {
+        newUserSetupDepth++;
         try {
           const result = await createUserWithEmailAndPassword(auth, email, password);
           const firebaseUser = result.user;
           
-          // Create user document in Firestore
-          const userRef = doc(db, 'users', firebaseUser.uid);
-          await setDoc(userRef, {
-            uid: firebaseUser.uid,
-            username: username.trim().toLowerCase(),
-            email: firebaseUser.email || '',
-            photoURL: '',
-            profilePictureURL: '',
-            profileBannerURL: '',
-            savedSpots: [],
-            createdAt: serverTimestamp(),
-            lastLoginAt: serverTimestamp(),
-          }, { merge: true });
+          // Create user document in Firestore (without username), then claim the chosen name
+          let data = await createUserDoc(firebaseUser);
+          let needsUsernameSetup = false;
+          try {
+            const claimed = await claimUsernameCallable({ username: normalizeUsername(username) });
+            data = withUsername(data, claimed.data.username);
+          } catch (error) {
+            const code = errorCode(error);
+            if (code === 'functions/already-exists' || code === 'functions/invalid-argument') {
+              // Chosen name unavailable: claim a generated one and let the username modal ask again
+              data = withUsername(data, await claimGeneratedUsername(firebaseUser.displayName || 'user'));
+            } else {
+              // Claim failed otherwise (e.g. callable unavailable): the doc exists, so sign the
+              // user in and let the username modal ask again
+              console.error('Failed to claim username:', error);
+            }
+            needsUsernameSetup = true;
+          }
           
-          // Set user in store
-          const userData: User = {
-            uid: firebaseUser.uid,
-            username: username.trim().toLowerCase(),
-            email: firebaseUser.email || '',
-            photoURL: '',
-            profilePictureURL: '',
-            profileBannerURL: '',
-            savedSpots: [],
-            highlightedSpots: [],
-          };
-          
-          set({ user: userData, loading: false });
+          set({
+            user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data),
+            loading: false,
+            needsUsername: needsUsernameSetup,
+          });
         } catch (error) {
           set({ loading: false });
           throw error;
+        } finally {
+          endNewUserSetup(set, () => get().user);
         }
       },
       
       signOut: async () => {
-        try {
-          await firebaseSignOut(auth);
-          set({ user: null, loading: false });
-        } catch (error) {
-          throw error;
+        const { user } = get();
+        const token = readRememberedFcmToken();
+
+        // Remove this device's push token from the user doc (primary cleanup, SEC-14)
+        if (token && user) {
+          try {
+            await updateDoc(doc(db, 'users', user.uid), { fcmTokens: arrayRemove(token) });
+          } catch (error) {
+            console.error('Failed to remove FCM token:', error);
+          }
         }
+        if (token) {
+          await deleteDeviceFcmToken();
+        }
+        clearRememberedFcmToken();
+
+        stopAdminListeners(set);
+
+        await firebaseSignOut(auth);
+        set({ user: null, loading: false });
       },
       
       initAuth: async () => {
@@ -298,6 +475,7 @@ export const useUserStore = create<UserStore>()(
         }
 
         // Check for redirect result first (handles signInWithRedirect flow)
+        newUserSetupDepth++;
         try {
           const redirectResult = await getRedirectResult(auth);
           if (redirectResult) {
@@ -306,29 +484,25 @@ export const useUserStore = create<UserStore>()(
             const userRef = doc(db, 'users', firebaseUser.uid);
             const userSnap = await getDoc(userRef);
             
+            let data: Record<string, unknown>;
             if (userSnap.exists()) {
               // Existing user - just update lastLoginAt
+              data = userSnap.data();
               await updateDoc(userRef, {
                 lastLoginAt: serverTimestamp()
               });
             } else {
-              // New user from redirect - create document
-              const username = generateUsername(firebaseUser.displayName || 'user');
-              await setDoc(userRef, {
-                uid: firebaseUser.uid,
-                username,
-                email: firebaseUser.email || '',
-                photoURL: firebaseUser.photoURL || '',
-                profilePictureURL: firebaseUser.photoURL || '',
-                profileBannerURL: '',
-                savedSpots: [],
-                createdAt: serverTimestamp(),
-                lastLoginAt: serverTimestamp(),
-              }, { merge: true });
+              // New user from redirect - create document, then claim a generated username
+              data = await createUserDoc(firebaseUser);
+              data = withUsername(data, await claimGeneratedUsername(firebaseUser.displayName || 'user'));
             }
+            set({ user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data) });
           }
         } catch (error) {
           console.error('Error handling redirect result:', error);
+        } finally {
+          // No recovery needed: the auth listener registered below loads the signed-in user
+          endNewUserSetup(set, () => get().user, false);
         }
         
         return new Promise<void>((resolve) => {
@@ -337,59 +511,21 @@ export const useUserStore = create<UserStore>()(
           authListenerUnsub = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
               // User is signed in
-              const userRef = doc(db, 'users', firebaseUser.uid);
-              const userSnap = await getDoc(userRef);
-              
-              if (userSnap.exists()) {
-                const data = userSnap.data();
-                const userData: User = {
-                  uid: firebaseUser.uid,
-                  username: data.username || 'user',
-                  email: firebaseUser.email || '',
-                  photoURL: firebaseUser.photoURL || '',
-                  profilePictureURL: data.profilePictureURL || data.photoURL || firebaseUser.photoURL || '',
-                  profileBannerURL: data.profileBannerURL || '',
-                  savedSpots: data.savedSpots || [],
-                  highlightedSpots: data.highlightedSpots || [],
-                };
-                
-                // Check if username needs to be set
-                if (!data.username) {
-                  set({ needsUsername: true });
+              startAdminListeners(firebaseUser.uid, set);
+
+              // A sign-in flow that may create the user owns the user state while it runs
+              if (newUserSetupDepth === 0) {
+                try {
+                  await loadOrCreateUser(firebaseUser, set);
+                } catch (error) {
+                  // Never block startup on a failed profile read (e.g. offline).
+                  console.error('Error loading user profile:', error);
+                  set({ loading: false });
                 }
-                
-                set({ user: userData, loading: false });
-              } else {
-                // User document doesn't exist yet (shouldn't happen normally)
-                // Create it now to prevent issues
-                const username = generateUsername(firebaseUser.displayName || 'user');
-                await setDoc(userRef, {
-                  uid: firebaseUser.uid,
-                  username,
-                  email: firebaseUser.email || '',
-                  photoURL: firebaseUser.photoURL || '',
-                  profilePictureURL: firebaseUser.photoURL || '',
-                  profileBannerURL: '',
-                  savedSpots: [],
-                  createdAt: serverTimestamp(),
-                  lastLoginAt: serverTimestamp(),
-                }, { merge: true });
-                
-                const userData: User = {
-                  uid: firebaseUser.uid,
-                  username,
-                  email: firebaseUser.email || '',
-                  photoURL: firebaseUser.photoURL || '',
-                  profilePictureURL: firebaseUser.photoURL || '',
-                  profileBannerURL: '',
-                  savedSpots: [],
-                  highlightedSpots: [],
-                };
-                
-                set({ user: userData, loading: false, needsUsername: true });
               }
             } else {
               // User is signed out
+              stopAdminListeners(set);
               set({ user: null, loading: false, needsUsername: false });
             }
             
@@ -438,164 +574,73 @@ export const useUserStore = create<UserStore>()(
         }
       },
 
-      // Initialize listener for admin emails
-      initAdminListener: () => {
-        const adminsRef = collection(db, 'admins');
-        const q = query(adminsRef);
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const adminsList: AdminUser[] = [];
-          const emailsList: string[] = [];
-          
-          snapshot.forEach((doc) => {
-            const adminData = { id: doc.id, ...doc.data() } as AdminUser;
-            adminsList.push(adminData);
-            emailsList.push(adminData.email);
-          });
-          
-          set({ adminEmails: emailsList, adminUsers: adminsList });
-          
-          // Update cached admin emails in useSpotStore
-          setCachedAdminEmails(emailsList);
-        });
-
-        return unsubscribe;
-      },
-
-      // Search for a user by email
-      // Search for a user by email (only Super Admin can do this)
-      searchUserByEmail: async (email: string) => {
-        const { user } = get();
-        if (!user || !isSuperAdmin(user.email)) {
-          throw new Error('Only Super Admin can search users');
-        }
-
+      // Look up a user by email (super admin only; enforced by the callable)
+      lookupUserByEmail: async (email: string) => {
         try {
-          const usersRef = collection(db, 'users');
-          const q = query(usersRef);
-          const snapshot = await getDocs(q);
-          
-          let foundUser: User | null = null;
-          snapshot.forEach((doc) => {
-            const userData = doc.data();
-            if (userData.email?.toLowerCase() === email.toLowerCase()) {
-              foundUser = {
-                uid: doc.id,
-                username: userData.username || 'user',
-                email: userData.email,
-                photoURL: userData.photoURL || '',
-                profilePictureURL: userData.profilePictureURL || userData.photoURL || '',
-                profileBannerURL: userData.profileBannerURL || '',
-                savedSpots: userData.savedSpots || [],
-              };
-            }
-          });
-          
-          return foundUser;
+          const result = await lookupUserByEmailCallable({ email });
+          return result.data;
         } catch (error) {
+          const code = errorCode(error);
+          // invalid-argument: not an email address (e.g. "bob"); shown as "User not found" as before
+          if (code === 'functions/not-found' || code === 'functions/invalid-argument') return null;
           throw error;
         }
       },
 
-      // Add a new admin (only Super Admin can do this)
+      // Add a new admin (only Super Admin can do this; enforced by the callable)
       addAdmin: async (email: string) => {
-        const { user } = get();
-        if (!user || !isSuperAdmin(user.email)) {
+        if (!get().isSuperAdmin) {
           throw new Error('Only Super Admin can add admins');
         }
-
-        try {
-          // Check if user exists
-          const targetUser = await get().searchUserByEmail(email);
-          if (!targetUser) {
-            throw new Error('User not found');
-          }
-
-          // Check if already admin
-          const { adminEmails } = get();
-          if (adminEmails.includes(email.toLowerCase()) || isSuperAdmin(email)) {
-            throw new Error('User is already an admin');
-          }
-
-          // Add to Firestore admins collection using user's UID as document ID
-          // This makes it easy to check in security rules: exists(/databases/.../admins/$(request.auth.uid))
-          await setDoc(doc(db, 'admins', targetUser.uid), {
-            email: targetUser.email,
-            username: targetUser.username,
-            photoURL: targetUser.photoURL || '',
-            addedAt: serverTimestamp(),
-            addedBy: user.uid,
-          });
-        } catch (error) {
-          throw error;
-        }
+        await addAdminCallable({ email });
       },
 
-      // Remove an admin (only Super Admin can do this)
+      // Remove an admin (only Super Admin can do this; enforced by the callable)
       removeAdmin: async (adminId: string) => {
-        const { user } = get();
-        if (!user || !isSuperAdmin(user.email)) {
+        if (!get().isSuperAdmin) {
           throw new Error('Only Super Admin can remove admins');
         }
-
-        try {
-          await deleteDoc(doc(db, 'admins', adminId));
-        } catch (error) {
-          throw error;
-        }
+        await removeAdminCallable({ uid: adminId });
       },
 
-      // Check if a username is available
+      // Check if a username is available (usernames/{name} registry)
       checkUsernameAvailable: async (username: string) => {
-        try {
-          const normalized = username.trim().toLowerCase();
-          const usersRef = collection(db, 'users');
-          const q = query(usersRef, where('username', '==', normalized));
-          const snapshot = await getDocs(q);
-          
-          // If found docs, check if it's the current user's own username
-          const { user } = get();
-          if (snapshot.empty) return true;
-          
-          // Allow if it's the user's own current username
-          let isOwnUsername = false;
-          snapshot.forEach((docSnap) => {
-            if (docSnap.id === user?.uid) {
-              isOwnUsername = true;
-            }
-          });
-          return isOwnUsername;
-        } catch (error) {
-          throw error;
-        }
+        const snap = await getDoc(doc(db, 'usernames', normalizeUsername(username)));
+        if (!snap.exists()) return true;
+        // Allow if it's the user's own current username
+        return snap.data().uid === get().user?.uid;
       },
 
-      // Update the user's username
+      // Update the user's username (claimed server-side, transactional)
       updateUsername: async (username: string) => {
         const { user } = get();
         if (!user) throw new Error('Not authenticated');
 
-        const trimmed = username.trim().toLowerCase();
-        if (trimmed.length < 3 || trimmed.length > 20) {
-          throw new Error('Username must be 3-20 characters');
-        }
-        if (!/^[a-z0-9_]+$/.test(trimmed)) {
-          throw new Error('Username can only contain letters, numbers, and underscores');
+        const trimmed = normalizeUsername(username);
+        const validationError = usernameValidationError(trimmed);
+        if (validationError) {
+          throw new Error(validationError);
         }
 
-        // Check uniqueness
-        const available = await get().checkUsernameAvailable(trimmed);
-        if (!available) {
-          throw new Error('Username is already taken');
-        }
-
+        let claimed: string;
         try {
-          const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, { username: trimmed });
-          set({ user: { ...user, username: trimmed }, needsUsername: false });
+          const result = await claimUsernameCallable({ username: trimmed });
+          claimed = result.data.username;
         } catch (error) {
+          const code = errorCode(error);
+          if (code === 'functions/already-exists') {
+            throw new Error('Username is already taken');
+          }
+          if (code === 'functions/invalid-argument') {
+            throw new Error(
+              usernameValidationError(trimmed) ?? 'Username can only contain letters, numbers, and underscores',
+            );
+          }
           throw error;
         }
+
+        set({ user: { ...user, username: claimed }, needsUsername: false });
       },
 
       // Upload and update profile picture with compression
@@ -752,33 +797,32 @@ export const useUserStore = create<UserStore>()(
         }
       },
       
-      // Update custom name color (level 5 only)
+      
+      // Update custom name color (level 5 only; enforced by the callable)
       updateCustomNameColor: async (color: string) => {
         const { user } = get();
         if (!user) throw new Error('Not authenticated');
 
-        try {
-          const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, { customNameColor: color });
-          
-          set({ user: { ...user, customNameColor: color } });
-        } catch (error) {
-          throw error;
-        }
+        await updateNameStyleCallable({ color });
+        set({ user: { ...user, customNameColor: color } });
       },
       
-      // Update custom name font (level 5 only)
+      // Update custom name font (level 5 only; enforced by the callable)
       updateCustomNameFont: async (font: string) => {
         const { user } = get();
         if (!user) throw new Error('Not authenticated');
 
+        await updateNameStyleCallable({ font });
+        set({ user: { ...user, customNameFont: font } });
+      },
+
+      // Remember this device's FCM token so signOut can remove it
+      rememberFcmToken: (token: string) => {
+        rememberedFcmToken = token;
         try {
-          const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, { customNameFont: font });
-          
-          set({ user: { ...user, customNameFont: font } });
-        } catch (error) {
-          throw error;
+          globalThis.localStorage?.setItem(FCM_TOKEN_KEY, token);
+        } catch {
+          // storage unavailable: the in-memory copy still works this session
         }
       },
     }),

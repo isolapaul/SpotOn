@@ -37,7 +37,7 @@ src/app/layout.tsx               Metadata, viewport, <InstallGate/> overlay
 src/app/api/feedback/route.ts    Feedback email endpoint (SMTP)
 src/app/api/firebase-messaging-sw/route.ts  FCM service worker (generated from NEXT_PUBLIC_* config)
 src/components/                  All UI (panels, modals, map). God components: ProfilePanel, SpotDetailsPanel
-src/store/useSpotStore.ts        Spots listener + all spot mutations; ALSO exports isAdmin/isSuperAdmin
+src/store/useSpotStore.ts        Spots listener + all spot mutations; admin state lives in useUserStore (isAdmin / isSuperAdmin, from admins/{uid})
 src/store/useUserStore.ts        Auth flows, user doc, admins, username, profile images, highlights
 src/store/use*Store.ts           language (t()), map theme, notifications, toast (forwards to notifications), ui
 src/hooks/usePushNotifications.ts FCM permission/token handling
@@ -91,7 +91,6 @@ In the Claude Code sandbox, the functions emulator cannot register Firestore tri
 | Var | When | Where used |
 |---|---|---|
 | `NEXT_PUBLIC_FIREBASE_*` (API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, MESSAGING_SENDER_ID, APP_ID, VAPID_KEY) | **build time** (inlined in bundle) | `lib/firebase.ts`, SW route, push hook |
-| `NEXT_PUBLIC_ADMIN_EMAIL` | build time — **to be removed (T11a)** | `useSpotStore.isSuperAdmin` |
 | `NEXT_PUBLIC_USE_EMULATORS` | build time, tests only (T04) | `lib/firebase.ts` |
 | `NEXT_PUBLIC_MOVED_TO` | build time, Vercel only (T19) | domain-move banner |
 | `SMTP_HOST/PORT/USER/PASS`, `FEEDBACK_RECIPIENT` | runtime (container `.env`) | `/api/feedback` |

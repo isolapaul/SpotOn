@@ -10,7 +10,6 @@ import imageCompression from 'browser-image-compression';
 import { translations } from '@/lib/translations';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
-import { isAdmin } from '@/store/useSpotStore';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -19,6 +18,7 @@ interface SettingsPanelProps {
 
 export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPanelProps>) {
   const { user, signOut, updateProfilePicture, updateProfileBanner } = useUserStore();
+  const userIsAdmin = useUserStore((s) => s.isAdmin);
   const { language, setLanguage } = useLanguageStore();
   const { showToast } = useToastStore();
   const { isPermissionGranted, isLoading: isNotificationLoading, requestPermission, disableNotifications } = usePushNotifications();
@@ -34,7 +34,6 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
   if (!isOpen || !user) return null;
 
   const t = translations[language as keyof typeof translations] || translations.hu;
-  const userIsAdmin = isAdmin(user.email);
 
   const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

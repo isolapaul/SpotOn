@@ -5,13 +5,13 @@ import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { useSpotStore, isAdmin as checkIsAdmin } from '@/store/useSpotStore';
+import { useSpotStore } from '@/store/useSpotStore';
+import { fetchPublicProfile, fetchPublicProfiles } from '@/store/publicProfiles';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { getLevelInfo, getUserNameColor } from '@/lib/levelUtils';
 import { useState, useEffect, useRef, ChangeEvent, useCallback } from 'react';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db, functions } from '@/lib/firebase';
+import { functions } from '@/lib/firebase';
 import { httpsCallable } from 'firebase/functions';
 
 interface SpotDetailsPanelProps {
@@ -62,10 +62,11 @@ function StarRow({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md' }
   );
 }
 
-function ReviewerBadge({ spotsCount, customNameColor, username, review }: {
+function ReviewerBadge({ spotsCount, customNameColor, username, isAdmin, review }: {
   spotsCount: number;
   customNameColor?: string;
   username?: string;
+  isAdmin: boolean;
   review: { userName: string; userEmail: string; customNameFont?: string };
 }) {
   const levelInfo = getLevelInfo(spotsCount);
@@ -81,7 +82,7 @@ function ReviewerBadge({ spotsCount, customNameColor, username, review }: {
       <span className={`text-xs px-2 py-0.5 rounded-full border ${levelInfo.bgColor} ${levelInfo.borderColor} ${levelInfo.textColor}`}>
         {levelInfo.icon} {levelInfo.level}
       </span>
-      {checkIsAdmin(review.userEmail) && (
+      {isAdmin && (
         <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">
           <Shield className="w-3 h-3 text-amber-400" />
           <span className="text-amber-400 text-xs font-bold">Admin</span>
@@ -93,6 +94,7 @@ function ReviewerBadge({ spotsCount, customNameColor, username, review }: {
 
 export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Readonly<SpotDetailsPanelProps>) {
   const { user, toggleFavorite } = useUserStore();
+  const userIsAdmin = useUserStore((s) => s.isAdmin);
   const { language, t } = useLanguageStore();
   const { addReview, approveSpot, addSpotImages, migrateSpotImages, deleteSpot, updateSpotDescription, updateSpotName, deleteSpotImage, setPrimaryImage } = useSpotStore();
   const { showToast } = useToastStore();
@@ -121,12 +123,10 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [ignoreHeroClicks, setIgnoreHeroClicks] = useState(true);
 
   // User/creator metadata
-  const [userSpotsCount, setUserSpotsCount] = useState(0);
   const [creatorSpotsCount, setCreatorSpotsCount] = useState<number | null>(null);
   const [creatorName, setCreatorName] = useState<string | null>(null);
   const [creatorCustomNameColor, setCreatorCustomNameColor] = useState<string | undefined>();
-  const [reviewerMeta, setReviewerMeta] = useState<Record<string, { spotsCount?: number; customNameColor?: string; username?: string }>>({});
-  const [uploaderNames, setUploaderNames] = useState<Record<string, string>>({});
+  const [reviewerMeta, setReviewerMeta] = useState<Record<string, { spotsCount?: number; customNameColor?: string; username?: string; isAdmin?: boolean }>>({});
 
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -178,45 +178,29 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     return () => globalThis.removeEventListener('keydown', handleKeyDown);
   }, [galleryOpen, nextImage, prevImage]);
 
-  // Fetch current user's spot count (for review level display)
-  useEffect(() => {
-    if (!user) return;
-    getDocs(query(collection(db, 'spots'), where('createdBy', '==', user.uid)))
-      .then((snap) => setUserSpotsCount(snap.size));
-  }, [user]);
-
-  // Fetch creator info
+  // Fetch creator info (public profile mirror)
   useEffect(() => {
     if (!spot?.createdBy) return;
 
-    if (spot.createdBy === user?.uid) {
+    const isSelf = spot.createdBy === user?.uid;
+    if (isSelf) {
       setCreatorName(user.username || null);
       setCreatorCustomNameColor(user.customNameColor);
-      setCreatorSpotsCount(userSpotsCount);
-      return;
     }
 
     let isMounted = true;
-    const fetch = async () => {
-      try {
-        const [userSnap, spotsSnap] = await Promise.all([
-          getDoc(doc(db, 'users', spot.createdBy)),
-          getDocs(query(collection(db, 'spots'), where('createdBy', '==', spot.createdBy))),
-        ]);
+    fetchPublicProfile(spot.createdBy)
+      .then((p) => {
         if (!isMounted) return;
-        if (userSnap.exists()) {
-          const data = userSnap.data() as { username?: string; customNameColor?: string };
-          setCreatorName(data.username || null);
-          setCreatorCustomNameColor(data.customNameColor);
+        setCreatorSpotsCount(p?.spotsCount ?? 0);
+        if (!isSelf) {
+          setCreatorName(p?.username ?? null);
+          setCreatorCustomNameColor(p?.customNameColor ?? undefined);
         }
-        setCreatorSpotsCount(spotsSnap.size);
-      } catch (error) {
-        console.error('Failed to fetch creator info:', error);
-      }
-    };
-    fetch();
+      })
+      .catch((error) => console.error('Failed to fetch creator info:', error));
     return () => { isMounted = false; };
-  }, [spot?.createdBy, user?.uid, user?.username, user?.customNameColor, userSpotsCount]);
+  }, [spot?.createdBy, user?.uid, user?.username, user?.customNameColor]);
 
   // Check if user has highlighted this spot
   useEffect(() => {
@@ -224,35 +208,14 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     setIsHighlightedByUser((spot.highlighted || []).some((h: any) => h.userId === user.uid));
   }, [spot, user]);
 
-  // Migrate legacy imageUrls to spotImages if needed, then fetch uploader display names
+  // Migrate legacy imageUrls to spotImages if needed
   useEffect(() => {
     if (!spot) return;
 
     if (!spot.spotImages?.length) {
       if (spot.imageUrls?.length) migrateSpotImages(spot.id).catch(console.error);
-      return;
     }
-
-    const missingIds = [...new Set(
-      spot.spotImages
-        .map((img) => img.addedBy)
-        .filter((id): id is string => Boolean(id) && !uploaderNames[id as string])
-    )];
-    if (!missingIds.length) return;
-
-    let isMounted = true;
-    Promise.all(
-      missingIds.map(async (uid) => {
-        const snap = await getDoc(doc(db, 'users', uid));
-        return { uid, username: snap.exists() ? (snap.data() as { username?: string }).username || t('anonymous') : t('anonymous') };
-      })
-    ).then((results) => {
-      if (!isMounted) return;
-      setUploaderNames((prev) => Object.fromEntries([...Object.entries(prev), ...results.map((r) => [r.uid, r.username])]));
-    }).catch(console.error);
-
-    return () => { isMounted = false; };
-  }, [spot, uploaderNames, migrateSpotImages, t]);
+  }, [spot, migrateSpotImages]);
 
   // Fetch reviewer display metadata
   useEffect(() => {
@@ -266,20 +229,19 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     if (!missingIds.length) return;
 
     let isMounted = true;
-    Promise.all(
-      missingIds.map(async (uid) => {
-        const [userSnap, spotsSnap] = await Promise.all([
-          getDoc(doc(db, 'users', uid)),
-          getDocs(query(collection(db, 'spots'), where('createdBy', '==', uid))),
-        ]);
-        const data = userSnap.exists() ? (userSnap.data() as { username?: string; customNameColor?: string }) : undefined;
-        return { uid, username: data?.username, customNameColor: data?.customNameColor, spotsCount: spotsSnap.size };
-      })
-    ).then((results) => {
+    fetchPublicProfiles(missingIds).then((profiles) => {
       if (!isMounted) return;
       setReviewerMeta((prev) => ({
         ...prev,
-        ...Object.fromEntries(results.map((r) => [r.uid, { username: r.username, customNameColor: r.customNameColor, spotsCount: r.spotsCount }])),
+        ...Object.fromEntries(missingIds.map((uid) => {
+          const p = profiles[uid];
+          return [uid, {
+            username: p?.username ?? undefined,
+            customNameColor: p?.customNameColor ?? undefined,
+            spotsCount: p?.spotsCount,
+            isAdmin: p?.isAdmin,
+          }];
+        })),
       }));
     }).catch(console.error);
 
@@ -296,7 +258,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     return date.toLocaleDateString(getDateLocale(), { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  const userIsAdmin = checkIsAdmin(user?.email);
   const isOwner = user && spot.createdBy === user.uid;
   const canEdit = userIsAdmin || (isOwner && spot.status === 'approved');
   const navigationUrl = getNavigationUrl(spot.location.lat, spot.location.lng);
@@ -357,7 +318,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
         userPhoto: user.profilePictureURL || user.photoURL,
         rating,
         comment,
-        userSpotsCount,
+        userSpotsCount: user.spotsCount ?? 0,
         customNameColor: user.customNameColor,
         customNameFont: user.customNameFont,
       });
@@ -777,6 +738,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                                 spotsCount={review.userSpotsCount ?? meta.spotsCount ?? 0}
                                 customNameColor={review.customNameColor ?? meta.customNameColor}
                                 username={meta.username || review.userName}
+                                isAdmin={meta.isAdmin === true}
                                 review={review}
                               />
                               <span className="text-white/40 text-xs">

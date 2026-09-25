@@ -4,6 +4,8 @@ export const E2E = {
   user: { uid: 'e2e-user', email: 'user@spoton.test', username: 'e2e_user' },
   admin: { uid: 'e2e-admin', email: 'admin@spoton.test', username: 'e2e_admin' },
   superAdmin: { uid: 'e2e-super', email: 'super@spoton.test', username: 'e2e_super' },
+  // T11a: dedicated to profile-admin.spec.ts username changes (no other spec may use it).
+  rename: { uid: 'e2e-rename', email: 'rename@spoton.test', username: 'e2e_rename' },
   legacySpot: {
     id: 'e2e-legacy-spot', name: 'E2E Legacy Spot', emoji: '🏔️',
     reviewComment: 'E2E legacy review comment',

@@ -36,3 +36,20 @@ export async function signInWithEmail(page: Page, email: string, password: strin
   await page.locator('form button[type="submit"]').click();
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
 }
+
+/** Toasts are recorded in the persisted notification store, never shown as popups. Polls it for a body. */
+export async function expectNotification(page: Page, body: string) {
+  await expect
+    .poll(() =>
+      page.evaluate((b) => {
+        try {
+          const raw = window.localStorage.getItem('spoton-notifications');
+          const list: Array<{ body?: string }> = raw ? JSON.parse(raw).state?.notifications ?? [] : [];
+          return list.some((n) => n.body === b);
+        } catch {
+          return false;
+        }
+      }, body),
+    )
+    .toBe(true);
+}

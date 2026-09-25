@@ -16,6 +16,7 @@ interface AddSpotModalProps {
 
 export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Readonly<AddSpotModalProps>) {
   const { user } = useUserStore();
+  const isAdmin = useUserStore((s) => s.isAdmin);
   const { addSpot } = useSpotStore();
   const { showToast } = useToastStore();
   const { t } = useLanguageStore();
@@ -123,7 +124,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
         imageFiles, // Array of files
         primaryImageIndex, // Primary image index
         user.uid,
-        user.email // Pass email for admin check
+        isAdmin // Admins' spots are approved immediately
       );
       
       // Reset form and close
