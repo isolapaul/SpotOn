@@ -36,6 +36,12 @@ const REFERRER = { key: 'Referrer-Policy', value: 'strict-origin-when-cross-orig
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Self-contained server bundle for the Docker image (T16).
+  output: 'standalone',
+  // Images are unoptimized; keep libvips out of the image (SEC-07).
+  outputFileTracingExcludes: { '*': ['node_modules/sharp/**', 'node_modules/@img/**'] },
+  // Keep them as real node_modules packages in the standalone output, so Trivy and the SBOM see them (T18).
+  serverExternalPackages: ['nodemailer', 'jose'],
   // Separate output dir for emulator/E2E builds so they never overwrite a real .next build.
   distDir: process.env.NEXT_DIST_DIR || '.next',
   // Always inline a definite value so production bundles constant-fold the emulator branch away.

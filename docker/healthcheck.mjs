@@ -1,0 +1,7 @@
+const port = process.env.PORT || '3000';
+try {
+  const r = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(3000) });
+  process.exit(r.ok ? 0 : 1);
+} catch {
+  process.exit(1);
+}

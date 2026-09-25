@@ -51,3 +51,10 @@ updates:
     groups:
       actions-minor-patch:
         update-types: [minor, patch]
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: weekly }
+    groups: { base-images: { patterns: ["*"] } }
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]   # Node major is a deliberate decision (D14, D17)
