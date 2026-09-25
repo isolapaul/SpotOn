@@ -163,5 +163,6 @@ Additional review gates:
 | T02 CI + Dependabot | done, review PASS | 5f34814 |
 | T03 Remove dead client code | done, review PASS | 456bd39 |
 | T04 Emulator harness + e2e | done, review PASS | b50b1dd |
-| T05 Next 16.3.6 + nodemailer 10 | done, review PASS | (this commit) |
+| T05 Next 16.3.6 + nodemailer 10 | done, review PASS | 52b1a87 |
+| T06 Firebase JS SDK 12 | done, review PASS | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |

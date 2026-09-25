@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { SDK_VERSION } from 'firebase/app';
 
 export async function GET() {
   const firebaseConfig = {
@@ -11,8 +12,8 @@ export async function GET() {
   };
 
   const script = `// Firebase Cloud Messaging Service Worker (Generated dynamically)
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-messaging-compat.js');
 
 // Initialize Firebase with config from environment variables
 firebase.initializeApp(${JSON.stringify(firebaseConfig)});

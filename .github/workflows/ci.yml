@@ -57,9 +57,6 @@ jobs:
     name: npm audit (production deps)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    # TEMPORARY: known CRITICAL advisories (SEC-07) until T05–T07 land.
-    # Whichever of T06/T07 lands LAST deletes this line and raises both levels to `high`.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -68,10 +65,10 @@ jobs:
         with:
           node-version-file: .nvmrc
       - name: Root
-        run: npm audit --omit=dev --audit-level=critical
+        run: npm audit --omit=dev --audit-level=high
       - name: Functions
         if: success() || failure()
-        run: npm --prefix functions audit --omit=dev --audit-level=critical
+        run: npm --prefix functions audit --omit=dev --audit-level=high
 
   e2e:
     name: E2E (Playwright vs emulators)
