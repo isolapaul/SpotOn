@@ -55,7 +55,7 @@ docs/                            Audits, roadmap, task specs, deploy/rollout run
 - `spots/{id}`: name, category, description, location{lat,lng}, createdBy, createdByName, createdByPhoto,
   status ('pending'|'approved'), createdAt, imageUrls[], spotImages[{id,url,addedBy,addedAt,likes,likedBy[]}],
   primaryImageIndex, **reviews[] embedded array**, highlighted[], isHighlighted.
-  Legacy spots may have only `imageUrls` (no `spotImages`) and reviews that contain `userEmail` — **all code must keep reading legacy shapes.**
+  Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
 - `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmTokens[], language,
   notificationsEnabled, notificationSettings, questProgress/questRewards (legacy Valentine event).
 - `admins/{uid}`: email, username, photoURL, addedAt, addedBy.
@@ -83,7 +83,8 @@ npm run test:e2e            # Playwright smoke vs emulator-seeded build (PLAYWRI
 ```
 `next build` needs Firebase config. Without a `.env.local`, export the non-secret demo values first (T01 defines the exact list), e.g.
 `export NEXT_PUBLIC_FIREBASE_API_KEY=demo-key NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-spoton …`.
-A single e2e spec runs via `npx firebase emulators:exec … "npx tsx scripts/seed-emulator.ts && npx playwright test e2e/<file>"` (`npm run test:e2e -- <file>` does not work).
+A single e2e spec runs via `npx firebase emulators:exec --only auth,firestore,storage[,functions] --project demo-spoton "npx tsx scripts/seed-emulator.ts && npx playwright test e2e/<file>"` — from T08 on, include `functions` and run `npm --prefix functions run build` first (`npm run test:e2e -- <file>` does not work).
+E2E specs must never leave a fixture that another spec uses in a mutated state.
 
 ### Environment variables
 | Var | When | Where used |
