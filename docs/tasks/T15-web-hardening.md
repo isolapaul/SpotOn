@@ -1,6 +1,6 @@
 # T15 — Web hardening (CSP, headers, auth proxy, innerHTML, assets)
 
-**Phase:** 2 · **Depends on:** T06 (Firebase SDK 12, SW `importScripts` version), T04 (e2e harness) · **Risk:** med · **Decisions:** D6, D7 (T32 does nonces later)
+**Phase:** 2 · **Depends on:** T06 (Firebase SDK 12, SW `importScripts` version), T04 (e2e harness), T11a (sequence after it: both edit `src/components/ProfilePanel.tsx`) · **Risk:** med · **Decisions:** D6, D7 (T32 does nonces later)
 **Audit refs:** SEC-12, SEC-15, SEC-20 (assets and headers), BUG-08
 
 ## Goal

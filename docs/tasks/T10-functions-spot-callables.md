@@ -36,6 +36,7 @@ Move the three array-rewriting spot mutations into transactional callables: imag
 - **D9:** keep honouring `questRewards.valentine2026.highlightBonus`.
 - **Storage download URL format:** `https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<url-encoded path>?alt=media&token=<t>`. The emulator uses `http://<FIREBASE_STORAGE_EMULATOR_HOST>/v0/b/<bucket>/o/<path>?alt=media&token=<t>`.
 - T11b uploads new spot images to `spot-images/{uid}/{uuid}.{jpg|png|webp}`.
+- Some legacy spots carry only a singular `imageUrl` field (read by the client at `ProfilePanel.tsx:580,781,823`, `SpotInfoWindow.tsx:123`, `SpotDetailsPanel.tsx:482`). The callables treat such a spot as having no `imageUrls` (`[]`), which is unchanged behaviour: `imageUrl` is never read, written or removed here.
 - T09 provides `functions/src/lib/levels.ts` (`maxHighlightsForCount`, with a parity test against `src/lib/levelUtils.ts`).
 
 ## Files
@@ -72,7 +73,7 @@ Move the three array-rewriting spot mutations into transactional callables: imag
    - Every url must pass `parseStorageDownloadUrl` and `isOwnSpotImagePath(path, callerUid)`, else `permission-denied` "Invalid image URL".
    - Every object must exist (`getStorage().bucket().file(path).exists()`), else `failed-precondition` "Image not uploaded".
    - Transaction: get the spot (`not-found`). Reject urls already in `imageUrls` (`invalid-argument`). Run `planAddImages`; `MAX_SPOT_IMAGES` becomes `HttpsError("resource-exhausted", "MAX_SPOT_IMAGES")`. `tx.update` with the planned fields.
-   - The `idFactory` is `() => \`${Date.now()}_${Math.floor(Math.random()*10000)}\``, the same format as today.
+   - The `idFactory` is `() => \`${Date.now()}_${Math.floor(Math.random()*10000)}\``, the same format as today. All ids of one call usually share the same `Date.now()`, so within a call re-roll the random part until the id is not already used (by an existing image or an earlier id of this call). The format is unchanged.
    - Spot status is **not** checked (today anyone signed in may add photos to any spot).
    - Return `{added: urls.length}`.
 4. **`lib/highlights.ts`** (pure; `now` is an injected `Date`):
@@ -145,7 +146,7 @@ Move the three array-rewriting spot mutations into transactional callables: imag
 npm run verify:fn
 npm --prefix functions test            # spotImages, highlights, storageUrl tests green
 npm run verify
-node -e "const m=require('./functions/lib/index.js');for(const k of ['highlightSpot','unhighlightSpot','toggleImageLike','addSpotImages','onSpotApproved','onReviewAdded','onSpotFavorited','onNewPendingSpot']) if(!m[k]){console.error('missing',k);process.exit(1)}"
+GCLOUD_PROJECT=demo-spoton node -e "const m=require('./functions/lib/index.js');for(const k of ['highlightSpot','unhighlightSpot','toggleImageLike','addSpotImages','onSpotApproved','onReviewAdded','onSpotFavorited','onNewPendingSpot']) if(!m[k]){console.error('missing',k);process.exit(1)}"
 ! grep -n "arrayUnion" functions/src/callables/highlightSpot.ts   # all writes are computed inside the transaction
 npm run test:e2e                       # existing UI still works (client unchanged until T11b)
 ```

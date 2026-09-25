@@ -39,14 +39,15 @@ All sites reset to the initial state on touchend and ignore move/end while not d
   - UsernameSetupModal (:97): `z-[3500]`; backdrop is a **non-interactive `<div>`** `absolute inset-0 bg-black/70 backdrop-blur-xl`; panel `relative glass-card max-w-md w-full p-8 animate-slide-up`, with no max-h, scroll or margins.
 - **`slate` variant:**
   - NotificationCenter modal (:110): `z-[2000]`, outer `… p-4 animate-fade-in` (no bg style); backdrop button `bg-black/50 backdrop-blur-sm touch-manipulation`; panel `relative bg-slate-900 w-[90%] max-w-md rounded-3xl shadow-2xl border-2 border-white/20 overflow-hidden animate-scale-in max-h-[80vh] flex flex-col`.
-  - FeedbackPanel (:87): `z-[2000]`, outer `items-start` with safe-area padding style; panel `… w-[92%] max-w-2xl … max-h-[90vh] …`.
+  - FeedbackPanel (:87-100): `z-[2000]`, outer `items-start` with safe-area padding style and **no** `p-4`; backdrop button `bg-black/50 backdrop-blur-sm` **without** `touch-manipulation`; panel `… w-[92%] max-w-2xl … max-h-[90vh] …`.
+  - Neither slate backdrop has `tabIndex` or an Escape `onKeyDown` (NotificationCenter :110-116, FeedbackPanel :97-102); the glass backdrops with a click handler (AuthModal, AddSpotModal) have both `tabIndex={-1}` and `onKeyDown` Escape.
 - **Out of scope** (distinct markup, left as is and listed in the commit): LanguageSelector (non-dismissible, `bg-black/60 backdrop-blur-md`), MapThemeSwitcher modal, the ProfilePanel level-info modal (`z-[70]`, `bg-black/80`, `glass-card … rounded-2xl animate-scale-in`), NotificationSettingsModal (`z-[9999]`, no backdrop element), InstallGate. Migrate one of these only if its classes can be reproduced exactly through `ModalShell` props.
 
 **Stars (DUP-08).** Current variants:
 - SpotDetailsPanel `StarRow` (:51-63): wrapper `flex gap-0.5`, size `sm` = `w-4 h-4`, `md` = `w-5 h-5`, filled `text-yellow-400 fill-yellow-400`, empty `text-white/30`.
 - SpotDetailsPanel review form (:707-711): interactive `<button>`s with class `transition-all duration-200 active:scale-95` wrapping `w-5 h-5` stars, wrapper `flex gap-1`, empty `text-white/30`.
 - ProfilePanel favourites (:837-848) and DiscoveryPanel (:311-322): wrapper `flex gap-0.5`, `w-3 h-3`, empty `text-white/20`, rating rounded.
-- SpotInfoWindow (:471-480): **no wrapper**. The five `<Star className="w-4 h-4 …">` are direct children of the row `flex items-center gap-1`; empty `text-white/30`.
+- SpotInfoWindow (:189-198): **no wrapper**. The five `<Star className="w-4 h-4 …">` are direct children of the row `flex items-center gap-1`; empty `text-white/30`.
 
 **BUG-22:** SettingsPanel uses `z-40` (backdrop) and `z-50` (sheet) while mounted inside ProfilePanel's `fixed … z-[60]` root. They stack correctly only because they are inside that context. Express these with the scale (`Z.panelInner*`, see step 1) and add a comment explaining the nesting. The numbers stay the same.
 
@@ -80,8 +81,9 @@ All sites reset to the initial state on touchend and ignore move/end while not d
    - Renders exactly the root, backdrop button and inner div from the table.
    - `variant: 'slate'` adds SpotDetails' `pointer-events-none` on the inner panel and `pointer-events-auto` on the backdrop.
    - The caller keeps its `if (!isOpen) return null` logic; PanelShell does not add open/close animation logic.
-4. **`ModalShell`** props: `{ variant: 'glass' | 'slate', z: keyof typeof Z, onBackdropClick?: () => void, backdropLabel?: string, align?: 'center' | 'start', outerStyle?, panelClassName: string, panelStyle?, children }`.
-   - The variant supplies the default outer, backdrop and panel base classes from the table.
+4. **`ModalShell`** props: `{ variant: 'glass' | 'slate', z: keyof typeof Z, onBackdropClick?: () => void, backdropLabel?: string, align?: 'center' | 'start', outerStyle?, outerClassName?: string, backdropClassName?: string, panelClassName: string, panelStyle?, children }`.
+   - The variant supplies the default outer, backdrop and panel base classes from the table. `outerClassName` / `backdropClassName` override the variant's outer / backdrop classes for sites that differ (FeedbackPanel: no `p-4`, no `touch-manipulation`).
+   - `tabIndex={-1}` and the Escape `onKeyDown` on the backdrop are rendered **only** for the `glass` variant with `onBackdropClick`; the slate backdrops keep neither.
    - Without `onBackdropClick`, the backdrop renders as a plain `<div>` (UsernameSetupModal).
    - `panelClassName` carries the per-site size classes, so the final class string equals today's. Order may differ, but the **set** of classes must be identical; verify with the DOM snapshot check in Acceptance.
 5. **`StarRating`** props: `{ rating: number, size: 'xs' | 'sm' | 'md', emptyTone: 'faint' | 'dim', gap?: 'gap-0.5' | 'gap-1', wrapper?: boolean, onSelect?: (n: number) => void }`.
@@ -107,7 +109,7 @@ npm run verify
 npx vitest run src/hooks/useHorizontalSwipe.test.ts
 npm run test:e2e
 grep -rn "dragStartX\|useSwipeDismiss\|SWIPE_INITIAL" src/components             # → none
-grep -rn "\[1, 2, 3, 4, 5\].map" src/components | grep -v "ProfilePanel"         # → none (level list in ProfilePanel is not stars)
+grep -rn "\[1, 2, 3, 4, 5\].map" src/components | grep -v "levelInfo\|(level)"    # → none (the ProfilePanel level list `map((level)` is not stars)
 grep -rnE "z-\[(60|70|100|1500|2000|3500|9999)\]" src/components | wc -l         # → only in out-of-scope modals (LanguageSelector, MapThemeSwitcher, level-info, NotificationSettingsModal, InstallGate, LoadingScreen)
 ```
 The swipe reducer test must cover: right-only ignores leftward moves; right-only 151 px closes and 150 px does not; both-direction −101 closes; the gallery ±51 navigates and ±50 does not.

@@ -88,11 +88,13 @@ Remove `'unsafe-inline'` from `script-src` in production. Each page request gets
      3. Open the info window and details; open the gallery.
      4. Open AuthModal and sign in with email against the emulator.
      5. Open the profile and settings.
-     6. Register the service worker (call `navigator.serviceWorker.register('/api/firebase-messaging-sw')` in `page.evaluate` and await `ready`).
+     6. Register the service worker: call `navigator.serviceWorker.register('/api/firebase-messaging-sw')` in `page.evaluate` and assert that the `register()` promise **settles** (resolves or rejects) within 10 s. Do **not** await `navigator.serviceWorker.ready`: the worker's `importScripts` from gstatic may be blocked in the sandbox, so activation may never happen. Additionally (or instead, if registration is unavailable) fetch `/api/firebase-messaging-sw` and assert its `Content-Security-Policy` header equals the static T15 API policy.
    - Assert `__csp` is empty and there are no CSP console messages.
    - Assert that the response CSP of `/` contains `'strict-dynamic'`, contains `nonce-`, and has no `'unsafe-inline'` in the `script-src` segment.
    - Google popup sign-in cannot run against the emulator. Document the manual check below.
 7. **Manual checks** on a staging build with real Firebase config (Paul): Google sign-in popup (and the redirect fallback), push permission plus token, and a foreground and background notification. Check that the browser console shows no CSP errors.
+   - **Cloudflare** (the zone in front of the tunnel): features that inject scripts into HTML must be **off** or nonce-compatible, or they break under `'strict-dynamic'`: Bot Fight Mode / JavaScript Detections, Web Analytics automatic injection, Zaraz and Rocket Loader.
+   - HTML must **not** be edge-cached (no "Cache Everything" page rule or cache rule on `/`): a cached page would replay one nonce to every visitor. Confirm with `curl -sI https://spoton.isolapaul.hu/` twice → different nonces, and `cf-cache-status` is not `HIT`.
 
 ## Must NOT change
 - Every non-CSP security header from T15 (COOP `same-origin-allow-popups`, HSTS, nosniff, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `X-XSS-Protection: 0`).
@@ -105,6 +107,7 @@ Remove `'unsafe-inline'` from `script-src` in production. Each page request gets
 npm run verify
 npx vitest run src/lib/csp.test.ts   # includes byte-equality with T15's three strings for nonce=null
 npm run build 2>&1 | tee /tmp/build.log; grep -E "^\S+\s+[○●]\s+/\s*$" /tmp/build.log   # → no output: route "/" must be listed as ƒ (Dynamic)
+grep -E "ƒ\s+/\s*$" /tmp/build.log                             # → exactly one line (positive check: "/" is dynamic)
 npm run test:e2e                                              # includes csp.spec.ts: zero violations
 npm run build && npm start &   # emulator build per T04; then:
 curl -sI localhost:3000/ | grep -i "^content-security-policy" | grep -o "script-src[^;]*" | grep -c "unsafe-inline"   # → 0

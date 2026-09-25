@@ -69,7 +69,7 @@ After T22, key parity across hu, en and de is enforced by `src/lib/translations.
 9. **Non-React code** (`useToastStore`, anything else outside components): `translate(useLanguageStore.getState().language ?? 'hu', key)`.
 10. **Mechanical migration:**
     - `const { t } = useLanguageStore()` becomes `const t = useT()` everywhere. Where the component also reads `language`, use `useLanguage()`.
-    - Where `.replace('{x}', v)` is applied to a `t()` result, switch to `t(key, { x: v })`: page `noSpotsInRange`, ProfilePanel `confirmRemoveAdmin`, T22's new keys.
+    - Where `.replace('{x}', v)` is applied to a `t()` result, switch to `t(key, { x: v })`: ProfilePanel `confirmRemoveAdmin`, T22's new keys.
     - Remove `t` from `useLanguageStore` (the store keeps `language`, `setLanguage` and `hasSelectedLanguage`, with the persist name `spoton-language` unchanged).
 11. **Tests:**
     - `i18n.test.ts`: `translate` works for every language and a missing key; `interpolate`; `splitBold` handles no markers, one, two, and markers at the start or end.

@@ -18,7 +18,7 @@ Line numbers are from `eee5668`. T09/T11a/T11b rewrote the data sources, so re-l
 - **Public profiles after T11a.** Clients read `publicProfiles/{uid}` → `{ username, profilePictureURL, customNameColor, customNameFont, spotsCount }`. Current consumers (before T11a these were `users/{uid}` + count queries), each with its own component state and effect:
   - SpotDetailsPanel creator effect (`// Fetch creator info`, currently at :188-219)
   - SpotDetailsPanel reviewer-meta effect (`// Fetch reviewer display metadata`, :257-287)
-  - SpotDetailsPanel uploader-name effect (:227-255; the `uploaderNames` state is **never rendered**)
+  - (The never-rendered uploader-name effect, :227-255, was already deleted by T11a step 10.)
   - SpotInfoWindow creator effect (:67-102)
 
   Both creator effects special-case the signed-in user (`spot.createdBy === user?.uid`) by taking `username` and `customNameColor` from the store. Every panel open refetches.
@@ -41,7 +41,7 @@ Cache design:
 - Module-level `Map<uid, { value: PublicProfile | null; fetchedAt: number }>` plus an in-flight `Map<uid, Promise<PublicProfile | null>>`, so concurrent callers share one request.
 - Entries expire after `PUBLIC_PROFILE_TTL_MS = 5 * 60_000` (in `src/lib/constants.ts`).
 - A missing document caches `null` (the caller falls back as today).
-- Errors are **not** cached (log, return `undefined`, retry next time).
+- Errors are **not** cached: `fetchPublicProfile` clears the in-flight entry and **rethrows**, and the next call retries. The hooks catch the rejection, log it, and map it to `undefined`.
 
 ## Files
 - Create:
@@ -50,17 +50,19 @@ Cache design:
   - `src/hooks/useUserSpots.ts` (`useUserSpots(uid?, enabled = true): Spot[]`)
   - `src/hooks/useFavoriteToggle.ts`
   - tests `src/store/publicProfiles.test.ts` (mock `firebase/firestore`), `src/hooks/useFavoriteToggle.test.ts` (if RTL is available; else test the selector logic).
-- Modify: `src/store/publicProfiles.ts` (created by T11a with `fetchPublicProfile` and `fetchPublicProfiles`; add the cache and in-flight maps **inside** these functions, keep their signatures, and add `peekPublicProfile`, `invalidatePublicProfile` and `__resetPublicProfileCacheForTests`), `src/lib/constants.ts`, `src/app/page.tsx`, `src/components/MapView.tsx`, `src/components/SpotInfoWindow.tsx`, `src/components/SpotDetailsPanel.tsx` (profiles and admin only; **not** favourites), `src/components/ProfilePanel.tsx`, `src/components/SettingsPanel.tsx`, `src/components/NotificationSettingsModal.tsx`.
+- Modify: `src/store/publicProfiles.ts` (created by T11a with `fetchPublicProfile` and `fetchPublicProfiles`; add the cache and in-flight maps **inside** these functions, keep their signatures, and add `peekPublicProfile`, `invalidatePublicProfile` and `__resetPublicProfileCacheForTests`), `src/lib/constants.ts`, `src/store/useSpotStore.ts` (only the `invalidatePublicProfile` calls, step 1), `src/app/page.tsx`, `src/components/MapView.tsx`, `src/components/SpotInfoWindow.tsx`, `src/components/SpotDetailsPanel.tsx` (profiles and admin only; **not** favourites), `src/components/ProfilePanel.tsx`, `src/components/SettingsPanel.tsx`, `src/components/NotificationSettingsModal.tsx`.
 
 ## Steps
 1. **`src/store/publicProfiles.ts` (extend T11a's module):**
    - `fetchPublicProfile(uid)`: fresh cache hit → return it; in-flight → return the same promise; otherwise `getDoc(doc(db,'publicProfiles',uid))`, store `{value, fetchedAt: Date.now()}`, then clear the in-flight entry in a `finally`.
    - `fetchPublicProfiles(uids)` reuses `fetchPublicProfile` per uid, so cache and dedupe apply to it too.
+   - On a rejected `getDoc`, nothing is cached and the error is rethrown.
+   - In `useSpotStore`, call `invalidatePublicProfile(uid)` after `addSpot` succeeds (the current user) and after `deleteSpot` succeeds (the deleted spot's `createdBy`), so the next read picks up the new `spotsCount`.
    - `PublicProfile` stays T11a's interface: `{ username, profilePictureURL, customNameColor, customNameFont, spotsCount?, isAdmin? }`.
 2. **`usePublicProfile(uid)`** returns `PublicProfile | null | undefined` (`undefined` = loading or unknown).
    - Initial state comes from `peekPublicProfile(uid)`.
    - The effect fetches, ignores stale results when `uid` changes (the same `isMounted` pattern as today), and does nothing for a falsy uid.
-   - **Own-user overlay:** if `uid === store user.uid`, return `{ ...fetched, username: user.username, customNameColor: user.customNameColor, customNameFont: user.customNameFont, profilePictureURL: user.profilePictureURL ?? fetched?.profilePictureURL }`. `spotsCount` comes from the profile.
+   - **Own-user overlay** (wrapped in `useMemo` keyed on the fetched value and the store fields, so the returned object is referentially stable): if `uid === store user.uid`, return `{ ...fetched, username: user.username, customNameColor: user.customNameColor, customNameFont: user.customNameFont, profilePictureURL: user.profilePictureURL ?? fetched?.profilePictureURL }`. `spotsCount` comes from the profile.
    - `usePublicProfiles(uids)` takes a sorted, de-duplicated key; it fetches missing ones in parallel and returns a `Record<uid, PublicProfile | null | undefined>`.
 3. **`useIsAdmin` / `useIsSuperAdmin`:** `useUserStore((s) => s.isAdmin)` and `useUserStore((s) => s.isSuperAdmin)`. Return primitives only, because zustand 5 (T31) needs stable selector results.
 4. **Remove prop drilling:**
@@ -71,7 +73,6 @@ Cache design:
    - SpotDetailsPanel creator: `usePublicProfile(spot?.createdBy)`. `creatorName = profile?.username || spot.createdByName || t('anonymous')`, and `creatorSpotsCount = profile?.spotsCount ?? 0`.
    - SpotDetailsPanel reviewers: `usePublicProfiles(spot?.reviews?.map(r => r.userId) ?? [])`. The priority of badge inputs must equal the post-T11b code.
    - SpotInfoWindow creator: `usePublicProfile(spot.createdBy)`.
-   - Delete the uploader-names effect and state (never rendered). **Intended:** fewer reads, no UI change.
 6. **`useUserSpots(uid, enabled)`:** moves ProfilePanel's own-spots `onSnapshot` into the hook, with the same query (no `orderBy`), the same `enabled` gating (`isOpen`), and unsubscribe on change or unmount. ProfilePanel calls it once and passes the list down.
 7. **`useFavoriteToggle(spotId)`** returns `{ isFavorite, toggle, canToggle }`:
    - `isFavorite = useUserStore((s) => !!s.user?.savedSpots?.includes(spotId))`
@@ -84,8 +85,7 @@ Cache design:
 **Intended behaviour changes:**
 - SpotInfoWindow's heart now reflects `savedSpots` from the store (BUG-09 for the info window).
 - Profile documents are fetched at most once per 5 minutes per uid across panels, instead of on every open.
-- The unused uploader-name reads are gone.
-- Admin UI flags come from one source, which fixes the case where the `isAdmin` prop was stale because page's `useMemo` depended only on `user?.email`.
+- Admin UI flags come from one source (the `isAdmin` prop is gone).
 
 ## Must NOT change
 - Displayed creator name, colour and level, reviewer badges, and fallbacks (`createdByName`, `review.userName`, `t('anonymous')`).

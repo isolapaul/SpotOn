@@ -37,6 +37,7 @@ The client change ships and deploys **first**, because rules do not filter queri
   - `src/store/useSpotStore.ts`, `src/hooks/useAppBootstrap.ts` (T29), and the listener lifecycle wiring (where auth/admin changes are observed);
   - `firestore.indexes.json`;
   - new `src/lib/mergeSpots.ts` and `src/lib/mergeSpots.test.ts`;
+  - new `src/store/useSpotStore.scopes.test.ts` (mocked `firebase/firestore`, step 2);
   - e2e `e2e/pending-visibility.spec.ts`;
   - T04 seed (add a second user's pending spot, if missing).
 - **Commit B (rules):** `firestore.rules`, `tests/rules/firestore.spots.test.ts`, `docs/security-rollout.md` (T30 section).
@@ -47,11 +48,16 @@ The client change ships and deploys **first**, because rules do not filter queri
    - Union by `id`, with precedence admin > own > approved when the same id appears twice (the same document, possibly at different snapshot times).
    - Sort to reproduce Firestore's `orderBy('createdAt','desc')`: by `createdAt` descending (compare `seconds`, then `nanoseconds`), ties broken by document id **descending** (the implicit `__name__` direction).
    - A `null` `createdAt` (a pending server timestamp on a local write) sorts **first**.
-   - Unit-test: duplicates, ties, a null timestamp, empty sources, and admin-only input equal to the admin list unchanged.
+   - Any other non-Timestamp `createdAt` (number, string, map, …; legacy or hand-edited data) sorts **after** all Timestamps, ties by id descending. Firestore's real cross-type ordering could not be verified from the sandbox, so this is a documented approximation: write it in a code comment. The listener query already excludes documents with no `createdAt`.
+   - Unit-test: duplicates, ties, a null timestamp, a non-Timestamp `createdAt`, empty sources, and admin-only input equal to the admin list unchanged.
 2. **Store:** replace the single listener with up to three, each kept in its own slot, and recompute `spots = mergeSpotSources(...)` on each snapshot:
    - `approved`: `query(spots, where('status','==','approved'), orderBy('createdAt','desc'))`. **Always** active, signed-in or not.
    - `own`: `query(spots, where('createdBy','==',uid), orderBy('createdAt','desc'))`. Active while signed in and not an admin.
-   - `admin`: today's unfiltered query. Active while admin. While it is active, `approved` and `own` may be stopped, since admin covers them.
+   - `admin`: today's unfiltered query. Active while admin.
+   - **Scope-switch rules** (so the map is never emptied by a switch):
+     - `approved` is never stopped except by `stopSpots()`.
+     - A newly started scope replaces the one it supersedes (`admin` supersedes `own`) only **after its first snapshot** arrives; until then the old slot keeps its data.
+     - Stopping `own` or `admin` removes only that slot's data, then recomputes the merge.
 
    API:
    - `startSpots()` starts `approved` and resolves on its first snapshot. This preserves the loading gate, and anonymous visitors do not wait for auth.
@@ -59,14 +65,19 @@ The client change ships and deploys **first**, because rules do not filter queri
    - `stopSpots()` stops everything (unmount, T21).
    - Call `syncSpotScopes` from the bootstrap whenever `user?.uid` or `isAdmin` changes. On sign-out, drop the `own`/`admin` data immediately, so a pending spot never lingers for the next user.
    - Errors on `own`/`admin` are logged and set `error`, but must not clear the `approved` data.
+   - **Unit test** `src/store/useSpotStore.scopes.test.ts` with a mocked `onSnapshot`/`query`/`where`: signed out (`startSpots()` then `syncSpotScopes({ uid: null, isAdmin: false })`) issues **only** the approved query; signed in as a non-admin adds exactly the `createdBy == uid` query; admin adds the unfiltered query and does not stop `approved`; sign-out drops the `own`/`admin` slots immediately.
 3. **`firestore.indexes.json`:** add `{ collectionGroup: 'spots', queryScope: 'COLLECTION', fields: [{createdBy ASC}, {createdAt DESC}] }`. Do not remove any existing index in this task.
 4. **UI checks:** `useVisibleSpots`, the Discovery filter and the pending tab stay as they are. They still work, because the data is now a subset. The own pending spots of a non-admin are in `spots`, but `useVisibleSpots` still hides them on the map (as today). The profile's my-spots list uses `useUserSpots` (unchanged).
 5. **E2E `pending-visibility.spec.ts`.** Seed: user A's pending spot P, user B's approved spot Q.
-   - Signed out: the map shows Q's marker, and the store never contains P. Assert via Discovery count or `window.__spotStore` if T04 exposes one; otherwise check network or UI.
+   - Signed out: the map shows Q's marker and not P's. (That the store never receives P is not observable from e2e; the scopes unit test in step 2 covers it.)
    - Signed in as A: the profile's my-spots list shows P as pending, and the map does not show P (unchanged rule).
    - Signed in as the admin: P is visible (yellow marker, pending tab count ≥ 1).
    - A adds a new spot: it appears in A's profile immediately (latency compensation).
 6. `npm run verify` and `npm run test:e2e` must pass with **the old rules still in place**.
+
+**Intended behaviour changes (commit A):**
+- Other users' pending spots that a user favourited no longer appear in that user's Favourites, already with commit A (the client no longer receives them), not only once the rules land (ROADMAP Q7: accepted).
+- For admins, pending markers and the pending tab/count appear only once the admin state resolves, which can be after the loading screen has gone (the loading gate waits only for `approved`).
 
 ### Commit B: rules (a separate commit, deployed later)
 7. In `firestore.rules`, the `spots/{spotId}` read rule becomes:
@@ -101,7 +112,7 @@ The client change ships and deploys **first**, because rules do not filter queri
 ## Acceptance
 ```bash
 npm run verify
-npx vitest run src/lib/mergeSpots.test.ts
+npx vitest run src/lib/mergeSpots.test.ts src/store/useSpotStore.scopes.test.ts
 npm run test:e2e                     # after commit A, with pre-T30 rules
 npm run test:rules                   # after commit B
 grep -rn "where('createdBy'" src | grep -v "src/store/useSpotStore.ts\|src/hooks/useUserSpots.ts"   # → none
@@ -115,6 +126,6 @@ Manually confirm that `firestore.indexes.json` contains `createdBy ASC, createdA
 - A new index is harmless to leave in place.
 
 ## Stop and ask Paul if…
-- A pending spot that the user has favourited must stay visible in Favourites for users who are not its owner. Under the new rules they lose it; today they see it.
+- A pending spot that the user has favourited must stay visible in Favourites for users who are not its owner. From commit A on they lose it (ROADMAP Q7 accepts this); today they see it.
 - Any other feature (deep link, share URL, notification click) opens a spot by id for a user who is not its owner while it is pending.
 - The approved-query index is reported missing in production, or the deploy tries to delete indexes.

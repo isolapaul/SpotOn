@@ -25,7 +25,7 @@ Put strict, tested `firestore.rules` and `storage.rules` under version control, 
   - `categories` (list, super admin only).
 
   Pending spots stay publicly readable here. Hiding them is T30.
-- The client write paths and their exact key sets are in the table in `docs/tasks/T11b-client-spot-interactions.md` ("Context"). The `users` key allowlist is in `docs/tasks/T11a-client-profiles-usernames-admin.md` ("Context"):
+- The client write paths and their exact key sets are in the table in `docs/tasks/T11b-client-spot-interactions.md` ("Context"). The `users` key allowlist is in `docs/tasks/T11a-client-profiles-usernames-admin.md` ("Context"). **Do not rely on those tables alone:** T21/T22 (and others) may land before this task. Re-derive the actual write paths from the code with `grep -rnE "updateDoc|setDoc|addDoc|deleteDoc|uploadBytes" src`, and stop and ask if a path is not covered below:
   - `addSpot`: `addDoc` with `createdAt: serverTimestamp()`.
   - `addReview`: `arrayUnion`, which **appends**, of `{id: "<uid>_<ms>", userId, userName, userPhoto?, rating, comment, createdAt: Timestamp}`.
   - `users` writes from T11a:
@@ -54,11 +54,12 @@ Put strict, tested `firestore.rules` and `storage.rules` under version control, 
 - Create:
   - `firestore.rules`, `storage.rules`;
   - `tests/rules/helpers.ts`, `tests/rules/firestore.spots.test.ts`, `tests/rules/firestore.users-admin.test.ts`, `tests/rules/storage.test.ts`. The Firestore tests are split so that no file exceeds about 300 lines;
-  - `vitest.rules.config.ts`.
+  - `vitest.rules.config.ts`;
+  - `docs/audit/transitional-firestore.rules`, **only if** step 6 finds a missing read.
 - Modify:
   - `firebase.json`;
   - `package.json` (the `test:rules` script and the devDependency `@firebase/rules-unit-testing`, pinned exactly to `5.0.2`, which has a peer dependency on `firebase ^12` from T06);
-  - T01's root vitest config (exclude `tests/rules/**`);
+  - T01's root vitest config: verify only. T01 step 3 already excludes `tests/rules/**`; change it only if that exclude is missing;
   - `.github/workflows/ci.yml` (T02; add the job);
   - `docs/audit/current-rules.md` (append a comparison section; see step 6).
 - Delete: none.
@@ -236,7 +237,7 @@ Put strict, tested `firestore.rules` and `storage.rules` under version control, 
    - keep `"functions"` and T04's `"emulators"` byte-identical.
 4. **Test infrastructure:**
    - `vitest.rules.config.ts` sets `test: {include: ['tests/rules/**/*.test.ts'], environment: 'node', fileParallelism: false, testTimeout: 20000, hookTimeout: 60000}`.
-   - T01's config excludes `tests/rules/**`.
+   - T01's config already excludes `tests/rules/**` (verify only).
    - `tests/rules/helpers.ts`:
      - `initializeTestEnvironment({projectId: 'demo-spoton', firestore: {rules: readFileSync('firestore.rules','utf8')}, storage: {rules: readFileSync('storage.rules','utf8')}})`, with the host and port taken from the env that `emulators:exec` sets;
      - seed data via `withSecurityRulesDisabled`, covering: an approved spot owned by `alice`; a pending spot owned by `alice`; a **legacy** spot with `imageUrls` only and a legacy review containing `userEmail`; `admins/adminUid` without `role`; `admins/superUid` with `role: 'super'`; `users/alice`; `publicProfiles/alice`; `usernames/alice`;
@@ -306,8 +307,12 @@ Put strict, tested `firestore.rules` and `storage.rules` under version control, 
      - **SEC-11 (storage):**
        - Allow: owner JPEG, PNG and WebP under 5 MB at `spot-images/{uid}/x.jpg`, `profile-pictures/{uid}/1_x.jpg` and `profile-banners/{uid}/1_x.jpg`; unauthenticated read of the legacy `spot-images/123_a.jpg` and of a new path.
        - Deny: another uid's folder; unauthenticated upload; exactly 5 MB (5 × 1024 × 1024 bytes); `image/gif`; `text/html`; `application/octet-stream`; a write to the legacy flat path; overwriting an existing object; delete; an unknown top-level path.
-6. **Diff against production** (`docs/audit/current-rules.md`). Append a section `## Comparison with repo rules (T12)`: one table row per path (spots, users, admins, publicProfiles, usernames, categories, storage paths, **and any other path the live rules mention**), with the columns "live rule", "new rule" and "effect". If the live rules allow a collection or path that the client code in this repo does not use, list it and **stop and ask** before dropping it.
-7. **CI:** add a job `rules` to `.github/workflows/ci.yml`:
+6. **Diff against production** (`docs/audit/current-rules.md`). Append a section `## Comparison with repo rules (T12)`: one table row per path (spots, users, admins, publicProfiles, usernames, categories, storage paths, **and any other path the live rules mention**), with the columns "live rule", "new rule", "effect" and "does live rule allow these T11a/T11b reads?". The last column checks the reads the T11a/T11b client issues **before** these rules are deployed (ROADMAP §4: client before rules): `publicProfiles/{uid}` get (public), `usernames/{name}` get (public), `admins/{self}` get, `admins` list (admins only), and `categories` list; answer yes/no per row. If the live rules allow a collection or path that the client code in this repo does not use, list it and **stop and ask** before dropping it.
+   - **Transitional rules:** if any answer is "no", also create `docs/audit/transitional-firestore.rules` = the live Firestore rules verbatim, plus **exactly** the missing read grants from that column, and nothing else. T13 deploys it before the client (runbook step 3.5). If every answer is "yes", do not create the file and say so in the comparison section.
+7. **Commit body — accepted residual risks.** List these explicitly in the commit message body:
+   - spot create does not validate the contents of `imageUrls` / `spotImages` elements (only list types and sizes);
+   - a review's `userPhoto` may be an arbitrary URL (up to 2048 characters); mitigated by T15's CSP `img-src`.
+8. **CI:** add a job `rules` to `.github/workflows/ci.yml`:
    - `actions/checkout`, `actions/setup-node` (Node 22, npm cache) and `actions/setup-java` (`distribution: temurin`, `java-version: '21'`). Pin every action by commit SHA, following T02's convention;
    - `npm ci`, then `npm run test:rules`;
    - optionally, `actions/cache` for `~/.cache/firebase/emulators`.

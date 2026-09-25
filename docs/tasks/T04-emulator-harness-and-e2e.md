@@ -50,6 +50,7 @@ Every later behaviour-preserving task uses this as its regression gate. Producti
   - root `firebase-admin` and `tsx`;
   - pinned `firebase-tools`;
   - `connectFunctionsEmulator` already wired.
+- **Fixture convention (binding for every later spec):** no spec may leave a fixture used by another spec mutated. All spec files share one seeded emulator per run, and Playwright runs them alphabetically with `workers: 1`. A spec that writes (renames a user, adds a review or photo, highlights, approves) uses a dedicated fixture that it adds to `e2e/fixtures.ts` and the seed.
 
 ## Files
 - Create: `scripts/seed-emulator.ts`, `e2e/fixtures.ts`, `e2e/helpers.ts`, `e2e/smoke.spec.ts`, `playwright.config.ts`

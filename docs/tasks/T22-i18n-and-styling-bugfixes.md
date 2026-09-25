@@ -94,6 +94,7 @@ Store-thrown messages that reach the UI through `error.message` (ProfilePanel `h
 ## Files
 - Modify: `tailwind.config.ts`, `src/lib/translations.ts`, `src/lib/levelUtils.ts`, `src/components/ProfilePanel.tsx`, `src/components/SpotDetailsPanel.tsx`, `src/components/SpotInfoWindow.tsx` (only if the colour call changes signature), `src/components/AddSpotModal.tsx`, `src/components/AuthModal.tsx` (hint line only), `src/components/FeedbackPanel.tsx`, `src/components/MapThemeSwitcher.tsx`, `src/components/UsernameSetupModal.tsx` (error mapping), `src/store/useToastStore.ts`, `src/hooks/usePushNotifications.ts`, `src/store/useUserStore.ts` (error codes only).
 - Create: `src/lib/nameStyle.ts`, `src/lib/nameStyle.test.ts`, `src/lib/levelUtils.test.ts`, `src/lib/translations.test.ts`.
+- Modify, **only if** `CUSTOM_NAME_COLORS`/`CUSTOM_NAME_FONTS` change shape: `functions/test/levels.parity.test.ts` (T09; it imports them from `src/lib/levelUtils.ts`). Update its mapping only, never the value lists.
 
 ## Steps
 1. **Tailwind content:** add `"./src/lib/**/*.{js,ts,jsx,tsx}"` to `content` in `tailwind.config.ts`.
@@ -171,6 +172,7 @@ Store-thrown messages that reach the UI through `error.message` (ProfilePanel `h
 ## Acceptance
 ```bash
 npm run verify
+npm run verify:fn                     # T09's functions/test/levels.parity.test.ts imports CUSTOM_NAME_* from levelUtils
 npx vitest run src/lib/translations.test.ts src/lib/nameStyle.test.ts src/lib/levelUtils.test.ts
 npm run test:e2e
 grep -rnP "[áéíóöőúüűÁÉÍÓÖŐÚÜŰ]" src --include=*.tsx --include=*.ts | grep -v "src/lib/translations.ts" | grep -v "AuthModal.tsx\|InstallGate.tsx\|LanguageSelector.tsx"

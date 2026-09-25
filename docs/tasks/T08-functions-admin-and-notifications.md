@@ -41,10 +41,10 @@ Split `functions/src/index.ts` into small modules. Admin identity moves to the s
 - Modify:
   - `functions/src/index.ts`: becomes re-exports only.
   - `functions/package.json`: vitest devDependency and a `test` script.
-  - Root `package.json`: `verify:fn` also runs `npm --prefix functions test`.
-  - `scripts/seed-emulator.ts`: fixture roles, see step 9.
+  - Root `package.json`: `verify:fn` also runs `npm --prefix functions test`; `test:e2e` adds the functions emulator (step 15).
+  - `scripts/seed-emulator.ts` and `e2e/fixtures.ts`: fixture roles, see step 9.
   - `.gitignore`: see step 8.
-  - `firebase.json` or T04's e2e harness script, **only if** the functions emulator is not already part of `test:e2e`.
+  - `.github/workflows/ci.yml`: job `e2e` installs the functions dependencies (step 15).
 - Delete: none.
 
 ## Steps
@@ -113,12 +113,15 @@ Split `functions/src/index.ts` into small modules. Admin identity moves to the s
      !functions/.env.demo-spoton
      ```
      This way the production file `functions/.env.<prodProjectId>`, which `firebase deploy` writes, is never committed.
-9. **Seed fixtures** (`scripts/seed-emulator.ts`). Make sure these exist (reuse T04's users if they already exist, otherwise add them):
-   - a super admin `super@spoton.test` with `admins/{uid}.role = "super"`;
-   - a legacy admin `admin@spoton.test` whose `admins/{uid}` has **no** `role` field (the legacy shape);
-   - a regular user `user@spoton.test` with no `admins` doc.
+9. **Seed fixtures** (`e2e/fixtures.ts` and `scripts/seed-emulator.ts`):
+   - Add to `E2E` in `e2e/fixtures.ts`: `superAdmin: { uid: 'e2e-super', email: 'super@spoton.test', username: 'e2e_super' }`.
+   - In the seed, add for it:
+     - an Auth user with its `uid`, `email` and `E2E.password`;
+     - `users/e2e-super`, shaped exactly like T04's `users` fixtures (`{ uid, username, email, photoURL: '', profilePictureURL: '', profileBannerURL: '', savedSpots: [], createdAt: t, lastLoginAt: t }`);
+     - `admins/e2e-super`: `{ email: 'super@spoton.test', username: 'e2e_super', photoURL: '', addedAt: t, addedBy: 'seed', role: 'super' }`.
+   - Keep T04's legacy admin `admin@spoton.test` (`admins/e2e-admin` with **no** `role` field, the legacy shape) and the regular user `user@spoton.test` (no `admins` doc) unchanged.
 
-   Keep all of T04's legacy spot and review fixtures. If T04 used different emails, keep T04's and use them in the Acceptance commands.
+   Keep all of T04's legacy spot and review fixtures.
 10. **`callables/highlightSpot.ts`.**
     - Move `highlightSpot` verbatim: same export name, same checks, same writes, same return value, same error codes and messages.
     - The only change is logging: replace `:487` and `:521` with `logger.info("highlightSpot", {uid, spotId})`, and remove all other data dumps. T10 replaces the logic.
@@ -148,6 +151,7 @@ Split `functions/src/index.ts` into small modules. Admin identity moves to the s
 13. **`scripts/lib/cli.ts`** exports `parseArgs(argv, spec)` and `guardTarget({project, apply})`:
     - `--project` is required, else exit 2.
     - If `project` starts with `demo-` and `FIRESTORE_EMULATOR_HOST` is unset, refuse (exit 2).
+    - If `project` does **not** start with `demo-` but `FIRESTORE_EMULATOR_HOST` or `FIREBASE_AUTH_EMULATOR_HOST` is set, refuse (exit 2). A real project id must never be mixed with emulator env.
     - Print one banner line: `TARGET=<project> MODE=<dry-run|APPLY> EMULATOR=<yes|no>`.
     - Dry-run is the default. Writes happen only with `--apply`.
     - Credentials: the Admin SDK's Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS` or `gcloud auth application-default login`). Never read key paths from argv.
@@ -159,7 +163,11 @@ Split `functions/src/index.ts` into small modules. Admin identity moves to the s
     - Otherwise plan `set(admins/{uid}, {email, username, photoURL, addedBy: uid, role: "super", addedAt: serverTimestamp()}, {merge: true})`. When the doc already exists, merge keeps its original `addedAt`: only write `addedAt` if the doc is missing.
     - Print the plan with the uid, and apply it only with `--apply`.
     - Run it the same way T04 runs `seed-emulator.ts` (the commands below assume `npx tsx`).
-15. **Emulator coverage.** If T04's `test:e2e` / `emulators:exec` does not include the `functions` emulator, add it (build the functions first). If this can't be done cleanly, stop and ask.
+15. **Emulator coverage.** T04's `test:e2e` runs only `auth,firestore,storage`. Replace the root `package.json` script with exactly:
+    ```json
+    "test:e2e": "npm --prefix functions run build && firebase emulators:exec --only auth,firestore,storage,functions --project demo-spoton \"tsx scripts/seed-emulator.ts && playwright test\""
+    ```
+    T04 already configured the functions emulator port (5001) in `firebase.json` and wired `connectFunctionsEmulator`. In `.github/workflows/ci.yml`, job `e2e`, add the step `- run: npm --prefix functions ci` directly before `- run: npm run test:e2e` (the job otherwise only runs the root `npm ci`). The CLAUDE.md single-spec command is updated by the orchestrator. If this can't be done cleanly, stop and ask.
 
 ## Must NOT change
 - Exported names `onSpotApproved`, `onReviewAdded`, `onSpotFavorited`, `onNewPendingSpot` and `highlightSpot`. Their trigger paths and event types. Region `europe-west3`.
@@ -181,7 +189,7 @@ npm run verify
 ! grep -rn "where(\"email\"" functions/src
 grep -n "new_like" functions/src/triggers/users.ts
 # export surface (built output):
-node -e "const m=require('./functions/lib/index.js');for(const k of ['onSpotApproved','onReviewAdded','onSpotFavorited','onNewPendingSpot','highlightSpot','addAdmin','removeAdmin','lookupUserByEmail']) if(!m[k]) {console.error('missing',k);process.exit(1)}"
+GCLOUD_PROJECT=demo-spoton node -e "const m=require('./functions/lib/index.js');for(const k of ['onSpotApproved','onReviewAdded','onSpotFavorited','onNewPendingSpot','highlightSpot','addAdmin','removeAdmin','lookupUserByEmail']) if(!m[k]) {console.error('missing',k);process.exit(1)}"
 # bootstrap script against the emulator only (dry-run, then apply, then idempotent re-run):
 npm --prefix functions run build
 npx firebase emulators:exec --project demo-spoton --only auth,firestore \
@@ -192,6 +200,8 @@ npx firebase emulators:exec --project demo-spoton --only auth,firestore \
 # guard: refuses without --project, and refuses demo-* without emulator:
 ! npx tsx scripts/bootstrap-super-admin.ts --email x@y.z
 ! env -u FIRESTORE_EMULATOR_HOST npx tsx scripts/bootstrap-super-admin.ts --project demo-spoton --email x@y.z
+# guard: refuses a non-demo project while emulator env is set:
+! FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npx tsx scripts/bootstrap-super-admin.ts --project some-real-project --email x@y.z
 npm run test:e2e                        # still green, with the functions emulator running
 ```
 Manual check: the last bootstrap run prints `already super`, and the dry-run printed a plan without writing anything.

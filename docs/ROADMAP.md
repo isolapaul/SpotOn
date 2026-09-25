@@ -55,8 +55,8 @@ Specs live in `docs/tasks/`. **Execute in this order**, unless the dependencies 
 | | T11b | Client: spot interactions via callables, review PII | T10, T11a | med-high |
 | | T12 | Firestore and Storage rules, with emulator tests | **D2**, T11b | high |
 | | T13 | PII strip script and security rollout runbook | T12 | low |
-| | T14 | Harden `/api/feedback` | T05 | low |
-| | T15 | Web hardening (CSP, headers, auth proxy, innerHTML, assets) | T06 | med |
+| | T14 | Harden `/api/feedback` | T05, T11a | low |
+| | T15 | Web hardening (CSP, headers, auth proxy, innerHTML, assets) | T06, T11a | med |
 | 3 Container | T16 | Standalone build and hardened Dockerfile | T14, T15 | med |
 | | T17 | Compose file, `.env.example`, server runbook | T16 | low |
 | | T18 | Release pipeline (Trivy, SBOM, cosign, GHCR) | T16, T02 | med |
@@ -107,7 +107,8 @@ Additional review gates:
 
 1. Deploy the Cloud Functions (T07–T10), with `APP_URL=https://spoton.isolapaul.hu`.
 2. Run `scripts/bootstrap-super-admin.ts` (T08). Paul becomes `admins/{uid}` with `role: 'super'`.
-3. Run `scripts/backfill-profiles.ts`: dry run first, then apply, then resolve any duplicate usernames it reports (T09).
+3. Run `scripts/backfill-profiles.ts`: dry run first, then apply, then resolve any duplicate usernames it reports (T09). If it reports `admins invalid` greater than 0, stop and ask.
+   - **Step 3.5**, only if T12 produced `docs/audit/transitional-firestore.rules`: deploy those transitional Firestore rules (the live rules plus the reads the new client needs), before step 4.
 4. Deploy the client container (T16–T18) to `spoton.isolapaul.hu`, and keep Vercel serving the same build.
 5. Save the current production rules to a file, then run `firebase deploy --only firestore:rules,storage` (T12). Watch for denied requests.
 6. Run `scripts/strip-review-pii.ts`: dry run, then apply (T13).

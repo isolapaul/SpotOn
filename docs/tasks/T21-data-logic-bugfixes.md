@@ -30,8 +30,8 @@ Line numbers are from commit `eee5668`. T03, T05, T06 and T08–T11b have shifte
 
 ## Files
 - Modify: `src/app/page.tsx`, `src/store/useSpotStore.ts` (only if a `stopSpots` action is added, see step 1), `src/components/SpotDetailsPanel.tsx`, `src/components/AddSpotModal.tsx`, `src/components/LanguageSelector.tsx`, `src/components/NotificationPrompt.tsx`, `src/components/MapView.tsx`, `src/lib/translations.ts` (one new key), `src/hooks/usePushNotifications.ts` and the `mapUserDoc` module (only if the residual check in step 4 finds a gap).
-- Create: `src/lib/constants.ts` (containing only `MAX_SPOT_IMAGES = 20`; T23 extends it), `src/lib/constants.test.ts` (trivial), and the e2e spec described in step 7.
-- Modify: the T04 seed fixtures (find them with `grep -rl "demo-spoton" e2e scripts 2>/dev/null`) to add the fixture spot in step 7.
+- Create: `src/lib/constants.ts` (containing only the `MAX_SPOT_IMAGES` re-export from `./spotImages`, see step 3; T23 extends it), `src/lib/constants.test.ts` (trivial), and the e2e spec described in step 7.
+- Modify: the T04 seed fixtures (`scripts/seed-emulator.ts`, `e2e/fixtures.ts`) to add the fixture spot in step 7, and `e2e/smoke.spec.ts` (T04 smoke test 2 counts approved markers; touch it only if it does not already assert via `EXPECTED_APPROVED_MARKERS`, see step 7).
 
 ## Steps
 1. **BUG-01**:
@@ -41,11 +41,12 @@ Line numbers are from commit `eee5668`. T03, T05, T06 and T08–T11b have shifte
      - add a `stopSpots()` action to `useSpotStore` that does exactly that, and call it.
    - Keep `fetchSpots`'s own "unsubscribe the existing listener first" logic unchanged.
 2. **BUG-03**: change the manager in the `showManageImages` block to:
-   1. Build the list from the **unfiltered** `spot.imageUrls`, keeping each entry's original index: `(spot.imageUrls || []).map((url, index) => ({ url, index })).filter(e => e.url !== PLACEHOLDER)`. Use `e.index` for the ★ badge comparison and for `handleSetPrimaryImage(e.index)`.
-   2. Then append the images that `getSpotImages(spot)` returns whose `url` is **not** in `spot.imageUrls`, as manageable entries: delete is available; set-primary is **hidden**, because `primaryImageIndex` indexes `imageUrls` and those images have no index. This is the expected case, because the T11b API is index-based.
-   3. The count badge (`{allGalleryImages.length} 📸`) stays as it is.
+   1. Build the list from the **unfiltered** `spot.imageUrls`, keeping each entry's original index: `(spot.imageUrls || []).map((url, index) => ({ url, index })).filter(e => e.url !== PLACEHOLDER_URL)`, with `PLACEHOLDER_URL` imported from `src/lib/spotImages.ts` (T11b). Use `e.index` for the ★ badge comparison and for `handleSetPrimaryImage(e.index)`.
+   2. Then append the images that `getSpotImages(spot)` returns whose `url` is **not** in `spot.imageUrls` and is not `PLACEHOLDER_URL`, as manageable entries: delete is available; set-primary is **hidden**, because `primaryImageIndex` indexes `imageUrls` and those images have no index. This is the expected case, because the T11b API is index-based.
+   3. The tile `alt` keeps today's display position: `` `Image ${position}` ``, where `position` is the 1-based position of the tile in the rendered grid (not `e.index + 1`).
+   4. The count badge (`{allGalleryImages.length} 📸`) stays as it is.
 3. **BUG-04**:
-   - Create `src/lib/constants.ts` with `export const MAX_SPOT_IMAGES = 20;`.
+   - T11b already exports `MAX_SPOT_IMAGES = 20` (and `PLACEHOLDER_URL`) from `src/lib/spotImages.ts`. Keep a single definition: create `src/lib/constants.ts` with `export { MAX_SPOT_IMAGES } from './spotImages';`. Do not define the number a second time.
    - In `AddSpotModal`, replace the literals 20 (:44) and 15 (:282, :299) with `MAX_SPOT_IMAGES`.
    - Replace `Max 15 kép` (:307) with a new translation key `maxImagesShort`: hu `Max {max} kép`, en `Max {max} photos`, de `Max. {max} Fotos`. Render it with `.replace('{max}', String(MAX_SPOT_IMAGES))`.
    - Keep the `{t('maxSize')} • ` prefix exactly.
@@ -59,7 +60,7 @@ Line numbers are from commit `eee5668`. T03, T05, T06 and T08–T11b have shifte
    - **page.tsx, app-ready effect**: `const id = setTimeout(...); return () => clearTimeout(id);`, placed inside the `if`.
    - **page.tsx, spots-ready**: declare `let spotsTimer: ReturnType<typeof setTimeout> | undefined; let cancelled = false;` in the mount effect. In `initializeSpots`, skip the `setTimeout` when `cancelled`, otherwise assign it. In the cleanup, set `cancelled = true; clearTimeout(spotsTimer)`.
    - **LanguageSelector**: `const id = setTimeout(...); return () => clearTimeout(id);`.
-   - **NotificationPrompt**: make `checkPrompt` synchronous (it has no `await`), keep the timer id, and return `() => clearTimeout(id)` from the effect.
+   - **NotificationPrompt**: make `checkPrompt` synchronous (it has no `await`), keep the timer id, and return `() => clearTimeout(id)` from the effect. Key the effect on `user?.uid` (not the `user` object), so store updates that replace the user object do not restart the timer and the prompt still appears 3 s after sign-in.
    - **SpotDetailsPanel `handleApprove`**: store the timer in a `useRef`. Clear it in an effect cleanup keyed on `spot?.id` (the component never unmounts; it returns `null` while there is no spot).
 6. **BUG-19**:
    - In `MapView`, compute `const nowIso = new Date().toISOString()` **once per render**, before `spots.map`.
@@ -67,6 +68,9 @@ Line numbers are from commit `eee5668`. T03, T05, T06 and T08–T11b have shifte
    - Use it in the marker loop. SVG and size math stay byte-identical.
 7. **E2E**: add `e2e/primary-image.spec.ts` to T04's Playwright directory.
    - **Seed** one legacy spot owned by the seeded test user, status `approved`, with `imageUrls: ['/placeholder-spot.jpg', urlA, urlB]`, no `spotImages` and `primaryImageIndex: 0`. Use URLs the emulator/Storage seed already serves, or local `/icon-192x192.png` and `/icon-512x512.png`.
+     - Use category `'scenic'` (🌅), which no other fixture uses, so `spotMarker(page, '🌅')` finds it uniquely, and a location within about 1 km of the default map centre `[47.4979, 19.0402]` (visible at zoom 13).
+     - Add it to `E2E` in `e2e/fixtures.ts` (id, name, emoji `'🌅'`), and write it in `scripts/seed-emulator.ts` from those values.
+     - It is a new approved marker, so T04 smoke test 2 (exact count of `circle[fill="#10b981"]`) would break. Increase `EXPECTED_APPROVED_MARKERS` (exported from `e2e/fixtures.ts` by T09) by 1, and make sure `e2e/smoke.spec.ts` asserts via that constant, not a literal.
    - **Test**:
      1. Sign in as the owner and open the spot.
      2. Open "manage images", hover the tile for `urlB` and click its "set primary" button (`title` = `t('setPrimaryImage')`).
@@ -80,6 +84,7 @@ Line numbers are from commit `eee5668`. T03, T05, T06 and T08–T11b have shifte
 - Images present only in `spotImages` now appear in the manager and can be deleted (set-primary only if the API supports it, see step 2).
 - The add-spot form allows selecting up to 20 images. The counter shows `/20`, and the hint reads "Max 20 kép / photos / Fotos" in the user's language.
 - In dev/StrictMode, the spots listener is unsubscribed on unmount.
+- If `primaryImageIndex` points at a placeholder entry, no manager tile shows ★ (consistent with the hero, which shows the placeholder).
 - Timers no longer fire after unmount. In particular, approving a spot and then opening another spot within 1 s no longer closes the new one.
 - Marker DOM is no longer rebuilt on renders where nothing about the marker changed. Visually identical.
 

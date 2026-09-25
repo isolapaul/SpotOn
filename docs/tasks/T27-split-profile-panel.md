@@ -4,7 +4,7 @@
 **Audit refs:** ARCH-02, ARCH-01, code smells (`getLevelInfo` recomputed 7×, IIFEs in JSX, async `onClick` bodies)
 
 ## Goal
-Break the ~1270-line `ProfilePanel.tsx` into focused components under `src/components/profile/`, each at most 300 lines, each owning only its own state. The UI and behaviour stay identical.
+Break the ~1270-line `ProfilePanel.tsx` into focused components under `src/components/profile/`, each at most 300 lines, each owning only its own state. The UI and behaviour stay identical, apart from the accepted state resets listed after the Steps.
 
 ## Context
 Line ranges below are from `eee5668`. After T11a, T15, T22–T26 the file has changed: admin search is a callable, the `innerHTML` fallback is replaced, strings are keys, PanelShell/StarRating/useSwipeToClose are used, and `useUserSpots` exists. **Map each block by its landmark comment or JSX, not by number.**
@@ -14,7 +14,7 @@ Line ranges below are from `eee5668`. After T11a, T15, T22–T26 the file has ch
 | props, top-level hooks, `activeTab`, `isSettingsOpen`, `showLevelInfo`, swipe (:16-51, :196-229) | orchestration | `profile/ProfilePanel.tsx` |
 | `getStatusClassName`, `getStatusText` (:53-65) | pure status → class/key | `src/lib/spotStatus.ts` (`STATUS_CLASS`, `STATUS_LABEL_KEY` static maps) |
 | own-spots listener (:67-83) | already `useUserSpots` (T26) | used in `ProfilePanel.tsx` |
-| categories listener (:85-100), `handleAddCategory` (:177-194) | category CRUD | `src/hooks/useCategories.ts` (`{ categories, addCategory, isAdding }`) + `profile/admin/CategoryManager.tsx` |
+| categories listener (:85-100), `handleAddCategory` (:177-194) | category CRUD | `src/hooks/useCategories.ts` (`{ categories, addCategory, isAdding }`), called as `useCategories(isOpen && isSuperAdmin)` in `profile/ProfilePanel.tsx`; `categories`/`addCategory`/`isAdding` are passed down `AdminTab` → `profile/admin/CategoryManager.tsx` (owns only its inputs) |
 | `handleApproveSpot` (:107-113) | approve | `profile/tabs/PendingTab.tsx` |
 | `handleSearchUser`, `handleAddAdmin` (:115-149) + state `adminEmailInput`, `searchedUser`, `isSearching` | admin search/grant | `profile/admin/AdminSearch.tsx` |
 | `handleRemoveAdmin` (:151-160) | revoke | `profile/admin/AdminList.tsx` |
@@ -35,7 +35,7 @@ Line ranges below are from `eee5668`. After T11a, T15, T22–T26 the file has ch
 | `activeTab === 'pending' && userIsAdmin` (:865-917) | pending list + approve | `profile/tabs/PendingTab.tsx` |
 | `activeTab === 'admin' && userIsSuperAdmin` (:919-1089) | admin tab | `profile/tabs/AdminTab.tsx` (composes AdminSearch :922-985, AdminList :987-1031, CategoryManager :1033-1087) |
 | `<SettingsPanel …/>` (:1094) | unchanged component | rendered by `ProfilePanel.tsx` |
-| `{/* Level Info Modal */}` (:1096-1269) | level system modal | `profile/LevelInfoModal.tsx` (props `spotsCount`, `onClose`); the per-level perk lists (:1195-1251) become a static `LEVEL_PERKS: Record<1..5, Array<{ emoji, keys: TranslationKey[] }>>` in the same file |
+| `{/* Level Info Modal */}` (:1096-1269) | level system modal | `profile/LevelInfoModal.tsx` (props `levelInfo`, `spotsCount`, `onClose`; the current level comes from the `levelInfo` prop, not a new `getLevelInfo` call); the per-level perk lists (:1195-1251) become a static `LEVEL_PERKS: Record<1..5, Array<{ emoji: string \| null; keys: TranslationKey[]; variant?: 'muted' }>>` in the same file. Level 1 is `[{ emoji: null, keys: ['noSpecialBenefits'], variant: 'muted' }]` (today's `<li className="text-white/50 italic">` with no emoji span, :1195-1197); multi-key entries render their keys joined by a space (`highlightOneSpot goldAppearance`) |
 
 **Resulting tree:**
 ```
@@ -53,7 +53,7 @@ src/components/profile/
 **State ownership:**
 - `ProfilePanel`:
   - owns `activeTab`, `isSettingsOpen` and `showLevelInfo`;
-  - calls `useUserSpots(user.uid, isOpen)` → `mySpots`, `useIsAdmin()`, `useIsSuperAdmin()`, `useSwipeToClose`;
+  - calls `useUserSpots(user.uid, isOpen)` → `mySpots`, `useIsAdmin()`, `useIsSuperAdmin()`, `useSwipeToClose`, and `useCategories(isOpen && isSuperAdmin)` (so the categories listener lifetime is unchanged: it does not depend on the admin tab being mounted);
   - computes `levelInfo = getLevelInfo(spotsCount)` **once**, where `spotsCount` is whatever T11a/T26 established (today `mySpots.length`), and passes it down;
   - derives `favoriteSpots` and `pendingSpots` from the spot store as today (:104-105).
 - `UsernameEditor`: its 3 states.
@@ -61,7 +61,7 @@ src/components/profile/
 - `HighlightManager`: `isHighlighting`.
 - `NameCustomizer`: `isCustomizing`.
 - `AdminSearch`: input, result and searching state.
-- `CategoryManager`: name, icon and adding state (via `useCategories`).
+- `CategoryManager`: only its name and icon inputs; `categories`, `addCategory` and `isAdding` come in as props.
 - Everything else is stateless (props in, callbacks out).
 
 ## Files
@@ -71,11 +71,17 @@ src/components/profile/
 
 ## Steps
 1. Create `src/lib/spotStatus.ts` with static maps, and test that they equal the old helper outputs for `approved`, `pending`, `rejected` and `'x'`.
-2. Create `useCategories` by moving the `categories` `onSnapshot` and `addDoc` unchanged. It keeps the `isOpen && isSuperAdmin` gating, and the same toast keys at the call site.
+2. Create `useCategories(enabled)` by moving the `categories` `onSnapshot` and `addDoc` unchanged. `ProfilePanel.tsx` calls it with `isOpen && isSuperAdmin` (today's gating), and the same toast keys stay at the call site.
 3. Extract the leaf components first (Banner, Avatar, Badges, LevelProgressCard, Stats, ProfileSpotCard, StatusBadge usage), then the containers (HighlightManager, NameCustomizer, MySpotList, tabs, admin), then LevelInfoModal. **Commit after each group**, running `npm run verify` and `npm run test:e2e` each time.
-4. Replace every `(() => { const levelInfo = getLevelInfo(...); … })()` IIFE with the prop `levelInfo`. `getLevelInfo` must be called only in `ProfilePanel.tsx` and `LevelInfoModal.tsx` (the per-level table).
+4. Replace every `(() => { const levelInfo = getLevelInfo(...); … })()` IIFE with the prop `levelInfo`. `getLevelInfo` must be called only in `ProfilePanel.tsx` (once, the current level) and `LevelInfoModal.tsx` (once, the per-level table). `LevelInfoModal` gets the current level via its `levelInfo` prop; `isUnlocked` becomes `level <= levelInfo.level`.
 5. `ProfilePanel.tsx` keeps the early return `if (!isOpen || !user) return null` **after** all hooks, as today.
 6. Check the line limit: `wc -l src/components/profile/**/*.tsx`. Every file must be ≤ 300 lines; target ≤ 200.
+7. **DOM equality check:** reuse T25's `__dom__` snapshot helper (T25 step 7; recreate it if T25 deleted it). Capture the open profile panel before the split for each tab (my-spots, favourites, pending and admin as super-admin) and with the level-info modal open, and compare after the split with normalised class lists.
+
+**Intended behaviour changes (accepted):** child components now own their state and unmount when hidden, so these reset where today they persisted:
+- `showHighlightPanel` and `showCustomizationPanel` reset on tab switch and on panel close.
+- The admin search input and search result reset on tab switch.
+- Username edit mode (and its draft) resets on panel close.
 
 ## Must NOT change
 - Rendered DOM, classes, texts, aria-labels, ids (`edit-username`, `admin-email`) and tab order/visibility.

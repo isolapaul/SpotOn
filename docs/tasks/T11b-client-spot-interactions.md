@@ -23,6 +23,9 @@ This spec also fixes the **exact field sets** of the remaining direct owner/admi
 - **Review badge:** `SpotDetailsPanel.tsx:65-92` puts `review.customNameFont` into `className` (SEC-05) and shows the level from `review.userSpotsCount ?? meta.spotsCount` (`:777-778`). After T11a, the admin badge uses `meta.isAdmin`, and `reviewerMeta` comes from `publicProfiles`.
 - **Legacy images:** `SpotDetailsPanel.tsx:227-234` calls `migrateSpotImages` on view, a write on read (BUG-18). Gallery code at `:140-152`.
 - **Highlights:** `SpotDetailsPanel.tsx:325-340` calls `httpsCallable(functions,'highlightSpot')` directly. `ProfilePanel.tsx:602-617` calls `useUserStore.highlightSpot(spotId, maxHighlights)` / `unhighlightSpot` (client writes). `SpotDetailsPanel.tsx:224` ignores expiry (BUG-10).
+- **Stale `spot` prop (pre-existing):** `page.tsx` keeps the opened spot as a `selectedSpot` state snapshot (`page.tsx:48, :337`), so store updates do not reach the open `SpotDetailsPanel` until it is reopened. T29 fixes this; this task only avoids depending on the snapshot where it derives new state (step 5).
+- **Legacy singular `imageUrl`:** some legacy spots have only `imageUrl` (read at `ProfilePanel.tsx:580,781,823`, `SpotInfoWindow.tsx:123`, `SpotDetailsPanel.tsx:482`). `getSpotImages`, `realImageCount` and the callables treat such a spot as having no `imageUrls`, which is unchanged behaviour. Keep those existing reads as they are.
+- **Toasts are not visible in e2e:** `showToast` only records a notification (see T11a step 14); assert with T11a's `expectNotification` helper from `e2e/helpers.ts`.
 - T10 callables: `toggleImageLike({spotId,imageId})`, `addSpotImages({spotId, urls})` (`resource-exhausted` `"MAX_SPOT_IMAGES"`), `highlightSpot({spotId})` and `unhighlightSpot({spotId})`. Server messages are shown via `error.message` as today.
 - T11a already moved `addSpot`'s status decision to the `isAdmin` store flag (`status: isAdmin ? 'approved' : 'pending'`). This task only verifies it. T12 rules enforce it.
 - Direct writes that **stay direct** (rules-guarded in T12), listed with their exact payloads:
@@ -45,8 +48,8 @@ This spec also fixes the **exact field sets** of the remaining direct owner/admi
 - Create: `src/lib/spotImages.ts` and `src/lib/spotImages.test.ts`, `src/lib/highlights.ts` and `src/lib/highlights.test.ts`, and `e2e/spot-interactions.spec.ts` (T04's e2e dir).
 - Modify:
   - `src/store/useSpotStore.ts`, `src/store/useUserStore.ts`;
-  - `src/components/SpotDetailsPanel.tsx`, `src/components/ProfilePanel.tsx`;
-  - `scripts/seed-emulator.ts` (only if steps 9 and 10 need fixtures that are missing).
+  - `src/components/SpotDetailsPanel.tsx`, `src/components/ProfilePanel.tsx`, `src/components/AddSpotModal.tsx` (`maxLength` only, step 5(f));
+  - `scripts/seed-emulator.ts` and `e2e/fixtures.ts` (the dedicated fixture in step 10).
 - Delete: none.
 
 ## Steps
@@ -91,8 +94,8 @@ This spec also fixes the **exact field sets** of the remaining direct owner/admi
      - `uploadBytes(ref, blob, {contentType: blob.type})`;
      - the paths and Firestore writes are unchanged.
 5. **`SpotDetailsPanel.tsx`**:
-   - (a) Delete the migrate effect. `sortedSpotImages` = `getSpotImages(spot).filter(i => i.url !== PLACEHOLDER_URL)`, then sorted as today (the comparator already tolerates a missing `addedAt`).
-   - (b) `isHighlightedByUser` = `isHighlightedBy(spot, user.uid)`.
+   - (a) Delete the migrate effect. `sortedSpotImages` = `getSpotImages(fresh).filter(i => i.url !== PLACEHOLDER_URL)`, then sorted as today (the comparator already tolerates a missing `addedAt`). Here `fresh` is the live store copy of the open spot, read unconditionally before the `if (!spot) return null` early return: `const fresh = useSpotStore((s) => (spot ? s.spots.find((x) => x.id === spot.id) : undefined)) ?? spot`. Use `fresh` for the highlight and gallery derivations only; everything else keeps using the `spot` prop (the stale snapshot is pre-existing, T29 fixes it).
+   - (b) `isHighlightedByUser` = `isHighlightedBy(fresh, user.uid)`, so the button turns active once the listener delivers the new entry, and a second click shows `youHighlightedThis` instead of a server error.
    - (c) `handleHighlightSpot` calls `useUserStore.highlightSpot(spot.id)`. The toasts are unchanged, including `error?.details?.message || error?.message || 'Error highlighting spot'`. Remove the imports of `httpsCallable`, `functions` and `firebase/*` if they become unused.
    - (d) `handleSubmitReview` sends only `{userId, userName: user.username || t('anonymous'), userPhoto: user.profilePictureURL || user.photoURL, rating, comment}`. The review textarea gets `maxLength={1000}` (no visible change).
    - (e) `reviewerMeta` also stores `customNameFont` from the public profile. `ReviewerBadge` props become `{meta: {username?, spotsCount?, customNameColor?, customNameFont?, isAdmin?}, review: Review}` and render:
@@ -103,6 +106,7 @@ This spec also fixes the **exact field sets** of the remaining direct owner/admi
      - the admin badge when `meta.isAdmin === true`.
 
      `review.userEmail`, `review.userSpotsCount`, `review.customNameColor` and `review.customNameFont` are **never read**.
+   - (f) Input limits matching T12 (no visible change): the edit-name `<input>` gets `maxLength={100}` and the edit-description `<textarea>` gets `maxLength={2000}`. In `AddSpotModal.tsx`, the name input (`#spot-name`) gets `maxLength={100}` and the description textarea (`#spot-description`) gets `maxLength={2000}`.
 6. **`ProfilePanel.tsx`**, in the highlight panel:
    - `isHighlighted = isHighlightedBy(spot, user.uid)`;
    - the "`N / max kiemelve`" count and the disable check use `myAllSpots.filter(s => isHighlightedBy(s, user.uid)).length` instead of `user.highlightedSpots.length`;
@@ -110,17 +114,17 @@ This spec also fixes the **exact field sets** of the remaining direct owner/admi
    - the texts are unchanged.
 7. **Grep for leftovers:** no `userEmail` writes, and no `migrateSpotImages`.
 8. **Unit tests:** as in steps 1 and 2. `npm run verify` runs them.
-9. **e2e (`spot-interactions.spec.ts`).** It runs inside T04's emulator harness, and uses `firebase-admin` in the Node test context (`FIRESTORE_EMULATOR_HOST` is set by `emulators:exec`) for data assertions:
-   - (1) `user@spoton.test` adds a spot with one JPEG fixture. The new doc has `status 'pending'`, and its `imageUrls[0]` decodes to a path starting with `spot-images/<uid>/` and ending `.jpg`.
-   - (2) The user adds a 4★ review to a seeded approved spot. It is visible in the UI, and the stored last review's keys are a subset of `{id,userId,userName,userPhoto,rating,comment,createdAt}`.
-   - (3) Opening a seeded **legacy** spot (only `imageUrls`) leaves the stored doc with no `spotImages` field (no write on read).
+9. **e2e (`spot-interactions.spec.ts`).** It runs inside T04's emulator harness, and uses `firebase-admin` in the Node test context (`FIRESTORE_EMULATOR_HOST` is set by `emulators:exec`) for data assertions. Because the open panel shows the `selectedSpot` snapshot (Context), **close and reopen the details panel** before asserting any review or photo change in the UI.
+   - (1) `E2E.user` adds a spot with one JPEG: `public/placeholder-spot.jpg`, attached with `setInputFiles`. The new doc has `status 'pending'`, and its `imageUrls[0]` decodes to a path starting with `spot-images/<uid>/` and ending `.jpg`.
+   - (2) The user adds a 4★ review to `E2E.interactionSpot` (step 10). After close/reopen it is visible in the UI, and the stored last review's keys are a subset of `{id,userId,userName,userPhoto,rating,comment,createdAt}`.
+   - (3) Opening `E2E.interactionSpot` (legacy: only `imageUrls`) leaves the stored doc with no `spotImages` field (no write on read).
    - (4) Adding a photo to that legacy spot gives `spotImages` ids `${spotId}_0…` followed by the new entry, and `imageUrls` grew by 1.
-   - (5) `admin@spoton.test` approves the pending spot from (1). The status becomes `approved`.
-   - (6) The level-5 seeded user (T09 seed) highlights one of their approved spots from SpotDetailsPanel. The success toast appears, the spot's `highlighted` has an entry with `expiresAt` about 7 days out, and `users.highlightedSpots` contains the id.
-10. **Seed:** only if missing, add a legacy approved spot with `imageUrls` only, and give the level-5 user an approved spot.
+   - (5) `E2E.admin` approves the pending spot from (1). The status becomes `approved`.
+   - (6) `E2E.level5` (T09 seed) highlights `E2E.level5.approvedSpot` from SpotDetailsPanel. A notification with body `Spot highlighted! Visible for 7 days` is recorded (`expectNotification`), the spot's `highlighted` has an entry with `expiresAt` about 7 days out, and `users.highlightedSpots` contains the id.
+10. **Seed** (T04 convention: no spec may leave a fixture used by another spec mutated, so (2)–(4) do not touch T04's spots): add `interactionSpot: { id: 'e2e-interaction-spot', name: 'E2E Interaction Spot', emoji: '🏖️' }` to `E2E` in `e2e/fixtures.ts`, and seed it in the **legacy** shape: `status: 'approved'`, category `part` (no other fixture uses it), `createdBy: 'e2e-admin'`, `createdByName: 'e2e_admin'`, `createdAt: t`, `imageUrls: ['/icon-512x512.png']`, `reviews: []`, **no** `spotImages` and **no** `primaryImageIndex`, placed within about 1 km of the map centre apart from the other fixtures. It is a new approved marker, so increase `EXPECTED_APPROVED_MARKERS` (T09) by 1. The level-5 user and its approved spot already exist (T09).
 
 ## Must NOT change
-- UI, layout and texts, except `maxLength={1000}` on the review textarea (no visible change). Toast messages are unchanged.
+- UI, layout and texts, except the `maxLength` attributes (no visible change): `maxLength={1000}` on the review textarea, and `maxLength={100}` / `maxLength={2000}` on the spot name / description inputs in `AddSpotModal` and the `SpotDetailsPanel` edit form (step 5(f)). Toast messages are unchanged.
 - The stored shapes of `spots` (see the T10 Must-NOT list), `reviews[]` elements (minus the removed keys), `users.highlightedSpots`, and the spot image ids.
 - Legacy data keeps rendering: spots with only `imageUrls`, reviews containing `userEmail` and the other legacy keys, and spots without `spotImages` or `reviews`.
 - The image limit of 20 and the placeholder behaviour (D12).

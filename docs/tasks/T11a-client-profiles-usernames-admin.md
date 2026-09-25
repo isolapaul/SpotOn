@@ -47,6 +47,8 @@ Make the client stop depending on reading other users' `users` docs, on download
   - `src/store/publicProfiles.ts`;
   - `e2e/profile-admin.spec.ts` (in T04's e2e directory, following its sign-in helper).
 - Modify:
+  - `e2e/fixtures.ts`, `scripts/seed-emulator.ts` (the dedicated rename fixture, step 14), `e2e/helpers.ts` (`expectNotification`, step 14);
+  - `playwright.config.ts` (delete the `NEXT_PUBLIC_ADMIN_EMAIL: ''` entry from `E2E_ENV`);
   - `src/store/useUserStore.ts`, `src/store/useSpotStore.ts`, `src/hooks/usePushNotifications.ts`;
   - `src/app/page.tsx`;
   - `src/components/ProfilePanel.tsx`, `src/components/SettingsPanel.tsx`, `src/components/SpotDetailsPanel.tsx`, `src/components/SpotInfoWindow.tsx`, `src/components/AddSpotModal.tsx`;
@@ -74,7 +76,7 @@ Make the client stop depending on reading other users' `users` docs, on download
    - `savedSpots: data.savedSpots || []`;
    - `highlightedSpots: data.highlightedSpots || []`;
    - `customNameColor`, `customNameFont` (a string, or omitted);
-   - `notificationSettings` (object with 3 booleans, or omitted);
+   - `notificationSettings`: if `data.notificationSettings` is an object, exactly `{spotApproved, spotReviewed, newPendingSpot}`, each the stored boolean, a missing or non-boolean one defaulting to `true`; any other key is dropped (T12 allows only these three keys). Otherwise omitted;
    - `spotsCount` (a non-negative integer, or omitted).
 
    Export the `User` type from here, and have `useUserStore` re-export it. Tests: each field present or absent, the legacy docs (photoURL only, no username), and that BUG-02's fields are preserved.
@@ -91,18 +93,16 @@ Make the client stop depending on reading other users' `users` docs, on download
      - While `isAdmin` is true, `onSnapshot(collection(db,'admins'))` sets `adminUsers = docs.map(d => ({id: d.id, ...d.data()})).filter(a => a.role !== 'super')`. Otherwise it unsubscribes and sets `adminUsers = []`.
      - The error callbacks set both flags to false.
    - (d) Every sign-in path builds the store user with `mapUserDoc`: popup, email, redirect and auth-state.
-   - (e) New-user doc creation: a helper `createUserDoc(fbUser)` runs `setDoc(ref, {uid, email, photoURL, profilePictureURL, profileBannerURL: '', savedSpots: [], createdAt: serverTimestamp(), lastLoginAt: serverTimestamp()}, {merge: true})`, with **no `username`**. Then `claimGeneratedUsername(displayName)` calls `claimUsername` with `generateUsername(...)`, retrying up to 5 times with a fresh name on `functions/already-exists`. It returns the name, or `null` on failure (logged). Use this in:
+   - (e) New-user guard: a module flag `newUserSetupInProgress` is set to `true` by the popup, redirect and email flows before their first auth call that can create or sign in a user (`signInWithPopup`, `getRedirectResult`, `createUserWithEmailAndPassword`), and cleared in `finally`. `onAuthStateChanged` must not create a doc or claim a username while it is true; it still resolves its first-call promise. New-user doc creation: a helper `createUserDoc(fbUser)` runs `setDoc(ref, {uid, email, photoURL, profilePictureURL, profileBannerURL: '', savedSpots: [], createdAt: serverTimestamp(), lastLoginAt: serverTimestamp()}, {merge: true})`, with **no `username`**. Then `claimGeneratedUsername(displayName)` calls `claimUsername` with `generateUsername(...)`, retrying up to 5 times with a fresh name on `functions/already-exists`. It returns the name, or `null` on failure (logged). Use this in:
      - the Google popup new-user path (then `needsUsername: true`, as today);
      - the Google popup existing-user-without-username path (replaces `updateDoc({username})`; `needsUsername: true`);
      - the redirect new-user path (`needsUsername` not set, as today);
      - the `onAuthStateChanged` missing-doc path (`needsUsername: true`, as today).
    - (f) `signUpWithEmail(email, pw, username)`:
-     - set a module flag `signUpInProgress = true` **before** `createUserWithEmailAndPassword`;
+     - set `newUserSetupInProgress = true` (step e) **before** `createUserWithEmailAndPassword`;
      - `createUserDoc`;
      - `claimUsername(normalizeUsername(username))`. On `already-exists` or `invalid-argument`, fall back to `claimGeneratedUsername` and set `needsUsername: true`, so the existing modal lets the user pick (no new UI text);
      - clear the flag in `finally`.
-
-     `onAuthStateChanged` must not create a doc or claim while `signUpInProgress` is true. It still resolves its first-call promise.
    - (g) `checkUsernameAvailable(name)`: `getDoc(doc(db,'usernames', normalizeUsername(name)))`. It is available if the doc does not exist, or if `data().uid === user.uid`.
    - (h) `updateUsername(name)`:
      - keep the current client validation and its messages;
@@ -116,7 +116,7 @@ Make the client stop depending on reading other users' `users` docs, on download
    - `signOut()`, in this order:
      - read the token (memory, then localStorage);
      - if there is a token and a user, run `updateDoc(users/{uid}, {fcmTokens: arrayRemove(token)})` (catch and log);
-     - `if (await isSupported()) await deleteToken(getMessaging(app))` (catch and log);
+     - only if there is a remembered token **and** `Notification.permission === 'granted'` **and** `await isSupported()`: `const messaging = getMessaging(app)`, then `await getToken(messaging, {vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY, serviceWorkerRegistration: await navigator.serviceWorker.getRegistration('/')})` (the FCM service worker is registered with scope `/` by `usePushNotifications`), then `await deleteToken(messaging)` (catch and log). Never prompt for permission here. The `arrayRemove` above stays the primary cleanup;
      - clear the token storage;
      - stop the admin listeners and reset `isAdmin`, `isSuperAdmin` and `adminUsers`;
      - then `firebaseSignOut(auth)` and `set({user: null, loading: false})`.
@@ -128,7 +128,7 @@ Make the client stop depending on reading other users' `users` docs, on download
    - `getDoc(userRef)` first.
    - Include `notificationSettings: defaultSettings` **only** if the stored doc has no `notificationSettings`. Never overwrite.
    - After a successful write, call `useUserStore.getState().rememberFcmToken(token)`.
-   - The other written keys stay the same (`fcmTokens: arrayUnion`, `language`, `notificationsEnabled: true`, `lastTokenUpdate`).
+   - The other written keys stay the same (`fcmTokens: arrayUnion`, `language`, `notificationsEnabled: true`, `lastTokenUpdate`), except that `language` is written as `language ?? 'hu'` (T12 accepts only `'hu' | 'en' | 'de'`).
 7. **`page.tsx`**:
    - `const userIsAdmin = useUserStore((s) => s.isAdmin)`;
    - remove the `isAdmin` import, the `initAdminListener()` call and `unsubscribeAdmins()` from the cleanup.
@@ -149,13 +149,34 @@ Make the client stop depending on reading other users' `users` docs, on download
 11. **`SpotInfoWindow.tsx`**: the creator effect uses `fetchPublicProfile`, the same way, including the self override. Remove the imports of `collection`, `query`, `where`, `getDocs` and `db`.
 12. **`AddSpotModal.tsx`**: pass `isAdmin` (from `useUserStore`) instead of `user.email` as `addSpot`'s last argument.
 13. **`src/lib/firebase.ts`**: if `NEXT_PUBLIC_USE_EMULATORS` does not already call `connectFunctionsEmulator(functions, '127.0.0.1', <T04 port>)`, add it.
-14. **e2e (`profile-admin.spec.ts`)**, using T04's seeded users from T08 (`user@`, `admin@` and `super@spoton.test`):
-    - (1) regular user: the profile shows neither the pending tab nor the admin tab;
-    - (2) legacy admin: the pending tab is visible and the admin tab is not;
-    - (3) super admin: the admin tab is visible, and its admin list does not contain the super admin's own entry;
-    - (4) regular user: the username changes to a fresh valid name, the success toast appears, and the new name persists after a reload;
-    - (5) changing to another seeded user's username shows `Username is already taken`;
-    - (6) sign-out succeeds with the success toast.
+14. **e2e (`profile-admin.spec.ts`)**, using the seeded fixtures `E2E.user` (T04), `E2E.admin` (T04, legacy admin without `role`) and `E2E.superAdmin` (T08).
+    - **Fixture rule** (T04 convention): no spec may leave a fixture used by another spec mutated. Playwright runs spec files alphabetically with `workers: 1`, so `profile-admin.spec.ts` runs before `smoke.spec.ts`, whose test 4 asserts the heading `e2e_user`. The rename therefore uses a dedicated fixture: add `rename: { uid: 'e2e-rename', email: 'rename@spoton.test', username: 'e2e_rename' }` to `E2E` in `e2e/fixtures.ts`, and seed its Auth user (`E2E.password`) and a `users/e2e-rename` doc shaped like T04's `users` fixtures.
+    - **Toasts are not visible:** `useToastStore.showToast` only calls `addNotification` (`src/store/useToastStore.ts:22-33`), and `NotificationCenter` is not rendered while the profile or details panel is open (`page.tsx:271`). Add to `e2e/helpers.ts`:
+      ```ts
+      /** Toasts are recorded in the persisted notification store, never shown as popups. Polls it for a body. */
+      export async function expectNotification(page: Page, body: string) {
+        await expect
+          .poll(() =>
+            page.evaluate((b) => {
+              try {
+                const raw = window.localStorage.getItem('spoton-notifications');
+                const list: Array<{ body?: string }> = raw ? JSON.parse(raw).state?.notifications ?? [] : [];
+                return list.some((n) => n.body === b);
+              } catch {
+                return false;
+              }
+            }, body),
+          )
+          .toBe(true);
+      }
+      ```
+    - Tests:
+      - (1) `E2E.user`: the profile shows neither the pending tab nor the admin tab;
+      - (2) `E2E.admin`: the pending tab is visible and the admin tab is not;
+      - (3) `E2E.superAdmin`: the admin tab is visible, and its admin list does not contain the super admin's own entry;
+      - (4) `E2E.rename`: the username changes to a fresh valid name, a notification with body `Username saved!` is recorded (`expectNotification`), and the new name persists after a reload;
+      - (5) `E2E.rename`: changing to `e2e_admin` (another seeded user's username) records a notification with body `Username is already taken`;
+      - (6) `E2E.user`: sign-out succeeds, and a notification with body `Sign out successful` is recorded.
 
 ## Must NOT change
 - All UI, layout and visible texts (hu/en/de), and the component props of `MapView`, `SpotInfoWindow`, `SpotDetailsPanel` and `NotificationSettingsModal`.
@@ -170,7 +191,7 @@ Make the client stop depending on reading other users' `users` docs, on download
 npm run verify                      # includes new lib unit tests
 npm run verify:fn
 npm run test:e2e                    # includes e2e/profile-admin.spec.ts
-! grep -rnE "NEXT_PUBLIC_ADMIN_EMAIL|setCachedAdminEmails|searchUserByEmail|initAdminListener|isSuperAdmin\(|isAdmin\(" src CLAUDE.md
+! grep -rnE "NEXT_PUBLIC_ADMIN_EMAIL|setCachedAdminEmails|searchUserByEmail|initAdminListener|isSuperAdmin\(|isAdmin\(" src CLAUDE.md playwright.config.ts
 ! grep -n "'users'" src/components/SpotDetailsPanel.tsx src/components/SpotInfoWindow.tsx
 ! grep -rn "where('createdBy'" src/components/SpotDetailsPanel.tsx src/components/SpotInfoWindow.tsx
 ! grep -rn "where('username'" src

@@ -1,6 +1,6 @@
 # T14 — Harden `/api/feedback`
 
-**Phase:** 2 · **Depends on:** T05 (Next 16.3.x, nodemailer 10) · **Risk:** low · **Decisions:** D10
+**Phase:** 2 · **Depends on:** T05 (Next 16.3.x, nodemailer 10), T11a (sequence after it: both edit `src/store/useUserStore.ts`) · **Risk:** low · **Decisions:** D10
 **Audit refs:** SEC-06, SEC-18 (fallback recipient)
 
 ## Goal

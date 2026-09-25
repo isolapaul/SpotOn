@@ -39,7 +39,7 @@ Other users will no longer be able to read `users/{uid}` once T12 lands. This ta
   - `functions/src/callables/profile.ts`: `claimUsername`, `updateNameStyle`.
   - `functions/test/profiles.test.ts`, `functions/test/levels.parity.test.ts`.
   - `scripts/backfill-profiles.ts`.
-- Modify: `functions/src/index.ts` (add re-exports), `scripts/seed-emulator.ts` (see step 8).
+- Modify: `functions/src/index.ts` (add re-exports), `scripts/seed-emulator.ts` and `e2e/fixtures.ts` (see step 8), `e2e/smoke.spec.ts` (smoke test 2 uses the exported approved-marker count, step 8).
 - Delete: none.
 
 ## Steps
@@ -94,18 +94,20 @@ Other users will no longer be able to read `users/{uid}` once T12 lands. This ta
    - `n = count()` of `spots where createdBy == uid` (live, all statuses). If `calculateLevel(n) < 5`, throw `permission-denied` `"Level 5 required"`.
    - `update(users/{uid}, …)`, where a string sets the field and `null` becomes `FieldValue.delete()`. The mirror trigger propagates the change.
    - Return `{success: true}`.
-8. **Seed** (`scripts/seed-emulator.ts`): add fixtures for the backfill test:
-   - two users sharing one username (a duplicate);
-   - one user with an invalid legacy username (for example `Béla` or `ab`);
-   - one user with 20 or more spots (mixed pending/approved), for level 5.
+8. **Seed** (`e2e/fixtures.ts` and `scripts/seed-emulator.ts`): add fixtures for the backfill test. All `users` docs are shaped like T04's (`{ uid, username, email, photoURL: '', profilePictureURL: '', profileBannerURL: '', savedSpots: [], createdAt: t, lastLoginAt: t }`).
+   - **Duplicate:** `users/e2e-dup-a` and `users/e2e-dup-b`, both with `username: 'dup_name'` and `email: ''`. No Auth users.
+   - **Invalid legacy username:** `users/e2e-invalid` with `username: 'Béla'` and `email: ''`. No Auth user.
+   - **Level 5:** add to `E2E` in `e2e/fixtures.ts`: `level5: { uid: 'e2e-level5', email: 'level5@spoton.test', username: 'e2e_level5', approvedSpot: { id: 'e2e-level5-spot-01', name: 'E2E Level5 Spot', emoji: '🎲' } }`. Seed an Auth user (`E2E.password`), its `users` doc, and 20 spots `e2e-level5-spot-01` … `e2e-level5-spot-20`, all `createdBy: 'e2e-level5'`, `createdByName: 'e2e_level5'`, category **`random`** 🎲 (no other fixture uses it), `createdAt: t`, `imageUrls: ['/placeholder-spot.jpg']`, `reviews: []`. **All are `pending` except exactly one**, `e2e-level5-spot-01` (named `E2E Level5 Spot`), which is `approved` and placed within about 1 km of the map centre, apart from the other fixtures (T11b step 9(6) highlights it). Do not seed `spotsCount`.
+   - **Expected markers:** export from `e2e/fixtures.ts` `export const EXPECTED_APPROVED_MARKERS = 3; // legacySpot + modernSpot + level5.approvedSpot; update whenever an approved fixture is added`. Change T04's smoke test 2 to assert `.leaflet-marker-icon circle[fill="#10b981"]` has count `EXPECTED_APPROVED_MARKERS` (instead of the literal 2). Its per-emoji assertions (🏔️ 1, 🌳 1, 🥾 0) stay.
 
-   Keep all existing fixtures.
+   Keep all existing fixtures unchanged.
 9. **`scripts/backfill-profiles.ts --project <id> [--apply]`** uses T08's `scripts/lib/cli.ts` guard and imports the pure helpers from `functions/src/lib/profiles.ts` and `levels.ts` (both stay import-free):
    - One pass over `spots` with `select("createdBy")` builds `countByUid` (all statuses).
    - Read all `admins` ids.
+   - **Admins check (read-only):** for each `admins/{id}`, `getAuth().getUser(id)` must exist and its `email` must equal `data.email` case-insensitively. Count every admin doc that fails (legacy docs whose id is not a uid would lose admin rights under T08/T12). Never write to `admins`.
    - Page through `users` ordered by document ID, 300 at a time. For each user, plan:
      - (a) `users.spotsCount = countByUid[uid] ?? 0`, if it differs;
-     - (b) `publicProfiles/{uid}` = `buildPublicProfile({...user, spotsCount}, {isAdmin})`, if it differs.
+     - (b) `publicProfiles/{uid}` = `buildPublicProfile({...user, spotsCount}, {isAdmin})`, if it differs from the stored doc according to `profileFieldsEqual`. Write it with `set({...projection, updatedAt: FieldValue.serverTimestamp()}, {merge: true})`.
    - Usernames: group `normalizeUsername(user.username)` → uids.
      - Exactly one uid, and the registry is missing: plan `usernames/{name} = {uid}`.
      - The registry exists with a different uid: **report a conflict** and don't write.
@@ -113,7 +115,7 @@ Other users will no longer be able to read `users/{uid}` once T12 lands. This ta
      - Invalid or missing: **report** the uid.
      - Never modify `users.username`.
    - Execute in batches of at most 400 writes, only with `--apply`.
-   - Output one `key: value` line per count, with exactly these keys: `users`, `profiles to write`, `counts to fix`, `usernames to register`, `planned writes`, `duplicates`, `conflicts`, `invalid`. Then print the duplicate/conflict/invalid lists with uids. **No emails.**
+   - Output one `key: value` line per count, with exactly these keys: `users`, `profiles to write`, `counts to fix`, `usernames to register`, `planned writes`, `duplicates`, `conflicts`, `invalid`, `admins invalid`. Then print the duplicate/conflict/invalid lists with uids, and the invalid admin doc ids. **No emails.**
    - Idempotent: a second `--apply` plans 0 writes.
 10. **Tests** (`functions/test`):
     - `profiles.test.ts`:
@@ -148,6 +150,7 @@ npx firebase emulators:exec --project demo-spoton --only auth,firestore \
    npx tsx scripts/backfill-profiles.ts --project demo-spoton | tee /tmp/bf2.txt"
 grep -E "planned writes: 0" /tmp/bf2.txt
 grep -E "duplicates: [1-9]" /tmp/bf2.txt
+grep -E "admins invalid: 0" /tmp/bf2.txt       # seeded admins/{uid} ids are Auth uids with matching emails
 npm run test:e2e                       # functions emulator loads the new triggers; UI unchanged
 ```
 Manual (emulator UI, with `firebase emulators:start --project demo-spoton` and the seed):

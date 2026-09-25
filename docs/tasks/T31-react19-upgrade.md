@@ -19,7 +19,7 @@
   | `zustand` | `5.0.15` | peers `react >=18`, optional `use-sync-external-store`, `immer` |
   | `next` | `16.3.6` | peers `react ^18.2 \|\| ^19` |
   | `lucide-react` | `0.378.0` | peer is `react ^16 \|\| ^17 \|\| ^18` → **`npm ci` fails with ERESOLVE under React 19** |
-  | `lucide-react` | `0.469.0` | first 0.x with a `^19.0.0` peer |
+  | `lucide-react` | `0.468.0` / `0.469.0` | already accept React 19: 0.468.0's peer is `^19.0.0-rc` (satisfied by 19.x releases), 0.469.0's is `^19.0.0`. Several earlier 0.x do too; the exact first version does not matter, because this task pins 0.577.0 |
   | `lucide-react` | `0.577.0` | latest 0.x |
   | `lucide-react` | `1.x` | a major with possible icon renames. **Do not jump to 1.x in this task.** |
 - **Next App Router uses its own vendored React** (`next/dist/compiled/react`) for `src/app`. The app therefore very likely already *runs* on React 19 in the browser, and this task aligns the installed packages, types and third-party peers (react-leaflet, lucide). Verify once:
@@ -65,7 +65,7 @@
    - `grep -rn "useRef<[^>]*>()" src`: none may remain.
    - `grep -rn "JSX\.Element\|: JSX\." src`: replace with `React.JSX.Element`, or remove the annotation.
    - `grep -rn "defaultProps\|propTypes\|forwardRef" src`: inspect each hit.
-4. **lucide-react 0.577.0:** every imported icon name must still exist (tsc catches this). The icons in use are X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle, Shield, ImagePlus, Sparkles, Pencil, Trash2, Image, Settings, Clock, UserPlus, Plus, TrendingUp, LogIn, Mail, Lock, Share, MoreVertical, Smartphone, Monitor, Globe, Check, Camera, LogOut, Bell, BellOff, MessageSquare, Palette, Filter, Upload, Loader2 and AlertCircle. Deprecated aliases such as `CheckCircle` and `AlertCircle` still exist in 0.x. Keep the names unless tsc fails.
+4. **lucide-react 0.577.0** (keep this pin): every imported icon name must still exist. **tsc is authoritative**; the list below is only a hint and may be stale. The icons in use are X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle, Shield, ImagePlus, Sparkles, Pencil, Trash2, Image, Settings, Clock, UserPlus, Plus, TrendingUp, LogIn, Mail, Lock, Share, MoreVertical, Smartphone, Monitor, Globe, Check, Camera, LogOut, Bell, BellOff, MessageSquare, Palette, Filter, Upload, Loader2 and AlertCircle. Deprecated aliases such as `CheckCircle` and `AlertCircle` still exist in 0.x. Keep the names unless tsc fails.
 5. **Zustand audit:**
    ```bash
    grep -rnE "use[A-Z][A-Za-z]*Store\(\s*\(?[a-z]+\)?\s*=>" src          # every selector call

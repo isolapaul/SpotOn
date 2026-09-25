@@ -30,6 +30,7 @@ The first production cutover must not happen before this runbook exists.
   1. functions;
   2. bootstrap;
   3. backfill;
+     - step 3.5: transitional Firestore rules, only if T12 produced `docs/audit/transitional-firestore.rules`;
   4. client container (plus Vercel serving the same build);
   5. rules;
   6. PII strip;
@@ -68,7 +69,13 @@ The first production cutover must not happen before this runbook exists.
    - Every command must be copy-pasteable.
 
    **§0 Preconditions (checklist):**
-   - T08–T12 are merged on `main`; CI is green (`verify`, `verify:fn`, `test:rules`, `test:e2e`); a release tag exists for the functions (for example `security-v1`) and for the **previous** functions state (for example `pre-security`).
+   - T08–T12 are merged on `main`; CI is green (`verify`, `verify:fn`, `test:rules`, `test:e2e`); a release tag exists for the functions (for example `security-v1`).
+   - The rollback tag for the **previous** functions state is the T07 commit (Node 22 toolchain, pre-T08 logic; a pre-T07 commit is Node 20 and its deploy may be blocked):
+     ```bash
+     git tag pre-security <commit of T07>
+     git show pre-security:functions/package.json | grep '"node": "22"'   # must print a line
+     ```
+   - Root dependencies installed (the scripts need the root `firebase-admin` and `tsx`): `npm ci`.
    - `firebase --version` matches the pinned version; `firebase login`; `firebase use <PROJECT_ID>` or `--project` on every command.
    - Credentials for the scripts:
      - either a service-account key for `firebase-adminsdk-*` (Console → Project settings → Service accounts → Generate key), stored outside the repo (`chmod 600`), with `export GOOGLE_APPLICATION_CREDENTIALS=<SA_KEY_PATH>`, and **deleted** in the console after the rollout;
@@ -77,10 +84,12 @@ The first production cutover must not happen before this runbook exists.
    - Put the client in a maintenance window, or at least tell users that old PWA windows may show errors (trap 2).
 
    **§1 Backups (before any change):**
-   - Firestore export:
+   - Firestore export, into a **dedicated private bucket** (never the default Storage bucket `<BUCKET>`, whose access is governed by the live, possibly permissive, Storage rules):
      ```bash
-     gcloud firestore export gs://<BUCKET>/backups/pre-security-$(date +%F) --project <PROJECT_ID>
+     gsutil mb -p <PROJECT_ID> -l europe-west3 -b on --pap enforced gs://<PROJECT_ID>-backups
+     gcloud firestore export gs://<PROJECT_ID>-backups/pre-security-$(date +%F) --project <PROJECT_ID>
      ```
+     `-b on` enables uniform bucket-level access and `--pap enforced` blocks public access. If the Firestore database is not in `europe-west3`, use its location for `-l` (Console → Firestore → database details).
    - Current rules. Save them outside the repo:
      ```bash
      TOKEN=$(gcloud auth print-access-token)
@@ -118,6 +127,7 @@ The first production cutover must not happen before this runbook exists.
      ```bash
      npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID> | tee ~/spoton-rollback/backfill-dry.txt
      ```
+   - Check `admins invalid`. **If it is greater than 0, stop and ask** (do not continue towards the rules deploy): those `admins/{id}` docs have an id that is not an existing Auth uid with a matching email, and would lose admin rights under the new functions and rules.
    - Review `duplicates`, `conflicts` and `invalid` (trap 10). For each duplicate, Paul decides who keeps the name, and edits the other user's `users/<uid>.username` in the console to a unique valid name (`^[a-z0-9_]{3,20}$`). The mirror trigger updates `publicProfiles`. Re-run the dry run until `duplicates: 0`; `invalid` entries may stay, since those users are prompted when they change their name.
    - Apply, then verify:
      ```bash
@@ -126,6 +136,15 @@ The first production cutover must not happen before this runbook exists.
      ```
      The last run must print `planned writes: 0`.
    - Spot-check a few `publicProfiles/<uid>` documents: `spotsCount` includes pending spots (trap 7).
+
+   **§4.5 Step 3.5: deploy transitional rules** (only if T12 produced `docs/audit/transitional-firestore.rules`; otherwise skip). They are the live rules plus exactly the read grants the new client needs before T12's rules go live (T12 step 6).
+   ```bash
+   mkdir -p ~/spoton-transitional
+   cp docs/audit/transitional-firestore.rules ~/spoton-transitional/firestore.rules
+   echo '{"firestore":{"rules":"firestore.rules"}}' > ~/spoton-transitional/firebase.json
+   firebase deploy --only firestore:rules --project <PROJECT_ID> --config ~/spoton-transitional/firebase.json
+   ```
+   Old clients keep working (only reads were added). Rollback: `firebase deploy --only firestore:rules --project <PROJECT_ID> --config ~/spoton-rollback/firebase.json`.
 
    **§5 Step 4: deploy the client.** Follow `docs/deploy.md` (T16–T18) to `https://spoton.isolapaul.hu`, and redeploy Vercel from the same commit. Smoke-test on the new domain:
    - sign in; change the username;
@@ -137,7 +156,7 @@ The first production cutover must not happen before this runbook exists.
    - enable notifications, then sign out.
 
    **§6 Step 5: deploy the rules** (trap 1: only after step 4 is live everywhere).
-   - Re-run the §1 rules backup (the live rules could have changed).
+   - Re-run the §1 rules backup (the live rules could have changed). If §4.5 was applied, the saved Firestore rules now equal `docs/audit/transitional-firestore.rules` rather than `docs/audit/current-rules.md`; that is expected, and they are the rollback target from now on (the new client needs their read grants).
    - `firebase deploy --only firestore:rules,storage --project <PROJECT_ID>`.
    - Immediately repeat the §5 smoke test.
    - Monitor for 24 to 48 hours:
@@ -171,10 +190,17 @@ The first production cutover must not happen before this runbook exists.
      ```
      Accept deleting only the new functions, and **only after** the client has been rolled back. Then `git checkout main`.
    - **Bootstrap:** delete `admins/<uid>` in the console, but only after the client rollback (the old client uses `NEXT_PUBLIC_ADMIN_EMAIL`).
+   - **Transitional rules (§4.5):** `firebase deploy --only firestore:rules --project <PROJECT_ID> --config ~/spoton-rollback/firebase.json`, with `~/spoton-rollback/firestore.rules` still holding the original §1 backup. Only while the old client is live, or after the client rollback.
    - **Backfill:** no rollback is needed (additive fields and collections).
    - **PII strip:** not reversible by design.
 
    **§10 Final checklist:** one checkbox per step above, with date and initials, plus:
+   - once the rollout is confirmed stable, let the backups expire after N days (Paul chooses N, for example 30):
+     ```bash
+     echo '{"rule":[{"action":{"type":"Delete"},"condition":{"age":30}}]}' > ~/spoton-rollback/lifecycle.json
+     gsutil lifecycle set ~/spoton-rollback/lifecycle.json gs://<PROJECT_ID>-backups
+     ```
+     or delete them directly with `gsutil rm -r gs://<PROJECT_ID>-backups/pre-security-<date>`;
    - delete the SA key;
    - confirm `functions/.env.<PROJECT_ID>` is not committed;
    - `git status` is clean;
@@ -189,7 +215,7 @@ The first production cutover must not happen before this runbook exists.
 ## Acceptance
 ```bash
 npm run verify                       # includes scripts/lib/stripReviewPii.test.ts
-npx firebase emulators:exec --project demo-spoton --only firestore \
+npx firebase emulators:exec --project demo-spoton --only auth,firestore \
   "npx tsx scripts/seed-emulator.ts && \
    ! npx tsx scripts/strip-review-pii.ts --project demo-spoton --check && \
    npx tsx scripts/strip-review-pii.ts --project demo-spoton | tee /tmp/pii1.txt && \
@@ -203,6 +229,7 @@ grep -E "spots to update: 0" /tmp/pii2.txt
 test -f docs/security-rollout.md
 grep -nE "releases/cloud.firestore|firestore:rules,storage|--config ~/spoton-rollback|bootstrap-super-admin|backfill-profiles|strip-review-pii" docs/security-rollout.md
 ! grep -nE "[A-Za-z0-9._%+-]+@(gmail|isolapaul)\." docs/security-rollout.md   # no real emails
+for p in '--pap enforced' 'admins invalid' 'transitional-firestore.rules' 'git tag pre-security'; do grep -qF -- "$p" docs/security-rollout.md || echo "missing: $p"; done   # prints nothing
 ```
 
 ## Rollback

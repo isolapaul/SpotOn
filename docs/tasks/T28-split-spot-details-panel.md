@@ -7,8 +7,9 @@
 - Break the ~870-line `SpotDetailsPanel.tsx` into focused components under `src/components/spot-details/`, each at most 300 lines.
 - Fix BUG-09: the favourite state is copied from props and never re-synced.
 - Fix BUG-17: effects re-run because they depend on the state they set.
+- Fix the edit-state leak across spots (see below).
 
-Everything else is identical.
+Everything else is identical, apart from the accepted state resets listed after the Steps.
 
 ## Context
 Line ranges below are from `eee5668`. T11b, T21–T26 changed the file:
@@ -33,7 +34,7 @@ Line ranges below are from `eee5668`. T11b, T21–T26 changed the file:
 | `isUploadingPhotos`, `photoInputRef` (:110, :131); `handleAddPhotos` (:396-411); JSX `{/* Add photos */}` (:735-753) | add photos card | `spot-details/AddPhotosCard.tsx` |
 | `isEditing`, `editName`, `editDescription` (:113-115); `handleSaveEdit` (:413-422) | edit state, spanning **two** DOM places (title input :555-561, description editor :597-614) | `spot-details/useSpotEdit.ts` (hook, owned by the shell) + `SpotTitle.tsx` + `EditForm.tsx` |
 | `showManageImages` (:116); `handleSetPrimaryImage`, `handleDeleteImage` (:424-441); JSX `{/* Manage images */}` (:622-656) | image manager (T21 logic) | `spot-details/ImageManager.tsx` |
-| gallery state (:118-121, :137), `nextImage`/`prevImage` (:154-160), keyboard effect (:169-179); JSX `{/* Fullscreen gallery modal */}` (:814-868) | gallery | `spot-details/Gallery.tsx` (owns index and swipe; props `urls`, `open`, `startIndex`, `onClose`, `alt`) |
+| gallery state (:118-121, :137), `nextImage`/`prevImage` (:154-160), keyboard effect (:169-179); JSX `{/* Fullscreen gallery modal */}` (:814-868) | gallery | `spot-details/Gallery.tsx` (owns index and swipe; props `urls`, `open`, `startIndex`, `onClose`, `alt`; clamps its index to `urls.length - 1`) |
 | `ignoreHeroClicks` effect (:162-167); JSX `{/* Hero Image */}` incl. top action bar and category badge (:474-525) | hero | `spot-details/SpotHero.tsx` |
 | `sortedSpotImages`, `allGalleryImages`, `heroImageUrl` (:139-152, :306-310) | already `lib/spotImages` (T23) | called in shell, passed as props |
 | creator effect (:188-219), `creatorDisplayName`/colour/level (:311-313); JSX `{/* Meta info */}` (:668-689) | date + creator | `spot-details/CreatorInfo.tsx` (uses `usePublicProfile`) |
@@ -58,21 +59,23 @@ src/components/spot-details/
 - `ReviewForm`: rating, comment, submitting.
 - `AddPhotosCard`: uploading, input ref.
 - `ImageManager`: `showManageImages`.
-- `Gallery`: current index and swipe.
+- `Gallery`: current index (clamped to `urls.length - 1`) and swipe.
 - `SpotHero`: `ignoreHeroClicks` (reset on `spot.id`).
 - `AdminStatusCard`: `isApproving` and the T21 close timer.
 
 **BUG-09 (intended change).** `isFavorite` is initialised from props once. The component is always mounted and receives `spot = null` at mount, so the heart starts as "not favourite" for every spot, even saved ones. After toggling, it flips locally and never re-syncs. **Fix:** `useFavoriteToggle(spot.id)` (T26), which reads `user.savedSpots` from the store. The heart now correctly shows saved spots and stays in sync with the info window and profile.
 
+**Edit state leaks across spots (intended fix).** The panel is always mounted, so `isEditing`, `editName` and `editDescription` (:113-115) survive closing the panel and opening another spot. The title input (:555-561, edit button :570) then shows the previous spot's draft, and Save could rename a **different** spot. **Fix:** `useSpotEdit` resets `isEditing = false` and clears the edit fields whenever `spot?.id` changes.
+
 **BUG-17 (intended change).** The effects with deps `[spot, uploaderNames, migrateSpotImages, t]` (:255) and `[spot?.reviews, reviewerMeta]` (:287) re-ran after every state update they caused. After T26 those fetches live in `usePublicProfile(s)`, so no component state feeds back into deps. Also remove any remaining effect whose deps include state it sets. Verify with the grep in Acceptance and by review.
 
 ## Files
-- Create: every file in the tree above, plus `src/lib/dates.ts` and `src/lib/dates.test.ts`.
-- Modify: `src/components/SpotDetailsPanel.tsx` (becomes a re-export).
+- Create: every file in the tree above, plus `src/lib/dates.ts`, `src/lib/dates.test.ts` and `e2e/spot-details.spec.ts`.
+- Modify: `src/components/SpotDetailsPanel.tsx` (becomes a re-export), `scripts/seed-emulator.ts` and `e2e/fixtures.ts` (the dedicated fixture for the e2e spec).
 
 ## Steps
 1. Create `lib/dates.ts`: `dateLocale(lang)` (`hu-HU`, `de-DE`, `en-US`) and `formatLongDate(ts, lang, unknownLabel)`. Test them against the old functions: Timestamp-like with `toDate`, a Date, a number, and a falsy value.
-2. Create the hooks `useSpotEdit(spot)` → `{ isEditing, editName, setEditName, editDescription, setEditDescription, start, cancel, save }` (T22's toast semantics) and `useSpotHighlight(spot)`.
+2. Create the hooks `useSpotEdit(spot)` → `{ isEditing, editName, setEditName, editDescription, setEditDescription, start, cancel, save }` (T22's toast semantics; resets `isEditing` to `false` and clears the edit fields when `spot?.id` changes) and `useSpotHighlight(spot)`.
 3. Extract the leaves first (ReviewerBadge, SpotLocation, CreatorInfo, AddPhotosCard, ReviewForm, ReviewList), then SpotTitle and EditForm, ImageManager, AdminActions, SpotHero, then Gallery. **Commit per group**, with `npm run verify` and `npm run test:e2e` green each time.
 4. Apply the BUG-09 fix in SpotHero; delete the local `isFavorite` state.
 5. Keep all hooks above the `if (!spot) return null` in the shell, as today. Children receive a non-null `spot`.
@@ -89,6 +92,10 @@ src/components/spot-details/
    10. spacer
 7. Check line counts: every file ≤ 300 lines.
 
+**Intended behaviour changes (accepted):**
+- Edit mode and its draft no longer carry over to another spot (fix above).
+- Children now unmount while there is no spot, so these reset on close where today they persisted: the `ReviewForm` rating and comment, `ImageManager`'s `showManageImages`, and the gallery index.
+
 ## Must NOT change
 - Rendered DOM, classes, texts, aria-labels (`Close spot details`, `Close`, `Share`, favourite labels, `Go to image N`), `role="button"` on the hero, and the ids `review-comment`.
 - Swipe behaviour (either direction >100 px closes), gallery swipe and keys (←, →, Esc), and the 300 ms hero click guard.
@@ -104,12 +111,16 @@ npm run test:e2e
 find src/components/spot-details -name '*.ts*' -exec wc -l {} + | awk '$1>300 && $2!="total"'  # → no output
 grep -rn "from 'firebase/" src/components/spot-details                                        # → none
 grep -rn "useState(spot" src/components/spot-details                                          # → none (no prop copies)
+grep -rn -A12 "useEffect(" src/components/spot-details                                        # review: no effect's dep array lists state that its own body sets (BUG-17)
 ```
-Add e2e `e2e/spot-details.spec.ts`:
-- **Favourite sync (BUG-09).** Signed in, with a spot seeded as saved in `users/{uid}.savedSpots`:
+Review checklist (BUG-17): for every `useEffect` in `src/components/spot-details` and its hooks, no dependency is a state variable that the effect's body sets. Record the check in the commit body.
+Add e2e `e2e/spot-details.spec.ts`. It uses **only** a dedicated fixture, never the T04, T11b or T21 fixtures (T04 fixture rule):
+- Add `detailsSpot: { id: 'e2e-details-spot', name: 'E2E Details Spot', emoji: '💨' }` to `E2E` in `e2e/fixtures.ts`, and seed it in `scripts/seed-emulator.ts`: `status: 'approved'`, category `smoke-spot` (no other fixture uses it), `createdBy: 'e2e-admin'`, `createdByName: 'e2e_admin'`, `createdAt: t`, `imageUrls: ['/icon-192x192.png', '/icon-512x512.png']` (two images, for the gallery), `reviews: []`, placed within about 1 km of the map centre apart from the other fixtures. It is a new approved marker, so increase `EXPECTED_APPROVED_MARKERS` (T09) by 1.
+- Seed `E2E.detailsSpot.id` in the signed-in spec user's `savedSpots`. The spec re-favourites it before it ends, so the user doc ends as seeded.
+- **Favourite sync (BUG-09).** Signed in, with `E2E.detailsSpot` seeded as saved in `users/{uid}.savedSpots`:
   1. Open it from the map info window → details. The heart shows filled (`aria-label` "Remove from favorites").
   2. Toggle it off, close, and reopen: the heart shows empty.
-- **Review.** Add a review → a toast appears in the notification centre → after reopening, the review is listed.
+- **Review.** Add a review to `E2E.detailsSpot` → a toast appears in the notification centre → after reopening, the review is listed.
 - **Gallery.** Open the gallery, press ArrowRight: the counter reads `2 / N`.
 
 ## Rollback
