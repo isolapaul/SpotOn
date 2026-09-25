@@ -1,0 +1,53 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    groups:
+      root-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Node 22 runtime (D14): types must stay on 22.x.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # ESLint 10 breaks eslint-plugin-react (bundled by eslint-config-next 16.3.x).
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      # React 19 / react-leaflet 5 / zustand 5 are T31.
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-leaflet"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "zustand"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: npm
+    directory: "/functions"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    groups:
+      functions-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]

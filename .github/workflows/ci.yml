@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'claude/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Non-secret demo values: `next build` prerenders `/` and Firebase Auth rejects an empty apiKey.
+  NEXT_PUBLIC_FIREBASE_API_KEY: demo-api-key
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: demo-spoton.firebaseapp.com
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: demo-spoton
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: demo-spoton.appspot.com
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '000000000000'
+  NEXT_PUBLIC_FIREBASE_APP_ID: '1:000000000000:web:0000000000000000000000'
+
+jobs:
+  app:
+    name: App verify (typecheck, lint, unit, build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+
+  functions:
+    name: Functions build + lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # TEMPORARY: functions lint has pre-existing errors until T07 (ESLint 9 migration). T07 deletes this line.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - run: npm --prefix functions ci
+      - run: npm run verify:fn
+
+  audit:
+    name: npm audit (production deps)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # TEMPORARY: known CRITICAL advisories (SEC-07) until T05–T07 land.
+    # Whichever of T06/T07 lands LAST deletes this line and raises both levels to `high`.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Root
+        run: npm audit --omit=dev --audit-level=critical
+      - name: Functions
+        if: success() || failure()
+        run: npm --prefix functions audit --omit=dev --audit-level=critical
+
+  # T04 adds job `e2e` here. T12 adds job `rules` here.
