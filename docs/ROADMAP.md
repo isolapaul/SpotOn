@@ -153,6 +153,7 @@ Additional review gates:
 | Q8 | Server CPU architecture is assumed to be amd64 (i5-8500T). | accept |
 | Q9 | T15: the auth proxy upstream is `<projectId>.firebaseapp.com`. Paul confirms his current `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` has that form. | confirm at deploy |
 | Q10 | T19: move banner dismissal is permanent per device (not re-shown); Stage B's 308 redirect catches remaining users. | accept |
+| Q11 | T14: feedback body-read deadline is 60 s (15 s would reject photo uploads on slow mobile uplinks); while two slow uploads are in flight, other feedback gets 503 `busy`. | accept |
 
 ## 7. Progress
 
@@ -169,5 +170,6 @@ Additional review gates:
 | T09 Profiles, usernames, spotsCount | done, review PASS; e2e green in CI | a16f7a4 |
 | T10 Spot mutation callables | done, review PASS (after D1/D2 fixes); e2e green in CI | 1c36fcf |
 | T11a Client profiles/usernames/admin | done, review + re-review PASS; e2e green in CI | bbe47d9 |
-| T11b Client spot interactions | done, review PASS; e2e 16/16 local harness, full via CI | (this commit) |
+| T11b Client spot interactions | done, review PASS; e2e 16/16 local harness, full via CI | 4069228 |
+| T14 Harden /api/feedback | done, adversarial review + re-verify PASS | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |

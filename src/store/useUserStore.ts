@@ -66,6 +66,7 @@ interface UserStore {
   updateCustomNameColor: (color: string) => Promise<void>;
   updateCustomNameFont: (font: string) => Promise<void>;
   rememberFcmToken: (token: string) => void;
+  getIdToken: () => Promise<string | null>;
 }
 
 type SetState = (partial: Partial<UserStore>) => void;
@@ -764,6 +765,8 @@ export const useUserStore = create<UserStore>()(
           // storage unavailable: the in-memory copy still works this session
         }
       },
+
+      getIdToken: async () => (auth.currentUser ? auth.currentUser.getIdToken() : null),
     }),
     {
       name: 'spoton-user',

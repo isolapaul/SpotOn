@@ -158,6 +158,9 @@ export const translations = {
     attachImages: 'Képek hozzáadása',
     feedbackPlaceholder: 'Írd le részletesen a visszajelzésed...',
     feedbackSendError: 'Hiba a visszajelzés küldésekor',
+    feedbackImageLimit: 'Legfeljebb 3 kép (JPG, PNG, WebP)',
+    feedbackTooLarge: 'A csatolt képek túl nagyok. Legfeljebb 3 kép, egyenként 1,5 MB.',
+    feedbackRateLimited: 'Túl sok üzenet rövid idő alatt. Próbáld újra néhány perc múlva.',
     sendFeedback: 'Küldés',
     sending: 'Küldés...',
     patchNotes: 'Frissítési megjegyzések',
@@ -462,6 +465,9 @@ export const translations = {
     attachImages: 'Attach images',
     feedbackPlaceholder: 'Describe your feedback in detail...',
     feedbackSendError: 'Failed to send feedback.',
+    feedbackImageLimit: 'Up to 3 images (JPG, PNG, WebP)',
+    feedbackTooLarge: 'The attached images are too large. Up to 3 images, 1.5 MB each.',
+    feedbackRateLimited: 'Too many messages in a short time. Try again in a few minutes.',
     sendFeedback: 'Send',
     sending: 'Sending...',
     patchNotes: 'Patch Notes',
@@ -902,6 +908,11 @@ export const translations = {
     locationDenied: 'Standortzugriff wurde verweigert. Bitte aktiviere ihn in den Browsereinstellungen.',
     locationUnavailable: 'Standort ist auf diesem Gerät nicht verfügbar.',
     locationRequesting: 'Berechtigung wird angefordert...',
+
+    // Feedback
+    feedbackImageLimit: 'Bis zu 3 Bilder (JPG, PNG, WebP)',
+    feedbackTooLarge: 'Die angehängten Bilder sind zu groß. Höchstens 3 Bilder, je 1,5 MB.',
+    feedbackRateLimited: 'Zu viele Nachrichten in kurzer Zeit. Versuch es in ein paar Minuten noch einmal.',
   },
 };
 
