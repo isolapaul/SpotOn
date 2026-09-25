@@ -91,7 +91,7 @@ npm run test:e2e            # Playwright smoke vs emulator-seeded build (PLAYWRI
 | `NEXT_PUBLIC_MOVED_TO` | build time, Vercel only (T19) | domain-move banner |
 | `SMTP_HOST/PORT/USER/PASS`, `FEEDBACK_RECIPIENT` | runtime (container `.env`) | `/api/feedback` |
 
-Never commit `.env*` files. Never hardcode personal emails, keys or tokens.
+Never commit `.env*` files — sole exception: `functions/.env.demo-spoton` (emulator-only, non-secret params such as `APP_URL`, whitelisted in `.gitignore`). Never hardcode personal emails, keys or tokens.
 
 ## 5. Hard rules for agents
 
