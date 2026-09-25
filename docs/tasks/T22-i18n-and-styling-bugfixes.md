@@ -99,6 +99,7 @@ Store-thrown messages that reach the UI through `error.message` (ProfilePanel `h
 ## Steps
 1. **Tailwind content:** add `"./src/lib/**/*.{js,ts,jsx,tsx}"` to `content` in `tailwind.config.ts`.
 2. **`src/lib/nameStyle.ts`** (pure, no React). The allowlist keys are the exact values stored today, so existing data stays valid.
+   - **Imports:** T09's `functions/test/levels.parity.test.ts` imports `../../src/lib/levelUtils` under the functions vitest, where the `@/` alias does not resolve. So `levelUtils.ts` and `nameStyle.ts` use **relative** imports only (`levelUtils.ts` → `./nameStyle`), and import `./translations` with `import type` only (`TranslationKey`), never `@/lib/...` and never a runtime import of the dictionaries.
    ```ts
    export const NAME_COLORS = {
      'text-cyan-300':    { textClass: 'text-cyan-300',    selectedClass: 'bg-cyan-300/20 border-2 border-cyan-300',       hex: '#67e8f9', labelKey: 'nameColorCyan' },
@@ -163,7 +164,14 @@ Store-thrown messages that reach the UI through `error.message` (ProfilePanel `h
 - Store error messages are shown translated.
 
 ## Must NOT change
-- Hungarian text of every existing string, except the rows where the table gives a different hu value (none do: hu values equal today's literals, apart from the key-name fallbacks).
+- Hungarian text of every existing string, except these **intended hu changes** (today's English literal or fallback becomes the hu key value):
+  - SpotDetailsPanel `formatDate`: `Unknown` → `Ismeretlen` (`unknownDate`).
+  - SpotDetailsPanel `handleHighlightSpot` fallback: `Error highlighting spot` → the hu `highlightError` value.
+  - usePushNotifications foreground title: `New Notification` → `Új értesítés`.
+  - useToastStore titles: `✅ Success` → `✅ Siker`, `❌ Error` → `❌ Hiba`, fallback `Notification` → `Értesítés` (`ℹ️ Info` is unchanged).
+  - FeedbackPanel `PatchNotesPreview`: `No patch notes yet.` → `Még nincsenek frissítési megjegyzések.`
+  - ProfilePanel name previews (:683, :725, :758): fallback `username` → `Felhasználónév`.
+  - The German key-name fallbacks (German only).
 - Stored values of `customNameColor` and `customNameFont` (no data migration). The picker writes the same values as today.
 - Level thresholds, colours, icons, `maxHighlights`, `canCustomize*`, and name hex colours for levels 1-5.
 - DOM structure, aria-labels, ids and `alt`s (e2e landmarks).
@@ -175,7 +183,7 @@ npm run verify
 npm run verify:fn                     # T09's functions/test/levels.parity.test.ts imports CUSTOM_NAME_* from levelUtils
 npx vitest run src/lib/translations.test.ts src/lib/nameStyle.test.ts src/lib/levelUtils.test.ts
 npm run test:e2e
-grep -rnP "[áéíóöőúüűÁÉÍÓÖŐÚÜŰ]" src --include=*.tsx --include=*.ts | grep -v "src/lib/translations.ts" | grep -v "AuthModal.tsx\|InstallGate.tsx\|LanguageSelector.tsx"
+LC_ALL=C.UTF-8 grep -rnP "[áéíóöőúüűÁÉÍÓÖŐÚÜŰ]" src --include=*.tsx --include=*.ts --exclude=*.test.ts | grep -v "src/lib/translations.ts" | grep -v "AuthModal.tsx\|InstallGate.tsx\|LanguageSelector.tsx"
 #   → only endonyms (Magyarország) remain
 grep -rn "\.replace('text-'\|\.replace('/20'\|replace('helyet'" src   # → no output
 grep -rn "customNameFont ||\|customNameFont}" src/components          # → no output (all via resolveNameFontClass)
