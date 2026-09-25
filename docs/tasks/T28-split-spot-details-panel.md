@@ -120,7 +120,7 @@ Add e2e `e2e/spot-details.spec.ts`. It uses **only** a dedicated fixture, never 
 - **Favourite sync (BUG-09).** Signed in, with `E2E.detailsSpot` seeded as saved in `users/{uid}.savedSpots`:
   1. Open it from the map info window → details. The heart shows filled (`aria-label` "Remove from favorites").
   2. Toggle it off, close, and reopen: the heart shows empty.
-- **Review.** Add a review to `E2E.detailsSpot` → a toast appears in the notification centre → after reopening, the review is listed.
+- **Review.** Add a review to `E2E.detailsSpot` → `expectNotification(page, 'Review added successfully!')` (T11a's helper in `e2e/helpers.ts`; toasts are only recorded in the notification store, and `NotificationCenter` is not rendered while the details panel is open, `page.tsx:271`) → after reopening, the review is listed.
 - **Gallery.** Open the gallery, press ArrowRight: the counter reads `2 / N`.
 
 ## Rollback
