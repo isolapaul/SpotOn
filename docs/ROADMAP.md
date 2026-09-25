@@ -157,4 +157,5 @@ Additional review gates:
 
 | Task | Status | Commit |
 |---|---|---|
-| Docs (CLAUDE.md, audits, roadmap, specs) | in progress | |
+| Docs (CLAUDE.md, audits, roadmap, specs) | done; independently reviewed (T01–T13, T21–T32); T14–T20 review and T29 re-review pending | |
+| T01 Tooling baseline | done, review PASS | (this commit) |

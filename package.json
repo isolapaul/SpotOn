@@ -7,10 +7,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "functions:build": "cd functions && npm run build",
     "functions:deploy": "firebase deploy --only functions",
-    "functions:logs": "firebase functions:log"
+    "functions:logs": "firebase functions:log",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "verify:fn": "npm --prefix functions run build && npm --prefix functions run lint"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.21",
@@ -27,12 +31,18 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
-    "@types/node": "^20.12.7",
+    "@types/node": "^22.20.4",
     "@types/nodemailer": "^6.4.4",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.6",
     "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.3"
+    "tailwindcss": "^3.4.3",
+    "vitest": "5.0.2"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
