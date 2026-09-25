@@ -218,7 +218,7 @@ docker image inspect spoton:test --format '{{.Config.User}} {{json .Config.Env}}
 docker image inspect spoton:test --format '{{json .Config.Env}}' | grep -E "SMTP|NEXT_PUBLIC" && exit 1 || true
 docker history --no-trunc --format '{{.CreatedBy}}' spoton:test | grep -E 'SMTP_|_PASS|TOKEN|FEEDBACK_RECIPIENT' && exit 1 || true
 #   (case-sensitive on purpose: the distroless base history contains `bazel build //common:passwd`)
-docker create --name spoton-export spoton:test && docker export x | tar -t | grep -E "(^|/)(\.env|node_modules/sharp|@img/sharp)" && exit 1 || true; docker rm x
+docker create --name spoton-export spoton:test && docker export spoton-export | tar -t | grep -E "(^|/)(\.env|node_modules/sharp|@img/sharp)" && exit 1 || true; docker rm spoton-export
 docker export $(docker create spoton:test) | tar -t | grep -q 'app/node_modules/nodemailer/package.json'   # external, visible to Trivy/SBOM
 docker export $(docker create spoton:test) | tar -t | grep -q 'app/node_modules/jose/package.json'
 docker image ls spoton:test --format '{{.Size}}'                                      # record; expect < 250MB
