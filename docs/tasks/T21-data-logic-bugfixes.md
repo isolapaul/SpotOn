@@ -34,6 +34,7 @@ Line numbers are from commit `eee5668`. T03, T05, T06 and T08–T11b have shifte
 - Modify: the T04 seed fixtures (`scripts/seed-emulator.ts`, `e2e/fixtures.ts`) to add the fixture spot in step 7, and `e2e/smoke.spec.ts` (T04 smoke test 2 counts approved markers; touch it only if it does not already assert via `EXPECTED_APPROVED_MARKERS`, see step 7).
 
 ## Steps
+0. **BUG-25 (added by orchestrator after T11b):** in `useSpotStore.addReview`, stop appending the review to local state after `updateDoc` (the spots `onSnapshot` listener already delivers it), or dedupe by review `id` when appending. Then remove the `.first()` workaround and its comment in `e2e/spot-interactions.spec.ts` so the test asserts exactly one rendered copy. Intended change: no duplicate review after close/reopen.
 1. **BUG-01**:
    - Remove `unsubscribeSpots` from the render-time destructuring in `Home`.
    - In the mount-effect cleanup, read it from the store at cleanup time. Either:
