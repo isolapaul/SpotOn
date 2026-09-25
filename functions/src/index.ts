@@ -6,16 +6,18 @@
 import * as functions from "firebase-functions/v2";
 import {setGlobalOptions} from "firebase-functions/v2";
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
-import * as admin from "firebase-admin";
+import {initializeApp} from "firebase-admin/app";
+import {getFirestore, FieldValue} from "firebase-admin/firestore";
+import {getMessaging, MulticastMessage} from "firebase-admin/messaging";
 import * as logger from "firebase-functions/logger";
 
 // Set global region to Europe (Frankfurt) for lower latency to Hungary
 setGlobalOptions({region: "europe-west3"});
 
-admin.initializeApp();
+initializeApp();
 
-const db = admin.firestore();
-const messaging = admin.messaging();
+const db = getFirestore();
+const messaging = getMessaging();
 
 // ========================================
 // TRANSLATIONS DICTIONARY
@@ -149,7 +151,7 @@ async function sendNotificationToUser(
     }
 
     // Prepare message
-    const message: admin.messaging.MulticastMessage = {
+    const message: MulticastMessage = {
       tokens: tokens,
       notification: {
         title: title,
@@ -190,7 +192,7 @@ async function sendNotificationToUser(
           .collection("users")
           .doc(userId)
           .update({
-            fcmTokens: admin.firestore.FieldValue.arrayRemove(...failedTokens),
+            fcmTokens: FieldValue.arrayRemove(...failedTokens),
           });
         logger.info(`Removed ${failedTokens.length} invalid tokens from user ${userId}`);
       }
@@ -578,7 +580,7 @@ export const highlightSpot = onCall(async (request: CallableRequest) => {
 
   // Add highlight to spot using arrayUnion for safety
   await spotRef.update({
-    highlighted: admin.firestore.FieldValue.arrayUnion({
+    highlighted: FieldValue.arrayUnion({
       userId: userId,
       highlightedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
@@ -587,7 +589,7 @@ export const highlightSpot = onCall(async (request: CallableRequest) => {
 
   // Update user's active highlights
   await userRef.update({
-    "questRewards.valentine2026.activeHighlights": admin.firestore.FieldValue.arrayUnion({
+    "questRewards.valentine2026.activeHighlights": FieldValue.arrayUnion({
       spotId: spotId,
       highlightedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
