@@ -14,7 +14,7 @@ Firebase stays the backend. Only the Next.js app moves off Vercel.
 | # | Decision | Status |
 |---|---|---|
 | D1 | Containerize the Next.js app only. Firebase (Auth, Firestore, Storage, FCM, Functions) stays. | **Paul** |
-| D2 | Paul provides the current production Firestore and Storage rules. T12 hardens them. | **Paul**, ⛔ pending paste |
+| D2 | Paul provides the current production Firestore and Storage rules. T12 hardens them. | **Paul**: provided 2026-09-26 (`docs/audit/current-rules.md`) |
 | D3 | CI: GitHub Actions → Trivy → SBOM → cosign → **private** GHCR. Dependabot. | **Paul** |
 | D4 | Implement everything. Each task gets an implementer agent, then an independent reviewer agent, then a commit. | **Paul** |
 | D5 | Vercel: a single, tasteful "moved" banner (Stage A), then a 308 redirect (Stage B), then Vercel is deleted. | **Paul** |
@@ -105,6 +105,7 @@ Additional review gates:
 
 ## 4. Production rollout order (Paul executes; details in `docs/security-rollout.md` and `docs/deploy.md`)
 
+0. **Emergency rules patch** (`docs/audit/current-rules.md` → "Emergency patch"): lock `admins` and `categories` writes to Paul's verified email, and restrict Storage `spot-images` to image creates under 5 MB. It is compatible with the current client. **Must be live before step 1:** while `admins/*` is writable by any signed-in user, the T08 functions would trust a self-written `role: 'super'` (LR-01).
 1. Deploy the Cloud Functions (T07–T10), with `APP_URL=https://spoton.isolapaul.hu`.
 2. Run `scripts/bootstrap-super-admin.ts` (T08). Paul becomes `admins/{uid}` with `role: 'super'`.
 3. Run `scripts/backfill-profiles.ts`: dry run first, then apply, then resolve any duplicate usernames it reports (T09). If it reports `admins invalid` greater than 0, stop and ask.

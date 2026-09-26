@@ -11,6 +11,7 @@ Two deliverables:
 The first production cutover must not happen before this runbook exists.
 
 ## Context
+- **Orchestrator note (2026-09-26):** ROADMAP §4 now starts with **step 0, the emergency rules patch** from `docs/audit/current-rules.md`. The runbook must include it as the first step, before the functions deploy, and must say why: LR-01 means `admins` is writable by any signed-in user, and the T08 functions trust `admins/{uid}.role`. Also add the admins-migration note: email-keyed admin docs are reported by the backfill, and Paul re-adds those admins from the Admin tab after the bootstrap.
 - Legacy reviews in `spots/{id}.reviews[]` contain `userEmail` (public PII, SEC-03), and `userSpotsCount`, `customNameColor` and `customNameFont` (spoofable, SEC-05). After T11b, new reviews never contain them. After T12, the rules reject them. Old data still has them.
 - Firestore triggers on `spots/{spotId}` updates:
   - `onReviewAdded` fires only when the reviews length grows;

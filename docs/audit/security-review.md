@@ -3,7 +3,8 @@
 **Date:** 2026-09-25
 **Scope:** whole repository at commit `eee5668` (Next.js app, API routes, Zustand stores, Cloud Functions, config, dependencies), plus the planned container deployment.
 **Method:** manual code review of every source file, `npm audit --package-lock-only` on both lockfiles, and a baseline build (`tsc` clean, `next build` OK).
-**Limitation:** the deployed Firestore and Storage rules are **not in the repo**. Findings marked *(rules-dependent)* are exploitable unless the live rules happen to block them. Paul supplies the live rules for T12.
+**Update 2026-09-26:** Paul supplied the live rules, and they are audited in `docs/audit/current-rules.md` (LR-01 to LR-10). They **confirm** SEC-01, SEC-02, SEC-04, SEC-08 and SEC-11 as exploitable today; LR-01 (any user can become admin) is Critical. An emergency patch is documented there.
+**Original limitation:** the deployed Firestore and Storage rules are **not in the repo**. Findings marked *(rules-dependent)* are exploitable unless the live rules happen to block them. Paul supplies the live rules for T12.
 
 Severity scale: **Critical**: remote, unauthenticated or any signed-in user, integrity or privacy impact on all users. **High**: significant impact, needs a precondition. **Medium**: limited impact or defence-in-depth. **Low**: hygiene.
 
