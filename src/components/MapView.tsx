@@ -17,6 +17,7 @@ import {
   INITIAL_MARKER_ZOOM,
   LOCATE_ZOOM,
   LOCATION_CACHE_MAX_AGE_MS,
+  Z,
 } from '@/lib/constants';
 
 interface MapViewProps {
@@ -191,9 +192,9 @@ export default function MapView({
   const nowIso = new Date().toISOString();
 
   return (
-    <div className="absolute inset-0 w-full h-full z-0">
+    <div className={`absolute inset-0 w-full h-full ${Z.mapBase}`}>
       {isAddingSpot && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1000] glass-card px-6 py-3 pointer-events-none animate-fade-in">
+        <div className={`absolute top-20 left-1/2 -translate-x-1/2 ${Z.mapInner} glass-card px-6 py-3 pointer-events-none animate-fade-in`}>
           <p className="text-white font-medium text-center">
             {t('clickMapToSelect')}
           </p>
@@ -250,7 +251,7 @@ export default function MapView({
 
       {/* Info popup rendered outside MapContainer (avoids Leaflet popup styling conflicts) */}
       {selectedSpot && (
-        <div className="absolute left-1/2 -translate-x-1/2 z-[1000] animate-fade-in"
+        <div className={`absolute left-1/2 -translate-x-1/2 ${Z.mapInner} animate-fade-in`}
           style={{ bottom: '100px' }}>
           <SpotInfoWindow
             spot={selectedSpot}

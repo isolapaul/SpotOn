@@ -6,6 +6,7 @@ import { useLanguageStore } from '@/store/useLanguageStore';
 import { useT } from '@/hooks/useT';
 import { useUiStore } from '@/store/useUiStore';
 import { MOVED_BANNER_DISMISS_KEY, getMovedTo, isBannerDismissed, movedTarget } from '@/lib/movedTo';
+import { Z } from '@/lib/constants';
 
 // Build-time constant: null everywhere except the Vercel build (T19).
 const MOVED_TO = getMovedTo();
@@ -62,8 +63,8 @@ export default function MovedBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed z-[1500] mx-auto max-w-md flex items-center gap-2 pl-4 pr-1 py-1
-        rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 shadow-glass-lg text-white animate-fade-in"
+      className={`fixed ${Z.floatingButton} mx-auto max-w-md flex items-center gap-2 pl-4 pr-1 py-1
+        rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 shadow-glass-lg text-white animate-fade-in`}
       style={{
         top: 'calc(1rem + env(safe-area-inset-top) + 56px)',
         left: 'max(1rem, env(safe-area-inset-left))',

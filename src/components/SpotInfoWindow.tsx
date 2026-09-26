@@ -13,6 +13,7 @@ import { averageRating } from '@/lib/rating';
 import { getPreviewImageUrl, isImageUnoptimized, sortSpotImagesByLikes } from '@/lib/spotImages';
 import { useState, useEffect } from 'react';
 import { fetchPublicProfile } from '@/store/publicProfiles';
+import StarRating from './ui/StarRating';
 
 interface SpotInfoWindowProps {
   spot: Spot;
@@ -162,16 +163,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
         {/* Rating */}
         {reviewCount > 0 ? (
           <div className="flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                className={`w-4 h-4 ${
-                  star <= Math.round(avgRating)
-                    ? 'text-yellow-400 fill-yellow-400'
-                    : 'text-white/30'
-                }`}
-              />
-            ))}
+            <StarRating rating={Math.round(avgRating)} size="sm" emptyTone="dim" wrapper={false} />
             <span className="text-white/80 text-sm ml-1">{avgRating.toFixed(1)}</span>
             <span className="text-white/40 text-xs">({reviewCount} {t('reviews')})</span>
           </div>

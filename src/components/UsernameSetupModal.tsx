@@ -5,6 +5,7 @@ import { User, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useUserStore, userErrorKey } from '@/store/useUserStore';
 import { useT } from '@/hooks/useT';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import ModalShell from './ui/ModalShell';
 
 interface UsernameSetupModalProps {
   isOpen: boolean;
@@ -93,13 +94,9 @@ export default function UsernameSetupModal({ isOpen, onClose }: Readonly<Usernam
     setError(null);
   };
 
+  // Not dismissible: without onBackdropClick the backdrop is a plain div (no click or Escape close)
   return (
-    <div className="fixed inset-0 z-[3500] flex items-center justify-center p-4 animate-fade-in" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" />
-      
-      {/* Modal */}
-      <div className="relative glass-card max-w-md w-full p-8 animate-slide-up">
+    <ModalShell variant="glass" z="usernameSetup" panelClassName="max-w-md w-full p-8">
         {/* Icon */}
         <div className="flex justify-center mb-6">
           <div className="glass-button p-4 rounded-full">
@@ -183,7 +180,6 @@ export default function UsernameSetupModal({ isOpen, onClose }: Readonly<Usernam
             {t('skipForNow')}
           </button>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

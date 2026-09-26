@@ -5,6 +5,8 @@ import { Bell, X, MessageSquare } from 'lucide-react';
 import FeedbackPanel from './FeedbackPanel';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { useT } from '@/hooks/useT';
+import { Z } from '@/lib/constants';
+import ModalShell from './ui/ModalShell';
 
 export default function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
@@ -65,11 +67,11 @@ export default function NotificationCenter() {
       {/* Notification Bell Button - Top Left */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed z-[1500] w-12 h-12 rounded-full 
+        className={`fixed ${Z.floatingButton} w-12 h-12 rounded-full 
           bg-black/40 backdrop-blur-md border border-white/10
           active:scale-95 transition-all duration-200 shadow-glass-lg
           hover:bg-black/50
-          touch-manipulation select-none flex items-center justify-center"
+          touch-manipulation select-none flex items-center justify-center`}
         style={{
           top: 'calc(1rem + env(safe-area-inset-top))',
           left: 'max(1rem, env(safe-area-inset-left))'
@@ -91,11 +93,11 @@ export default function NotificationCenter() {
       {/* Feedback Button - Top Left, next to Notifications */}
       <button
         onClick={() => setIsFeedbackOpen(true)}
-        className="fixed z-[1500] w-12 h-12 rounded-full 
+        className={`fixed ${Z.floatingButton} w-12 h-12 rounded-full 
           bg-black/40 backdrop-blur-md border border-white/10
           active:scale-95 transition-all duration-200 shadow-glass-lg
           hover:bg-black/50
-          touch-manipulation select-none flex items-center justify-center"
+          touch-manipulation select-none flex items-center justify-center`}
         style={{
           top: 'calc(1rem + env(safe-area-inset-top))',
           left: 'calc(max(1rem, env(safe-area-inset-left)) + 56px)'
@@ -107,20 +109,13 @@ export default function NotificationCenter() {
 
       {/* Notification Modal - Centered */}
       {isOpen && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 animate-fade-in">
-          {/* Backdrop - Click to close */}
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm touch-manipulation"
-            onClick={handleClose}
-            aria-label="Close notifications"
-          />
-          
-          {/* Modal Content */}
-          <div className="relative bg-slate-900 w-[90%] max-w-md rounded-3xl shadow-2xl 
-            border-2 border-white/20 overflow-hidden animate-scale-in
-            max-h-[80vh] flex flex-col">
-            
+        <ModalShell
+          variant="slate"
+          z="modal"
+          onBackdropClick={handleClose}
+          backdropLabel="Close notifications"
+          panelClassName="w-[90%] max-w-md max-h-[80vh]"
+        >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/10 
               bg-slate-800/50 backdrop-blur-xl">
@@ -232,8 +227,7 @@ export default function NotificationCenter() {
                 </div>
               )}
             </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
       <FeedbackPanel open={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Palette, Check } from 'lucide-react';
 import { useMapThemeStore, type MapTheme } from '@/store/useMapThemeStore';
 import { useT } from '@/hooks/useT';
+import { Z } from '@/lib/constants';
 
 export default function MapThemeSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,11 +28,11 @@ export default function MapThemeSwitcher() {
     <>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed z-[1500] w-12 h-12 rounded-full
+        className={`fixed ${Z.floatingButton} w-12 h-12 rounded-full
           bg-black/40 backdrop-blur-md border border-white/10
           active:scale-95 transition-all duration-200 shadow-glass-lg
           hover:bg-black/50
-          touch-manipulation select-none flex items-center justify-center"
+          touch-manipulation select-none flex items-center justify-center`}
         style={{
           top: 'calc(1rem + env(safe-area-inset-top))',
           right: 'max(1rem, env(safe-area-inset-right))'

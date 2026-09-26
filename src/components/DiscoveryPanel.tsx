@@ -1,16 +1,19 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { X, Star, MapPin, Filter } from 'lucide-react';
+import { X, MapPin, Filter } from 'lucide-react';
 import Image from 'next/image';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
+import { useSwipeToClose } from '@/hooks/useSwipeToClose';
 import { CATEGORIES, getMarkerEmoji } from '@/lib/categories';
 import { haversineKm } from '@/lib/geo';
 import { averageRating } from '@/lib/rating';
 import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
 import { DISCOVERY_BATCH_SIZE, SWIPE_THRESHOLDS } from '@/lib/constants';
 import type { Spot, SpotCategory } from '@/store/useSpotStore';
+import PanelShell from './ui/PanelShell';
+import StarRating from './ui/StarRating';
 
 interface DiscoveryPanelProps {
   isOpen: boolean;
@@ -84,45 +87,8 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
     setVisibleCount(prev => prev + DISCOVERY_BATCH_SIZE);
   };
   
-  // iOS Swipe-to-Close Gesture
-  const [dragStartX, setDragStartX] = useState(0);
-  const [dragCurrentX, setDragCurrentX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  
-  // Touch handlers for swipe gesture
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setDragStartX(e.touches[0].clientX);
-    setDragCurrentX(e.touches[0].clientX);
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const currentX = e.touches[0].clientX;
-    const diff = currentX - dragStartX;
-    
-    // Only allow rightward drag (iOS back gesture)
-    if (diff > 0) {
-      setDragCurrentX(currentX);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDragging) return;
-    const dragDistance = dragCurrentX - dragStartX;
-    
-    // Close if dragged more than the panel swipe threshold to the right
-    if (dragDistance > SWIPE_THRESHOLDS.panel) {
-      onClose();
-    }
-    
-    // Reset
-    setIsDragging(false);
-    setDragStartX(0);
-    setDragCurrentX(0);
-  };
-
-  const translateX = isDragging ? Math.max(0, dragCurrentX - dragStartX) : 0;
+  // iOS swipe-to-close gesture: rightward only
+  const swipe = useSwipeToClose({ onClose, threshold: SWIPE_THRESHOLDS.panel, direction: 'right' });
 
   const handleSortChange = (option: SortOption) => {
     if (option === 'nearest' && !userLocation) {
@@ -135,28 +101,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
-      {/* Backdrop */}
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
-        onClick={onClose}
-        onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        aria-label="Close discovery panel"
-        tabIndex={-1}
-      />
-
-      {/* Panel with Swipe Support */}
-      <div 
-        className="absolute inset-0 flex flex-col bg-gray-900/95 backdrop-blur-2xl"
-        style={{
-          transform: `translateX(${translateX}px)`,
-          transition: isDragging ? 'none' : 'transform 0.3s ease-out'
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
+    <PanelShell onClose={onClose} backdropLabel="Close discovery panel" variant="gray" swipe={swipe}>
         {/* Header */}
         <div className="flex-shrink-0 px-6 border-b border-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)', paddingBottom: '1rem' }}>
           <div className="flex items-center justify-between mb-4">
@@ -285,18 +230,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                       <div className="flex items-center gap-1 mb-1">
                         {rating > 0 ? (
                           <>
-                            <div className="flex gap-0.5">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                  key={star}
-                                  className={`w-3 h-3 ${
-                                    star <= Math.round(rating)
-                                      ? 'text-yellow-400 fill-yellow-400'
-                                      : 'text-white/20'
-                                  }`}
-                                />
-                              ))}
-                            </div>
+                            <StarRating rating={Math.round(rating)} size="xs" emptyTone="faint" />
                             <span className="text-white/70 text-xs ml-1">
                               {rating.toFixed(1)} ({reviewCount})
                             </span>
@@ -341,7 +275,6 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </PanelShell>
   );
 }

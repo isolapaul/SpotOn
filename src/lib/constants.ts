@@ -49,11 +49,19 @@ export const DELAYS = {
 } as const;
 
 /**
- * Z-index scale (Tailwind classes, static strings; applied in T25). Listed in ascending order;
- * `mapInner` lives inside the map container's `z-0` stacking context, so it is not comparable.
+ * Z-index scale (Tailwind classes, static strings; applied in T25). Listed in ascending order,
+ * except the nested layers (NESTED_Z_LAYERS), which live inside another layer's stacking context
+ * and are therefore not comparable with the rest:
+ * - `mapInner` sits inside the map container's `mapBase` (`z-0`) context.
+ * - `panelInnerBackdrop` / `panelInnerSheet` (SettingsPanel) are rendered inside ProfilePanel's
+ *   `panel` (`z-[60]`) root, so they stack above the profile content although 40/50 < 60 (BUG-22).
  */
 export const Z = {
-  mapOverlay: 'z-10', mapInner: 'z-[1000]', dock: 'z-50', prompt: 'z-50', panel: 'z-[60]',
-  panelModal: 'z-[70]', gallery: 'z-[100]', floatingButton: 'z-[1500]', modal: 'z-[2000]',
-  usernameSetup: 'z-[3500]', blocking: 'z-[9999]',
+  mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-[1000]', dock: 'z-50', prompt: 'z-50',
+  panel: 'z-[60]', panelInnerBackdrop: 'z-40', panelInnerSheet: 'z-50', panelModal: 'z-[70]',
+  gallery: 'z-[100]', floatingButton: 'z-[1500]', modal: 'z-[2000]', usernameSetup: 'z-[3500]',
+  blocking: 'z-[9999]',
 } as const;
+
+/** Z keys that live inside another layer's stacking context (see Z). */
+export const NESTED_Z_LAYERS: ReadonlyArray<keyof typeof Z> = ['mapInner', 'panelInnerBackdrop', 'panelInnerSheet'];

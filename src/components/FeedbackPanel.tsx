@@ -6,6 +6,7 @@ import { compressImage } from '@/lib/imageCompression';
 import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
 import { FEEDBACK_LIMITS } from '@/lib/feedback/validate';
+import ModalShell from './ui/ModalShell';
 
 interface Props {
   open: boolean;
@@ -89,23 +90,22 @@ export default function FeedbackPanel({ open, onClose }: Props) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[2000] flex items-start justify-center animate-fade-in"
-      style={{
+    <ModalShell
+      variant="slate"
+      z="modal"
+      onBackdropClick={onClose}
+      backdropLabel="Close feedback"
+      align="start"
+      outerClassName=""
+      outerStyle={{
         paddingTop: 'calc(1rem + env(safe-area-inset-top))',
         paddingLeft: 'max(1rem, env(safe-area-inset-left))',
         paddingRight: 'max(1rem, env(safe-area-inset-right))',
         paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))'
       }}
+      backdropClassName="absolute inset-0 bg-black/50 backdrop-blur-sm"
+      panelClassName="w-[92%] max-w-2xl max-h-[90vh]"
     >
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-        aria-label="Close feedback"
-      />
-
-      <div className="relative bg-slate-900 w-[92%] max-w-2xl rounded-3xl shadow-2xl border-2 border-white/20 overflow-hidden animate-scale-in max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-800/50 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <Camera className="w-5 h-5 text-white" />
@@ -195,8 +195,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
             {sending ? t('sending') : t('sendFeedback')}
           </button>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
 

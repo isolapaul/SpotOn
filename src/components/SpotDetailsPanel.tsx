@@ -5,6 +5,8 @@ import Image from 'next/image';
 import type { Review, Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguage, useT } from '@/hooks/useT';
+import { useHorizontalSwipe } from '@/hooks/useHorizontalSwipe';
+import { useSwipeToClose } from '@/hooks/useSwipeToClose';
 import { useSpotStore } from '@/store/useSpotStore';
 import { fetchPublicProfile, fetchPublicProfiles } from '@/store/publicProfiles';
 import { useToastStore } from '@/store/useToastStore';
@@ -20,56 +22,16 @@ import {
   sortSpotImagesByLikes,
 } from '@/lib/spotImages';
 import { averageRating } from '@/lib/rating';
-import { DELAYS, SWIPE_THRESHOLDS } from '@/lib/constants';
+import { DELAYS, SWIPE_THRESHOLDS, Z } from '@/lib/constants';
 import { isHighlightedBy } from '@/lib/highlights';
 import { useState, useEffect, useRef, ChangeEvent, useCallback } from 'react';
+import PanelShell from './ui/PanelShell';
+import StarRating from './ui/StarRating';
 
 interface SpotDetailsPanelProps {
   spot: Spot | null;
   isAdmin?: boolean;
   onClose: () => void;
-}
-
-interface SwipeState {
-  startX: number;
-  currentX: number;
-  dragging: boolean;
-}
-
-const SWIPE_INITIAL: SwipeState = { startX: 0, currentX: 0, dragging: false };
-
-function useSwipeDismiss(onDismiss: () => void, threshold: number = SWIPE_THRESHOLDS.spotDetails) {
-  const [swipe, setSwipe] = useState<SwipeState>(SWIPE_INITIAL);
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    const x = e.touches[0].clientX;
-    setSwipe({ startX: x, currentX: x, dragging: true });
-  };
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!swipe.dragging) return;
-    setSwipe((s) => ({ ...s, currentX: e.touches[0].clientX }));
-  };
-  const onTouchEnd = () => {
-    if (!swipe.dragging) return;
-    if (Math.abs(swipe.currentX - swipe.startX) > threshold) onDismiss();
-    setSwipe(SWIPE_INITIAL);
-  };
-
-  return { swipe, onTouchStart, onTouchMove, onTouchEnd };
-}
-
-function StarRow({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md' }) {
-  const cls = size === 'md' ? 'w-5 h-5' : 'w-4 h-4';
-  return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className={`${cls} ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/30'}`}
-        />
-      ))}
-    </div>
-  );
 }
 
 interface ReviewerMeta {
@@ -149,11 +111,8 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const approveCloseTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const shownSpotIdRef = useRef<string | undefined>(undefined);
 
-  // Swipe to dismiss the panel
-  const { swipe: panelSwipe, onTouchStart, onTouchMove, onTouchEnd } = useSwipeDismiss(onClose);
-
-  // Gallery swipe (separate because threshold/behavior differs)
-  const [gallerySwipe, setGallerySwipe] = useState<SwipeState>(SWIPE_INITIAL);
+  // Swipe to dismiss the panel (either direction)
+  const panelSwipe = useSwipeToClose({ onClose, threshold: SWIPE_THRESHOLDS.spotDetails, direction: 'both' });
 
   // Live store copy of the open spot (the `spot` prop is a snapshot, see T29). Used only for the
   // highlight and gallery derivations.
@@ -177,6 +136,14 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const prevImage = useCallback(() => {
     setGalleryIndex((prev) => (prev - 1 + galleryCount) % galleryCount);
   }, [galleryCount]);
+
+  // Gallery swipe: the image follows the finger; navigation only with more than one image
+  const gallerySwipe = useHorizontalSwipe({
+    threshold: SWIPE_THRESHOLDS.gallery,
+    direction: 'both',
+    onSwipe: (side) => (side === 'right' ? prevImage() : nextImage()),
+    enabled: allGalleryImages.length > 1,
+  });
 
   // Ignore hero clicks briefly when panel opens (prevents accidental gallery open)
   useEffect(() => {
@@ -431,26 +398,53 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     }
   };
 
-  const panelTranslateX = panelSwipe.dragging ? panelSwipe.currentX - panelSwipe.startX : 0;
-
-  return (
-    <div className="fixed inset-0 z-[60] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
+  // Fullscreen gallery modal (rendered next to the panel, inside the panel shell's root)
+  const gallery = galleryOpen && allGalleryImages.length > 0 && (
+    <div className={`fixed inset-0 ${Z.gallery} bg-black`} {...gallerySwipe.handlers}>
       <button
-        type="button"
-        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default pointer-events-auto"
-        onClick={onClose}
-        onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        aria-label="Close spot details"
-        tabIndex={-1}
-      />
+        onClick={() => setGalleryOpen(false)}
+        className="absolute z-20 p-3 rounded-full bg-black/50 active:bg-black/70 transition-colors touch-manipulation"
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)', right: '1rem' }}
+      >
+        <X className="w-6 h-6 text-white" />
+      </button>
+
+      {allGalleryImages.length > 1 && (
+        <div
+          className="absolute z-20 text-white text-sm bg-black/50 px-3 py-1.5 rounded-full"
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)', left: '1rem' }}
+        >
+          {galleryIndex + 1} / {allGalleryImages.length}
+        </div>
+      )}
 
       <div
-        className="absolute inset-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 pointer-events-none"
-        style={{ transform: `translateX(${panelTranslateX}px)`, transition: panelSwipe.dragging ? 'none' : 'transform 0.3s ease-out' }}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+        className="absolute inset-0 flex items-center justify-center"
+        style={{
+          transform: gallerySwipe.dragging ? `translateX(${gallerySwipe.offset}px)` : 'translateX(0)',
+          transition: gallerySwipe.dragging ? 'none' : 'transform 0.2s ease-out',
+        }}
       >
+        <Image src={allGalleryImages[galleryIndex]} alt={`${spot.name} - Image ${galleryIndex + 1}`} fill sizes="100vw" className="object-contain" priority draggable={false} />
+      </div>
+
+      {allGalleryImages.length > 1 && (
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-2 z-20" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+          {allGalleryImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setGalleryIndex(index)}
+              className={`h-2 rounded-full transition-all touch-manipulation ${index === galleryIndex ? 'bg-white w-6' : 'bg-white/40 w-2'}`}
+              aria-label={`Go to image ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <PanelShell onClose={onClose} backdropLabel="Close spot details" variant="slate" swipe={panelSwipe} overlays={gallery}>
         {/* Hero Image */}
         <div
           className="relative w-full h-[40vh] flex-shrink-0 pointer-events-auto cursor-pointer"
@@ -557,7 +551,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                 )}
               </div>
               <div className="flex items-center gap-3">
-                <StarRow rating={Math.round(avgRating)} size="md" />
+                <StarRating rating={Math.round(avgRating)} size="md" emptyTone="dim" />
                 <span className="text-white font-semibold">{avgRating > 0 ? avgRating.toFixed(1) : '-'}</span>
                 <span className="text-white/60">({spot.reviews?.length || 0} {t('reviews')})</span>
               </div>
@@ -687,13 +681,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                     )}
                     <div>
                       <p className="text-white font-medium">{user.username}</p>
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button key={star} onClick={() => setRating(star)} className="transition-all duration-200 active:scale-95">
-                            <Star className={`w-5 h-5 ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/30'}`} />
-                          </button>
-                        ))}
-                      </div>
+                      <StarRating rating={rating} size="md" emptyTone="dim" gap="gap-1" onSelect={setRating} />
                     </div>
                   </div>
                   <textarea
@@ -765,7 +753,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                                   : ''}
                               </span>
                             </div>
-                            <StarRow rating={review.rating} />
+                            <StarRating rating={review.rating} size="sm" emptyTone="dim" />
                             {review.comment && <p className="text-white/80 text-sm mt-2">{review.comment}</p>}
                           </div>
                         </div>
@@ -789,63 +777,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
             <div className="h-20" />
           </div>
         </div>
-      </div>
-
-      {/* Fullscreen gallery modal */}
-      {galleryOpen && allGalleryImages.length > 0 && (
-        <div
-          className="fixed inset-0 z-[100] bg-black"
-          onTouchStart={(e) => { const x = e.touches[0].clientX; setGallerySwipe({ startX: x, currentX: x, dragging: true }); }}
-          onTouchMove={(e) => { if (!gallerySwipe.dragging) return; setGallerySwipe((s) => ({ ...s, currentX: e.touches[0].clientX })); }}
-          onTouchEnd={() => {
-            if (!gallerySwipe.dragging) return;
-            const dist = gallerySwipe.currentX - gallerySwipe.startX;
-            if (dist > SWIPE_THRESHOLDS.gallery && allGalleryImages.length > 1) prevImage();
-            else if (dist < -SWIPE_THRESHOLDS.gallery && allGalleryImages.length > 1) nextImage();
-            setGallerySwipe(SWIPE_INITIAL);
-          }}
-        >
-          <button
-            onClick={() => setGalleryOpen(false)}
-            className="absolute z-20 p-3 rounded-full bg-black/50 active:bg-black/70 transition-colors touch-manipulation"
-            style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)', right: '1rem' }}
-          >
-            <X className="w-6 h-6 text-white" />
-          </button>
-
-          {allGalleryImages.length > 1 && (
-            <div
-              className="absolute z-20 text-white text-sm bg-black/50 px-3 py-1.5 rounded-full"
-              style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)', left: '1rem' }}
-            >
-              {galleryIndex + 1} / {allGalleryImages.length}
-            </div>
-          )}
-
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{
-              transform: gallerySwipe.dragging ? `translateX(${gallerySwipe.currentX - gallerySwipe.startX}px)` : 'translateX(0)',
-              transition: gallerySwipe.dragging ? 'none' : 'transform 0.2s ease-out',
-            }}
-          >
-            <Image src={allGalleryImages[galleryIndex]} alt={`${spot.name} - Image ${galleryIndex + 1}`} fill sizes="100vw" className="object-contain" priority draggable={false} />
-          </div>
-
-          {allGalleryImages.length > 1 && (
-            <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-2 z-20" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-              {allGalleryImages.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setGalleryIndex(index)}
-                  className={`h-2 rounded-full transition-all touch-manipulation ${index === galleryIndex ? 'bg-white w-6' : 'bg-white/40 w-2'}`}
-                  aria-label={`Go to image ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    </PanelShell>
   );
 }

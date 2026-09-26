@@ -4,6 +4,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useT } from '@/hooks/useT';
 import { LogIn, X, Mail, Lock, User } from 'lucide-react';
 import { useState } from 'react';
+import ModalShell, { SAFE_AREA_MARGINS } from './ui/ModalShell';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -106,24 +107,14 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 animate-fade-in" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
-      {/* Backdrop */}
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
-        onClick={onClose}
-        onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        aria-label="Close authentication modal"
-        tabIndex={-1}
-      />
-      
-      {/* Modal */}
-      <div className="relative glass-card max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-8 animate-slide-up"
-        style={{ 
-          marginTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-          marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
-        }}
-      >
+    <ModalShell
+      variant="glass"
+      z="modal"
+      onBackdropClick={onClose}
+      backdropLabel="Close authentication modal"
+      panelClassName="max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-8"
+      panelStyle={SAFE_AREA_MARGINS}
+    >
         {/* Close Button */}
         <button
           onClick={() => {
@@ -355,7 +346,6 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
             {t('authTerms')}
           </p>
         )}
-      </div>
-    </div>
+    </ModalShell>
   );
 }

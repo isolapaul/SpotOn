@@ -63,7 +63,7 @@ src/components/spot-details/
 - `SpotHero`: `ignoreHeroClicks` (reset on `spot.id`).
 - `AdminStatusCard`: `isApproving` and the T21 close timer.
 
-**BUG-26 (intended change, added after T21).** The hero's Close button is inside the clickable hero, so a Close click also opens the fullscreen gallery, and the next spot opens straight into it. **Fix:** in `SpotHero`, the Close handler calls `event.stopPropagation()` (or the button moves out of the clickable area), and gallery/manager state resets when the shown spot changes. Then make the `Manage images` click in `e2e/primary-image.spec.ts` unconditional (its `TODO(T28)`).
+**BUG-26 (intended change, added after T21).** The hero's Close button is inside the clickable hero, so a Close click also opens the fullscreen gallery, and the next spot opens straight into it. The favourite (heart) button has the same cause (found during T25): tapping it also opens the gallery. **Fix:** in `SpotHero`, the Close and favourite handlers call `event.stopPropagation()` (or the buttons move out of the clickable area), and gallery/manager state resets when the shown spot changes. Then make the `Manage images` click in `e2e/primary-image.spec.ts` unconditional (its `TODO(T28)`).
 
 **BUG-09 (intended change).** `isFavorite` is initialised from props once. The component is always mounted and receives `spot = null` at mount, so the heart starts as "not favourite" for every spot, even saved ones. After toggling, it flips locally and never re-syncs. **Fix:** `useFavoriteToggle(spot.id)` (T26), which reads `user.savedSpots` from the store. The heart now correctly shows saved spots and stays in sync with the info window and profile.
 

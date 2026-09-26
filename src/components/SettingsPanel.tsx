@@ -8,7 +8,7 @@ import { X, Camera, Image as ImageIcon, LogOut, Globe, Bell, BellOff, MapPin } f
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { compressImage } from '@/lib/imageCompression';
-import { MAX_UPLOAD_BYTES } from '@/lib/constants';
+import { MAX_UPLOAD_BYTES, Z } from '@/lib/constants';
 import { translate, type Language } from '@/lib/i18n';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
@@ -109,18 +109,22 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
     }
   };
 
+  // BUG-22: SettingsPanel is only rendered inside ProfilePanel's fixed root at Z.panel (60),
+  // which is its stacking context. z-40/z-50 therefore stack above the profile content (a sibling
+  // without a z-index inside that root) and never compete with the app-level z-50 dock. Mounting it
+  // anywhere else would need the app-level scale instead.
   return (
     <>
       {/* Backdrop */}
       <button
         type="button"
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity cursor-default"
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm ${Z.panelInnerBackdrop} transition-opacity cursor-default`}
         onClick={onClose}
         aria-label="Close settings"
       />
       
       {/* Settings Panel */}
-      <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl z-50 overflow-y-auto border-l border-white/10">
+      <div className={`fixed inset-y-0 right-0 w-full sm:w-96 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl ${Z.panelInnerSheet} overflow-y-auto border-l border-white/10`}>
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-xl border-b border-white/10 p-4 z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
           <div className="flex items-center justify-between">

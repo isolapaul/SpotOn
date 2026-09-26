@@ -9,6 +9,7 @@ import { useState, useRef, ChangeEvent } from 'react';
 import type { SpotCategory } from '@/store/useSpotStore';
 import { MAX_SPOT_IMAGES, MAX_UPLOAD_BYTES } from '@/lib/constants';
 import { CATEGORIES } from '@/lib/categories';
+import ModalShell, { SAFE_AREA_MARGINS } from './ui/ModalShell';
 
 interface AddSpotModalProps {
   isOpen: boolean;
@@ -162,25 +163,14 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
   // Swipe-to-dismiss intentionally disabled to prevent accidental dismissal on iOS
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
-      {/* Backdrop */}
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
-        onClick={handleClose}
-        onKeyDown={(e) => e.key === 'Escape' && handleClose()}
-        aria-label="Close add spot modal"
-        tabIndex={-1}
-      />
-      
-      {/* Modal */}
-      <div 
-        className="relative glass-card max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6 animate-slide-up"
-        style={{ 
-          marginTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-          marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
-        }}
-      >
+    <ModalShell
+      variant="glass"
+      z="panel"
+      onBackdropClick={handleClose}
+      backdropLabel="Close add spot modal"
+      panelClassName="max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6"
+      panelStyle={SAFE_AREA_MARGINS}
+    >
         
         {/* Close Button */}
         <button
@@ -391,7 +381,6 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             {t('reviewMessage')}
           </p>
         </form>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

@@ -11,6 +11,7 @@ import {
   LOCATION_CACHE_MAX_AGE_MS,
   MAX_SPOT_IMAGES,
   MAX_UPLOAD_BYTES,
+  NESTED_Z_LAYERS,
   SWIPE_THRESHOLDS,
   Z,
 } from './constants';
@@ -60,18 +61,25 @@ describe('Z scale', () => {
     for (const cls of Object.values(Z)) expect(() => numeric(cls)).not.toThrow();
   });
 
-  it('is non-decreasing in listed order, except mapInner (inside the map stacking context)', () => {
+  it('is non-decreasing in listed order, except the nested layers (inside another stacking context)', () => {
+    expect([...NESTED_Z_LAYERS]).toEqual(['mapInner', 'panelInnerBackdrop', 'panelInnerSheet']);
     const values = Object.entries(Z)
-      .filter(([name]) => name !== 'mapInner')
+      .filter(([name]) => !NESTED_Z_LAYERS.includes(name as keyof typeof Z))
       .map(([, cls]) => numeric(cls));
     for (let i = 1; i < values.length; i++) expect(values[i]).toBeGreaterThanOrEqual(values[i - 1]);
   });
 
+  it('orders the nested layers within their context (SettingsPanel backdrop < sheet, BUG-22)', () => {
+    expect(numeric(Z.panelInnerBackdrop)).toBeLessThan(numeric(Z.panelInnerSheet));
+    expect(numeric(Z.mapInner)).toBeGreaterThan(numeric(Z.mapBase));
+  });
+
   it('pins the values in use', () => {
     expect(Z).toEqual({
-      mapOverlay: 'z-10', mapInner: 'z-[1000]', dock: 'z-50', prompt: 'z-50', panel: 'z-[60]',
-      panelModal: 'z-[70]', gallery: 'z-[100]', floatingButton: 'z-[1500]', modal: 'z-[2000]',
-      usernameSetup: 'z-[3500]', blocking: 'z-[9999]',
+      mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-[1000]', dock: 'z-50', prompt: 'z-50',
+      panel: 'z-[60]', panelInnerBackdrop: 'z-40', panelInnerSheet: 'z-50', panelModal: 'z-[70]',
+      gallery: 'z-[100]', floatingButton: 'z-[1500]', modal: 'z-[2000]', usernameSetup: 'z-[3500]',
+      blocking: 'z-[9999]',
     });
   });
 });

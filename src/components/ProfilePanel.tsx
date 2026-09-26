@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useUserStore, userErrorKey } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
+import { useSwipeToClose } from '@/hooks/useSwipeToClose';
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -16,6 +17,8 @@ import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
 import { SWIPE_THRESHOLDS } from '@/lib/constants';
 import { resolveNameFontClass } from '@/lib/nameStyle';
 import SettingsPanel from './SettingsPanel';
+import PanelShell from './ui/PanelShell';
+import StarRating from './ui/StarRating';
 import { isHighlightedBy } from '@/lib/highlights';
 
 interface ProfilePanelProps {
@@ -49,10 +52,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   // Remember which src failed (no reset effect needed; a new URL is tried automatically).
   const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
   
-  // iOS Swipe-to-Close Gesture
-  const [dragStartX, setDragStartX] = useState(0);
-  const [dragCurrentX, setDragCurrentX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  // iOS swipe-to-close gesture: rightward only
+  const swipe = useSwipeToClose({ onClose, threshold: SWIPE_THRESHOLDS.panel, direction: 'right' });
   
   const userIsAdmin = useUserStore((s) => s.isAdmin);
   const userIsSuperAdmin = useUserStore((s) => s.isSuperAdmin);
@@ -203,64 +204,195 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
     }
   };
 
-  // Touch handlers for swipe gesture
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setDragStartX(e.touches[0].clientX);
-    setDragCurrentX(e.touches[0].clientX);
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const currentX = e.touches[0].clientX;
-    const diff = currentX - dragStartX;
-    
-    // Only allow rightward drag (iOS back gesture)
-    if (diff > 0) {
-      setDragCurrentX(currentX);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDragging) return;
-    const dragDistance = dragCurrentX - dragStartX;
-    
-    // Close if dragged more than the panel swipe threshold to the right
-    if (dragDistance > SWIPE_THRESHOLDS.panel) {
-      onClose();
-    }
-    
-    // Reset
-    setIsDragging(false);
-    setDragStartX(0);
-    setDragCurrentX(0);
-  };
-
-  const translateX = isDragging ? Math.max(0, dragCurrentX - dragStartX) : 0;
-  
-  return (
-    <div className="fixed inset-0 z-[60] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
-      {/* Backdrop */}
+  // Level Info Modal (out of T25 scope: distinct markup, kept as is)
+  const levelInfoModal = showLevelInfo && (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
-        onClick={onClose}
-        onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        aria-label="Close profile panel"
-        tabIndex={-1}
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        onClick={() => setShowLevelInfo(false)}
+        aria-label="Close level info"
       />
       
-      {/* Panel with Swipe Support */}
-      <div 
-        className="absolute inset-0 flex flex-col bg-gray-900/95 backdrop-blur-2xl"
-        style={{
-          transform: `translateX(${translateX}px)`,
-          transition: isDragging ? 'none' : 'transform 0.3s ease-out'
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
+      <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto glass-card p-6 rounded-2xl animate-scale-in">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <TrendingUp className="w-6 h-6 text-primary-400" />
+            {t('levelSystem')}
+          </h2>
+          <button
+            onClick={() => setShowLevelInfo(false)}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5 text-white/60" />
+          </button>
+        </div>
+        
+        {/* Current Level */}
+        {(() => {
+          const currentLevel = getLevelInfo(myAllSpots.length);
+          const progress = getLevelProgress(myAllSpots.length);
+          return (
+            <div className={`p-6 rounded-xl ${currentLevel.bgColor} border-2 ${currentLevel.borderColor} mb-6`}>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="text-5xl">{currentLevel.icon}</div>
+                <div className="flex-1">
+                  <h3 className={`text-2xl font-bold ${currentLevel.textColor}`}>{t(currentLevel.nameKey)}</h3>
+                  <p className="text-white/80 text-sm">{t('currentLevel')}</p>
+                </div>
+              </div>
+              
+              <div className="relative w-full h-3 bg-white/20 rounded-full overflow-hidden mb-2">
+                <div 
+                  className={`absolute top-0 left-0 h-full ${currentLevel.progressBarClass} transition-all duration-500`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-white/80">
+                  {myAllSpots.length} / {currentLevel.spotsForNext || currentLevel.spotsRequired} {t('spots')}
+                </span>
+                <span className={`font-bold ${currentLevel.textColor}`}>
+                  {progress.toFixed(0)}%
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+        
+        {/* All Levels */}
+        <div className="space-y-3">
+          <h3 className="text-lg font-bold text-white mb-4">{t('allLevels')}</h3>
+          
+          {[1, 2, 3, 4, 5].map((level) => {
+            // Calculate spots needed for each level
+            const spotsForLevel = getLevelThreshold(level);
+            const levelInfo = getLevelInfo(spotsForLevel);
+            const isUnlocked = level <= getLevelInfo(myAllSpots.length).level;
+            
+            return (
+              <div 
+                key={level} 
+                className={`p-5 rounded-xl border-2 transition-all ${
+                  isUnlocked 
+                    ? `${levelInfo.bgColor} ${levelInfo.borderColor}` 
+                    : 'bg-white/5 border-white/10 opacity-60'
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="text-4xl">{levelInfo.icon}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className={`text-xl font-bold ${isUnlocked ? levelInfo.textColor : 'text-white/60'}`}>
+                        {level}. {t(levelInfo.nameKey)}
+                      </h4>
+                      {isUnlocked && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 font-medium">
+                          {t('unlocked')} ✓
+                        </span>
+                      )}
+                    </div>
+                    
+                    <p className="text-white/70 text-sm mb-3">
+                      {t('requiredSpots')}: <span className="font-bold">{levelInfo.spotsRequired}</span>
+                    </p>
+                    
+                    {/* Perks */}
+                    <div className="space-y-2">
+                      <p className="text-white/90 text-sm font-semibold">{t('benefits')}:</p>
+                      <ul className="space-y-1 text-white/70 text-sm">
+                        {level === 1 && (
+                          <li className="text-white/50 italic">{t('noSpecialBenefits')}</li>
+                        )}
+                        {level === 2 && (
+                          <li className="flex items-center gap-2">
+                            <span className="text-base">🥈</span>
+                            {t('silverName')}
+                          </li>
+                        )}
+                        {level === 3 && (
+                          <>
+                            <li className="flex items-center gap-2">
+                              <span className="text-base">🥇</span>
+                              {t('goldName')}
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-base">✨</span>
+                              {t('highlightOneSpot')} {t('goldAppearance')}
+                            </li>
+                          </>
+                        )}
+                        {level === 4 && (
+                          <>
+                            <li className="flex items-center gap-2">
+                              <span className="text-base">🥇</span>
+                              {t('goldName')}
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-base">✨</span>
+                              {t('highlightTwoSpots')} {t('goldAppearance')}
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-base">🎨</span>
+                              {t('useCustomIcons')}
+                            </li>
+                          </>
+                        )}
+                        {level === 5 && (
+                          <>
+                            <li className="flex items-center gap-2">
+                              <span className="text-base">💎</span>
+                              {t('diamondNameAndBadge')}
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-base">✨</span>
+                              {t('highlightTwoSpots')} {t('goldAppearance')}
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-base">🎨</span>
+                              {t('useCustomIcons')}
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="text-base">🌈</span>
+                              {t('customizeNameStyle')}
+                            </li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Motivational Message */}
+        <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-primary-500/20 to-purple-500/20 border border-primary-500/30">
+          <p className="text-white/90 text-sm text-center">
+            {t('keepExploringMessage')}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <PanelShell
+      onClose={onClose}
+      backdropLabel="Close profile panel"
+      variant="gray"
+      swipe={swipe}
+      overlays={
+        <>
+          {/* Settings Panel (nested: stacks inside this root's Z.panel context, see Z.panelInner*) */}
+          <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+          {levelInfoModal}
+        </>
+      }
+    >
         {/* Profile Banner */}
         <div className="relative w-full h-[18vh] flex-shrink-0 bg-gradient-to-r from-primary-700 to-primary-900">
           {user.profileBannerURL ? (
@@ -836,18 +968,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         <div className="flex items-center gap-1 mt-2">
                           {avgRating > 0 ? (
                             <>
-                              <div className="flex gap-0.5">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={`w-3 h-3 ${
-                                      star <= Math.round(avgRating)
-                                        ? 'text-yellow-400 fill-yellow-400'
-                                        : 'text-white/20'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
+                              <StarRating rating={Math.round(avgRating)} size="xs" emptyTone="faint" />
                               <span className="text-white/70 text-xs ml-1">
                                 {avgRating.toFixed(1)} ({reviewCount})
                               </span>
@@ -1102,185 +1223,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
             </div>
           )}
         </div>
-      </div>
-      
-      {/* Settings Panel */}
-      <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      
-      {/* Level Info Modal */}
-      {showLevelInfo && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => setShowLevelInfo(false)}
-            aria-label="Close level info"
-          />
-          
-          <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto glass-card p-6 rounded-2xl animate-scale-in">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-primary-400" />
-                {t('levelSystem')}
-              </h2>
-              <button
-                onClick={() => setShowLevelInfo(false)}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-white/60" />
-              </button>
-            </div>
-            
-            {/* Current Level */}
-            {(() => {
-              const currentLevel = getLevelInfo(myAllSpots.length);
-              const progress = getLevelProgress(myAllSpots.length);
-              return (
-                <div className={`p-6 rounded-xl ${currentLevel.bgColor} border-2 ${currentLevel.borderColor} mb-6`}>
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="text-5xl">{currentLevel.icon}</div>
-                    <div className="flex-1">
-                      <h3 className={`text-2xl font-bold ${currentLevel.textColor}`}>{t(currentLevel.nameKey)}</h3>
-                      <p className="text-white/80 text-sm">{t('currentLevel')}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="relative w-full h-3 bg-white/20 rounded-full overflow-hidden mb-2">
-                    <div 
-                      className={`absolute top-0 left-0 h-full ${currentLevel.progressBarClass} transition-all duration-500`}
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-white/80">
-                      {myAllSpots.length} / {currentLevel.spotsForNext || currentLevel.spotsRequired} {t('spots')}
-                    </span>
-                    <span className={`font-bold ${currentLevel.textColor}`}>
-                      {progress.toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-              );
-            })()}
-            
-            {/* All Levels */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-bold text-white mb-4">{t('allLevels')}</h3>
-              
-              {[1, 2, 3, 4, 5].map((level) => {
-                // Calculate spots needed for each level
-                const spotsForLevel = getLevelThreshold(level);
-                const levelInfo = getLevelInfo(spotsForLevel);
-                const isUnlocked = level <= getLevelInfo(myAllSpots.length).level;
-                
-                return (
-                  <div 
-                    key={level} 
-                    className={`p-5 rounded-xl border-2 transition-all ${
-                      isUnlocked 
-                        ? `${levelInfo.bgColor} ${levelInfo.borderColor}` 
-                        : 'bg-white/5 border-white/10 opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="text-4xl">{levelInfo.icon}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className={`text-xl font-bold ${isUnlocked ? levelInfo.textColor : 'text-white/60'}`}>
-                            {level}. {t(levelInfo.nameKey)}
-                          </h4>
-                          {isUnlocked && (
-                            <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 font-medium">
-                              {t('unlocked')} ✓
-                            </span>
-                          )}
-                        </div>
-                        
-                        <p className="text-white/70 text-sm mb-3">
-                          {t('requiredSpots')}: <span className="font-bold">{levelInfo.spotsRequired}</span>
-                        </p>
-                        
-                        {/* Perks */}
-                        <div className="space-y-2">
-                          <p className="text-white/90 text-sm font-semibold">{t('benefits')}:</p>
-                          <ul className="space-y-1 text-white/70 text-sm">
-                            {level === 1 && (
-                              <li className="text-white/50 italic">{t('noSpecialBenefits')}</li>
-                            )}
-                            {level === 2 && (
-                              <li className="flex items-center gap-2">
-                                <span className="text-base">🥈</span>
-                                {t('silverName')}
-                              </li>
-                            )}
-                            {level === 3 && (
-                              <>
-                                <li className="flex items-center gap-2">
-                                  <span className="text-base">🥇</span>
-                                  {t('goldName')}
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <span className="text-base">✨</span>
-                                  {t('highlightOneSpot')} {t('goldAppearance')}
-                                </li>
-                              </>
-                            )}
-                            {level === 4 && (
-                              <>
-                                <li className="flex items-center gap-2">
-                                  <span className="text-base">🥇</span>
-                                  {t('goldName')}
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <span className="text-base">✨</span>
-                                  {t('highlightTwoSpots')} {t('goldAppearance')}
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <span className="text-base">🎨</span>
-                                  {t('useCustomIcons')}
-                                </li>
-                              </>
-                            )}
-                            {level === 5 && (
-                              <>
-                                <li className="flex items-center gap-2">
-                                  <span className="text-base">💎</span>
-                                  {t('diamondNameAndBadge')}
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <span className="text-base">✨</span>
-                                  {t('highlightTwoSpots')} {t('goldAppearance')}
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <span className="text-base">🎨</span>
-                                  {t('useCustomIcons')}
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <span className="text-base">🌈</span>
-                                  {t('customizeNameStyle')}
-                                </li>
-                              </>
-                            )}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            
-            {/* Motivational Message */}
-            <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-primary-500/20 to-purple-500/20 border border-primary-500/30">
-              <p className="text-white/90 text-sm text-center">
-                {t('keepExploringMessage')}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </PanelShell>
   );
 }
