@@ -74,7 +74,7 @@ test('username change to a taken name is rejected', async ({ page }) => {
   await page.locator('#edit-username').fill(E2E.admin.username);
   await page.getByRole('button', { name: 'Save', exact: true }).click();
 
-  await expectNotification(page, 'Username is already taken');
+  await expectNotification(page, 'This username is already taken'); // en usernameTaken (T22: store error codes are translated)
   await expect(page.locator('#edit-username')).toHaveValue(E2E.admin.username);
 });
 

@@ -184,5 +184,6 @@ Additional review gates:
 | T12 Firestore + Storage rules, emulator tests, transitional rules | done, adversarial review PASS-WITH-NITS + fixes (get-only public mirrors, shrinkable over-cap lists) | ada58e4 |
 | T13 PII strip script + security rollout runbook | done, review FAIL → fixed (Vercel pause before merge, planted uid-keyed admin docs, busy-spot fallback) | f668b73 |
 | T20 README, CHANGELOG, env matrix | done, review PASS-WITH-NITS + fixes | 8ead175 |
-| T21 Data and logic bug fixes | done, review PASS-WITH-NITS + fixes (approve timer guard, BUG-27) | (this commit) |
+| T21 Data and logic bug fixes | done, review PASS-WITH-NITS + fixes (approve timer guard, BUG-27) | 8ab6a06 |
+| T22 i18n and styling bug fixes | done, review PASS-WITH-NITS + fixes (translated photo-add error, userAlreadyAdmin) | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |

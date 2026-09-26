@@ -9,7 +9,8 @@ import { useSpotStore } from '@/store/useSpotStore';
 import { fetchPublicProfile, fetchPublicProfiles } from '@/store/publicProfiles';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
-import { getLevelInfo, getUserNameColor, CUSTOM_NAME_FONTS } from '@/lib/levelUtils';
+import { getLevelInfo, getUserNameColor } from '@/lib/levelUtils';
+import { resolveNameFontClass } from '@/lib/nameStyle';
 import { PLACEHOLDER_URL, getSpotImages } from '@/lib/spotImages';
 import { isHighlightedBy } from '@/lib/highlights';
 import { useState, useEffect, useRef, ChangeEvent, useCallback } from 'react';
@@ -70,15 +71,13 @@ interface ReviewerMeta {
   isAdmin?: boolean;
 }
 
-const NAME_FONT_CLASSES: readonly string[] = CUSTOM_NAME_FONTS.map((f) => f.value);
-
 // Display style comes only from the reviewer's public profile; the review's own legacy
 // style/level fields are spoofable and never read (SEC-05).
 function ReviewerBadge({ meta, review }: { meta: ReviewerMeta; review: Review }) {
   const spotsCount = meta.spotsCount ?? 0;
   const levelInfo = getLevelInfo(spotsCount);
   const nameColor = getUserNameColor(spotsCount, meta.customNameColor ?? undefined);
-  const fontClass = meta.customNameFont && NAME_FONT_CLASSES.includes(meta.customNameFont) ? meta.customNameFont : 'font-sans';
+  const fontClass = resolveNameFontClass(meta.customNameFont);
   return (
     <div className="flex items-center gap-2">
       <p
@@ -261,7 +260,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const getDateLocale = () => language === 'hu' ? 'hu-HU' : language === 'de' ? 'de-DE' : 'en-US';
 
   const formatDate = (timestamp: any) => {
-    if (!timestamp) return 'Unknown';
+    if (!timestamp) return t('unknownDate');
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     return date.toLocaleDateString(getDateLocale(), { year: 'numeric', month: 'long', day: 'numeric' });
   };
@@ -311,7 +310,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       await highlightSpot(spot.id);
       showToast(t('highlightSuccess'), 'success');
     } catch (error: any) {
-      showToast(error?.details?.message || error?.message || 'Error highlighting spot', 'error');
+      showToast(error?.details?.message || error?.message || t('highlightError'), 'error');
     } finally {
       setIsHighlighting(false);
     }
@@ -322,7 +321,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     if (rating === 0) { showToast(t('ratingRequired'), 'error'); return; }
     if (isSubmitting) return;
     if (spot.reviews?.some((r) => r.userId === user.uid)) {
-      showToast('Már értékelted ezt a helyet!', 'error');
+      showToast(t('alreadyReviewed'), 'error');
       return;
     }
 
@@ -380,8 +379,9 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     try {
       await addSpotImages(spot.id, files, user.uid);
       showToast(t('spotPhotosAdded'), 'success');
-    } catch (error: any) {
-      showToast(error?.message === 'MAX_SPOT_IMAGES' ? t('maxSpotImages') : (error?.message || t('spotPhotoAddError')), 'error');
+    } catch (error) {
+      console.error('Failed to add photos:', error);
+      showToast(error instanceof Error && error.message === 'MAX_SPOT_IMAGES' ? t('maxSpotImages') : t('spotPhotoAddError'), 'error');
     } finally {
       setIsUploadingPhotos(false);
       event.target.value = '';
@@ -390,10 +390,14 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
 
   const handleSaveEdit = async () => {
     try {
-      if (editName.trim() && editName.trim() !== spot.name) await updateSpotName(spot.id, editName.trim());
-      if (editDescription.trim() !== spot.description) await updateSpotDescription(spot.id, editDescription.trim());
+      const nameChanged = !!editName.trim() && editName.trim() !== spot.name;
+      const descChanged = editDescription.trim() !== spot.description;
+      if (nameChanged) await updateSpotName(spot.id, editName.trim());
+      if (descChanged) await updateSpotDescription(spot.id, editDescription.trim());
       setIsEditing(false);
-      showToast(t('nameUpdated'), 'success');
+      if (nameChanged && descChanged) showToast(t('spotUpdated'), 'success');
+      else if (nameChanged) showToast(t('nameUpdated'), 'success');
+      else if (descChanged) showToast(t('descriptionUpdated'), 'success');
     } catch (error) {
       showToast(t('updateError'), 'error');
     }
@@ -409,7 +413,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   };
 
   const handleDeleteImage = async (imageUrl: string) => {
-    if (!confirm(t('confirmDeleteSpot').replace('helyet', 'képet'))) return;
+    if (!confirm(t('confirmDeleteImage'))) return;
     try {
       await deleteSpotImage(spot.id, imageUrl);
       showToast(t('imageDeleted'), 'success');

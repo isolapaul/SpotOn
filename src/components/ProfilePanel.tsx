@@ -2,7 +2,7 @@
 
 import { X, MapPin, Heart, Settings, Shield, Clock, UserPlus, Trash2, Pencil, Star, Plus, TrendingUp } from 'lucide-react';
 import Image from 'next/image';
-import { useUserStore } from '@/store/useUserStore';
+import { useUserStore, userErrorKey } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useState, useEffect } from 'react';
@@ -11,6 +11,7 @@ import { db } from '@/lib/firebase';
 import type { Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { getLevelInfo, getLevelProgress, getSpotsRemainingText, CUSTOM_NAME_COLORS, CUSTOM_NAME_FONTS, getCustomNameColorValue } from '@/lib/levelUtils';
+import { resolveNameFontClass } from '@/lib/nameStyle';
 import SettingsPanel from './SettingsPanel';
 import { isHighlightedBy } from '@/lib/highlights';
 
@@ -113,7 +114,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
     try {
       await approveSpot(spotId);
     } catch (error) {
-      console.error('Failed to add category:', error);
+      console.error('Failed to approve spot:', error);
+      showToast(t('approveError'), 'error');
     }
   };
 
@@ -148,8 +150,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       showToast(`@${searchedUser.username} ${t('addedAsAdmin')}`, 'success');
       setAdminEmailInput('');
       setSearchedUser(null);
-    } catch (error: any) {
-      showToast(error.message || t('adminAddError'), 'error');
+    } catch (error) {
+      showToast(t(userErrorKey(error) ?? 'adminAddError'), 'error');
     }
   };
 
@@ -159,8 +161,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
     try {
       await removeAdmin(adminId);
       showToast(`${adminName} ${t('removedFromAdmins')}`, 'success');
-    } catch (error: any) {
-      showToast(error.message || t('adminRemoveError'), 'error');
+    } catch (error) {
+      showToast(t(userErrorKey(error) ?? 'adminRemoveError'), 'error');
     }
   };
 
@@ -172,8 +174,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       await updateUsername(trimmed);
       showToast(t('usernameSaved'), 'success');
       setIsEditingUsername(false);
-    } catch (error: any) {
-      showToast(error.message || t('usernameSaveError'), 'error');
+    } catch (error) {
+      showToast(t(userErrorKey(error) ?? 'usernameSaveError'), 'error');
     } finally {
       setIsSavingUsername(false);
     }
@@ -376,7 +378,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     >
                       <span className="text-lg">{levelInfo.icon}</span>
                       <span className={`${levelInfo.textColor} text-xs font-bold`}>
-                        {levelInfo.level}. szint
+                        {t('levelLabel').replace('{level}', String(levelInfo.level))}
                       </span>
                     </button>
                   );
@@ -387,7 +389,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               {(() => {
                 const levelInfo = getLevelInfo(myAllSpots.length);
                 const progress = getLevelProgress(myAllSpots.length);
-                const spotsRemaining = getSpotsRemainingText(myAllSpots.length, levelInfo.spotsForNext);
+                const spotsRemaining = getSpotsRemainingText(myAllSpots.length, levelInfo.spotsForNext, t);
                 
                 return (
                   <div className={`w-full max-w-md px-4 py-3 rounded-xl ${levelInfo.bgColor} border ${levelInfo.borderColor} transition-all mb-3`}>
@@ -396,7 +398,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         <span className="text-xl">{levelInfo.icon}</span>
                         <div>
                           <p className={`${levelInfo.textColor} font-bold text-sm`}>
-                            {levelInfo.name}
+                            {t(levelInfo.nameKey)}
                           </p>
                           <p className="text-white/60 text-xs">
                             {spotsRemaining}
@@ -419,9 +421,9 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     {/* Perks Preview */}
                     {levelInfo.level >= 3 && (
                       <div className="mt-2 flex flex-wrap gap-1 text-xs text-white/70">
-                        {levelInfo.maxHighlights > 0 && <span>✨ {levelInfo.maxHighlights}x kiemelés</span>}
-                        {levelInfo.canCustomizeIcon && <span>🎨 ikonok</span>}
-                        {levelInfo.canCustomizeName && <span>💎 testreszabás</span>}
+                        {levelInfo.maxHighlights > 0 && <span>✨ {t('perkHighlights').replace('{count}', String(levelInfo.maxHighlights))}</span>}
+                        {levelInfo.canCustomizeIcon && <span>🎨 {t('perkIcons')}</span>}
+                        {levelInfo.canCustomizeName && <span>💎 {t('perkCustomization')}</span>}
                       </div>
                     )}
                   </div>
@@ -521,7 +523,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         onClick={() => setShowHighlightPanel(!showHighlightPanel)}
                         className={`w-full py-2 px-4 rounded-lg font-medium text-sm transition-all ${levelInfo.bgColor} ${levelInfo.textColor} border ${levelInfo.borderColor} hover:opacity-80`}
                       >
-                        {showHighlightPanel ? '✨ Kiemelés bezárása' : '✨ Helyek kiemelése'}
+                        {showHighlightPanel ? `✨ ${t('closeHighlightPanel')}` : `✨ ${t('highlightSpots')}`}
                       </button>
                     )}
                     
@@ -531,7 +533,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         onClick={() => setShowCustomizationPanel(!showCustomizationPanel)}
                         className={`w-full py-2 px-4 rounded-lg font-medium text-sm transition-all ${levelInfo.bgColor} ${levelInfo.textColor} border ${levelInfo.borderColor} hover:opacity-80`}
                       >
-                        {showCustomizationPanel ? '💎 Testreszabás bezárása' : '💎 Név testreszabása'}
+                        {showCustomizationPanel ? `💎 ${t('closeCustomization')}` : `💎 ${t('customizeName')}`}
                       </button>
                     )}
                   </div>
@@ -548,10 +550,10 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className={`font-bold ${levelInfo.textColor}`}>
-                          ✨ Helyek kiemelése
+                          ✨ {t('highlightSpots')}
                         </h3>
                         <p className="text-white/60 text-xs mt-1">
-                          {activeHighlightCount} / {levelInfo.maxHighlights} kiemelve
+                          {t('highlightedCount').replace('{count}', String(activeHighlightCount)).replace('{max}', String(levelInfo.maxHighlights))}
                         </p>
                       </div>
                     </div>
@@ -559,7 +561,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     <div className="space-y-3">
                       {myAllSpots.filter(s => s.status === 'approved').length === 0 ? (
                         <p className="text-white/60 text-sm text-center py-4">
-                          Nincs jóváhagyott helyed a kiemeléshez.
+                          {t('noApprovedSpotsToHighlight')}
                         </p>
                       ) : (
                         myAllSpots
@@ -603,13 +605,13 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                       try {
                                         if (isHighlighted) {
                                           await unhighlightSpot(spot.id);
-                                          showToast('Kiemelés megszüntetve', 'success');
+                                          showToast(t('highlightRemoved'), 'success');
                                         } else {
                                           await highlightSpot(spot.id);
-                                          showToast('Hely kiemelve! ✨', 'success');
+                                          showToast(t('spotHighlighted'), 'success');
                                         }
-                                      } catch (error: any) {
-                                        showToast(error.message || 'Hiba történt', 'error');
+                                      } catch (error) {
+                                        showToast(t(userErrorKey(error) ?? 'genericError'), 'error');
                                       } finally {
                                         setIsHighlighting(false);
                                       }
@@ -621,7 +623,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                         : `${levelInfo.bgColor} ${levelInfo.textColor} border ${levelInfo.borderColor} hover:opacity-80`
                                     }`}
                                   >
-                                    {isHighlighted ? 'Törlés' : 'Kiemel'}
+                                    {isHighlighted ? t('delete') : t('highlightAction')}
                                   </button>
                                 </div>
                               </div>
@@ -641,16 +643,16 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   <div className="glass-card p-5 space-y-5 animate-fade-in">
                     <div>
                       <h3 className="text-cyan-300 font-bold mb-2 flex items-center gap-2">
-                        💎 Gyémánt Testreszabás
+                        💎 {t('diamondCustomization')}
                       </h3>
                       <p className="text-white/60 text-xs">
-                        5. szint kizárólagos funkciók - válassz egyedi színt és betűstílust!
+                        {t('diamondCustomizationDesc')}
                       </p>
                     </div>
                     
                     {/* Color Selection */}
                     <div className="space-y-3">
-                      <h4 className="text-white font-semibold text-sm">Név színe:</h4>
+                      <h4 className="text-white font-semibold text-sm">{t('nameColorLabel')}</h4>
                       <div className="grid grid-cols-2 gap-2">
                         {CUSTOM_NAME_COLORS.map((colorOption) => {
                           const isSelected = user?.customNameColor === colorOption.value;
@@ -661,9 +663,9 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                 setIsCustomizing(true);
                                 try {
                                   await updateCustomNameColor(colorOption.value);
-                                  showToast(`Szín beállítva: ${colorOption.name}`, 'success');
-                                } catch (error: any) {
-                                  showToast(error.message || 'Hiba történt', 'error');
+                                  showToast(t('colorSet').replace('{name}', t(colorOption.labelKey)), 'success');
+                                } catch (error) {
+                                  showToast(t(userErrorKey(error) ?? 'genericError'), 'error');
                                 } finally {
                                   setIsCustomizing(false);
                                 }
@@ -671,18 +673,18 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                               disabled={isCustomizing}
                               className={`p-3 rounded-xl transition-all text-left ${
                                 isSelected
-                                  ? `${colorOption.value.replace('text-', 'bg-')}/20 border-2 ${colorOption.value.replace('text-', 'border-')}`
+                                  ? colorOption.selectedClass
                                   : 'bg-white/5 border border-white/10 hover:bg-white/10'
                               }`}
                             >
-                              <div className={`font-bold ${colorOption.value} text-sm mb-1`}>
-                                {colorOption.name}
+                              <div className={`font-bold ${colorOption.textClass} text-sm mb-1`}>
+                                {t(colorOption.labelKey)}
                               </div>
-                              <div className={`text-xs ${colorOption.value} opacity-70`}>
-                                {user?.username || 'username'}
+                              <div className={`text-xs ${colorOption.textClass} opacity-70`}>
+                                {user?.username || t('username')}
                               </div>
                               {isSelected && (
-                                <div className="mt-1 text-xs text-green-400">✓ Aktív</div>
+                                <div className="mt-1 text-xs text-green-400">✓ {t('activeLabel')}</div>
                               )}
                             </button>
                           );
@@ -692,7 +694,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     
                     {/* Font Selection */}
                     <div className="space-y-3">
-                      <h4 className="text-white font-semibold text-sm">Betűstílus:</h4>
+                      <h4 className="text-white font-semibold text-sm">{t('fontStyleLabel')}</h4>
                       <div className="grid grid-cols-2 gap-2">
                         {CUSTOM_NAME_FONTS.map((fontOption) => {
                           const isSelected = user?.customNameFont === fontOption.value;
@@ -703,9 +705,9 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                 setIsCustomizing(true);
                                 try {
                                   await updateCustomNameFont(fontOption.value);
-                                  showToast(`Betűstílus beállítva: ${fontOption.name}`, 'success');
-                                } catch (error: any) {
-                                  showToast(error.message || 'Hiba történt', 'error');
+                                  showToast(t('fontSet').replace('{name}', t(fontOption.labelKey)), 'success');
+                                } catch (error) {
+                                  showToast(t(userErrorKey(error) ?? 'genericError'), 'error');
                                 } finally {
                                   setIsCustomizing(false);
                                 }
@@ -717,14 +719,14 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                   : 'bg-white/5 border border-white/10 hover:bg-white/10'
                               }`}
                             >
-                              <div className={`text-white text-sm mb-1 ${fontOption.value}`}>
-                                {fontOption.name}
+                              <div className={`text-white text-sm mb-1 ${fontOption.className}`}>
+                                {t(fontOption.labelKey)}
                               </div>
-                              <div className={`text-xs text-white/60 ${fontOption.value}`}>
-                                {user?.username || 'username'}
+                              <div className={`text-xs text-white/60 ${fontOption.className}`}>
+                                {user?.username || t('username')}
                               </div>
                               {isSelected && (
-                                <div className="mt-1 text-xs text-green-400">✓ Aktív</div>
+                                <div className="mt-1 text-xs text-green-400">✓ {t('activeLabel')}</div>
                               )}
                             </button>
                           );
@@ -734,7 +736,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     
                     {/* Preview */}
                     <div className="pt-3 border-t border-white/10">
-                      <h4 className="text-white font-semibold text-sm mb-2">Előnézet:</h4>
+                      <h4 className="text-white font-semibold text-sm mb-2">{t('previewLabel')}</h4>
                       <div className="glass-card p-4 flex items-center gap-3">
                         <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-cyan-500/30">
                           {(user?.profilePictureURL || user?.photoURL) && (
@@ -749,14 +751,14 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                         </div>
                         <div>
                           <p
-                            className={`font-medium ${user?.customNameFont || 'font-sans'}`}
+                            className={`font-medium ${resolveNameFontClass(user?.customNameFont)}`}
                             style={{
                               color: getCustomNameColorValue(user?.customNameColor) || '#67e8f9',
                             }}
                           >
-                            {user?.username || 'username'}
+                            {user?.username || t('username')}
                           </p>
-                          <p className="text-white/60 text-xs">Így fog megjelenni másoknak</p>
+                          <p className="text-white/60 text-xs">{t('previewHint')}</p>
                         </div>
                       </div>
                     </div>
@@ -1138,14 +1140,14 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   <div className="flex items-center gap-4 mb-4">
                     <div className="text-5xl">{currentLevel.icon}</div>
                     <div className="flex-1">
-                      <h3 className={`text-2xl font-bold ${currentLevel.textColor}`}>{currentLevel.name}</h3>
+                      <h3 className={`text-2xl font-bold ${currentLevel.textColor}`}>{t(currentLevel.nameKey)}</h3>
                       <p className="text-white/80 text-sm">{t('currentLevel')}</p>
                     </div>
                   </div>
                   
                   <div className="relative w-full h-3 bg-white/20 rounded-full overflow-hidden mb-2">
                     <div 
-                      className={`absolute top-0 left-0 h-full ${currentLevel.bgColor.replace('/20', '/80')} transition-all duration-500`}
+                      className={`absolute top-0 left-0 h-full ${currentLevel.progressBarClass} transition-all duration-500`}
                       style={{ width: `${progress}%` }}
                     />
                   </div>
@@ -1186,7 +1188,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h4 className={`text-xl font-bold ${isUnlocked ? levelInfo.textColor : 'text-white/60'}`}>
-                            {level}. {levelInfo.name}
+                            {level}. {t(levelInfo.nameKey)}
                           </h4>
                           {isUnlocked && (
                             <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 font-medium">

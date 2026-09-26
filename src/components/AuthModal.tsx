@@ -12,7 +12,7 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>) {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useUserStore();
-  const { language } = useLanguageStore();
+  const { language, t: translate } = useLanguageStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -291,7 +291,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                     maxLength={20}
                   />
                 </div>
-                <p className="text-white/50 text-xs mt-1">3-20 karakter, csak kisbetű, szám és _</p>
+                <p className="text-white/50 text-xs mt-1">{translate('usernameRules')}</p>
               </div>
             )}
 

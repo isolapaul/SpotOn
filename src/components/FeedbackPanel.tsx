@@ -73,7 +73,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
             ? t('feedbackTooLarge')
             : res.status === 429
               ? t('feedbackRateLimited')
-              : t('feedbackSendError') || 'Failed sending feedback.',
+              : t('feedbackSendError'),
         );
         return;
       }
@@ -83,7 +83,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
       // optionally show a toast elsewhere
     } catch (e) {
       console.error(e);
-      alert(t('feedbackSendError') || 'Failed sending feedback.');
+      alert(t('feedbackSendError'));
     } finally {
       setSending(false);
     }
@@ -110,7 +110,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-800/50 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <Camera className="w-5 h-5 text-white" />
-            <h3 className="text-white font-semibold text-lg">{t('feedback') || 'Visszajelzések'}</h3>
+            <h3 className="text-white font-semibold text-lg">{t('feedback')}</h3>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -121,7 +121,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
               disabled={files.length >= FEEDBACK_LIMITS.maxAttachments}
               className="px-3 py-2 text-sm text-white/80 bg-white/5 rounded-lg hover:bg-white/10 disabled:opacity-50"
             >
-              {t('attachImages') || 'Képek hozzáadása'}
+              {t('attachImages')}
             </button>
 
             <button
@@ -139,7 +139,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             maxLength={FEEDBACK_LIMITS.maxMessageChars}
-            placeholder={t('feedbackPlaceholder') || 'Írd le részletesen a visszajelzésed...'}
+            placeholder={t('feedbackPlaceholder')}
             className="w-full min-h-[180px] bg-transparent border border-white/10 rounded-xl p-3 text-white resize-none focus:outline-none"
           />
 
@@ -177,7 +177,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
           </div>
 
           <div className="mt-6 bg-slate-800/30 p-3 rounded-xl">
-            <h4 className="text-white font-semibold mb-2">{t('patchNotes') || 'Patch Notes'}</h4>
+            <h4 className="text-white font-semibold mb-2">{t('patchNotes')}</h4>
             <div className="text-white/70 text-sm whitespace-pre-wrap max-h-40 overflow-y-auto">
               {/* Fetch and render patch-notes from public/patch-notes.md */}
               {/* Simple fetch on first render would be overkill for client-only component; keep it simple by fetching on demand. */}
@@ -193,7 +193,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
             className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-2xl hover:opacity-95 disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
-            {sending ? (t('sending') || 'Küldés...') : (t('sendFeedback') || 'Küldés')}
+            {sending ? t('sending') : t('sendFeedback')}
           </button>
         </div>
       </div>
@@ -202,18 +202,21 @@ export default function FeedbackPanel({ open, onClose }: Props) {
 }
 
 function PatchNotesPreview() {
-  const [text, setText] = useState<string>('Betöltés...');
+  const { t } = useLanguageStore();
+  // null = still loading, false = failed; the texts are translated at render time.
+  const [text, setText] = useState<string | null | false>(null);
 
   React.useEffect(() => {
     let mounted = true;
     fetch('/patch-notes.md')
       .then((r) => r.text())
-      .then((t) => mounted && setText(t))
-      .catch(() => mounted && setText('No patch notes yet.'));
+      .then((body) => mounted && setText(body))
+      .catch(() => mounted && setText(false));
     return () => {
       mounted = false;
     };
   }, []);
 
-  return <div className="text-sm">{text}</div>;
+  const shown = text === null ? t('loading') : text === false ? t('noPatchNotes') : text;
+  return <div className="text-sm">{shown}</div>;
 }

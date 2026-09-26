@@ -18,6 +18,7 @@ import { app, auth, db, functions, googleProvider, storage } from '@/lib/firebas
 import { mapUserDoc, type User } from '@/lib/mapUserDoc';
 import { generateUsername, normalizeUsername } from '@/lib/username';
 import { extForMime } from '@/lib/spotImages';
+import type { TranslationKey } from '@/lib/translations';
 import imageCompression from 'browser-image-compression';
 
 export type { User } from '@/lib/mapUserDoc';
@@ -98,14 +99,42 @@ function errorCode(error: unknown): unknown {
   return typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
 }
 
+/**
+ * Codes this store throws as Error.message, mapped to translation keys. Codes without an
+ * entry (e.g. NOT_SUPER_ADMIN) fall back to the display site's generic key.
+ */
+const USER_ERROR_KEYS: Partial<Record<string, TranslationKey>> = {
+  NOT_AUTHENTICATED: 'pleaseSignIn',
+  USERNAME_TOO_SHORT: 'usernameTooShort',
+  USERNAME_TOO_LONG: 'usernameTooLong',
+  USERNAME_INVALID_CHARS: 'usernameInvalidChars',
+  USERNAME_TAKEN: 'usernameTaken',
+  ALREADY_ADMIN: 'userAlreadyAdmin',
+};
+
+/** Callable (HttpsError) codes with a meaning that does not depend on the callable. */
+const CALLABLE_ERROR_KEYS: Partial<Record<string, TranslationKey>> = {
+  'functions/unauthenticated': 'pleaseSignIn',
+};
+
+/** Translation key for an error thrown by this store, or undefined (use the site's generic key). */
+export function userErrorKey(error: unknown): TranslationKey | undefined {
+  const message = error instanceof Error ? error.message : undefined;
+  if (message && Object.hasOwn(USER_ERROR_KEYS, message)) return USER_ERROR_KEYS[message];
+  const code = errorCode(error);
+  if (typeof code === 'string' && Object.hasOwn(CALLABLE_ERROR_KEYS, code)) return CALLABLE_ERROR_KEYS[code];
+  return undefined;
+}
+
 function authInfoOf(firebaseUser: FirebaseUser) {
   return { email: firebaseUser.email, photoURL: firebaseUser.photoURL };
 }
 
-/** The current client-side message for an invalid username, or null when it is valid. */
+/** The error code for an invalid username (see USER_ERROR_KEYS), or null when it is valid. */
 function usernameValidationError(name: string): string | null {
-  if (name.length < 3 || name.length > 20) return 'Username must be 3-20 characters';
-  if (!/^[a-z0-9_]+$/.test(name)) return 'Username can only contain letters, numbers, and underscores';
+  if (name.length < 3) return 'USERNAME_TOO_SHORT';
+  if (name.length > 20) return 'USERNAME_TOO_LONG';
+  if (!/^[a-z0-9_]+$/.test(name)) return 'USERNAME_INVALID_CHARS';
   return null;
 }
 
@@ -600,15 +629,20 @@ export const useUserStore = create<UserStore>()(
       // Add a new admin (only Super Admin can do this; enforced by the callable)
       addAdmin: async (email: string) => {
         if (!get().isSuperAdmin) {
-          throw new Error('Only Super Admin can add admins');
+          throw new Error('NOT_SUPER_ADMIN');
         }
-        await addAdminCallable({ email });
+        try {
+          await addAdminCallable({ email });
+        } catch (error) {
+          if (errorCode(error) === 'functions/already-exists') throw new Error('ALREADY_ADMIN');
+          throw error;
+        }
       },
 
       // Remove an admin (only Super Admin can do this; enforced by the callable)
       removeAdmin: async (adminId: string) => {
         if (!get().isSuperAdmin) {
-          throw new Error('Only Super Admin can remove admins');
+          throw new Error('NOT_SUPER_ADMIN');
         }
         await removeAdminCallable({ uid: adminId });
       },
@@ -624,7 +658,7 @@ export const useUserStore = create<UserStore>()(
       // Update the user's username (claimed server-side, transactional)
       updateUsername: async (username: string) => {
         const { user } = get();
-        if (!user) throw new Error('Not authenticated');
+        if (!user) throw new Error('NOT_AUTHENTICATED');
 
         const trimmed = normalizeUsername(username);
         const validationError = usernameValidationError(trimmed);
@@ -639,11 +673,11 @@ export const useUserStore = create<UserStore>()(
         } catch (error) {
           const code = errorCode(error);
           if (code === 'functions/already-exists') {
-            throw new Error('Username is already taken');
+            throw new Error('USERNAME_TAKEN');
           }
           if (code === 'functions/invalid-argument') {
             throw new Error(
-              usernameValidationError(trimmed) ?? 'Username can only contain letters, numbers, and underscores',
+              usernameValidationError(trimmed) ?? 'USERNAME_INVALID_CHARS',
             );
           }
           throw error;
@@ -655,7 +689,7 @@ export const useUserStore = create<UserStore>()(
       // Upload and update profile picture with compression
       updateProfilePicture: async (file: File) => {
         const { user } = get();
-        if (!user) throw new Error('Not authenticated');
+        if (!user) throw new Error('NOT_AUTHENTICATED');
 
         try {
           const compressed = await compressProfileImage(file);
@@ -687,7 +721,7 @@ export const useUserStore = create<UserStore>()(
       // Upload and update profile banner with compression
       updateProfileBanner: async (file: File) => {
         const { user } = get();
-        if (!user) throw new Error('Not authenticated');
+        if (!user) throw new Error('NOT_AUTHENTICATED');
 
         try {
           const compressed = await compressProfileImage(file);
@@ -710,7 +744,7 @@ export const useUserStore = create<UserStore>()(
       // Highlight a spot (level 3+; allowance, expiry and writes are enforced by the callable)
       highlightSpot: async (spotId: string) => {
         const { user } = get();
-        if (!user) throw new Error('Not authenticated');
+        if (!user) throw new Error('NOT_AUTHENTICATED');
 
         await highlightSpotCallable({ spotId });
 
@@ -726,7 +760,7 @@ export const useUserStore = create<UserStore>()(
       // Unhighlight a spot (server-side)
       unhighlightSpot: async (spotId: string) => {
         const { user } = get();
-        if (!user) throw new Error('Not authenticated');
+        if (!user) throw new Error('NOT_AUTHENTICATED');
 
         await unhighlightSpotCallable({ spotId });
 
@@ -742,7 +776,7 @@ export const useUserStore = create<UserStore>()(
       // Update custom name color (level 5 only; enforced by the callable)
       updateCustomNameColor: async (color: string) => {
         const { user } = get();
-        if (!user) throw new Error('Not authenticated');
+        if (!user) throw new Error('NOT_AUTHENTICATED');
 
         await updateNameStyleCallable({ color });
         set({ user: { ...user, customNameColor: color } });
@@ -751,7 +785,7 @@ export const useUserStore = create<UserStore>()(
       // Update custom name font (level 5 only; enforced by the callable)
       updateCustomNameFont: async (font: string) => {
         const { user } = get();
-        if (!user) throw new Error('Not authenticated');
+        if (!user) throw new Error('NOT_AUTHENTICATED');
 
         await updateNameStyleCallable({ font });
         set({ user: { ...user, customNameFont: font } });

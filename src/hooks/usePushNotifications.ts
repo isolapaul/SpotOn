@@ -199,7 +199,8 @@ export const usePushNotifications = () => {
     onMessage(messaging, (payload) => {
       console.log('Foreground message received:', payload);
       
-      const title = payload.notification?.title || 'New Notification';
+      // Read the language at message time: this listener is registered once (no stale closure).
+      const title = payload.notification?.title || useLanguageStore.getState().t('newNotification');
       const body = payload.notification?.body || '';
       
       // Add to notification center only (no toast to avoid stacking)

@@ -129,6 +129,7 @@ The fallback language also differs: `hu` in some places, `en` in others. The fix
 | BUG-25 | A new review can show twice: `addReview` appends locally after `updateDoc` while the spots listener has already delivered the same review; visible after close/reopen until the next snapshot (found during T11b) | `useSpotStore.ts` `addReview` | T21 |
 | BUG-26 | The hero's Close button sits inside the clickable hero, so closing also opens the fullscreen gallery; because the panel never unmounts, the next spot opens straight into the gallery (found during T21) | `SpotDetailsPanel.tsx` hero | T28 |
 | BUG-27 | Deleting an image before the primary one keeps the old index, so the hero silently moves to the next image (found in the T21 review) | `useSpotStore.ts` `deleteSpotImage` | T21 |
+| BUG-28 | Highlighting shows the server's raw English reason (e.g. "No highlight bonus available" for level 1-2 users, "Spot must be approved to highlight"); four of five reasons share `permission-denied`, so the client cannot map them (found in the T22 review) | `SpotDetailsPanel.tsx` `handleHighlightSpot`, `functions/src/lib/highlights.ts` | follow-up: server sends `details: { reason }`, client maps each reason to a key |
 | BUG-22 | SettingsPanel renders at z-40/50 inside ProfilePanel's z-60 stacking context | `SettingsPanel.tsx` | T25 (z-index scale in `lib/`) |
 
 ---

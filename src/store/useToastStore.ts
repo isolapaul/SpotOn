@@ -1,14 +1,17 @@
 import { create } from 'zustand';
 import { useNotificationStore } from './useNotificationStore';
+import { useLanguageStore } from './useLanguageStore';
 
 export type ToastType = 'success' | 'error' | 'info';
 
-// Map toast types to notification titles
-const toastTitles: Record<ToastType, string> = {
-  success: '✅ Success',
-  error: '❌ Error',
-  info: 'ℹ️ Info',
-};
+// Notification title per toast type (emoji prefix + translated word), in the current language
+function toastTitle(type: ToastType): string {
+  const { t } = useLanguageStore.getState();
+  if (type === 'success') return `✅ ${t('toastSuccess')}`;
+  if (type === 'error') return `❌ ${t('toastError')}`;
+  if (type === 'info') return `ℹ️ ${t('toastInfo')}`;
+  return t('notificationDefaultTitle');
+}
 
 interface ToastStore {
   showToast: (message: string, type: ToastType) => void;
@@ -20,7 +23,7 @@ export const useToastStore = create<ToastStore>(() => ({
     const { addNotification } = useNotificationStore.getState();
     
     addNotification({
-      title: toastTitles[type] || 'Notification',
+      title: toastTitle(type),
       body: message,
       type: type, // 'success' | 'error' | 'info' now valid types
     });

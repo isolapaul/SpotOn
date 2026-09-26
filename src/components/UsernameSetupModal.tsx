@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { User, Check, AlertCircle, Loader2 } from 'lucide-react';
-import { useUserStore } from '@/store/useUserStore';
+import { useUserStore, userErrorKey } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useNotificationStore } from '@/store/useNotificationStore';
 
@@ -74,8 +74,8 @@ export default function UsernameSetupModal({ isOpen, onClose }: Readonly<Usernam
         type: 'success',
       });
       onClose();
-    } catch (err: any) {
-      setError(err.message || t('usernameSaveError'));
+    } catch (err) {
+      setError(t(userErrorKey(err) ?? 'usernameSaveError'));
     } finally {
       setIsSaving(false);
     }

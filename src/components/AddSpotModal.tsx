@@ -136,8 +136,10 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
       onClose();
       
       showToast(t('spotUploaded'), 'success');
-    } catch (err: any) {
-      const errorMessage = err.message || t('spotUploadFailed');
+    } catch (err) {
+      // addSpot throws no store error codes; any failure shows the generic translated message.
+      console.error('Failed to add spot:', err);
+      const errorMessage = t('spotUploadFailed');
       setError(errorMessage);
       showToast(errorMessage, 'error');
     } finally {
@@ -206,7 +208,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {selectedLocation && (
             <div className="glass p-3 rounded-xl">
               <p className="text-white/80 text-sm">
-                📍 Location: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                📍 {t('location')}: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
               </p>
             </div>
           )}
@@ -329,7 +331,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
                     {/* Primary badge */}
                     {index === primaryImageIndex && (
                       <div className="absolute top-1 left-1 bg-primary-500 text-white text-xs px-2 py-1 rounded">
-                        Fő
+                        {t('primaryBadge')}
                       </div>
                     )}
                     {/* Remove button */}
@@ -349,7 +351,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
                         className="absolute bottom-1 left-1 right-1 bg-black/60 hover:bg-black/80 text-white text-xs py-1 rounded transition-colors"
                         disabled={loading}
                       >
-                        Legyen fő
+                        {t('makePrimary')}
                       </button>
                     )}
                   </div>

@@ -7,16 +7,23 @@
  * - Level 3: 10-14 spots (gold name + highlight 1 spot that appears gold to others)
  * - Level 4: 15-19 spots (gold name + highlight 2 spots + custom icons)
  * - Level 5: 20+ spots (diamond name + badge + custom name color/font)
+ *
+ * Relative imports only, and only `import type` from translations: the functions vitest
+ * (functions/test/levels.parity.test.ts) imports this file and has no `@/` alias.
  */
+
+import type { TranslationKey } from './translations';
+import { NAME_COLORS, NAME_FONTS, resolveNameColorHex, type NameColorValue, type NameFontValue } from './nameStyle';
 
 export interface LevelInfo {
   level: number;
-  name: string;
+  nameKey: TranslationKey; // Level name, translate with t()
   color: string; // Tailwind color class
   textColor: string; // For displaying username
   bgColor: string; // For badges
   borderColor: string; // For borders
   progressColor: string; // Hex color for progress bar fill
+  progressBarClass: string; // Tailwind class for the level-info progress bar fill
   icon: string; // Emoji icon
   spotsRequired: number;
   spotsForNext: number | null; // null if max level
@@ -25,12 +32,12 @@ export interface LevelInfo {
   canCustomizeName: boolean; // color and font
 }
 
-export const LEVEL_THRESHOLDS = [
-  { level: 1, spotsRequired: 0, name: 'Kezdő', icon: '🌱' },
-  { level: 2, spotsRequired: 3, name: 'Haladó', icon: '🥈' },
-  { level: 3, spotsRequired: 10, name: 'Felfedező', icon: '🥇' },
-  { level: 4, spotsRequired: 15, name: 'Spotmester', icon: '⭐' },
-  { level: 5, spotsRequired: 20, name: 'Világutazó', icon: '💎' },
+export const LEVEL_THRESHOLDS: readonly { level: number; spotsRequired: number; nameKey: TranslationKey; icon: string }[] = [
+  { level: 1, spotsRequired: 0, nameKey: 'levelBeginner', icon: '🌱' },
+  { level: 2, spotsRequired: 3, nameKey: 'levelExplorer', icon: '🥈' },
+  { level: 3, spotsRequired: 10, nameKey: 'levelMaster', icon: '🥇' },
+  { level: 4, spotsRequired: 15, nameKey: 'levelLegend', icon: '⭐' },
+  { level: 5, spotsRequired: 20, nameKey: 'levelDiamond', icon: '💎' },
 ];
 
 /**
@@ -56,27 +63,32 @@ export function getLevelInfo(spotsCount: number): LevelInfo {
   let bgColor = 'bg-gray-500/20';
   let borderColor = 'border-gray-500/30';
   let progressColor = '#6b7280'; // gray-500
+  let progressBarClass = 'bg-gray-500/80';
   
   if (level === 2) {
     textColor = 'text-gray-300'; // Silver
     bgColor = 'bg-gray-400/20';
     borderColor = 'border-gray-400/30';
     progressColor = '#9ca3af'; // gray-400
+    progressBarClass = 'bg-gray-400/80';
   } else if (level === 3) {
     textColor = 'text-yellow-400'; // Gold
     bgColor = 'bg-yellow-500/20';
     borderColor = 'border-yellow-500/30';
     progressColor = '#eab308'; // yellow-500
+    progressBarClass = 'bg-yellow-500/80';
   } else if (level === 4) {
     textColor = 'text-yellow-400'; // Gold (same as level 3)
     bgColor = 'bg-yellow-500/20';
     borderColor = 'border-yellow-500/30';
     progressColor = '#eab308'; // yellow-500
+    progressBarClass = 'bg-yellow-500/80';
   } else if (level === 5) {
     textColor = 'text-cyan-300'; // Diamond
     bgColor = 'bg-cyan-500/20';
     borderColor = 'border-cyan-500/30';
     progressColor = '#06b6d4'; // cyan-500
+    progressBarClass = 'bg-cyan-500/80';
   }
 
   const maxHighlights = (() => {
@@ -87,12 +99,13 @@ export function getLevelInfo(spotsCount: number): LevelInfo {
 
   return {
     level,
-    name: currentThreshold.name,
+    nameKey: currentThreshold.nameKey,
     color: textColor,
     textColor,
     bgColor,
     borderColor,
     progressColor,
+    progressBarClass,
     icon: currentThreshold.icon,
     spotsRequired: currentThreshold.spotsRequired,
     spotsForNext: nextThreshold ? nextThreshold.spotsRequired : null,
@@ -131,22 +144,12 @@ const LEVEL_NAME_COLORS: Record<number, string> = {
   5: '#06b6d4', // fallback
 };
 
-const CUSTOM_NAME_COLOR_VALUES: Record<string, string> = {
-  'text-cyan-300': '#67e8f9',
-  'text-purple-400': '#c084fc',
-  'text-emerald-400': '#34d399',
-  'text-rose-400': '#fb7185',
-  'text-yellow-300': '#fde047',
-  'text-slate-300': '#cbd5e1',
-  'text-orange-400': '#fb923c',
-};
-
+/**
+ * Hex colour for an allowlisted custom name colour, else undefined. Raw '#…', 'rgb…' and
+ * 'hsl…' values are not honoured (SEC-05); callers fall back to the level colour.
+ */
 export function getCustomNameColorValue(customColor?: string): string | undefined {
-  if (!customColor) return undefined;
-  if (customColor.startsWith('#') || customColor.startsWith('rgb') || customColor.startsWith('hsl')) {
-    return customColor;
-  }
-  return CUSTOM_NAME_COLOR_VALUES[customColor];
+  return resolveNameColorHex(customColor);
 }
 
 export function getUserNameColor(spotsCount: number, customColor?: string): string {
@@ -160,36 +163,42 @@ export function getUserNameColor(spotsCount: number, customColor?: string): stri
 /**
  * Get available custom colors for level 5 users
  */
-export const CUSTOM_NAME_COLORS = [
-  { name: 'Gyémánt Kék', value: 'text-cyan-300', gradient: 'from-cyan-400 to-blue-500' },
-  { name: 'Lila Varázs', value: 'text-purple-400', gradient: 'from-purple-400 to-pink-500' },
-  { name: 'Smaragdzöld', value: 'text-emerald-400', gradient: 'from-emerald-400 to-green-500' },
-  { name: 'Rubin Vörös', value: 'text-rose-400', gradient: 'from-rose-400 to-red-500' },
-  { name: 'Aranyfény', value: 'text-yellow-300', gradient: 'from-yellow-300 to-amber-500' },
-  { name: 'Ezüst Holdfény', value: 'text-slate-300', gradient: 'from-slate-300 to-gray-400' },
-  { name: 'Tüzes Narancs', value: 'text-orange-400', gradient: 'from-orange-400 to-red-500' },
-];
+export const CUSTOM_NAME_COLORS: readonly {
+  value: NameColorValue;
+  labelKey: TranslationKey;
+  textClass: string;
+  selectedClass: string;
+}[] = (Object.keys(NAME_COLORS) as NameColorValue[]).map((value) => ({
+  value,
+  labelKey: NAME_COLORS[value].labelKey,
+  textClass: NAME_COLORS[value].textClass,
+  selectedClass: NAME_COLORS[value].selectedClass,
+}));
 
 /**
  * Get available custom fonts for level 5 users
  */
-export const CUSTOM_NAME_FONTS = [
-  { name: 'Normál', value: 'font-sans' },
-  { name: 'Félkövér', value: 'font-bold' },
-  { name: 'Kézírás', value: 'font-serif' },
-  { name: 'Modern', value: 'font-mono' },
-  { name: 'Elegáns', value: 'font-serif italic' },
-  { name: 'Extra Félkövér', value: 'font-extrabold' },
-  { name: 'Vékony Elegáns', value: 'font-light italic' },
-];
+export const CUSTOM_NAME_FONTS: readonly {
+  value: NameFontValue;
+  labelKey: TranslationKey;
+  className: string;
+}[] = (Object.keys(NAME_FONTS) as NameFontValue[]).map((value) => ({
+  value,
+  labelKey: NAME_FONTS[value].labelKey,
+  className: NAME_FONTS[value].className,
+}));
 
 /**
- * Format spots remaining text for translations
+ * Translated "spots to the next level" / "max level reached" text
  */
-export function getSpotsRemainingText(spotsCount: number, spotsForNext: number | null): string {
+export function getSpotsRemainingText(
+  spotsCount: number,
+  spotsForNext: number | null,
+  t: (key: TranslationKey) => string,
+): string {
   if (spotsForNext === null) {
-    return 'Maximum szint elérve! 🎉';
+    return t('maxLevelReached');
   }
   const remaining = spotsForNext - spotsCount;
-  return `${remaining} hely a következő szintig`;
+  return t('spotsToNextLevel').replace('{count}', String(remaining));
 }
