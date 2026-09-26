@@ -173,5 +173,6 @@ Additional review gates:
 | T11b Client spot interactions | done, review PASS; e2e 16/16 local harness, full via CI | 4069228 |
 | T14 Harden /api/feedback | done, adversarial review + re-verify PASS | 478c6a1 |
 | T15 Web hardening (CSP, headers, auth proxy) | done, review PASS | 0e30571 |
-| T16 Standalone image + Dockerfile | done, review PASS (D1/D2 fixed) | (this commit) |
+| T16 Standalone image + Dockerfile | done, review PASS (D1/D2 fixed) | d5ac8cb |
+| T17 Compose + server runbook | done, review PASS + fixes | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |

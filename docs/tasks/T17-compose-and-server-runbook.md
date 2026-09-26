@@ -66,6 +66,7 @@ Other facts:
          - no-new-privileges:true
        init: true
        mem_limit: 512m
+       memswap_limit: 512m
        cpus: 1.0
        pids_limit: 256
        healthcheck:
@@ -97,7 +98,7 @@ Other facts:
    SMTP_PORT=465
    SMTP_USER=
    # App password / SMTP password. Keep this file chmod 600.
-   # If the password contains "$", wrap the whole value in single quotes ('...'): Compose interpolates $ in env_file values.
+   # Wrap the password in single quotes ('...'): otherwise Compose expands "$" and treats " #" as the start of a comment.
    SMTP_PASS=
    # Where feedback is delivered. Required: without it /api/feedback answers 503.
    FEEDBACK_RECIPIENT=
@@ -111,7 +112,7 @@ Other facts:
    ```
    plus a top-level `registries.ghcr: { type: docker-registry, url: ghcr.io, username: isolapaul, password: "${{secrets.DEPENDABOT_GHCR_TOKEN}}" }`, and the secret `DEPENDABOT_GHCR_TOKEN` (a classic PAT, `read:packages`).
    - Dependabot PRs only propose a new tag and digest. Paul still deploys with `./update.sh`, which verifies the signature.
-4. **`deploy/update.sh`**, exactly this content. It is fail-safe: any failed check stops it before the compose file is touched.
+4. **`deploy/update.sh`**, exactly this content. It is fail-safe: any failed check stops it before the compose file is touched. The cosign identity is the **exact** workflow ref of the tag being deployed (not a regexp), so a signature made for another tag is rejected; `up --wait` makes an unhealthy release fail loudly.
    ```bash
    #!/usr/bin/env bash
    # /srv/docker/spoton/update.sh — verify, pin and roll out a SpotOn release. Usage: ./update.sh v2.1.0
@@ -120,25 +121,25 @@ Other facts:
    TAG=${1:?usage: ./update.sh vX.Y.Z}
    [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "final release tags only (vX.Y.Z)" >&2; exit 1; }
    IMAGE=ghcr.io/isolapaul/spoton
-   ID='^https://github\.com/isolapaul/SpotOn/\.github/workflows/release\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'
+   ID="https://github.com/isolapaul/SpotOn/.github/workflows/release.yml@refs/tags/$TAG"
    ISSUER=https://token.actions.githubusercontent.com
    OUT=$(docker buildx imagetools inspect "$IMAGE:$TAG")
    DIGEST=$(awk '/^Digest:/{print $2; exit}' <<<"$OUT")
    [[ $DIGEST =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "could not resolve a digest for $TAG" >&2; exit 1; }
    echo "$TAG -> $DIGEST (must equal the digest in the release job summary)"
-   cosign verify "$IMAGE@$DIGEST" --certificate-identity-regexp "$ID" --certificate-oidc-issuer "$ISSUER" > /dev/null
+   cosign verify "$IMAGE@$DIGEST" --certificate-identity "$ID" --certificate-oidc-issuer "$ISSUER" > /dev/null
    echo "signature OK"
-   cosign verify-attestation --type cyclonedx "$IMAGE@$DIGEST" --certificate-identity-regexp "$ID" --certificate-oidc-issuer "$ISSUER" > /dev/null
+   cosign verify-attestation --type cyclonedx "$IMAGE@$DIGEST" --certificate-identity "$ID" --certificate-oidc-issuer "$ISSUER" > /dev/null
    echo "SBOM attestation OK"
    cp docker-compose.yml "docker-compose.yml.$(date +%F-%H%M%S).bak"
    sed -i -E "s#^(\s*image: ghcr\.io/isolapaul/spoton):[^@]+@sha256:[0-9a-f]{64}#\1:$TAG@$DIGEST#" docker-compose.yml
    grep -qF "image: $IMAGE:$TAG@$DIGEST" docker-compose.yml || { echo "image line not updated" >&2; exit 1; }
    docker compose pull
-   docker compose up -d
+   docker compose up -d --wait --wait-timeout 120
    ```
 5. **`docs/deploy.md`.** Write these sections, in this order, with the commands verbatim. Adapt the prose, not the commands.
-   1. **Overview.** A text diagram: `Browser → Cloudflare edge (TLS) → tunnel → cloudflared (docker net "edge") → http://spoton:3000 → Firebase (Auth/Firestore/Storage/FCM/Functions)`. The container is stateless.
-   2. **Prerequisites.** Docker ≥ 29 and Compose v5; the `edge` network exists (`docker network inspect edge`); cosign v3 (§5); Paul's GitHub account with access to the private package.
+   1. **Overview.** A text diagram: `Browser → Cloudflare edge (TLS) → tunnel → cloudflared (docker net "edge") → http://spoton:3000 → Firebase (Auth/Firestore/Storage/FCM/Functions)`. The container is stateless. Add "Where this fits: ROADMAP §4 step 4 (after functions deploy and backfill, before the rules deploy)".
+   2. **Prerequisites.** Docker ≥ 29 and Compose v5; Docker Buildx (`docker buildx version`; `update.sh` uses `docker buildx imagetools inspect`); the `edge` network exists (`docker network inspect edge`); cosign v3 (§5); Paul's GitHub account with access to the private package.
    3. **GitHub repository variables** (Settings → Secrets and variables → Actions → *Variables*; not secrets, because they are public config compiled into the bundle):
       - `NEXT_PUBLIC_FIREBASE_API_KEY`
       - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` = `spoton.isolapaul.hu`
@@ -157,13 +158,16 @@ Other facts:
         read -rs GHCR_PAT && echo "$GHCR_PAT" | docker login ghcr.io -u isolapaul --password-stdin && unset GHCR_PAT
         chmod 600 ~/.docker/config.json
         ```
-      - Note: the token is stored base64 (not encrypted) in `~/.docker/config.json`. It is read-only for packages; revoke it on GitHub if the server is compromised.
-   5. **Install cosign** (v3.x; the version must be ≥ the `cosign-release` pinned in `release.yml`):
+      - GHCR still requires a classic PAT (sources: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry and https://github.com/orgs/community/discussions/38467); re-check if GitHub adds fine-grained support.
+      - Note: without a credential helper, Docker stores the token base64 (effectively plaintext) in `~/.docker/config.json` (`docker login` warns). That is acceptable for a read-only token with the file `chmod 600`. cosign reads the same file. Revoke the token on GitHub if the server is compromised.
+   5. **Install cosign** (v3.x; the version must be ≥ the `cosign-release` pinned in `release.yml`). The binary is checked against the release's checksums file **and** against a SHA-256 pinned in the runbook; a version bump updates both values:
       ```bash
-      COSIGN_VERSION=v3.0.6   # = cosign-release pinned in .github/workflows/release.yml (T18); newer v3.x also fine
-      cd /tmp && curl -fsSLO "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64" \
+      COSIGN_VERSION=v3.0.6   # = cosign-release pinned in .github/workflows/release.yml (T18)
+      COSIGN_SHA256=c956e5dfcac53d52bcf058360d579472f0c1d2d9b69f55209e256fe7783f4c74   # cosign-linux-amd64 of v3.0.6
+      cd "$(mktemp -d)" && curl -fsSLO "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64" \
         && curl -fsSLO "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign_checksums.txt" \
         && grep ' cosign-linux-amd64$' cosign_checksums.txt | sha256sum -c - \
+        && echo "${COSIGN_SHA256}  cosign-linux-amd64" | sha256sum -c - \
         && sudo install -m 0755 cosign-linux-amd64 /usr/local/bin/cosign && cosign version
       ```
    6. **First install:**
@@ -175,18 +179,18 @@ Other facts:
       scp deploy/update.sh         brvpaul@<server>:/srv/docker/spoton/update.sh
       ssh -t brvpaul@<server> 'chmod 600 /srv/docker/spoton/.env && chmod 750 /srv/docker/spoton/update.sh && ${EDITOR:-nano} /srv/docker/spoton/.env'
       ```
-      Then **§Update**.
+      State that `SMTP_PASS` must be wrapped in single quotes (Compose treats ` #` as a comment start and expands `$`). Then **§Update**.
    7. **Update (every release):**
       ```bash
       cd /srv/docker/spoton
       ./update.sh v2.1.0                           # tag from the release / Dependabot PR
       ```
-      The script (`deploy/update.sh`, step 4) resolves the digest, runs both cosign verifications, and only then backs up `docker-compose.yml`, pins `tag@digest`, pulls and restarts. It stops at the first failed check, before touching the compose file. Compare the printed digest with the release job summary. **Never** deploy by hand if the script fails. It accepts final tags only; `-rc` images are for testing. If `update.sh` changes in a release, copy the new version to the server first.
+      The script (`deploy/update.sh`, step 4) resolves the digest, runs both cosign verifications (exact identity of that tag), and only then backs up `docker-compose.yml`, pins `tag@digest`, pulls and restarts (`up -d --wait --wait-timeout 120`). It stops at the first failed check, before touching the compose file. If pull/up fails after the checks, `docker-compose.yml` already names the new release: restore with §11. Compare the printed digest with the release job summary. **Never** deploy by hand if the script fails. It accepts final tags only; `-rc` images are for testing. If `update.sh` changes in a release, copy the new version to the server first.
    8. **Health and logs:**
       ```bash
       docker inspect --format '{{.State.Health.Status}}' spoton      # healthy (within ~60 s)
       docker logs --tail 100 spoton
-      docker run --rm --network edge curlimages/curl -fsS http://spoton:3000/api/health   # optional in-network probe
+      docker exec spoton /nodejs/bin/node -e 'fetch("http://127.0.0.1:3000/api/health").then(async r=>console.log(r.status,await r.text()))'   # optional probe: 200 {"status":"ok"}
       ```
    9. **Cloudflare Zero Trust:**
       - Networks → Tunnels → your tunnel → **Public hostnames** (newer dashboards: *Published application routes*) → Add. Subdomain `spoton`, domain `isolapaul.hu`, path empty, service **HTTP** `spoton:3000`.
@@ -196,7 +200,7 @@ Other facts:
         - Speed/Scrape Shield: **Rocket Loader off**, **Email Address Obfuscation off**; Web Analytics auto-inject off for this hostname (it would break the CSP).
         - Security → WAF → rate limiting rule (optional): `http.request.uri.path eq "/api/feedback" and http.request.method eq "POST"`, per IP, block. On the Free plan the period is 10 s, so use e.g. 3 requests / 10 s. The app's own limit (T14) stays authoritative.
         - Bot Fight Mode: optional. If enabled, re-test sign-in, feedback and push registration.
-        - Caching: default. `/_next/static` is immutable; the API sends `no-store`.
+        - Caching: default. `/_next/static` is immutable; the API sends `no-store`. No *Cache Everything* / cache rules that cache HTML on this hostname (stale CSP now; breaks the nonce CSP after T32).
    10. **Firebase and Google Cloud consoles** (one-time, before switching users):
        - Firebase console → Authentication → Settings → **Authorized domains** → add `spoton.isolapaul.hu`.
        - Google Cloud console → APIs & Services → Credentials → OAuth 2.0 Client IDs → *Web client (auto created by Google Service)*:
@@ -209,11 +213,11 @@ Other facts:
        cd /srv/docker/spoton && ls docker-compose.yml.*.bak
        cp docker-compose.yml.<timestamp>.bak docker-compose.yml && docker compose up -d
        ```
-       The previous digest is still in GHCR, because releases never overwrite tags.
+       The newest `.bak` (written by the failed/bad update) holds the previous `tag@digest`; check with `grep -H image: docker-compose.yml.*.bak`. The previous digest is still in GHCR, because releases never overwrite tags.
    12. **Backups.** The app is stateless: all data is in Firebase. Back up only `/srv/docker/spoton/{docker-compose.yml,.env}`. `.env` holds the SMTP password, so store it encrypted.
    13. **Post-deploy checklist:**
        - [ ] `healthy` status; `curl -sI https://spoton.isolapaul.hu/ | grep -i content-security-policy`.
-       - [ ] `curl -s https://spoton.isolapaul.hu/__/auth/handler | grep -qi firebase` (the auth proxy works).
+       - [ ] `curl -s https://spoton.isolapaul.hu/__/auth/handler | grep -qi firebase && echo OK || echo FAIL` (the auth proxy works).
        - [ ] Google sign-in: desktop popup; iOS Safari redirect; iOS home-screen PWA.
        - [ ] Map tiles in all 5 themes.
        - [ ] Add a spot with an image (as a test user); the image shows.
