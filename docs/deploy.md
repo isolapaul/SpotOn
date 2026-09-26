@@ -55,6 +55,27 @@ Any change to these requires a new tag and release (ROADMAP trap 5). Setting the
 
 Check that the package is **Private**: GitHub → Profile → Packages → `spoton` → Package settings.
 
+### GitHub setup for the release pipeline (T18)
+
+One-time settings in the GitHub repository before the first `v*` tag is pushed:
+
+1. **Repository variables:** the 7 `NEXT_PUBLIC_FIREBASE_*` values above. Without them `release.yml` fails at the build step.
+2. **Tag ruleset:** Settings → Rules → Rulesets → New tag ruleset, target `v*`. Restrict creations, updates and deletions, with only Paul on the bypass list. Why: the cosign signature proves only that `release.yml` ran for that tag, not who pushed the tag. Anyone who can push a `v*` tag can get a signed release that `update.sh` accepts.
+3. **Issues enabled** (Settings → General → Features): the weekly `image-rescan` workflow opens `image-cve` issues.
+4. **Allowed actions**, only if Settings → Actions → General is set to "Allow select actions": tick "Allow actions created by GitHub" (covers `actions/*`, including the nested `actions/cache` and `actions/checkout`), and allow these pinned commits:
+   ```
+   docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069,
+   docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc,
+   docker/login-action@dbcb813823bdd20940b903addbd779551569679f,
+   aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25,
+   aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514,
+   anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26,
+   sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
+   ```
+   When Dependabot bumps an action, update this list too.
+5. **After the first tag push:** GitHub → Profile → Packages → `spoton` → Package settings. The package must be **Private**, linked to `isolapaul/SpotOn`, and the repository must have **Actions** access (Manage Actions access), so that `image-rescan` can pull it with its read-only token.
+6. **Workflow artifacts are public for 1 day.** On a public repository, the `release-image` artifact (OCI image + SBOM) of each release run can be downloaded by anyone for 1 day (`retention-days: 1`). This is accepted: it contains only public code and the public `NEXT_PUBLIC_*` values, nothing from `.env`.
+
 ### Optional, later: Dependabot for the compose file (ROADMAP Q4)
 
 Do this only **after** the first real release is deployed, i.e. once `deploy/docker-compose.yml` in the repository holds a real `tag@digest` instead of the all-zero placeholder. It is not set up by default.

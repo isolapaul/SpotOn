@@ -175,5 +175,6 @@ Additional review gates:
 | T14 Harden /api/feedback | done, adversarial review + re-verify PASS | 478c6a1 |
 | T15 Web hardening (CSP, headers, auth proxy) | done, review PASS | 0e30571 |
 | T16 Standalone image + Dockerfile | done, review PASS (D1/D2 fixed) | d5ac8cb |
-| T17 Compose + server runbook | done, review PASS + fixes | (this commit) |
+| T17 Compose + server runbook | done, review PASS + fixes | ebf6639 |
+| T18 Release pipeline (Trivy, SBOM, cosign, GHCR) | done, supply-chain review + re-review PASS | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |
