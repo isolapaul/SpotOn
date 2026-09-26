@@ -156,6 +156,8 @@ Additional review gates:
 | Q10 | T19: move banner dismissal is permanent per device (not re-shown); Stage B's 308 redirect catches remaining users. | accept |
 | Q11 | T14: feedback body-read deadline is 60 s (15 s would reject photo uploads on slow mobile uplinks); while two slow uploads are in flight, other feedback gets 503 `busy`. | accept |
 | Q12 | T18: the release build uploads the OCI image + SBOM as a workflow artifact; on this **public** repo any signed-in GitHub user can download it for 1 day (retention-days: 1). It contains only public code and public `NEXT_PUBLIC_*` values. Alternative: delete it at the end of publish (needs `actions: write`). | accept, retention 1 day |
+| Q13 | T12: Storage `spots/**` (legacy path, unused by any code) becomes fully denied. Existing images there that are shown via tokenized download URLs keep working, because download URLs bypass rules. | accept |
+| Q14 | T12 review: `publicProfiles` and `usernames` allow public `get` only, not `list` (spec said `read`). The client only uses `getDoc`; a public list would enumerate every username and, via the `isAdmin` mirror, every admin. | accept (tightening) |
 
 ## 7. Progress
 
@@ -178,5 +180,6 @@ Additional review gates:
 | T16 Standalone image + Dockerfile | done, review PASS (D1/D2 fixed) | d5ac8cb |
 | T17 Compose + server runbook | done, review PASS + fixes | ebf6639 |
 | T18 Release pipeline (Trivy, SBOM, cosign, GHCR) | done, supply-chain review + re-review PASS | c3ccb6d |
-| T19 Domain-move notice (Vercel only) + Stage B redirect | done, review PASS + fixes | (this commit) |
+| T19 Domain-move notice (Vercel only) + Stage B redirect | done, review PASS + fixes | 1436c75 |
+| T12 Firestore + Storage rules, emulator tests, transitional rules | done, adversarial review PASS-WITH-NITS + fixes (get-only public mirrors, shrinkable over-cap lists) | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |

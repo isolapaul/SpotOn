@@ -168,6 +168,7 @@ Put strict, tested `firestore.rules` and `storage.rules` under version control, 
            && (!ak.hasAny(['photoURL']) || isStr(d.photoURL, 0, 2048))
            && (!ak.hasAny(['profilePictureURL']) || isStr(d.profilePictureURL, 0, 2048))
            && (!ak.hasAny(['profileBannerURL']) || isStr(d.profileBannerURL, 0, 2048))
+           // amended in review: a list over its cap may still shrink (withinCapOrShrinking), so legacy data can be trimmed
            && (!ak.hasAny(['savedSpots']) || (d.savedSpots is list && d.savedSpots.size() <= 1000))
            && (!ak.hasAny(['fcmTokens']) || (d.fcmTokens is list && d.fcmTokens.size() <= 100))
            && (!ak.hasAny(['language']) || d.language in ['hu','en','de'])
@@ -190,8 +191,8 @@ Put strict, tested `firestore.rules` and `storage.rules` under version control, 
        }
 
        // ---------- server-maintained ----------
-       match /publicProfiles/{uid} { allow read: if true; allow write: if false; }
-       match /usernames/{name}     { allow read: if true; allow write: if false; }
+       match /publicProfiles/{uid} { allow get: if true; allow list, write: if false; }   // amended in review: get only
+       match /usernames/{name}     { allow get: if true; allow list, write: if false; }   // amended in review: get only
        match /admins/{adminId} {
          allow get: if isSelf(adminId) || isAdmin();
          allow list: if isAdmin();
@@ -245,7 +246,7 @@ Put strict, tested `firestore.rules` and `storage.rules` under version control, 
    - `package.json`: `"test:rules": "firebase emulators:exec --only firestore,storage --project demo-spoton \"vitest run --config vitest.rules.config.ts\""`, using T04's pinned `firebase-tools`.
 5. **Tests.** Each case uses `assertSucceeds` / `assertFails`. **Every** client path in the T11a/T11b tables must have an allow test, and every SEC finding needs at least one deny test.
    - **Allow:**
-     - public read of `spots` (unauthenticated, including the list query `orderBy('createdAt','desc')`), `publicProfiles`, `usernames` and `categories`;
+     - public read of `spots` (unauthenticated, including the list query `orderBy('createdAt','desc')`), `categories`, and public `get` (not list) of `publicProfiles` and `usernames`;
      - `spots where createdBy == alice` as alice;
      - create a pending spot (with images; with the placeholder only; without `createdByPhoto`);
      - an admin creates an approved spot;

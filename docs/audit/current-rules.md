@@ -191,3 +191,37 @@ Is there any data in `favorites`, `reviews` (top-level) or `notifications` that 
 - **Admin doc IDs:** they look like `3duKwjbZQJjSmdLPhvWg`, which is 20 characters. That is a Firestore **auto-generated ID**. It is neither a Firebase Auth UID (28 characters) nor an email. So the existing `admins` docs were created with auto IDs, most likely from an older client version or by hand in the console, and **the new functions and rules will not recognise them as admins.**
   - Plan: `bootstrap-super-admin.ts` creates Paul's `admins/{uid}` with `role: 'super'`. `backfill-profiles.ts` reports every other admin doc under `admins invalid: N`. Paul reviews that list and re-adds only the admins he still wants, from Profile → Admin (the `addAdmin` callable writes `admins/{uid}`). The legacy auto-ID docs can then be deleted in the console.
   - **Security check for Paul:** because of LR-01, anyone could have created an admin doc. Look at the `email` field of every document in `admins`, and delete any entry you do not recognise.
+
+---
+
+## Comparison with repo rules (T12)
+
+**Baseline ("live rule")** is the production rules **as patched** with the emergency patch above, which Paul has deployed (2026-09-26): `admins` and `categories` writes locked to Paul's verified email; Storage `spot-images/**` limited to image creates under 5 MB with no update or delete; Storage `spots/**` read-only. **"New rule"** is the repo's `firestore.rules` / `storage.rules` (T12). The last column checks the reads the T11a/T11b client issues **before** T12's rules are deployed (ROADMAP §4: client before rules): `publicProfiles/{uid}` get, `usernames/{name}` get, `admins/{self}` get, `admins` list (admins only) and `categories` list. Rows that serve none of these reads are marked "n/a" (the other reads the new client issues there, such as `spots` and `users/{self}`, are allowed by the live rules).
+
+### Firestore
+
+| Path | Live rule (patched) | New rule (T12) | Effect | Live rule allows the T11a/T11b reads? |
+|---|---|---|---|---|
+| `spots/{id}` | read: all · create/update: any signed-in user · delete: owner, or `admins/{token.email}` exists | read: all (pending hiding is T30) · create: validated key set, `createdBy == uid`, `status 'pending'` (admins may use `'approved'`), `createdAt == request.time` · update: admin, **or** a single valid review append, **or** owner edit of an **approved** spot (`name`, `description`, `primaryImageIndex`, image removals only) · delete: admin | Closes LR-02, LR-03, SEC-02/03/05/09/10. Owners can no longer delete their own spots (the UI only offers delete to admins). LR-09's email-keyed admin check is gone: admins are `admins/{uid}`. | n/a |
+| `users/{uid}` | read: **anyone** (incl. list) · create/update/delete: owner, any field | get: owner only · list: nobody · create/update: owner, client key allowlist with value checks · delete: nobody | Closes LR-04, LR-05, SEC-04/09. Server-only fields (`username`, `customName*`, `highlightedSpots`, `quest*`, `spotsCount`) become Admin-SDK only. | n/a (`users/{self}` get: yes) |
+| `admins/{id}` | read: all · write: Paul's verified email only | get: self or any admin · list: admins · write: nobody (the `addAdmin`/`removeAdmin` callables use the Admin SDK) | Closes SEC-08 reads (admin list no longer public). Legacy auto-ID admin docs grant nothing. | **yes** (`admins/{self}` get and `admins` list: `read: if true`) |
+| `categories/{id}` | read: all · write: Paul's verified email only | read: all · create: admin, keys `name, icon, createdAt` (1–50 / 1–8 chars, server time) · update/delete: admin | LR-06 stays closed; write access widens from Paul only to every `admins/{uid}` holder (the UI still offers it to the super admin only). | **yes** (`categories` list) |
+| `publicProfiles/{uid}` | no match → denied by the catch-all | get: all · list: nobody · write: nobody (functions only) | New server-maintained collection (T09). No list, so neither usernames nor the `isAdmin` mirror can be enumerated. | **no** → transitional grant |
+| `usernames/{name}` | no match → denied by the catch-all | get: all · list: nobody · write: nobody (functions only) | New server-maintained collection (T09). No list, so neither usernames nor the `isAdmin` mirror can be enumerated. | **no** → transitional grant |
+| `favorites/{id}` | read/write: any signed-in user | no match → denied | Unused by the code (LR-10). Paul confirmed on 2026-09-26: deny; data is not deleted. | n/a |
+| `reviews/{id}` (top-level) | read: all · write: any signed-in user | no match → denied | Unused by the code (reviews are embedded in `spots`). Paul confirmed: deny. | n/a |
+| `notifications/{id}` | read/update/delete: `resource.data.userId == uid` · create: any signed-in user | no match → denied | Unused by the code (notifications are local). Paul confirmed: deny. | n/a |
+| `/{document=**}` | read/write: denied | no match → denied | Unchanged. | n/a |
+
+### Storage
+
+| Path | Live rule (patched) | New rule (T12) | Effect | Live rule allows the T11a/T11b reads? |
+|---|---|---|---|---|
+| `profile-pictures/{uid}/**` | read: all · write (create, overwrite, delete): owner, no size/type limit | `profile-pictures/{uid}/{file}`: read: all · create: owner, `< 5 MB`, `image/(jpeg\|png\|webp)`, not over an existing object · no update/delete | Closes LR-08. Only one path segment below `{uid}` (the client writes `{ts}_{name}`). | n/a |
+| `profile-banners/{uid}/**` | same as profile pictures | same as profile pictures | Closes LR-08. | n/a |
+| `spot-images/**` | read: all · create: any signed-in user, `< 5 MB` image, **any path** · no update/delete | `spot-images/{file}` (legacy flat): read-only · `spot-images/{uid}/{file}`: read: all · create: owner, same size/type limits · no update/delete | Closes the rest of LR-07 and SEC-11: uploads are user-scoped. | n/a |
+| `spots/**` | read: all · write: denied | no match → denied (read too) | **Unused by the code** (grep: the client only uses `spot-images/`, `profile-pictures/`, `profile-banners/`). Reads through the SDK are denied; tokenized download URLs stored in documents are served by Firebase without rule evaluation. Decided in ROADMAP Q13: fully denied. If something under Storage `spots/` turns out to be needed through the SDK, add a read-only `match /spots/{allPaths=**} { allow read: if true; }` before deploying. | n/a |
+| `/{allPaths=**}` | read/write: denied | no match → denied | Unchanged. | n/a |
+
+### Transitional rules
+Two answers in the last column are **no**: `publicProfiles/{uid}` and `usernames/{name}` get. The T11a client needs both (profile badges and name styles; username availability check), and the live rules deny them. So T12 adds `docs/audit/transitional-firestore.rules`: the live Firestore rules as patched, verbatim, plus exactly these two public `get` grants (no list). T13 deploys it at rollout step 3.5, before the client (step 4). Paul replaces `<YOUR_ADMIN_EMAIL>` with the same email as in the deployed patch. No Storage transitional rules are needed: the new client's reads and its `spot-images/{uid}/…` uploads are allowed by the patched Storage rules. Known gap during the window (already true in production today, LR-09): the live spot delete rule checks `admins/{token.email}`, so an admin cannot delete another user's spot until the final rules (step 5) are deployed; smoke tests between steps 3.5 and 5 must not expect admin delete to work.

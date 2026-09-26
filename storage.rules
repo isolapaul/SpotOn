@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// SpotOn Storage rules (T12). Owner-only image creates under 5 MB; no overwrite or delete
+// (nothing in the client does either, ROADMAP trap 9). Everything not matched is denied.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function validImage() {
+      return request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+    function ownerCreate(userId) {
+      return request.auth != null && request.auth.uid == userId && resource == null && validImage();
+    }
+    match /spot-images/{fileName} { allow read: if true; allow write: if false; }            // legacy flat
+    match /spot-images/{userId}/{fileName} { allow read: if true; allow create: if ownerCreate(userId); }
+    match /profile-pictures/{userId}/{fileName} { allow read: if true; allow create: if ownerCreate(userId); }
+    match /profile-banners/{userId}/{fileName} { allow read: if true; allow create: if ownerCreate(userId); }
+  }
+}

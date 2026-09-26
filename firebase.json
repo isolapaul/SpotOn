@@ -1,6 +1,10 @@
 {
   "firestore": {
+    "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
   },
   "functions": [
     {
@@ -17,20 +21,6 @@
       ]
     }
   ],
-  "hosting": {
-    "public": "out",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
-  },
   "emulators": {
     "singleProjectMode": true,
     "auth": { "host": "127.0.0.1", "port": 9099 },

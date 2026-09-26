@@ -1,0 +1,157 @@
+rules_version = '2';
+
+// SpotOn Firestore rules (T12). The real authorization boundary: UI checks are UX only.
+// Server-only data (publicProfiles, usernames, admins, users.{username, customName*, highlightedSpots,
+// quest*, spotsCount}, spots.{highlighted, isHighlighted, spotImages likes/additions}) is written by
+// Cloud Functions through the Admin SDK, which bypasses these rules.
+// Rules do not filter queries (ROADMAP trap 1): pending spots stay publicly readable until T30.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+    function isAdmin() { return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function isStr(v, min, max) { return v is string && v.size() >= min && v.size() <= max; }
+
+    // ---------- spots ----------
+    function validLocation(l) {
+      return l is map && l.keys().hasOnly(['lat', 'lng']) && l.keys().hasAll(['lat', 'lng'])
+        && l.lat is number && l.lat >= -90 && l.lat <= 90
+        && l.lng is number && l.lng >= -180 && l.lng <= 180;
+    }
+    function validSpotCreate() {
+      let d = request.resource.data;
+      return signedIn()
+        && d.keys().hasOnly(['name', 'category', 'description', 'location', 'createdBy', 'createdByName',
+                             'createdByPhoto', 'imageUrls', 'spotImages', 'primaryImageIndex', 'status', 'createdAt'])
+        && d.keys().hasAll(['name', 'category', 'description', 'location', 'createdBy',
+                            'imageUrls', 'spotImages', 'primaryImageIndex', 'status', 'createdAt'])
+        && d.createdBy == request.auth.uid
+        && (d.status == 'pending' || (d.status == 'approved' && isAdmin()))
+        && d.createdAt == request.time
+        && isStr(d.name, 1, 100)
+        && d.description is string && d.description.size() <= 2000
+        && d.category in ['scenic', 'smoke-spot', 'viewpoint', 'other', 'hiking', 'random', 'date-spot', 'park', 'part']
+        && validLocation(d.location)
+        && (!('createdByName' in d) || isStr(d.createdByName, 0, 100))
+        && (!('createdByPhoto' in d) || isStr(d.createdByPhoto, 0, 2048))
+        && d.imageUrls is list && d.imageUrls.size() >= 1 && d.imageUrls.size() <= 20
+        && d.spotImages is list && d.spotImages.size() <= 20
+        && d.primaryImageIndex is int && d.primaryImageIndex >= 0 && d.primaryImageIndex < d.imageUrls.size();
+    }
+    // New reviews carry no PII and no self-asserted badges (SEC-03, SEC-05).
+    function validNewReview(r) {
+      return r is map
+        && r.keys().hasOnly(['id', 'userId', 'userName', 'userPhoto', 'rating', 'comment', 'createdAt'])
+        && r.keys().hasAll(['id', 'userId', 'userName', 'rating', 'comment', 'createdAt'])
+        && r.userId == request.auth.uid
+        && r.id is string && r.id.matches(request.auth.uid + '_[0-9]+')
+        && isStr(r.userName, 1, 100)
+        && (!('userPhoto' in r) || isStr(r.userPhoto, 0, 2048))
+        && r.rating is int && r.rating >= 1 && r.rating <= 5
+        && r.comment is string && r.comment.size() <= 1000
+        && r.createdAt is timestamp && r.createdAt <= request.time + duration.value(5, 'm');
+    }
+    // Exactly one review appended; existing (incl. legacy) entries untouched and in order.
+    function isReviewAppend() {
+      let oldR = resource.data.get('reviews', []);
+      let newR = request.resource.data.get('reviews', []);
+      return signedIn()
+        && changed().hasOnly(['reviews'])
+        && newR is list
+        && newR.size() == oldR.size() + 1
+        // an empty slice list[0:0] raises an index error in the rules runtime, so guard it
+        && (oldR.size() == 0 || newR[0:oldR.size()] == oldR)
+        && validNewReview(newR[oldR.size()]);
+    }
+    function onlyRemoved(oldL, newL) {
+      return newL is list && newL.size() <= oldL.size() && newL.removeAll(oldL).size() == 0;
+    }
+    // Owner image edits may only remove entries (SEC-10); removing the last one leaves the placeholder.
+    function validOwnerImages() {
+      let newU = request.resource.data.get('imageUrls', []);
+      return (newU == ['/placeholder-spot.jpg'] || onlyRemoved(resource.data.get('imageUrls', []), newU))
+        && onlyRemoved(resource.data.get('spotImages', []), request.resource.data.get('spotImages', []));
+    }
+    function isOwnerEdit() {
+      let d = request.resource.data;
+      let ak = changed();
+      return signedIn()
+        && resource.data.createdBy == request.auth.uid
+        && resource.data.status == 'approved'
+        && ak.hasOnly(['name', 'description', 'primaryImageIndex', 'imageUrls', 'spotImages'])
+        && (!ak.hasAny(['name']) || isStr(d.name, 1, 100))
+        && (!ak.hasAny(['description']) || (d.description is string && d.description.size() <= 2000))
+        && (!ak.hasAny(['primaryImageIndex']) || (d.primaryImageIndex is int && d.primaryImageIndex >= 0 && d.primaryImageIndex < 20))
+        && (!ak.hasAny(['imageUrls', 'spotImages']) || validOwnerImages());
+    }
+    match /spots/{spotId} {
+      allow read: if true;                       // pending hiding = T30
+      allow create: if validSpotCreate();
+      allow update: if isAdmin() || isReviewAppend() || isOwnerEdit();
+      allow delete: if isAdmin();
+    }
+
+    // ---------- users ----------
+    function userClientKeys() {
+      return ['uid', 'email', 'photoURL', 'profilePictureURL', 'profileBannerURL', 'savedSpots', 'fcmTokens',
+              'language', 'notificationsEnabled', 'notificationSettings', 'lastTokenUpdate', 'lastLoginAt', 'createdAt'];
+    }
+    function validNotifSettings(s) {
+      return s is map && s.keys().hasOnly(['spotApproved', 'spotReviewed', 'newPendingSpot'])
+        && (!('spotApproved' in s) || s.spotApproved is bool)
+        && (!('spotReviewed' in s) || s.spotReviewed is bool)
+        && (!('newPendingSpot' in s) || s.newPendingSpot is bool);
+    }
+    // A list may exceed its cap only while it shrinks, so legacy oversized lists can still be trimmed.
+    function withinCapOrShrinking(list, field, cap) {
+      return list.size() <= cap
+        || (resource != null && list.size() < resource.data.get(field, []).size());
+    }
+    function validUserFields(d, ak) {
+      return (!ak.hasAny(['uid']) || d.uid == request.auth.uid)
+        && (!ak.hasAny(['email']) || d.email == '' || d.email == request.auth.token.get('email', ''))
+        && (!ak.hasAny(['photoURL']) || isStr(d.photoURL, 0, 2048))
+        && (!ak.hasAny(['profilePictureURL']) || isStr(d.profilePictureURL, 0, 2048))
+        && (!ak.hasAny(['profileBannerURL']) || isStr(d.profileBannerURL, 0, 2048))
+        && (!ak.hasAny(['savedSpots']) || (d.savedSpots is list && withinCapOrShrinking(d.savedSpots, 'savedSpots', 1000)))
+        && (!ak.hasAny(['fcmTokens']) || (d.fcmTokens is list && withinCapOrShrinking(d.fcmTokens, 'fcmTokens', 100)))
+        && (!ak.hasAny(['language']) || d.language in ['hu', 'en', 'de'])
+        && (!ak.hasAny(['notificationsEnabled']) || d.notificationsEnabled is bool)
+        && (!ak.hasAny(['notificationSettings']) || validNotifSettings(d.notificationSettings))
+        && (!ak.hasAny(['lastTokenUpdate']) || isStr(d.lastTokenUpdate, 0, 64))
+        && (!ak.hasAny(['lastLoginAt']) || d.lastLoginAt == request.time)
+        && (!ak.hasAny(['createdAt']) || d.createdAt == request.time);
+    }
+    match /users/{userId} {
+      allow get: if isSelf(userId);
+      allow list: if false;
+      allow create: if isSelf(userId)
+        && request.resource.data.keys().hasOnly(userClientKeys())
+        && validUserFields(request.resource.data, request.resource.data.keys());
+      allow update: if isSelf(userId)
+        && changed().hasOnly(userClientKeys())
+        && validUserFields(request.resource.data, changed());
+      allow delete: if false;
+    }
+
+    // ---------- server-maintained ----------
+    // get only: the client never lists these, and a public list would enumerate admins (isAdmin) and all usernames.
+    match /publicProfiles/{uid} { allow get: if true; allow list, write: if false; }
+    match /usernames/{name}     { allow get: if true; allow list, write: if false; }
+    match /admins/{adminId} {
+      allow get: if isSelf(adminId) || isAdmin();
+      allow list: if isAdmin();
+      allow write: if false;
+    }
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['name', 'icon', 'createdAt'])
+        && isStr(request.resource.data.name, 1, 50) && isStr(request.resource.data.icon, 1, 8)
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if isAdmin();
+    }
+    // everything else (incl. legacy favorites, reviews, notifications): denied (no match)
+  }
+}
