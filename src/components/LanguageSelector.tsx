@@ -3,6 +3,7 @@
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { Globe, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { DELAYS } from '@/lib/constants';
 
 export default function LanguageSelector() {
   const { setLanguage, hasSelectedLanguage } = useLanguageStore();
@@ -13,7 +14,7 @@ export default function LanguageSelector() {
     // Show language selector if user hasn't selected a language yet
     if (!hasSelectedLanguage) {
       // Small delay for smooth entrance
-      const id = setTimeout(() => setIsOpen(true), 300);
+      const id = setTimeout(() => setIsOpen(true), DELAYS.languageSelector);
       return () => clearTimeout(id);
     }
   }, [hasSelectedLanguage]);

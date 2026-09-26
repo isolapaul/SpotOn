@@ -21,6 +21,7 @@ import { useSpotStore } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useUiStore } from '@/store/useUiStore';
 import type { Spot } from '@/store/useSpotStore';
+import { DELAYS } from '@/lib/constants';
 
 // Dynamic import to avoid SSR issues with Leaflet
 const MapView = dynamic(
@@ -72,7 +73,7 @@ export default function Home() {
       // Small delay for smooth transition
       const id = setTimeout(() => {
         setIsAppReady(true);
-      }, 500);
+      }, DELAYS.appReady);
       return () => clearTimeout(id);
     }
   }, [loadingStates, isAppReady]);
@@ -95,7 +96,7 @@ export default function Home() {
       // Wait a bit to ensure spots are populated
       spotsTimer = setTimeout(() => {
         setLoadingStates(prev => ({ ...prev, spots: true }));
-      }, 300);
+      }, DELAYS.spotsSettle);
     };
     
     // Start both initializations in parallel

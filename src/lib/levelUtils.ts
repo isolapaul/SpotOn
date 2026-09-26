@@ -41,6 +41,13 @@ export const LEVEL_THRESHOLDS: readonly { level: number; spotsRequired: number; 
 ];
 
 /**
+ * Spots required to reach `level` (1-5), from LEVEL_THRESHOLDS; 0 for any other level.
+ */
+export function getLevelThreshold(level: number): number {
+  return LEVEL_THRESHOLDS.find((threshold) => threshold.level === level)?.spotsRequired ?? 0;
+}
+
+/**
  * Calculate user level based on number of spots created
  */
 export function calculateLevel(spotsCount: number): number {

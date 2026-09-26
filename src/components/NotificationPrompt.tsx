@@ -6,6 +6,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useUiStore } from '@/store/useUiStore';
 import { getMovedTo } from '@/lib/movedTo';
+import { DELAYS } from '@/lib/constants';
 
 export default function NotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -41,7 +42,7 @@ export default function NotificationPrompt() {
           // Wait a bit before showing (better UX)
           return setTimeout(() => {
             setShowPrompt(true);
-          }, 3000);
+          }, DELAYS.notificationPrompt);
         }
       }
     };

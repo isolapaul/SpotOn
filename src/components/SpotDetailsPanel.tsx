@@ -11,7 +11,16 @@ import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { getLevelInfo, getUserNameColor } from '@/lib/levelUtils';
 import { resolveNameFontClass } from '@/lib/nameStyle';
-import { PLACEHOLDER_URL, getSpotImages } from '@/lib/spotImages';
+import {
+  PLACEHOLDER_URL,
+  getGalleryUrls,
+  getHeroImageUrl,
+  getSpotImages,
+  isImageUnoptimized,
+  sortSpotImagesByLikes,
+} from '@/lib/spotImages';
+import { averageRating } from '@/lib/rating';
+import { DELAYS, SWIPE_THRESHOLDS } from '@/lib/constants';
 import { isHighlightedBy } from '@/lib/highlights';
 import { useState, useEffect, useRef, ChangeEvent, useCallback } from 'react';
 
@@ -29,7 +38,7 @@ interface SwipeState {
 
 const SWIPE_INITIAL: SwipeState = { startX: 0, currentX: 0, dragging: false };
 
-function useSwipeDismiss(onDismiss: () => void, threshold = 100) {
+function useSwipeDismiss(onDismiss: () => void, threshold: number = SWIPE_THRESHOLDS.spotDetails) {
   const [swipe, setSwipe] = useState<SwipeState>(SWIPE_INITIAL);
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -150,34 +159,27 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
 
   // Sorted gallery images (stable across renders, safe before null-check). Legacy spots are
   // materialised in memory only (never written on read).
-  const sortedSpotImages = (fresh ? getSpotImages(fresh) : [])
-    .filter((image) => image.url !== PLACEHOLDER_URL)
-    .sort((a, b) => {
-      if (b.likes !== a.likes) return b.likes - a.likes;
-      return (b.addedAt?.toMillis?.() ?? 0) - (a.addedAt?.toMillis?.() ?? 0);
-    });
+  const sortedSpotImages = sortSpotImagesByLikes(fresh ? getSpotImages(fresh) : [], 'missingAsZero');
 
-  const allGalleryImages = fresh
-    ? [
-        ...sortedSpotImages.map((img) => img.url),
-        ...(fresh.imageUrls || []).filter((url) => !sortedSpotImages.some((img) => img.url === url)),
-      ].filter((url, i, self) => url !== PLACEHOLDER_URL && self.indexOf(url) === i)
-    : [];
+  const allGalleryImages = fresh ? getGalleryUrls(fresh, sortedSpotImages) : [];
 
   const isHighlightedByUser = !!fresh && !!user && isHighlightedBy(fresh, user.uid);
 
+  // A primitive dependency: the React Compiler cannot prove the helper-built array is not mutated.
+  const galleryCount = allGalleryImages.length;
+
   const nextImage = useCallback(() => {
-    setGalleryIndex((prev) => (prev + 1) % allGalleryImages.length);
-  }, [allGalleryImages.length]);
+    setGalleryIndex((prev) => (prev + 1) % galleryCount);
+  }, [galleryCount]);
 
   const prevImage = useCallback(() => {
-    setGalleryIndex((prev) => (prev - 1 + allGalleryImages.length) % allGalleryImages.length);
-  }, [allGalleryImages.length]);
+    setGalleryIndex((prev) => (prev - 1 + galleryCount) % galleryCount);
+  }, [galleryCount]);
 
   // Ignore hero clicks briefly when panel opens (prevents accidental gallery open)
   useEffect(() => {
     setIgnoreHeroClicks(true);
-    const id = setTimeout(() => setIgnoreHeroClicks(false), 300);
+    const id = setTimeout(() => setIgnoreHeroClicks(false), DELAYS.heroClickGuard);
     return () => clearTimeout(id);
   }, [spot?.id]);
 
@@ -268,9 +270,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const isOwner = user && spot.createdBy === user.uid;
   const canEdit = userIsAdmin || (isOwner && spot.status === 'approved');
   const navigationUrl = getNavigationUrl(spot.location.lat, spot.location.lng);
-  const averageRating = spot.reviews?.length
-    ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
-    : 0;
+  const avgRating = averageRating(spot.reviews);
   // Manager tiles: imageUrls entries keep their original index (primaryImageIndex indexes imageUrls);
   // images only in spotImages have no index, so they can be deleted but not made primary.
   const imageUrlSet = new Set(spot.imageUrls || []);
@@ -281,11 +281,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       .filter((url, i, self) => url !== PLACEHOLDER_URL && !imageUrlSet.has(url) && self.indexOf(url) === i)
       .map((url) => ({ url })),
   ];
-  const heroImageUrl =
-    spot.imageUrls?.[spot.primaryImageIndex || 0] ||
-    spot.imageUrls?.[0] ||
-    sortedSpotImages[0]?.url ||
-    '/placeholder-spot.jpg';
+  const heroImageUrl = getHeroImageUrl(spot, sortedSpotImages);
   const creatorDisplayName = creatorName || spot.createdByName || t('anonymous');
   const creatorNameColor = getUserNameColor(creatorSpotsCount ?? 0, creatorCustomNameColor);
   const creatorLevelInfo = getLevelInfo(creatorSpotsCount ?? 0);
@@ -352,7 +348,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       showToast(t('spotApproved'), 'success');
       // Another spot may have been opened while the write was pending: only close the approved one.
       if (shownSpotIdRef.current === approvedId) {
-        approveCloseTimerRef.current = setTimeout(() => onClose(), 1000);
+        approveCloseTimerRef.current = setTimeout(() => onClose(), DELAYS.approveClose);
       }
     } catch (error) {
       showToast(t('approveError'), 'error');
@@ -461,7 +457,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
           tabIndex={0}
           onKeyDown={(e) => !ignoreHeroClicks && e.key === 'Enter' && allGalleryImages.length > 0 && (setGalleryIndex(0), setGalleryOpen(true))}
         >
-          <Image src={heroImageUrl} alt={spot.name} fill sizes="100vw" className="object-cover" priority unoptimized={!spot.imageUrls && !(spot as any).imageUrl} />
+          <Image src={heroImageUrl} alt={spot.name} fill sizes="100vw" className="object-cover" priority unoptimized={isImageUnoptimized(spot)} />
           {allGalleryImages.length > 1 && (
             <div className="absolute bottom-4 right-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full flex items-center gap-1">
               📸 {allGalleryImages.length}
@@ -559,8 +555,8 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                 )}
               </div>
               <div className="flex items-center gap-3">
-                <StarRow rating={Math.round(averageRating)} size="md" />
-                <span className="text-white font-semibold">{averageRating > 0 ? averageRating.toFixed(1) : '-'}</span>
+                <StarRow rating={Math.round(avgRating)} size="md" />
+                <span className="text-white font-semibold">{avgRating > 0 ? avgRating.toFixed(1) : '-'}</span>
                 <span className="text-white/60">({spot.reviews?.length || 0} {t('reviews')})</span>
               </div>
             </div>
@@ -802,8 +798,8 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
           onTouchEnd={() => {
             if (!gallerySwipe.dragging) return;
             const dist = gallerySwipe.currentX - gallerySwipe.startX;
-            if (dist > 50 && allGalleryImages.length > 1) prevImage();
-            else if (dist < -50 && allGalleryImages.length > 1) nextImage();
+            if (dist > SWIPE_THRESHOLDS.gallery && allGalleryImages.length > 1) prevImage();
+            else if (dist < -SWIPE_THRESHOLDS.gallery && allGalleryImages.length > 1) nextImage();
             setGallerySwipe(SWIPE_INITIAL);
           }}
         >

@@ -1,29 +1,10 @@
-import type { SpotCategory } from '@/store/useSpotStore';
-import type { TranslationKey } from '@/lib/translations';
+// Spot helpers. The category maps moved to categories.ts (T23) and are re-exported under their
+// old names so existing imports keep working.
+import { CATEGORY_EMOJI, CATEGORY_LABEL_KEY } from './categories';
 
-export const categoryEmojis: Record<SpotCategory, string> = {
-  scenic: '🌅',
-  'smoke-spot': '💨',
-  viewpoint: '🏔️',
-  other: '📍',
-  hiking: '🥾',
-  random: '🎲',
-  'date-spot': '❤️',
-  park: '🌳',
-  part: '🏖️',
-};
+export const categoryEmojis = CATEGORY_EMOJI;
 
-export const categoryTranslationKeys: Record<SpotCategory, TranslationKey> = {
-  scenic: 'categoryScenic',
-  'smoke-spot': 'categorySmoke',
-  viewpoint: 'categoryViewpoint',
-  other: 'categoryOther',
-  hiking: 'categoryHiking',
-  random: 'categoryRandom',
-  'date-spot': 'categoryDateSpot',
-  park: 'categoryPark',
-  part: 'categoryPart',
-};
+export const categoryTranslationKeys = CATEGORY_LABEL_KEY;
 
 export const getPlatform = (): 'ios' | 'android' | 'desktop' => {
   const userAgent = navigator.userAgent.toLowerCase();

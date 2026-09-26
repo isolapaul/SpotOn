@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { X, Camera, Send } from 'lucide-react';
-import imageCompression from 'browser-image-compression';
+import { compressImage } from '@/lib/imageCompression';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useUserStore } from '@/store/useUserStore';
 import { FEEDBACK_LIMITS } from '@/lib/feedback/validate';
@@ -47,8 +47,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
       // compress images and convert to data URLs
       const attachments = await Promise.all(
         files.map(async (f) => {
-          // useWebWorker: false — the library's worker would load its code from a third-party CDN
-          const compressed = await imageCompression(f, { maxSizeMB: 1, maxWidthOrHeight: 1600, useWebWorker: false });
+          const compressed = await compressImage(f, 'feedback');
           const dataUrl = await readFileAsDataUrl(compressed as File);
           return { filename: f.name, dataUrl };
         })

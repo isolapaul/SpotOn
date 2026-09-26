@@ -19,7 +19,7 @@ import { mapUserDoc, type User } from '@/lib/mapUserDoc';
 import { generateUsername, normalizeUsername } from '@/lib/username';
 import { extForMime } from '@/lib/spotImages';
 import type { TranslationKey } from '@/lib/translations';
-import imageCompression from 'browser-image-compression';
+import { compressImage } from '@/lib/imageCompression';
 
 export type { User } from '@/lib/mapUserDoc';
 
@@ -75,14 +75,9 @@ type SetState = (partial: Partial<UserStore>) => void;
 // Compress profile images before upload (max 1920px, ~1MB). Output types the Storage rules
 // do not accept (e.g. GIF) are re-encoded as JPEG.
 async function compressProfileImage(file: File): Promise<File> {
-  const options = {
-    maxSizeMB: 1,
-    maxWidthOrHeight: 1920,
-    useWebWorker: false,
-  };
-  const compressed = await imageCompression(file, options);
+  const compressed = await compressImage(file, 'profileStore');
   if (extForMime(compressed.type)) return compressed;
-  return imageCompression(file, { ...options, fileType: 'image/jpeg' });
+  return compressImage(file, 'profileStore', 'image/jpeg');
 }
 
 // Callables (T08/T09, region europe-west3 via `functions`)

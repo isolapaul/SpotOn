@@ -16,7 +16,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions, storage } from '@/lib/firebase';
 import { MAX_SPOT_IMAGES, PLACEHOLDER_URL, extForMime, realImageCount } from '@/lib/spotImages';
-import imageCompression from 'browser-image-compression';
+import { compressImage } from '@/lib/imageCompression';
 
 export interface Review {
   id: string;
@@ -96,12 +96,6 @@ interface SpotStore {
   setPrimaryImage: (spotId: string, imageIndex: number) => Promise<void>;
 }
 
-const IMAGE_COMPRESSION_OPTIONS = {
-  maxSizeMB: 0.3,
-  maxWidthOrHeight: 1280,
-  useWebWorker: false,
-};
-
 // Callables (T10, region europe-west3 via `functions`)
 const addSpotImagesCallable = httpsCallable<{ spotId: string; urls: string[] }, unknown>(functions, 'addSpotImages');
 const toggleImageLikeCallable = httpsCallable<{ spotId: string; imageId: string }, unknown>(functions, 'toggleImageLike');
@@ -115,9 +109,9 @@ function errorCode(error: unknown): unknown {
  * contentType. Output types the Storage rules do not accept (e.g. GIF) are re-encoded as JPEG.
  */
 async function compressAndUpload(imageFile: File, userId: string): Promise<{ url: string; spotImage: SpotImage }> {
-  let blob = await imageCompression(imageFile, IMAGE_COMPRESSION_OPTIONS);
+  let blob = await compressImage(imageFile, 'spot');
   if (!extForMime(blob.type)) {
-    blob = await imageCompression(imageFile, { ...IMAGE_COMPRESSION_OPTIONS, fileType: 'image/jpeg' });
+    blob = await compressImage(imageFile, 'spot', 'image/jpeg');
   }
   const ext = extForMime(blob.type) ?? 'jpg';
   const imageRef = ref(storage, `spot-images/${userId}/${crypto.randomUUID()}.${ext}`);

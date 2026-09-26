@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getLevelInfo, getSpotsRemainingText, LEVEL_THRESHOLDS } from './levelUtils';
+import { getLevelInfo, getLevelThreshold, getSpotsRemainingText, LEVEL_THRESHOLDS } from './levelUtils';
+import { profileLevelSpots } from './__oracles__/legacy';
 import type { TranslationKey } from './translations';
 
 // Values of getLevelInfo before T22 (only `name` became `nameKey`; progressBarClass is new).
@@ -54,5 +55,16 @@ describe('getSpotsRemainingText', () => {
   it('interpolates the remaining count', () => {
     expect(getSpotsRemainingText(4, 10, t)).toBe('6 to go');
     expect(getSpotsRemainingText(0, 3, t)).toBe('3 to go');
+  });
+});
+
+describe('getLevelThreshold (characterisation vs ProfilePanel [0, 0, 3, 10, 15, 20][level])', () => {
+  it.each([1, 2, 3, 4, 5])('level %i', (level) => {
+    expect(getLevelThreshold(level)).toBe(profileLevelSpots[level]);
+  });
+
+  it('returns 0 outside 1-5', () => {
+    expect(getLevelThreshold(0)).toBe(0);
+    expect(getLevelThreshold(6)).toBe(0);
   });
 });

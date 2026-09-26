@@ -6,7 +6,8 @@ import { useToastStore } from '@/store/useToastStore';
 import { X, Camera, Image as ImageIcon, LogOut, Globe, Bell, BellOff, MapPin } from 'lucide-react';
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import imageCompression from 'browser-image-compression';
+import { compressImage } from '@/lib/imageCompression';
+import { MAX_UPLOAD_BYTES } from '@/lib/constants';
 import { translations } from '@/lib/translations';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
@@ -39,20 +40,15 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       showToast(t.imageTooLarge, 'error');
       return;
     }
 
     setIsUploadingPicture(true);
     try {
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 800,
-        useWebWorker: false,
-      };
-      
-      const compressedFile = await imageCompression(file, options);
+      // First of two passes (the store compresses again); kept as is, see T23.
+      const compressedFile = await compressImage(file, 'settingsProfilePicture');
       await updateProfilePicture(compressedFile);
       showToast(t.profileUpdated, 'success');
     } catch (error) {
@@ -67,20 +63,15 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       showToast(t.imageTooLarge, 'error');
       return;
     }
 
     setIsUploadingBanner(true);
     try {
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
-        useWebWorker: false,
-      };
-      
-      const compressedFile = await imageCompression(file, options);
+      // First of two passes (the store compresses again); kept as is, see T23.
+      const compressedFile = await compressImage(file, 'settingsBanner');
       await updateProfileBanner(compressedFile);
       showToast(t.profileUpdated, 'success');
     } catch (error) {

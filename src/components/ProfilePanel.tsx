@@ -10,7 +10,10 @@ import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'f
 import { db } from '@/lib/firebase';
 import type { Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
-import { getLevelInfo, getLevelProgress, getSpotsRemainingText, CUSTOM_NAME_COLORS, CUSTOM_NAME_FONTS, getCustomNameColorValue } from '@/lib/levelUtils';
+import { getLevelInfo, getLevelProgress, getLevelThreshold, getSpotsRemainingText, CUSTOM_NAME_COLORS, CUSTOM_NAME_FONTS, getCustomNameColorValue } from '@/lib/levelUtils';
+import { averageRating } from '@/lib/rating';
+import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
+import { SWIPE_THRESHOLDS } from '@/lib/constants';
 import { resolveNameFontClass } from '@/lib/nameStyle';
 import SettingsPanel from './SettingsPanel';
 import { isHighlightedBy } from '@/lib/highlights';
@@ -222,8 +225,8 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
     if (!isDragging) return;
     const dragDistance = dragCurrentX - dragStartX;
     
-    // Close if dragged more than 150px to the right
-    if (dragDistance > 150) {
+    // Close if dragged more than the panel swipe threshold to the right
+    if (dragDistance > SWIPE_THRESHOLDS.panel) {
       onClose();
     }
     
@@ -578,12 +581,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                 <div className="flex gap-3 items-center">
                                   <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
                                     <Image
-                                      src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
+                                      src={getThumbnailUrl(spot)}
                                       alt={spot.name}
                                       fill
                                       sizes="56px"
                                       className="object-cover"
-                                      unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
+                                      unoptimized={isImageUnoptimized(spot)}
                                     />
                                     {isHighlighted && (
                                       <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
@@ -779,12 +782,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                   <div key={spot.id} className="glass-card p-4 flex gap-4">
                     <div className="relative w-28 h-28 rounded-xl overflow-hidden flex-shrink-0">
                       <Image
-                        src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
+                        src={getThumbnailUrl(spot)}
                         alt={spot.name}
                         fill
                         sizes="112px"
                         className="object-cover"
-                        unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
+                        unoptimized={isImageUnoptimized(spot)}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -813,20 +816,18 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                 </div>
               ) : (
                 favoriteSpots.map((spot) => {
-                  const avgRating = spot.reviews && spot.reviews.length > 0
-                    ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
-                    : 0;
+                  const avgRating = averageRating(spot.reviews);
                   const reviewCount = spot.reviews?.length || 0;
                   return (
                     <div key={spot.id} className="glass-card p-4 flex gap-4">
                       <div className="relative w-28 h-28 rounded-xl overflow-hidden flex-shrink-0">
                         <Image
-                          src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
+                          src={getThumbnailUrl(spot)}
                           alt={spot.name}
                           fill
                           sizes="112px"
                           className="object-cover"
-                          unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
+                          unoptimized={isImageUnoptimized(spot)}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -878,12 +879,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     <div className="flex gap-4 mb-3">
                       <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                         <Image
-                          src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
+                          src={getThumbnailUrl(spot)}
                           alt={spot.name}
                           fill
                           sizes="80px"
                           className="object-cover"
-                          unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
+                          unoptimized={isImageUnoptimized(spot)}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1170,7 +1171,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
               
               {[1, 2, 3, 4, 5].map((level) => {
                 // Calculate spots needed for each level
-                const spotsForLevel = [0, 0, 3, 10, 15, 20][level];
+                const spotsForLevel = getLevelThreshold(level);
                 const levelInfo = getLevelInfo(spotsForLevel);
                 const isUnlocked = level <= getLevelInfo(myAllSpots.length).level;
                 

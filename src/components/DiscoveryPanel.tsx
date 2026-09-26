@@ -5,7 +5,11 @@ import { X, Star, MapPin, Filter } from 'lucide-react';
 import Image from 'next/image';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { categoryEmojis } from '@/lib/spotUtils';
+import { CATEGORIES, getMarkerEmoji } from '@/lib/categories';
+import { haversineKm } from '@/lib/geo';
+import { averageRating } from '@/lib/rating';
+import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
+import { DISCOVERY_BATCH_SIZE, SWIPE_THRESHOLDS } from '@/lib/constants';
 import type { Spot, SpotCategory } from '@/store/useSpotStore';
 
 interface DiscoveryPanelProps {
@@ -17,55 +21,28 @@ interface DiscoveryPanelProps {
 
 type SortOption = 'nearest' | 'best-rated';
 
-const BATCH_SIZE = 20;
-
-// Haversine distance calculation
-function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
 export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSelect }: Readonly<DiscoveryPanelProps>) {
   const { spots } = useSpotStore();
   const { t } = useLanguageStore();
   const [sortBy, setSortBy] = useState<SortOption>('best-rated');
   const [filterCategory, setFilterCategory] = useState<SpotCategory | null>(null);
-  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const [visibleCount, setVisibleCount] = useState(DISCOVERY_BATCH_SIZE);
   const [showFilters, setShowFilters] = useState(false);
 
-  const categories: { value: SpotCategory; label: string; emoji: string }[] = [
-    { value: 'scenic', label: t('categoryScenic'), emoji: '🌅' },
-    { value: 'smoke-spot', label: t('categorySmoke'), emoji: '💨' },
-    { value: 'viewpoint', label: t('categoryViewpoint'), emoji: '🏔️' },
-    { value: 'hiking', label: t('categoryHiking'), emoji: '🥾' },
-    { value: 'random', label: t('categoryRandom'), emoji: '🎲' },
-    { value: 'date-spot', label: t('categoryDateSpot'), emoji: '❤️' },
-    { value: 'park', label: t('categoryPark'), emoji: '🌳' },
-    { value: 'part', label: t('categoryPart'), emoji: '🏖️' },
-    { value: 'other', label: t('categoryOther'), emoji: '📍' },
-  ];
+  const categories: { value: SpotCategory; label: string; emoji: string }[] = CATEGORIES.map((c) => ({
+    value: c.id,
+    label: t(c.labelKey),
+    emoji: c.emoji,
+  }));
 
   // Get distance for a spot (returns null if no user location)
   const getDistance = useCallback((spot: Spot): number | null => {
     if (!userLocation) return null;
-    return calculateDistance(
+    return haversineKm(
       userLocation.lat, userLocation.lng,
       spot.location.lat, spot.location.lng
     );
   }, [userLocation]);
-
-  // Compute average rating for a spot
-  const getAverageRating = useCallback((spot: Spot): number => {
-    if (!spot.reviews || spot.reviews.length === 0) return 0;
-    return spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length;
-  }, []);
 
   // Filter and sort spots
   const sortedSpots = useMemo(() => {
@@ -87,14 +64,14 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
     } else {
       // Best rated (default)
       filtered.sort((a, b) => {
-        const ratingA = getAverageRating(a);
-        const ratingB = getAverageRating(b);
+        const ratingA = averageRating(a.reviews);
+        const ratingB = averageRating(b.reviews);
         return ratingB - ratingA;
       });
     }
 
     return filtered;
-  }, [spots, filterCategory, sortBy, userLocation, getDistance, getAverageRating]);
+  }, [spots, filterCategory, sortBy, userLocation, getDistance]);
 
   // Paginated spots
   const displayedSpots = useMemo(() => {
@@ -104,7 +81,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   const hasMore = visibleCount < sortedSpots.length;
 
   const handleLoadMore = () => {
-    setVisibleCount(prev => prev + BATCH_SIZE);
+    setVisibleCount(prev => prev + DISCOVERY_BATCH_SIZE);
   };
   
   // iOS Swipe-to-Close Gesture
@@ -134,8 +111,8 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
     if (!isDragging) return;
     const dragDistance = dragCurrentX - dragStartX;
     
-    // Close if dragged more than 150px to the right
-    if (dragDistance > 150) {
+    // Close if dragged more than the panel swipe threshold to the right
+    if (dragDistance > SWIPE_THRESHOLDS.panel) {
       onClose();
     }
     
@@ -152,7 +129,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
       return;
     }
     setSortBy(option);
-    setVisibleCount(BATCH_SIZE);
+    setVisibleCount(DISCOVERY_BATCH_SIZE);
   };
 
   if (!isOpen) return null;
@@ -237,7 +214,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
           {showFilters && (
             <div className="flex flex-wrap gap-2 pb-3">
               <button
-                onClick={() => { setFilterCategory(null); setVisibleCount(BATCH_SIZE); }}
+                onClick={() => { setFilterCategory(null); setVisibleCount(DISCOVERY_BATCH_SIZE); }}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                   filterCategory === null
                     ? 'bg-primary-500/30 border border-primary-500/60 text-white'
@@ -249,7 +226,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
               {categories.map((cat) => (
                 <button
                   key={cat.value}
-                  onClick={() => { setFilterCategory(cat.value); setVisibleCount(BATCH_SIZE); }}
+                  onClick={() => { setFilterCategory(cat.value); setVisibleCount(DISCOVERY_BATCH_SIZE); }}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${
                     filterCategory === cat.value
                       ? 'bg-primary-500/30 border border-primary-500/60 text-white'
@@ -275,7 +252,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
             <div className="space-y-3">
               {displayedSpots.map((spot) => {
                 const distance = getDistance(spot);
-                const rating = getAverageRating(spot);
+                const rating = averageRating(spot.reviews);
                 const reviewCount = spot.reviews?.length || 0;
 
                 return (
@@ -287,16 +264,16 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                     {/* Thumbnail */}
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                       <Image
-                        src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
+                        src={getThumbnailUrl(spot)}
                         alt={spot.name}
                         fill
                         className="object-cover"
                         sizes="80px"
-                        unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
+                        unoptimized={isImageUnoptimized(spot)}
                       />
                       {/* Category Badge */}
                       <div className="absolute bottom-1 left-1 bg-black/60 rounded-full px-1.5 py-0.5">
-                        <span className="text-xs">{categoryEmojis[spot.category] || '📍'}</span>
+                        <span className="text-xs">{getMarkerEmoji(spot.category)}</span>
                       </div>
                     </div>
 

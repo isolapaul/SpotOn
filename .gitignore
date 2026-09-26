@@ -31,3 +31,6 @@ playwright-report/
 # Functions params (T08): only the emulator file is committed
 functions/.env.*
 !functions/.env.demo-spoton
+
+# Unit-test coverage reports (T23: vitest run --coverage)
+coverage/

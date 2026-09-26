@@ -7,7 +7,8 @@ import { useLanguageStore } from '@/store/useLanguageStore';
 import { X, MapPin, Upload, Loader2 } from 'lucide-react';
 import { useState, useRef, ChangeEvent } from 'react';
 import type { SpotCategory } from '@/store/useSpotStore';
-import { MAX_SPOT_IMAGES } from '@/lib/constants';
+import { MAX_SPOT_IMAGES, MAX_UPLOAD_BYTES } from '@/lib/constants';
+import { CATEGORIES } from '@/lib/categories';
 
 interface AddSpotModalProps {
   isOpen: boolean;
@@ -53,7 +54,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     const previews: string[] = [];
 
     for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > MAX_UPLOAD_BYTES) {
         setError(t('imageTooLarge'));
         continue;
       }
@@ -250,15 +251,9 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               disabled={loading}
               required
             >
-              <option value="scenic" className="bg-gray-800">🌅 {t('categoryScenic')}</option>
-              <option value="smoke-spot" className="bg-gray-800">💨 {t('categorySmoke')}</option>
-              <option value="viewpoint" className="bg-gray-800">🏔️ {t('categoryViewpoint')}</option>
-              <option value="hiking" className="bg-gray-800">🥾 {t('categoryHiking')}</option>
-              <option value="random" className="bg-gray-800">🎲 {t('categoryRandom')}</option>
-              <option value="date-spot" className="bg-gray-800">❤️ {t('categoryDateSpot')}</option>
-              <option value="park" className="bg-gray-800">🌳 {t('categoryPark')}</option>
-              <option value="part" className="bg-gray-800">🏖️ {t('categoryPart')}</option>
-              <option value="other" className="bg-gray-800">📍 {t('categoryOther')}</option>
+              {CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id} className="bg-gray-800">{`${c.emoji} ${t(c.labelKey)}`}</option>
+              ))}
             </select>
           </div>
 

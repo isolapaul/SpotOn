@@ -9,6 +9,8 @@ import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { getUserNameColor } from '@/lib/levelUtils';
+import { averageRating } from '@/lib/rating';
+import { getPreviewImageUrl, isImageUnoptimized, sortSpotImagesByLikes } from '@/lib/spotImages';
 import { useState, useEffect } from 'react';
 import { fetchPublicProfile } from '@/store/publicProfiles';
 
@@ -32,9 +34,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
   const [creatorName, setCreatorName] = useState<string | null>(null);
   const [creatorCustomNameColor, setCreatorCustomNameColor] = useState<string | undefined>();
 
-  const averageRating = spot.reviews && spot.reviews.length > 0
-    ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
-    : 0;
+  const avgRating = averageRating(spot.reviews);
   const reviewCount = spot.reviews?.length || 0;
 
   const handleFavoriteToggle = async () => {
@@ -95,21 +95,9 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
     creatorCustomNameColor
   );
 
-  const sortedSpotImages = (spot.spotImages || [])
-    .filter((image) => image.url !== '/placeholder-spot.jpg')
-    .sort((a, b) => {
-      if (b.likes !== a.likes) return b.likes - a.likes;
-      return a.addedAt?.toMillis?.() && b.addedAt?.toMillis?.()
-        ? b.addedAt.toMillis() - a.addedAt.toMillis()
-        : 0;
-    });
-
-  const previewImageUrl =
-    sortedSpotImages[0]?.url ||
-    spot.imageUrls?.[spot.primaryImageIndex || 0] ||
-    spot.imageUrls?.[0] ||
-    (spot as any).imageUrl ||
-    '/placeholder-spot.jpg';
+  // Most-liked image first ('bothRequired' tie-break: the info window's own order, kept as is).
+  const sortedSpotImages = sortSpotImagesByLikes(spot.spotImages || [], 'bothRequired');
+  const previewImageUrl = getPreviewImageUrl(spot, sortedSpotImages);
 
   return (
     <div className="w-[300px] overflow-hidden animate-slide-up bg-slate-900/95 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl">
@@ -130,7 +118,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
           fill
           className="object-cover"
           sizes="300px"
-          unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
+          unoptimized={isImageUnoptimized(spot)}
         />
         
         {/* Favorite Button */}
@@ -178,13 +166,13 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
               <Star
                 key={star}
                 className={`w-4 h-4 ${
-                  star <= Math.round(averageRating)
+                  star <= Math.round(avgRating)
                     ? 'text-yellow-400 fill-yellow-400'
                     : 'text-white/30'
                 }`}
               />
             ))}
-            <span className="text-white/80 text-sm ml-1">{averageRating.toFixed(1)}</span>
+            <span className="text-white/80 text-sm ml-1">{avgRating.toFixed(1)}</span>
             <span className="text-white/40 text-xs">({reviewCount} {t('reviews')})</span>
           </div>
         ) : (
