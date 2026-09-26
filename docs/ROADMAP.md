@@ -154,6 +154,7 @@ Additional review gates:
 | Q9 | T15: the auth proxy upstream is `<projectId>.firebaseapp.com`. Paul confirms his current `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` has that form. | confirm at deploy |
 | Q10 | T19: move banner dismissal is permanent per device (not re-shown); Stage B's 308 redirect catches remaining users. | accept |
 | Q11 | T14: feedback body-read deadline is 60 s (15 s would reject photo uploads on slow mobile uplinks); while two slow uploads are in flight, other feedback gets 503 `busy`. | accept |
+| Q12 | T18: the release build uploads the OCI image + SBOM as a workflow artifact; on this **public** repo any signed-in GitHub user can download it for 1 day (retention-days: 1). It contains only public code and public `NEXT_PUBLIC_*` values. Alternative: delete it at the end of publish (needs `actions: write`). | accept, retention 1 day |
 
 ## 7. Progress
 
