@@ -14,10 +14,12 @@ import NotificationPrompt from '@/components/NotificationPrompt';
 import NotificationCenter from '@/components/NotificationCenter';
 import MapThemeSwitcher from '@/components/MapThemeSwitcher';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
+import MovedBanner from '@/components/MovedBanner';
 import { useUserStore } from '@/store/useUserStore';
 import { useMapThemeStore, type MapTheme } from '@/store/useMapThemeStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { useUiStore } from '@/store/useUiStore';
 import type { Spot } from '@/store/useSpotStore';
 
 // Dynamic import to avoid SSR issues with Leaflet
@@ -50,6 +52,7 @@ export default function Home() {
   const { theme: currentMapTheme, setTheme } = useMapThemeStore();
   const { spots, fetchSpots, unsubscribeSpots } = useSpotStore();
   const { t } = useLanguageStore();
+  const movedBannerVisible = useUiStore((s) => s.movedBannerVisible);
 
   const [prevMapTheme, setPrevMapTheme] = useState<MapTheme | null>(null);
 
@@ -196,6 +199,9 @@ export default function Home() {
           
           {/* Map Theme Switcher - Top Right Button - PHASE 3 */}
           <MapThemeSwitcher />
+
+          {/* Domain-move notice (Vercel build only, T19) - one row below the top buttons */}
+          {isAppReady && !isSelectingLocation && <MovedBanner />}
         </>
       )}
       
@@ -260,8 +266,8 @@ export default function Home() {
         onMapClick={() => setSelectedSpot(null)}
       />
       
-      {/* Empty state message */}
-      {visibleSpots.length === 0 && !isSelectingLocation && (
+      {/* Empty state message (shares its slot with the move banner) */}
+      {visibleSpots.length === 0 && !isSelectingLocation && !movedBannerVisible && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10
           glass-card px-6 py-3 animate-fade-in pointer-events-none">
           <p className="text-white/80 text-sm text-center">

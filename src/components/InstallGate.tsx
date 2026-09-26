@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Share, MoreVertical, Smartphone, X, Monitor } from 'lucide-react';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { getMovedTo } from '@/lib/movedTo';
 
 const DISMISS_KEY = 'spoton-install-prompt-dismissed';
 
@@ -61,6 +62,9 @@ export default function InstallGate() {
   const { language } = useLanguageStore();
 
   useEffect(() => {
+    // Old (Vercel) domain: installing it would install the wrong origin (T19)
+    if (getMovedTo()) { setShowPrompt(false); return; }
+
     // Check if user previously dismissed with "don't show again"
     const dismissed = localStorage.getItem(DISMISS_KEY);
     if (dismissed === 'true') {

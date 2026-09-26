@@ -5,6 +5,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useUiStore } from '@/store/useUiStore';
+import { getMovedTo } from '@/lib/movedTo';
 
 export default function NotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -17,6 +18,8 @@ export default function NotificationPrompt() {
   useEffect(() => {
     // Check if we should show the prompt
     const checkPrompt = async () => {
+      // Old (Vercel) domain: push tokens are per origin, so never ask there (T19)
+      if (getMovedTo()) return;
       if (!user) return;
       
       // Don't show if already granted

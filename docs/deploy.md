@@ -242,3 +242,57 @@ The app is stateless: all data is in Firebase. Back up only `/srv/docker/spoton/
 | 502 / Bad gateway in the browser | The tunnel hostname's service must be `HTTP` → `spoton:3000`, and the container must be on the `edge` network (`docker network inspect edge`). |
 | Sign-in fails with `auth/unauthorized-domain` | §10 (authorized domain, OAuth origin and redirect URI). |
 | `EROFS` (read-only file system) in the logs | Something writes outside the tmpfs paths (`/tmp`, `/app/.next/cache`). Do not make the root filesystem writable; report it as a bug. |
+
+## 15. Leaving Vercel (T19)
+
+The old address `https://spot-on-rho.vercel.app` is retired in three stages. Each browser origin keeps its own
+sign-in, favourites cache, install and push subscription, so users have to open the new address once themselves.
+
+### Stage A: move banner
+
+Only after the post-deploy checklist (§13) is green on `spoton.isolapaul.hu`.
+
+1. Vercel → Project → Settings → Environment Variables → add `NEXT_PUBLIC_MOVED_TO` = `https://spoton.isolapaul.hu`
+   (**Production** only).
+2. Deployments → Redeploy the latest production deployment. It is a build-time variable: setting it without a
+   redeploy does nothing.
+3. Keep Vercel's `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` on `<project>.firebaseapp.com` (the `/__/auth` proxy is unused there).
+
+The Vercel build then shows one slim banner below the top buttons ("SpotOn has a new address: spoton.isolapaul.hu",
+Open and Hide). Hide hides it for good on that device. On the old domain the install overlay and the notification
+prompt are switched off (ROADMAP Q2). The Docker image cannot get the variable (`check-public-env.mjs --production`
+rejects it), so the banner never appears on the new domain.
+
+Check: open `https://spot-on-rho.vercel.app` → one banner and no install overlay.
+
+Rollback: remove the variable and redeploy, or `git revert`.
+
+### Stage B: permanent redirect (about 30 days after Stage A)
+
+```bash
+cp deploy/vercel-stage-b.json vercel.json
+git add vercel.json && git commit -m "Redirect the Vercel domain to spoton.isolapaul.hu"
+git push   # the branch Vercel deploys
+```
+
+Check:
+
+```bash
+curl -sI 'https://spot-on-rho.vercel.app/some/path?x=1'
+# HTTP/2 308
+# location: https://spoton.isolapaul.hu/some/path?x=1
+```
+
+- `vercel.json` is read only by Vercel. It has no effect on the Docker image (`.dockerignore` excludes it).
+- Browsers cache a 308, so treat it as irreversible. Deleting `vercel.json` and redeploying stops new redirects,
+  but browsers that cached the 308 keep redirecting; that is why Stage A runs for 30 days first.
+- Old installed PWAs follow the redirect on launch.
+- Push tokens for the old origin keep working until they are pruned; clicking such a notification opens the old
+  URL, which redirects.
+
+### Stage C: delete the Vercel project (about 90 days after Stage B)
+
+Delete the Vercel project. Then, in a cleanup task, remove `vercel.json`, `deploy/vercel-stage-b.json`,
+`src/components/MovedBanner.tsx`, `src/lib/movedTo.ts` (+ test), the guards in `InstallGate` and
+`NotificationPrompt`, the `movedBanner*` translation keys, the `NEXT_PUBLIC_MOVED_TO` entry in `next.config.mjs`
+and `e2e/moved-banner.spec.ts`.

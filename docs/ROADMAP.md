@@ -177,5 +177,6 @@ Additional review gates:
 | T15 Web hardening (CSP, headers, auth proxy) | done, review PASS | 0e30571 |
 | T16 Standalone image + Dockerfile | done, review PASS (D1/D2 fixed) | d5ac8cb |
 | T17 Compose + server runbook | done, review PASS + fixes | ebf6639 |
-| T18 Release pipeline (Trivy, SBOM, cosign, GHCR) | done, supply-chain review + re-review PASS | (this commit) |
+| T18 Release pipeline (Trivy, SBOM, cosign, GHCR) | done, supply-chain review + re-review PASS | c3ccb6d |
+| T19 Domain-move notice (Vercel only) + Stage B redirect | done, review PASS + fixes | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |

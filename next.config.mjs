@@ -47,6 +47,7 @@ const nextConfig = {
   // Always inline a definite value so production bundles constant-fold the emulator branch away.
   env: {
     NEXT_PUBLIC_USE_EMULATORS: useEmulators ? '1' : '0',
+    NEXT_PUBLIC_MOVED_TO: process.env.NEXT_PUBLIC_MOVED_TO ?? '',
   },
   images: {
     unoptimized: process.env.NODE_ENV === 'production',

@@ -305,6 +305,13 @@ export const translations = {
     locationDenied: 'A helymeghatározás meg lett tagadva. Kérlek engedélyezd a böngésző beállításaiban.',
     locationUnavailable: 'A helymeghatározás nem elérhető ezen az eszközön.',
     locationRequesting: 'Engedély kérése...',
+
+    // Domain move (T19, Vercel only)
+    movedBannerText: 'A SpotOn új címre költözött:',
+    movedBannerHint: 'Mentsd el az új linket. Ott egyszer újra be kell jelentkezned.',
+    movedBannerHintInstalled: 'Tedd ki újra a SpotOnt a kezdőképernyőre. Ott egyszer újra be kell jelentkezned.',
+    movedBannerOpen: 'Megnyitás',
+    movedBannerDismiss: 'Elrejtés',
   },
   en: {
     // Navigation
@@ -612,6 +619,13 @@ export const translations = {
     locationDenied: 'Location access was denied. Please enable it in your browser settings.',
     locationUnavailable: 'Location is not available on this device.',
     locationRequesting: 'Requesting permission...',
+
+    // Domain move (T19, Vercel only)
+    movedBannerText: 'SpotOn has a new address:',
+    movedBannerHint: "Save the new link. You'll need to sign in there once.",
+    movedBannerHintInstalled: "Add SpotOn to your home screen again. You'll need to sign in there once.",
+    movedBannerOpen: 'Open',
+    movedBannerDismiss: 'Hide',
   },
   de: {
     // Navigation
@@ -913,6 +927,13 @@ export const translations = {
     feedbackImageLimit: 'Bis zu 3 Bilder (JPG, PNG, WebP)',
     feedbackTooLarge: 'Die angehängten Bilder sind zu groß. Höchstens 3 Bilder, je 1,5 MB.',
     feedbackRateLimited: 'Zu viele Nachrichten in kurzer Zeit. Versuch es in ein paar Minuten noch einmal.',
+
+    // Domain move (T19, Vercel only)
+    movedBannerText: 'SpotOn hat eine neue Adresse:',
+    movedBannerHint: 'Speichere den neuen Link. Dort musst du dich einmal neu anmelden.',
+    movedBannerHintInstalled: 'Füge SpotOn erneut zum Home-Bildschirm hinzu. Dort musst du dich einmal neu anmelden.',
+    movedBannerOpen: 'Öffnen',
+    movedBannerDismiss: 'Ausblenden',
   },
 };
 
