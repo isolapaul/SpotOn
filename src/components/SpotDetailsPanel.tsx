@@ -8,7 +8,8 @@ import { useLanguage, useT } from '@/hooks/useT';
 import { useHorizontalSwipe } from '@/hooks/useHorizontalSwipe';
 import { useSwipeToClose } from '@/hooks/useSwipeToClose';
 import { useSpotStore } from '@/store/useSpotStore';
-import { fetchPublicProfile, fetchPublicProfiles } from '@/store/publicProfiles';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { usePublicProfile, usePublicProfiles, type PublicProfileResult } from '@/hooks/usePublicProfile';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { getLevelInfo, getUserNameColor } from '@/lib/levelUtils';
@@ -30,37 +31,29 @@ import StarRating from './ui/StarRating';
 
 interface SpotDetailsPanelProps {
   spot: Spot | null;
-  isAdmin?: boolean;
   onClose: () => void;
-}
-
-interface ReviewerMeta {
-  username?: string;
-  spotsCount?: number;
-  customNameColor?: string;
-  customNameFont?: string;
-  isAdmin?: boolean;
 }
 
 // Display style comes only from the reviewer's public profile; the review's own legacy
 // style/level fields are spoofable and never read (SEC-05).
-function ReviewerBadge({ meta, review }: { meta: ReviewerMeta; review: Review }) {
-  const spotsCount = meta.spotsCount ?? 0;
+// `profile` is undefined while loading and null without a profile document.
+function ReviewerBadge({ profile, review }: { profile: PublicProfileResult; review: Review }) {
+  const spotsCount = profile?.spotsCount ?? 0;
   const levelInfo = getLevelInfo(spotsCount);
-  const nameColor = getUserNameColor(spotsCount, meta.customNameColor ?? undefined);
-  const fontClass = resolveNameFontClass(meta.customNameFont);
+  const nameColor = getUserNameColor(spotsCount, profile?.customNameColor ?? undefined);
+  const fontClass = resolveNameFontClass(profile?.customNameFont);
   return (
     <div className="flex items-center gap-2">
       <p
         className={`font-medium ${fontClass}`}
         style={{ color: nameColor }}
       >
-        {meta.username || review.userName}
+        {profile?.username || review.userName}
       </p>
       <span className={`text-xs px-2 py-0.5 rounded-full border ${levelInfo.bgColor} ${levelInfo.borderColor} ${levelInfo.textColor}`}>
         {levelInfo.icon} {levelInfo.level}
       </span>
-      {meta.isAdmin === true && (
+      {profile?.isAdmin === true && (
         <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30">
           <Shield className="w-3 h-3 text-amber-400" />
           <span className="text-amber-400 text-xs font-bold">Admin</span>
@@ -70,9 +63,9 @@ function ReviewerBadge({ meta, review }: { meta: ReviewerMeta; review: Review })
   );
 }
 
-export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Readonly<SpotDetailsPanelProps>) {
+export default function SpotDetailsPanel({ spot, onClose }: Readonly<SpotDetailsPanelProps>) {
   const { user, toggleFavorite, highlightSpot } = useUserStore();
-  const userIsAdmin = useUserStore((s) => s.isAdmin);
+  const isAdmin = useIsAdmin();
   const t = useT();
   // Date locale: English while no language is chosen yet (unchanged pre-T24 behaviour).
   const language = useLanguage({ fallback: 'en' });
@@ -101,11 +94,9 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [ignoreHeroClicks, setIgnoreHeroClicks] = useState(true);
 
-  // User/creator metadata
-  const [creatorSpotsCount, setCreatorSpotsCount] = useState<number | null>(null);
-  const [creatorName, setCreatorName] = useState<string | null>(null);
-  const [creatorCustomNameColor, setCreatorCustomNameColor] = useState<string | undefined>();
-  const [reviewerMeta, setReviewerMeta] = useState<Record<string, ReviewerMeta>>({});
+  // User/creator metadata (public profiles; own values overlaid from the store)
+  const creatorProfile = usePublicProfile(spot?.createdBy);
+  const reviewerProfiles = usePublicProfiles(spot?.reviews?.map((r) => r.userId) ?? []);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const approveCloseTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -170,62 +161,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     return () => globalThis.removeEventListener('keydown', handleKeyDown);
   }, [galleryOpen, nextImage, prevImage]);
 
-  // Fetch creator info (public profile mirror)
-  useEffect(() => {
-    if (!spot?.createdBy) return;
-
-    const isSelf = spot.createdBy === user?.uid;
-    if (isSelf) {
-      setCreatorName(user.username || null);
-      setCreatorCustomNameColor(user.customNameColor);
-    }
-
-    let isMounted = true;
-    fetchPublicProfile(spot.createdBy)
-      .then((p) => {
-        if (!isMounted) return;
-        setCreatorSpotsCount(p?.spotsCount ?? 0);
-        if (!isSelf) {
-          setCreatorName(p?.username ?? null);
-          setCreatorCustomNameColor(p?.customNameColor ?? undefined);
-        }
-      })
-      .catch((error) => console.error('Failed to fetch creator info:', error));
-    return () => { isMounted = false; };
-  }, [spot?.createdBy, user?.uid, user?.username, user?.customNameColor]);
-
-  // Fetch reviewer display metadata
-  useEffect(() => {
-    if (!spot?.reviews?.length) return;
-
-    const missingIds = [...new Set(
-      spot.reviews
-        .filter((r) => r.userId && !reviewerMeta[r.userId])
-        .map((r) => r.userId)
-    )];
-    if (!missingIds.length) return;
-
-    let isMounted = true;
-    fetchPublicProfiles(missingIds).then((profiles) => {
-      if (!isMounted) return;
-      setReviewerMeta((prev) => ({
-        ...prev,
-        ...Object.fromEntries(missingIds.map((uid) => {
-          const p = profiles[uid];
-          return [uid, {
-            username: p?.username ?? undefined,
-            customNameColor: p?.customNameColor ?? undefined,
-            customNameFont: p?.customNameFont ?? undefined,
-            spotsCount: p?.spotsCount,
-            isAdmin: p?.isAdmin,
-          }];
-        })),
-      }));
-    }).catch(console.error);
-
-    return () => { isMounted = false; };
-  }, [spot?.reviews, reviewerMeta]);
-
   if (!spot) return null;
 
   const getDateLocale = () => language === 'hu' ? 'hu-HU' : language === 'de' ? 'de-DE' : 'en-US';
@@ -237,7 +172,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   };
 
   const isOwner = user && spot.createdBy === user.uid;
-  const canEdit = userIsAdmin || (isOwner && spot.status === 'approved');
+  const canEdit = isAdmin || (isOwner && spot.status === 'approved');
   const navigationUrl = getNavigationUrl(spot.location.lat, spot.location.lng);
   const avgRating = averageRating(spot.reviews);
   // Manager tiles: imageUrls entries keep their original index (primaryImageIndex indexes imageUrls);
@@ -251,9 +186,10 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
       .map((url) => ({ url })),
   ];
   const heroImageUrl = getHeroImageUrl(spot, sortedSpotImages);
-  const creatorDisplayName = creatorName || spot.createdByName || t('anonymous');
-  const creatorNameColor = getUserNameColor(creatorSpotsCount ?? 0, creatorCustomNameColor);
-  const creatorLevelInfo = getLevelInfo(creatorSpotsCount ?? 0);
+  const creatorSpotsCount = creatorProfile?.spotsCount ?? 0;
+  const creatorDisplayName = creatorProfile?.username || spot.createdByName || t('anonymous');
+  const creatorNameColor = getUserNameColor(creatorSpotsCount, creatorProfile?.customNameColor ?? undefined);
+  const creatorLevelInfo = getLevelInfo(creatorSpotsCount);
 
   const handleFavoriteToggle = async () => {
     if (!user) return;
@@ -634,7 +570,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
             )}
 
             {/* Delete spot (admin only) */}
-            {userIsAdmin && (
+            {isAdmin && (
               <button
                 onClick={handleDeleteSpot}
                 className="w-full py-3 rounded-xl font-medium text-sm bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
@@ -735,7 +671,6 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                   </div>
                 ) : (
                   spot.reviews.map((review) => {
-                    const meta = reviewerMeta[review.userId] ?? {};
                     return (
                       <div key={review.id} className="glass-card p-4">
                         <div className="flex items-start gap-3">
@@ -746,7 +681,7 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                              <ReviewerBadge meta={meta} review={review} />
+                              <ReviewerBadge profile={reviewerProfiles[review.userId]} review={review} />
                               <span className="text-white/40 text-xs">
                                 {review.createdAt?.toDate
                                   ? new Date(review.createdAt.toDate()).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' })

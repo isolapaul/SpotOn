@@ -17,6 +17,7 @@ import { httpsCallable } from 'firebase/functions';
 import { db, functions, storage } from '@/lib/firebase';
 import { MAX_SPOT_IMAGES, PLACEHOLDER_URL, extForMime, realImageCount } from '@/lib/spotImages';
 import { compressImage } from '@/lib/imageCompression';
+import { invalidatePublicProfile } from '@/store/publicProfiles';
 
 export interface Review {
   id: string;
@@ -221,6 +222,8 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         status: isAdmin ? 'approved' : 'pending',
         createdAt: serverTimestamp(),
       });
+      // The server bumps spotsCount; drop the cached profile so the next read sees it (T26).
+      invalidatePublicProfile(userId);
 
       set({ isLoading: false });
     } catch (error: any) {
@@ -288,7 +291,9 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
 
   deleteSpot: async (spotId) => {
     try {
+      const createdBy = get().spots.find((spot) => spot.id === spotId)?.createdBy;
       await deleteDoc(doc(db, 'spots', spotId));
+      if (createdBy) invalidatePublicProfile(createdBy);
       set((state) => ({ spots: state.spots.filter((spot) => spot.id !== spotId) }));
     } catch (error: any) {
       console.error('Error deleting spot:', error);

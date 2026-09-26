@@ -20,7 +20,6 @@ interface SettingsPanelProps {
 
 export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPanelProps>) {
   const { user, signOut, updateProfilePicture, updateProfileBanner } = useUserStore();
-  const userIsAdmin = useUserStore((s) => s.isAdmin);
   const { language, setLanguage } = useLanguageStore();
   const t = useT();
   const { showToast } = useToastStore();
@@ -344,7 +343,6 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
       <NotificationSettingsModal
         isOpen={showNotificationSettings}
         onClose={() => setShowNotificationSettings(false)}
-        isAdmin={userIsAdmin}
         isEnabled={isPermissionGranted}
         isLoading={isNotificationLoading}
         onEnableNotifications={requestPermission}

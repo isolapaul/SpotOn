@@ -6,10 +6,11 @@ import { useUserStore, userErrorKey } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
 import { useSwipeToClose } from '@/hooks/useSwipeToClose';
+import { useIsAdmin, useIsSuperAdmin } from '@/hooks/useIsAdmin';
+import { useUserSpots } from '@/hooks/useUserSpots';
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { getLevelInfo, getLevelProgress, getLevelThreshold, getSpotsRemainingText, CUSTOM_NAME_COLORS, CUSTOM_NAME_FONTS, getCustomNameColorValue } from '@/lib/levelUtils';
 import { averageRating } from '@/lib/rating';
@@ -32,7 +33,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const t = useT();
   const { showToast } = useToastStore();
   const [activeTab, setActiveTab] = useState<'my-spots' | 'favorites' | 'pending' | 'admin'>('my-spots');
-  const [myAllSpots, setMyAllSpots] = useState<Spot[]>([]);
   const [adminEmailInput, setAdminEmailInput] = useState('');
   const [searchedUser, setSearchedUser] = useState<{ uid: string; email: string; username: string; photoURL: string } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -55,8 +55,11 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   // iOS swipe-to-close gesture: rightward only
   const swipe = useSwipeToClose({ onClose, threshold: SWIPE_THRESHOLDS.panel, direction: 'right' });
   
-  const userIsAdmin = useUserStore((s) => s.isAdmin);
-  const userIsSuperAdmin = useUserStore((s) => s.isSuperAdmin);
+  const userIsAdmin = useIsAdmin();
+  const userIsSuperAdmin = useIsSuperAdmin();
+
+  // ALL of the user's spots (approved + pending), live while the panel is open
+  const myAllSpots = useUserSpots(user?.uid, isOpen);
 
   // Helper function for spot status styling
   const getStatusClassName = (status: string) => {
@@ -73,24 +76,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   };
 
   // Reset the avatar fallback when the picture changes
-
-  // Fetch ALL user's spots (approved + pending)
-  useEffect(() => {
-    if (!user || !isOpen) return;
-
-    const spotsRef = collection(db, 'spots');
-    const q = query(spotsRef, where('createdBy', '==', user.uid));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const userSpots: Spot[] = [];
-      snapshot.forEach((doc) => {
-        userSpots.push({ id: doc.id, ...doc.data() } as Spot);
-      });
-      setMyAllSpots(userSpots);
-    });
-
-    return () => unsubscribe();
-  }, [user, isOpen]);
 
   // Fetch dynamic categories from Firestore (admin only)
   useEffect(() => {

@@ -188,5 +188,6 @@ Additional review gates:
 | T22 i18n and styling bug fixes | done, review PASS-WITH-NITS + fixes (translated photo-add error, userAlreadyAdmin) | aeb53fc |
 | T23 Pure lib modules (geo, rating, spotImages, categories, markers, compression, constants) | done, review PASS-WITH-NITS; 1072 unit tests, lib coverage 97.7% | 99c212b |
 | T24 Single translation hook (useT) | done, review PASS-WITH-NITS; 76-state before/after text snapshot identical | b62b324 |
-| T25 Shared UI primitives (PanelShell, ModalShell, swipe hooks, StarRating, z scale) | done, review PASS-WITH-NITS; DOM, gestures and CSS identical to HEAD | (this commit) |
+| T25 Shared UI primitives (PanelShell, ModalShell, swipe hooks, StarRating, z scale) | done, review PASS-WITH-NITS; DOM, gestures and CSS identical to HEAD | ac3a38a |
+| T26 Data hooks (usePublicProfile(s) cache, useIsAdmin, useUserSpots, useFavoriteToggle) | done, review PASS-WITH-NITS; publicProfiles reads 9 -> 6 for two opens | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |

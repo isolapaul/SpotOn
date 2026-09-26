@@ -25,7 +25,6 @@ interface MapViewProps {
   onLocationSelect?: (location: { lat: number; lng: number }) => void;
   tempMarker?: { lat: number; lng: number } | null;
   spots?: Spot[];
-  isAdmin?: boolean;
   onSpotDetailsOpen?: (spot: Spot) => void;
   onMapLoad?: () => void;
   onMapClick?: () => void;
@@ -149,7 +148,6 @@ export default function MapView({
   onLocationSelect,
   tempMarker,
   spots = [],
-  isAdmin = false,
   onSpotDetailsOpen,
   onMapLoad,
   onMapClick,
@@ -255,7 +253,6 @@ export default function MapView({
           style={{ bottom: '100px' }}>
           <SpotInfoWindow
             spot={selectedSpot}
-            isAdmin={isAdmin}
             onClose={() => setSelectedSpot(null)}
             onViewDetails={() => {
               onSpotDetailsOpen?.(selectedSpot);

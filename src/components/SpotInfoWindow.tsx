@@ -3,50 +3,38 @@
 import { X, Heart, Star, MapPin, CheckCircle, Navigation } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
-import { useUserStore } from '@/store/useUserStore';
 import { useT } from '@/hooks/useT';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { usePublicProfile } from '@/hooks/usePublicProfile';
+import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { getUserNameColor } from '@/lib/levelUtils';
 import { averageRating } from '@/lib/rating';
 import { getPreviewImageUrl, isImageUnoptimized, sortSpotImagesByLikes } from '@/lib/spotImages';
-import { useState, useEffect } from 'react';
-import { fetchPublicProfile } from '@/store/publicProfiles';
+import { useState } from 'react';
 import StarRating from './ui/StarRating';
 
 interface SpotInfoWindowProps {
   spot: Spot;
-  isAdmin?: boolean;
   onClose: () => void;
   onViewDetails: () => void;
 }
 
-export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewDetails }: Readonly<SpotInfoWindowProps>) {
-  const { user, toggleFavorite } = useUserStore();
+export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonly<SpotInfoWindowProps>) {
+  const isAdmin = useIsAdmin();
   const t = useT();
   const { approveSpot } = useSpotStore();
   const { showToast } = useToastStore();
-  const [isFavorite, setIsFavorite] = useState(
-    user?.savedSpots?.includes(spot.id) || false
-  );
+  // Heart reflects the store's savedSpots (BUG-09, T26)
+  const { isFavorite, toggle: handleFavoriteToggle, canToggle: canToggleFavorite } = useFavoriteToggle(spot.id);
   const [isApproving, setIsApproving] = useState(false);
-  const [creatorSpotsCount, setCreatorSpotsCount] = useState<number | null>(null);
-  const [creatorName, setCreatorName] = useState<string | null>(null);
-  const [creatorCustomNameColor, setCreatorCustomNameColor] = useState<string | undefined>();
+  // Creator's public profile (own values overlaid from the store)
+  const creatorProfile = usePublicProfile(spot.createdBy);
 
   const avgRating = averageRating(spot.reviews);
   const reviewCount = spot.reviews?.length || 0;
-
-  const handleFavoriteToggle = async () => {
-    if (!user) return;
-    try {
-      await toggleFavorite(spot.id);
-      setIsFavorite(!isFavorite);
-    } catch (error) {
-      console.error('Failed to toggle favorite:', error);
-    }
-  };
 
   const handleApprove = async () => {
     setIsApproving(true);
@@ -64,36 +52,10 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
 
   const navigationUrl = getNavigationUrl(spot.location.lat, spot.location.lng);
 
-  useEffect(() => {
-    if (!spot?.createdBy) return;
-    let isMounted = true;
-
-    const isSelf = spot.createdBy === user?.uid;
-    if (isSelf) {
-      setCreatorName(user.username || null);
-      setCreatorCustomNameColor(user.customNameColor);
-    }
-
-    fetchPublicProfile(spot.createdBy)
-      .then((p) => {
-        if (!isMounted) return;
-        setCreatorSpotsCount(p?.spotsCount ?? 0);
-        if (!isSelf) {
-          setCreatorName(p?.username ?? null);
-          setCreatorCustomNameColor(p?.customNameColor ?? undefined);
-        }
-      })
-      .catch((error) => console.error('Failed to fetch creator info:', error));
-
-    return () => {
-      isMounted = false;
-    };
-  }, [spot?.createdBy, user?.uid, user?.username, user?.customNameColor]);
-
-  const creatorDisplayName = creatorName || spot.createdByName || t('anonymous');
+  const creatorDisplayName = creatorProfile?.username || spot.createdByName || t('anonymous');
   const creatorNameColor = getUserNameColor(
-    creatorSpotsCount ?? 0,
-    creatorCustomNameColor
+    creatorProfile?.spotsCount ?? 0,
+    creatorProfile?.customNameColor ?? undefined
   );
 
   // Most-liked image first ('bothRequired' tie-break: the info window's own order, kept as is).
@@ -123,7 +85,7 @@ export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewD
         />
         
         {/* Favorite Button */}
-        {user && (
+        {canToggleFavorite && (
           <button
             onClick={handleFavoriteToggle}
             className="absolute bottom-2 right-2 glass-button p-2 rounded-full touch-manipulation"

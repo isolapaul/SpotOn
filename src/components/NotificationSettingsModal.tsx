@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Bell } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useNotificationStore } from '@/store/useNotificationStore';
@@ -11,7 +12,6 @@ import { useNotificationStore } from '@/store/useNotificationStore';
 interface NotificationSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  isAdmin: boolean;
   isEnabled: boolean;
   isLoading: boolean;
   onEnableNotifications: () => Promise<boolean> | boolean;
@@ -77,13 +77,13 @@ const ToggleCard = ({
 export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ 
   isOpen, 
   onClose,
-  isAdmin,
   isEnabled,
   isLoading,
   onEnableNotifications,
   onDisableNotifications
 }) => {
   const t = useT();
+  const isAdmin = useIsAdmin();
   const { user, setUser } = useUserStore();
   const { addNotification } = useNotificationStore();
 

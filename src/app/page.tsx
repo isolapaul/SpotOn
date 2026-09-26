@@ -19,6 +19,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useMapThemeStore, type MapTheme } from '@/store/useMapThemeStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUiStore } from '@/store/useUiStore';
 import type { Spot } from '@/store/useSpotStore';
 import { DELAYS } from '@/lib/constants';
@@ -58,7 +59,7 @@ export default function Home() {
   const [prevMapTheme, setPrevMapTheme] = useState<MapTheme | null>(null);
 
   // Check if current user is admin
-  const userIsAdmin = useUserStore((s) => s.isAdmin);
+  const userIsAdmin = useIsAdmin();
 
   // Filter spots based on user role: admins see all spots, everyone else only approved ones
   const visibleSpots = useMemo(
@@ -254,7 +255,6 @@ export default function Home() {
       <SpotDetailsPanel 
         spot={selectedSpot}
         onClose={() => setSelectedSpot(null)}
-        isAdmin={userIsAdmin}
       />
 
       {/* Profile Panel */}
@@ -269,7 +269,6 @@ export default function Home() {
         onLocationSelect={handleLocationSelect}
         tempMarker={selectedLocation}
         spots={visibleSpots}
-        isAdmin={userIsAdmin}
         onSpotDetailsOpen={setSelectedSpot}
         onMapLoad={handleMapLoad}
         onMapClick={() => setSelectedSpot(null)}

@@ -27,6 +27,9 @@ export const INITIAL_MARKER_ZOOM = 13;
 export const LOCATION_CACHE_MAX_AGE_MS = 600_000;
 export const GEOLOCATION_TIMEOUT_MS = 10_000;
 
+/** How long a fetched publicProfiles/{uid} document is reused before it is read again (T26). */
+export const PUBLIC_PROFILE_TTL_MS = 5 * 60_000;
+
 /** Spots per "load more" batch in the discovery panel. */
 export const DISCOVERY_BATCH_SIZE = 20;
 
