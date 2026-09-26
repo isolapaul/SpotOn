@@ -185,3 +185,9 @@ Are your existing `admins` documents keyed by **email** or by **uid**? Check in 
 After the functions are deployed, only uid-keyed docs count as admins. Your own entry is created by `scripts/bootstrap-super-admin.ts`. Any other email-keyed admin would lose admin rights, and `scripts/backfill-profiles.ts` reports them as `admins invalid: N` (ROADMAP §4 step 3 stops there). You re-add them from the Profile → Admin tab once you are super admin.
 
 Is there any data in `favorites`, `reviews` (top-level) or `notifications` that you want to keep? The app does not use these collections, and T12's rules will make them inaccessible to clients. The data is not deleted.
+
+### Paul's answers (2026-09-26)
+- **Unused collections** (`favorites`, top-level `reviews`, `notifications`): nothing is needed, so T12 denies them. The data is not deleted.
+- **Admin doc IDs:** they look like `3duKwjbZQJjSmdLPhvWg`, which is 20 characters. That is a Firestore **auto-generated ID**. It is neither a Firebase Auth UID (28 characters) nor an email. So the existing `admins` docs were created with auto IDs, most likely from an older client version or by hand in the console, and **the new functions and rules will not recognise them as admins.**
+  - Plan: `bootstrap-super-admin.ts` creates Paul's `admins/{uid}` with `role: 'super'`. `backfill-profiles.ts` reports every other admin doc under `admins invalid: N`. Paul reviews that list and re-adds only the admins he still wants, from Profile → Admin (the `addAdmin` callable writes `admins/{uid}`). The legacy auto-ID docs can then be deleted in the console.
+  - **Security check for Paul:** because of LR-01, anyone could have created an admin doc. Look at the `email` field of every document in `admins`, and delete any entry you do not recognise.
