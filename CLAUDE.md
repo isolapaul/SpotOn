@@ -12,7 +12,7 @@ A mobile-first PWA for discovering and sharing places ("spots") on a map.
 Users sign in (Google or email), add spots with photos, review, favourite, and level up.
 Admins approve pending spots. UI languages: Hungarian (default), English, German.
 
-**Production today:** Vercel (`spot-on-rho.vercel.app`).
+**Production:** https://spoton.isolapaul.hu (container, see docs/deploy.md). Vercel (`spot-on-rho.vercel.app`) only shows the move notice / redirects (T19) until it is deleted.
 **Target:** hardened Docker container on Paul's home server at `https://spoton.isolapaul.hu`,
 reached through a dashboard-managed Cloudflare Tunnel (`cloudflared` on the external docker network `edge`).
 Firebase stays the backend (decision: *app container only*).

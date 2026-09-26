@@ -182,5 +182,6 @@ Additional review gates:
 | T18 Release pipeline (Trivy, SBOM, cosign, GHCR) | done, supply-chain review + re-review PASS | c3ccb6d |
 | T19 Domain-move notice (Vercel only) + Stage B redirect | done, review PASS + fixes | 1436c75 |
 | T12 Firestore + Storage rules, emulator tests, transitional rules | done, adversarial review PASS-WITH-NITS + fixes (get-only public mirrors, shrinkable over-cap lists) | ada58e4 |
-| T13 PII strip script + security rollout runbook | done, review FAIL → fixed (Vercel pause before merge, planted uid-keyed admin docs, busy-spot fallback) | (this commit) |
+| T13 PII strip script + security rollout runbook | done, review FAIL → fixed (Vercel pause before merge, planted uid-keyed admin docs, busy-spot fallback) | f668b73 |
+| T20 README, CHANGELOG, env matrix | done, review PASS-WITH-NITS + fixes | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |
