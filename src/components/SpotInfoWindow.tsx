@@ -4,7 +4,7 @@ import { X, Heart, Star, MapPin, CheckCircle, Navigation } from 'lucide-react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
@@ -23,7 +23,7 @@ interface SpotInfoWindowProps {
 
 export default function SpotInfoWindow({ spot, isAdmin = false, onClose, onViewDetails }: Readonly<SpotInfoWindowProps>) {
   const { user, toggleFavorite } = useUserStore();
-  const { t } = useLanguageStore();
+  const t = useT();
   const { approveSpot } = useSpotStore();
   const { showToast } = useToastStore();
   const [isFavorite, setIsFavorite] = useState(

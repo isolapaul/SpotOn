@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserStore } from '@/store/useUserStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { useUiStore } from '@/store/useUiStore';
 import { getMovedTo } from '@/lib/movedTo';
 import { DELAYS } from '@/lib/constants';
@@ -12,7 +12,7 @@ export default function NotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const { user } = useUserStore();
-  const { t } = useLanguageStore();
+  const t = useT();
   const { isPermissionGranted, isLoading, initializePush } = usePushNotifications();
   const { setNotificationPromptVisible } = useUiStore();
 

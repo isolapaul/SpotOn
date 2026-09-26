@@ -201,11 +201,11 @@ export const CUSTOM_NAME_FONTS: readonly {
 export function getSpotsRemainingText(
   spotsCount: number,
   spotsForNext: number | null,
-  t: (key: TranslationKey) => string,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
 ): string {
   if (spotsForNext === null) {
     return t('maxLevelReached');
   }
   const remaining = spotsForNext - spotsCount;
-  return t('spotsToNextLevel').replace('{count}', String(remaining));
+  return t('spotsToNextLevel', { count: remaining });
 }

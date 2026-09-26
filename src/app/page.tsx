@@ -18,7 +18,7 @@ import MovedBanner from '@/components/MovedBanner';
 import { useUserStore } from '@/store/useUserStore';
 import { useMapThemeStore, type MapTheme } from '@/store/useMapThemeStore';
 import { useSpotStore } from '@/store/useSpotStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { useUiStore } from '@/store/useUiStore';
 import type { Spot } from '@/store/useSpotStore';
 import { DELAYS } from '@/lib/constants';
@@ -52,7 +52,7 @@ export default function Home() {
   const { user, needsUsername, setNeedsUsername, initAuth } = useUserStore();
   const { theme: currentMapTheme, setTheme } = useMapThemeStore();
   const { spots, fetchSpots } = useSpotStore();
-  const { t } = useLanguageStore();
+  const t = useT();
   const movedBannerVisible = useUiStore((s) => s.movedBannerVisible);
 
   const [prevMapTheme, setPrevMapTheme] = useState<MapTheme | null>(null);

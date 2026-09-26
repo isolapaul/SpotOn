@@ -4,7 +4,7 @@ import { X, MapPin, Heart, Settings, Shield, Clock, UserPlus, Trash2, Pencil, St
 import Image from 'next/image';
 import { useUserStore, userErrorKey } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -26,7 +26,7 @@ interface ProfilePanelProps {
 export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelProps>) {
   const { user, adminUsers, addAdmin, removeAdmin, lookupUserByEmail, updateUsername, highlightSpot, unhighlightSpot, updateCustomNameColor, updateCustomNameFont } = useUserStore();
   const { spots, approveSpot } = useSpotStore();
-  const { t } = useLanguageStore();
+  const t = useT();
   const { showToast } = useToastStore();
   const [activeTab, setActiveTab] = useState<'my-spots' | 'favorites' | 'pending' | 'admin'>('my-spots');
   const [myAllSpots, setMyAllSpots] = useState<Spot[]>([]);
@@ -159,7 +159,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   };
 
   const handleRemoveAdmin = async (adminId: string, adminName: string) => {
-    if (!confirm(t('confirmRemoveAdmin').replace('{name}', adminName))) return;
+    if (!confirm(t('confirmRemoveAdmin', { name: adminName }))) return;
 
     try {
       await removeAdmin(adminId);
@@ -381,7 +381,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     >
                       <span className="text-lg">{levelInfo.icon}</span>
                       <span className={`${levelInfo.textColor} text-xs font-bold`}>
-                        {t('levelLabel').replace('{level}', String(levelInfo.level))}
+                        {t('levelLabel', { level: levelInfo.level })}
                       </span>
                     </button>
                   );
@@ -424,7 +424,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                     {/* Perks Preview */}
                     {levelInfo.level >= 3 && (
                       <div className="mt-2 flex flex-wrap gap-1 text-xs text-white/70">
-                        {levelInfo.maxHighlights > 0 && <span>✨ {t('perkHighlights').replace('{count}', String(levelInfo.maxHighlights))}</span>}
+                        {levelInfo.maxHighlights > 0 && <span>✨ {t('perkHighlights', { count: levelInfo.maxHighlights })}</span>}
                         {levelInfo.canCustomizeIcon && <span>🎨 {t('perkIcons')}</span>}
                         {levelInfo.canCustomizeName && <span>💎 {t('perkCustomization')}</span>}
                       </div>
@@ -556,7 +556,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                           ✨ {t('highlightSpots')}
                         </h3>
                         <p className="text-white/60 text-xs mt-1">
-                          {t('highlightedCount').replace('{count}', String(activeHighlightCount)).replace('{max}', String(levelInfo.maxHighlights))}
+                          {t('highlightedCount', { count: activeHighlightCount, max: levelInfo.maxHighlights })}
                         </p>
                       </div>
                     </div>
@@ -666,7 +666,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                 setIsCustomizing(true);
                                 try {
                                   await updateCustomNameColor(colorOption.value);
-                                  showToast(t('colorSet').replace('{name}', t(colorOption.labelKey)), 'success');
+                                  showToast(t('colorSet', { name: t(colorOption.labelKey) }), 'success');
                                 } catch (error) {
                                   showToast(t(userErrorKey(error) ?? 'genericError'), 'error');
                                 } finally {
@@ -708,7 +708,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
                                 setIsCustomizing(true);
                                 try {
                                   await updateCustomNameFont(fontOption.value);
-                                  showToast(t('fontSet').replace('{name}', t(fontOption.labelKey)), 'success');
+                                  showToast(t('fontSet', { name: t(fontOption.labelKey) }), 'success');
                                 } catch (error) {
                                   showToast(t(userErrorKey(error) ?? 'genericError'), 'error');
                                 } finally {

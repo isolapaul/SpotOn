@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { Bell, X, MessageSquare } from 'lucide-react';
 import FeedbackPanel from './FeedbackPanel';
 import { useNotificationStore } from '@/store/useNotificationStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 
 export default function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { notifications, markAsRead, markAllAsRead, clearAll, getUnreadCount } = useNotificationStore();
-  const { t } = useLanguageStore();
+  const t = useT();
   const unreadCount = getUnreadCount();
 
   const handleNotificationClick = (id: string) => {

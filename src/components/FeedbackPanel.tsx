@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { X, Camera, Send } from 'lucide-react';
 import { compressImage } from '@/lib/imageCompression';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
 import { FEEDBACK_LIMITS } from '@/lib/feedback/validate';
 
@@ -13,7 +13,7 @@ interface Props {
 }
 
 export default function FeedbackPanel({ open, onClose }: Props) {
-  const { t } = useLanguageStore();
+  const t = useT();
   const getIdToken = useUserStore((s) => s.getIdToken);
   const [message, setMessage] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -201,7 +201,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
 }
 
 function PatchNotesPreview() {
-  const { t } = useLanguageStore();
+  const t = useT();
   // null = still loading, false = failed; the texts are translated at render time.
   const [text, setText] = useState<string | null | false>(null);
 

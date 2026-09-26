@@ -4,7 +4,7 @@ import { X, Heart, Star, MapPin, Share2, Calendar, User, Send, CheckCircle, Shie
 import Image from 'next/image';
 import type { Review, Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useLanguage, useT } from '@/hooks/useT';
 import { useSpotStore } from '@/store/useSpotStore';
 import { fetchPublicProfile, fetchPublicProfiles } from '@/store/publicProfiles';
 import { useToastStore } from '@/store/useToastStore';
@@ -111,7 +111,9 @@ function ReviewerBadge({ meta, review }: { meta: ReviewerMeta; review: Review })
 export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Readonly<SpotDetailsPanelProps>) {
   const { user, toggleFavorite, highlightSpot } = useUserStore();
   const userIsAdmin = useUserStore((s) => s.isAdmin);
-  const { language, t } = useLanguageStore();
+  const t = useT();
+  // Date locale: English while no language is chosen yet (unchanged pre-T24 behaviour).
+  const language = useLanguage({ fallback: 'en' });
   const { addReview, approveSpot, addSpotImages, deleteSpot, updateSpotDescription, updateSpotName, deleteSpotImage, setPrimaryImage } = useSpotStore();
   const { showToast } = useToastStore();
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { useUiStore } from '@/store/useUiStore';
 import { MOVED_BANNER_DISMISS_KEY, getMovedTo, isBannerDismissed, movedTarget } from '@/lib/movedTo';
 
@@ -15,7 +16,8 @@ let hiddenThisView = false;
 
 /** Slim, non-modal notice on the old domain. One tap on Hide hides it for good on this device. */
 export default function MovedBanner() {
-  const { t, hasSelectedLanguage } = useLanguageStore();
+  const t = useT();
+  const hasSelectedLanguage = useLanguageStore((s) => s.hasSelectedLanguage);
   const setMovedBannerVisible = useUiStore((s) => s.setMovedBannerVisible);
   const [mounted, setMounted] = useState(false);
   const [dismissed, setDismissed] = useState(false);

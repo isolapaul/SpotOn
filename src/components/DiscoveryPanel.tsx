@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { X, Star, MapPin, Filter } from 'lucide-react';
 import Image from 'next/image';
 import { useSpotStore } from '@/store/useSpotStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { CATEGORIES, getMarkerEmoji } from '@/lib/categories';
 import { haversineKm } from '@/lib/geo';
 import { averageRating } from '@/lib/rating';
@@ -23,7 +23,7 @@ type SortOption = 'nearest' | 'best-rated';
 
 export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSelect }: Readonly<DiscoveryPanelProps>) {
   const { spots } = useSpotStore();
-  const { t } = useLanguageStore();
+  const t = useT();
   const [sortBy, setSortBy] = useState<SortOption>('best-rated');
   const [filterCategory, setFilterCategory] = useState<SpotCategory | null>(null);
   const [visibleCount, setVisibleCount] = useState(DISCOVERY_BATCH_SIZE);

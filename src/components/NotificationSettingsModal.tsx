@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Bell } from 'lucide-react';
-import { useLanguageStore } from '@/store/useLanguageStore';
-import { translations } from '@/lib/translations';
+import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -84,10 +83,9 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
   onEnableNotifications,
   onDisableNotifications
 }) => {
-  const { language } = useLanguageStore();
+  const t = useT();
   const { user, setUser } = useUserStore();
   const { addNotification } = useNotificationStore();
-  const t = (key: string) => (translations[language || 'hu'] as any)[key] || key;
 
   // Default settings if none exist
   const defaultSettings: NotificationSettingsState = {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getLevelInfo, getLevelThreshold, getSpotsRemainingText, LEVEL_THRESHOLDS } from './levelUtils';
 import { profileLevelSpots } from './__oracles__/legacy';
 import type { TranslationKey } from './translations';
+import { interpolate } from './i18n';
 
 // Values of getLevelInfo before T22 (only `name` became `nameKey`; progressBarClass is new).
 const LEVELS = {
@@ -46,7 +47,7 @@ describe('getSpotsRemainingText', () => {
     maxLevelReached: 'MAX',
     spotsToNextLevel: '{count} to go',
   };
-  const t = (key: TranslationKey) => stub[key] ?? key;
+  const t = (key: TranslationKey, vars?: Record<string, string | number>) => interpolate(stub[key] ?? key, vars);
 
   it('uses maxLevelReached at max level', () => {
     expect(getSpotsRemainingText(25, null, t)).toBe('MAX');

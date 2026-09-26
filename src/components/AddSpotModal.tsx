@@ -3,7 +3,7 @@
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { X, MapPin, Upload, Loader2 } from 'lucide-react';
 import { useState, useRef, ChangeEvent } from 'react';
 import type { SpotCategory } from '@/store/useSpotStore';
@@ -21,7 +21,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
   const isAdmin = useUserStore((s) => s.isAdmin);
   const { addSpot } = useSpotStore();
   const { showToast } = useToastStore();
-  const { t } = useLanguageStore();
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -305,7 +305,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             >
               <Upload className="w-8 h-8 text-white/60" />
               <span className="text-white/80 font-medium">{t('clickToUpload')}</span>
-              <span className="text-white/40 text-xs">{t('maxSize')} • {t('maxImagesShort').replace('{max}', String(MAX_SPOT_IMAGES))}</span>
+              <span className="text-white/40 text-xs">{t('maxSize')} • {t('maxImagesShort', { max: MAX_SPOT_IMAGES })}</span>
             </button>
             
             {/* Image Previews Grid */}

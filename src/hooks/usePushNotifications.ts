@@ -1,11 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db, app } from '@/lib/firebase';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useNotificationStore } from '@/store/useNotificationStore';
-import { translations } from '@/lib/translations';
+import { translate } from '@/lib/i18n';
+import { useT } from '@/hooks/useT';
 
 // Get VAPID key from environment variables
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
@@ -23,9 +24,8 @@ export const usePushNotifications = () => {
   const { user, loading: authLoading } = useUserStore();
   const { language } = useLanguageStore();
   const { addNotification } = useNotificationStore();
-  
-  // Helper to get translation
-  const t = useCallback((key: string) => (translations[language || 'hu'] as any)[key] || key, [language]);
+  // Memoized per language by useT (same stability as the former useCallback on language)
+  const t = useT();
 
   const isNotificationSupported = () => 'Notification' in globalThis;
 
@@ -200,7 +200,7 @@ export const usePushNotifications = () => {
       console.log('Foreground message received:', payload);
       
       // Read the language at message time: this listener is registered once (no stale closure).
-      const title = payload.notification?.title || useLanguageStore.getState().t('newNotification');
+      const title = payload.notification?.title || translate(useLanguageStore.getState().language ?? 'hu', 'newNotification');
       const body = payload.notification?.body || '';
       
       // Add to notification center only (no toast to avoid stacking)

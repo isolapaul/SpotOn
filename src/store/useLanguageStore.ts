@@ -1,26 +1,23 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { translations, TranslationKey } from '@/lib/translations';
+import type { Language } from '@/lib/i18n';
 
-type Language = 'en' | 'hu' | 'de';
+// Moved to lib/i18n (T24); re-exported for existing imports.
+export type { Language };
 
+// Translate with `useT()` (React) or `translate()` from lib/i18n (non-React code).
 interface LanguageStore {
   language: Language | null;
   setLanguage: (lang: Language) => void;
   hasSelectedLanguage: boolean;
-  t: (key: TranslationKey) => string;
 }
 
 export const useLanguageStore = create<LanguageStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       language: null,
       hasSelectedLanguage: false,
       setLanguage: (lang: Language) => set({ language: lang, hasSelectedLanguage: true }),
-      t: (key: TranslationKey) => {
-        const lang = get().language || 'hu';
-        return (translations[lang] as any)[key] || key;
-      },
     }),
     {
       name: 'spoton-language',

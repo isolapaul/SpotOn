@@ -6,7 +6,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Spot } from '@/store/useSpotStore';
 import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import SpotInfoWindow from './SpotInfoWindow';
 import { buildMarkerSvg, getMarkerSize, type MarkerStatus } from '@/lib/mapMarkers';
 import {
@@ -159,7 +159,7 @@ export default function MapView({
   const [zoomLevel, setZoomLevel] = useState(INITIAL_MARKER_ZOOM);
 
   const { theme } = useMapThemeStore();
-  const { t } = useLanguageStore();
+  const t = useT();
 
   useEffect(() => {
     if (!navigator.geolocation) return;

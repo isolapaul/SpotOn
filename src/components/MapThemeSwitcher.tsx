@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { Palette, Check } from 'lucide-react';
 import { useMapThemeStore, type MapTheme } from '@/store/useMapThemeStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 
 export default function MapThemeSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const { theme, setTheme } = useMapThemeStore();
-  const { t } = useLanguageStore();
+  const t = useT();
 
   const themes: { id: MapTheme; name: string; preview: string }[] = [
     { id: 'standard', name: t('themeStandard'), preview: 'bg-gradient-to-br from-blue-100 to-green-100' },

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { User, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { useUserStore, userErrorKey } from '@/store/useUserStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { useNotificationStore } from '@/store/useNotificationStore';
 
 interface UsernameSetupModalProps {
@@ -13,7 +13,7 @@ interface UsernameSetupModalProps {
 
 export default function UsernameSetupModal({ isOpen, onClose }: Readonly<UsernameSetupModalProps>) {
   const { user, updateUsername, checkUsernameAvailable, setNeedsUsername } = useUserStore();
-  const { t } = useLanguageStore();
+  const t = useT();
   const { addNotification } = useNotificationStore();
   const [username, setUsername] = useState(user?.username || '');
   const [isChecking, setIsChecking] = useState(false);

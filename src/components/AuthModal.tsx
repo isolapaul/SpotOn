@@ -1,7 +1,7 @@
 'use client';
 
 import { useUserStore } from '@/store/useUserStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { LogIn, X, Mail, Lock, User } from 'lucide-react';
 import { useState } from 'react';
 
@@ -12,7 +12,8 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>) {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useUserStore();
-  const { language, t: translate } = useLanguageStore();
+  // English while no language is chosen yet (unlike the app-wide 'hu' default; pre-T24 behaviour).
+  const t = useT({ fallback: 'en' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -25,123 +26,15 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
 
   if (!isOpen) return null;
 
-  // Translations
-  const texts = {
-    hu: {
-      welcome: 'Üdvözöl a SpotOn',
-      welcomeDesc: 'Jelentkezz be vagy regisztrálj a kedvenc helyeid mentéséhez',
-      signIn: 'Bejelentkezés',
-      signUp: 'Regisztráció',
-      signInDesc: 'Jelentkezz be az email címeddel',
-      signUpDesc: 'Hozz létre új fiókot',
-      signingIn: 'Bejelentkezés...',
-      googleWith: 'Google',
-      or: 'vagy',
-      emailWith: 'Email címmel',
-      username: 'Felhasználónév',
-      email: 'Email',
-      password: 'Jelszó',
-      usernamePlaceholder: 'felhasználóneved',
-      emailPlaceholder: 'email@pelda.com',
-      passwordPlaceholder: '••••••••',
-      passwordHint: 'Legalább 6 karakter',
-      noAccount: 'Még nincs fiókod? Regisztrálj',
-      haveAccount: 'Van már fiókod? Jelentkezz be',
-      back: '← Vissza',
-      terms: 'A bejelentkezéssel elfogadod az Általános Szerződési Feltételeket és az Adatvédelmi Szabályzatot',
-      errors: {
-        google: 'Google bejelentkezés sikertelen. Próbáld újra.',
-        username: 'Add meg a felhasználónevedet!',
-        invalidEmail: 'Érvénytelen email cím.',
-        wrongPassword: 'Hibás email vagy jelszó.',
-        emailInUse: 'Ez az email cím már használatban van.',
-        weakPassword: 'A jelszónak legalább 6 karakter hosszúnak kell lennie.',
-        invalidCredential: 'Hibás bejelentkezési adatok.',
-        signInFailed: 'Bejelentkezés sikertelen.',
-        signUpFailed: 'Regisztráció sikertelen.',
-      }
-    },
-    de: {
-      welcome: 'Willkommen bei SpotOn',
-      welcomeDesc: 'Melde dich an oder registriere dich, um deine Lieblingsorte zu speichern',
-      signIn: 'Anmelden',
-      signUp: 'Registrieren',
-      signInDesc: 'Melde dich mit deiner E-Mail an',
-      signUpDesc: 'Erstelle ein neues Konto',
-      signingIn: 'Anmeldung...',
-      googleWith: 'Google',
-      or: 'oder',
-      emailWith: 'Mit E-Mail',
-      username: 'Benutzername',
-      email: 'E-Mail',
-      password: 'Passwort',
-      usernamePlaceholder: 'benutzername',
-      emailPlaceholder: 'email@beispiel.de',
-      passwordPlaceholder: '••••••••',
-      passwordHint: 'Mindestens 6 Zeichen',
-      noAccount: 'Noch kein Konto? Registrieren',
-      haveAccount: 'Schon ein Konto? Anmelden',
-      back: '← Zurück',
-      terms: 'Mit der Anmeldung akzeptierst du die Allgemeinen Geschäftsbedingungen und die Datenschutzerklärung',
-      errors: {
-        google: 'Google-Anmeldung fehlgeschlagen. Bitte versuche es erneut.',
-        username: 'Bitte gib deinen Benutzernamen ein!',
-        invalidEmail: 'Ungültige E-Mail-Adresse.',
-        wrongPassword: 'Falsche E-Mail oder Passwort.',
-        emailInUse: 'Diese E-Mail-Adresse wird bereits verwendet.',
-        weakPassword: 'Das Passwort muss mindestens 6 Zeichen lang sein.',
-        invalidCredential: 'Ungültige Anmeldedaten.',
-        signInFailed: 'Anmeldung fehlgeschlagen.',
-        signUpFailed: 'Registrierung fehlgeschlagen.',
-      }
-    },
-    en: {
-      welcome: 'Welcome to SpotOn',
-      welcomeDesc: 'Sign in or register to save your favorite spots',
-      signIn: 'Sign In',
-      signUp: 'Sign Up',
-      signInDesc: 'Sign in with your email',
-      signUpDesc: 'Create a new account',
-      signingIn: 'Signing in...',
-      googleWith: 'Google',
-      or: 'or',
-      emailWith: 'With Email',
-      username: 'Username',
-      email: 'Email',
-      password: 'Password',
-      usernamePlaceholder: 'yourusername',
-      emailPlaceholder: 'email@example.com',
-      passwordPlaceholder: '••••••••',
-      passwordHint: 'At least 6 characters',
-      noAccount: 'No account yet? Sign up',
-      haveAccount: 'Already have an account? Sign in',
-      back: '← Back',
-      terms: 'By signing in, you agree to our Terms of Service and Privacy Policy',
-      errors: {
-        google: 'Google sign in failed. Please try again.',
-        username: 'Please enter your username!',
-        invalidEmail: 'Invalid email address.',
-        wrongPassword: 'Wrong email or password.',
-        emailInUse: 'This email address is already in use.',
-        weakPassword: 'Password must be at least 6 characters long.',
-        invalidCredential: 'Invalid credentials.',
-        signInFailed: 'Sign in failed.',
-        signUpFailed: 'Sign up failed.',
-      }
-    }
-  };
-
-  const t = texts[language as keyof typeof texts] || texts.en;
-
   // Helper functions for dynamic text to avoid nested ternaries
   const getTitle = () => {
-    if (!showEmailForm) return t.welcome;
-    return mode === 'signin' ? t.signIn : t.signUp;
+    if (!showEmailForm) return t('authWelcome');
+    return mode === 'signin' ? t('authSignIn') : t('authSignUp');
   };
 
   const getDescription = () => {
-    if (!showEmailForm) return t.welcomeDesc;
-    return mode === 'signin' ? t.signInDesc : t.signUpDesc;
+    if (!showEmailForm) return t('authWelcomeDesc');
+    return mode === 'signin' ? t('authSignInDesc') : t('authSignUpDesc');
   };
 
   const handleGoogleSignIn = async () => {
@@ -154,7 +47,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       resetForm();
     } catch (err) {
       console.error('Google sign-in error:', err);
-      setError(t.errors.google);
+      setError(t('authErrGoogle'));
     } finally {
       setLoading(false);
     }
@@ -170,7 +63,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
         await signInWithEmail(email, password);
       } else {
         if (!username.trim() || username.length < 3) {
-          setError(t.errors.username);
+          setError(t('authErrUsername'));
           setLoading(false);
           return;
         }
@@ -181,17 +74,17 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
     } catch (err: any) {
       // Firebase error handling
       if (err.code === 'auth/invalid-email') {
-        setError(t.errors.invalidEmail);
+        setError(t('authErrInvalidEmail'));
       } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError(t.errors.wrongPassword);
+        setError(t('authErrWrongPassword'));
       } else if (err.code === 'auth/email-already-in-use') {
-        setError(t.errors.emailInUse);
+        setError(t('authErrEmailInUse'));
       } else if (err.code === 'auth/weak-password') {
-        setError(t.errors.weakPassword);
+        setError(t('authErrWeakPassword'));
       } else if (err.code === 'auth/invalid-credential') {
-        setError(t.errors.invalidCredential);
+        setError(t('authErrInvalidCredential'));
       } else {
-        setError(mode === 'signin' ? t.errors.signInFailed : t.errors.signUpFailed);
+        setError(mode === 'signin' ? t('authErrSignInFailed') : t('authErrSignUpFailed'));
       }
     } finally {
       setLoading(false);
@@ -272,7 +165,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
             {mode === 'signup' && (
               <div>
                 <label htmlFor="username" className="block text-white/80 text-sm font-medium mb-2">
-                  {t.username}
+                  {t('authUsername')}
                 </label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
@@ -282,7 +175,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value.toLowerCase().replaceAll(/[^a-z0-9_]/g, ''))}
-                    placeholder={t.usernamePlaceholder}
+                    placeholder={t('authUsernamePlaceholder')}
                     className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 
                       text-white placeholder-white/50 focus:outline-none focus:ring-2 
                       focus:ring-primary-500 focus:border-transparent transition-all"
@@ -291,14 +184,14 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                     maxLength={20}
                   />
                 </div>
-                <p className="text-white/50 text-xs mt-1">{translate('usernameRules')}</p>
+                <p className="text-white/50 text-xs mt-1">{t('usernameRules')}</p>
               </div>
             )}
 
             {/* Email field */}
             <div>
               <label htmlFor="email" className="block text-white/80 text-sm font-medium mb-2">
-                {t.email}
+                {t('authEmail')}
               </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
@@ -308,7 +201,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.emailPlaceholder}
+                  placeholder={t('authEmailPlaceholder')}
                   className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 
                     text-white placeholder-white/50 focus:outline-none focus:ring-2 
                     focus:ring-primary-500 focus:border-transparent transition-all"
@@ -320,7 +213,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
             {/* Password field */}
             <div>
               <label htmlFor="password" className="block text-white/80 text-sm font-medium mb-2">
-                {t.password}
+                {t('authPassword')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
@@ -330,7 +223,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t.passwordPlaceholder}
+                  placeholder={t('authPasswordPlaceholder')}
                   className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 
                     text-white placeholder-white/50 focus:outline-none focus:ring-2 
                     focus:ring-primary-500 focus:border-transparent transition-all"
@@ -339,7 +232,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                 />
               </div>
               {mode === 'signup' && (
-                <p className="text-white/50 text-xs mt-1">{t.passwordHint}</p>
+                <p className="text-white/50 text-xs mt-1">{t('authPasswordHint')}</p>
               )}
             </div>
 
@@ -357,10 +250,10 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
               {loading ? (
                 <>
                   <div className="w-6 h-6 border-3 border-white/20 border-t-white rounded-full animate-spin" />
-                  <span>{mode === 'signin' ? t.signingIn : t.signUp + '...'}</span>
+                  <span>{mode === 'signin' ? t('authSigningIn') : `${t('authSignUp')}...`}</span>
                 </>
               ) : (
-                <span>{mode === 'signin' ? t.signIn : t.signUp}</span>
+                <span>{mode === 'signin' ? t('authSignIn') : t('authSignUp')}</span>
               )}
             </button>
 
@@ -371,7 +264,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                 onClick={toggleMode}
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
-                {mode === 'signin' ? t.noAccount : t.haveAccount}
+                {mode === 'signin' ? t('authNoAccount') : t('authHaveAccount')}
               </button>
             </div>
 
@@ -384,7 +277,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
               }}
               className="w-full py-3 text-white/60 hover:text-white text-sm transition-colors"
             >
-              {t.back}
+              {t('authBack')}
             </button>
           </form>
         ) : (
@@ -404,7 +297,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
               {loading ? (
                 <>
                   <div className="w-6 h-6 border-3 border-gray-900/20 border-t-gray-900 rounded-full animate-spin" />
-                  <span>{t.signingIn}</span>
+                  <span>{t('authSigningIn')}</span>
                 </>
               ) : (
                 <>
@@ -426,7 +319,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  <span>{t.googleWith}</span>
+                  <span>{t('authGoogle')}</span>
                 </>
               )}
             </button>
@@ -437,7 +330,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                 <div className="w-full border-t border-white/20"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-slate-900/50 text-white/60">{t.or}</span>
+                <span className="px-4 bg-slate-900/50 text-white/60">{t('authOr')}</span>
               </div>
             </div>
 
@@ -451,7 +344,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                 flex items-center justify-center gap-3"
             >
               <Mail className="w-6 h-6" />
-              <span>{t.emailWith}</span>
+              <span>{t('authWithEmail')}</span>
             </button>
           </div>
         )}
@@ -459,7 +352,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
         {/* Privacy Note */}
         {!showEmailForm && (
           <p className="text-white/50 text-xs text-center mt-6">
-            {t.terms}
+            {t('authTerms')}
           </p>
         )}
       </div>

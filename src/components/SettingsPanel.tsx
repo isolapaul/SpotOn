@@ -2,13 +2,14 @@
 
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { useToastStore } from '@/store/useToastStore';
 import { X, Camera, Image as ImageIcon, LogOut, Globe, Bell, BellOff, MapPin } from 'lucide-react';
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { compressImage } from '@/lib/imageCompression';
 import { MAX_UPLOAD_BYTES } from '@/lib/constants';
-import { translations } from '@/lib/translations';
+import { translate, type Language } from '@/lib/i18n';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
 
@@ -21,6 +22,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
   const { user, signOut, updateProfilePicture, updateProfileBanner } = useUserStore();
   const userIsAdmin = useUserStore((s) => s.isAdmin);
   const { language, setLanguage } = useLanguageStore();
+  const t = useT();
   const { showToast } = useToastStore();
   const { isPermissionGranted, isLoading: isNotificationLoading, requestPermission, disableNotifications } = usePushNotifications();
   
@@ -34,14 +36,12 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
 
   if (!isOpen || !user) return null;
 
-  const t = translations[language as keyof typeof translations] || translations.hu;
-
   const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.size > MAX_UPLOAD_BYTES) {
-      showToast(t.imageTooLarge, 'error');
+      showToast(t('imageTooLarge'), 'error');
       return;
     }
 
@@ -50,10 +50,10 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
       // First of two passes (the store compresses again); kept as is, see T23.
       const compressedFile = await compressImage(file, 'settingsProfilePicture');
       await updateProfilePicture(compressedFile);
-      showToast(t.profileUpdated, 'success');
+      showToast(t('profileUpdated'), 'success');
     } catch (error) {
       console.error('Failed to update profile picture:', error);
-      showToast(t.profileUpdateError, 'error');
+      showToast(t('profileUpdateError'), 'error');
     } finally {
       setIsUploadingPicture(false);
     }
@@ -64,7 +64,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
     if (!file) return;
 
     if (file.size > MAX_UPLOAD_BYTES) {
-      showToast(t.imageTooLarge, 'error');
+      showToast(t('imageTooLarge'), 'error');
       return;
     }
 
@@ -73,10 +73,10 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
       // First of two passes (the store compresses again); kept as is, see T23.
       const compressedFile = await compressImage(file, 'settingsBanner');
       await updateProfileBanner(compressedFile);
-      showToast(t.profileUpdated, 'success');
+      showToast(t('profileUpdated'), 'success');
     } catch (error) {
       console.error('Failed to update profile banner:', error);
-      showToast(t.profileUpdateError, 'error');
+      showToast(t('profileUpdateError'), 'error');
     } finally {
       setIsUploadingBanner(false);
     }
@@ -86,24 +86,24 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
     try {
       await signOut();
       onClose();
-      showToast(t.signOutSuccess, 'success');
+      showToast(t('signOutSuccess'), 'success');
     } catch {
-      showToast(t.signOutError, 'error');
+      showToast(t('signOutError'), 'error');
     }
   };
 
   const handleLanguageChange = (newLanguage: string) => {
-    setLanguage(newLanguage as 'hu' | 'en' | 'de');
+    setLanguage(newLanguage as Language);
     let langName = 'Magyar';
     if (newLanguage === 'en') langName = 'English';
     else if (newLanguage === 'de') langName = 'Deutsch';
-    const newT = translations[newLanguage as keyof typeof translations] || translations.hu;
-    showToast(newT.languageChanged.replace('{language}', langName), 'success');
+    // Toast in the newly chosen language (the render-time t still has the old one).
+    showToast(translate(newLanguage as Language, 'languageChanged', { language: langName }), 'success');
   };
 
   const handleNotificationToggle = async () => {
     if (isPermissionGranted) {
-      showToast(t.notificationsAlreadyEnabled, 'info');
+      showToast(t('notificationsAlreadyEnabled'), 'info');
     } else {
       await requestPermission();
     }
@@ -125,7 +125,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
         <div className="sticky top-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-xl border-b border-white/10 p-4 z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              ⚙️ {t.settings}
+              ⚙️ {t('settings')}
             </h2>
             <button
               onClick={onClose}
@@ -142,7 +142,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
           <div className="glass-card p-5">
             <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
               <Camera className="w-5 h-5" />
-              {t.changeProfilePicture}
+              {t('changeProfilePicture')}
             </h3>
             
             <div className="flex items-center gap-4">
@@ -170,7 +170,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
                 className="flex-1 py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold
                   hover:from-purple-700 hover:to-pink-700 transition-all duration-200 active:scale-95 disabled:opacity-50"
               >
-                {isUploadingPicture ? t.uploadingImage : t.uploadPicture}
+                {isUploadingPicture ? t('uploadingImage') : t('uploadPicture')}
               </button>
             </div>
             
@@ -187,7 +187,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
           <div className="glass-card p-5">
             <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
               <ImageIcon className="w-5 h-5" />
-              {t.changeProfileBanner}
+              {t('changeProfileBanner')}
             </h3>
             
             <div className="space-y-3">
@@ -213,7 +213,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
                 className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold
                   hover:from-purple-700 hover:to-pink-700 transition-all duration-200 active:scale-95 disabled:opacity-50"
               >
-                {isUploadingBanner ? t.uploadingImage : t.uploadBanner}
+                {isUploadingBanner ? t('uploadingImage') : t('uploadBanner')}
               </button>
             </div>
             
@@ -230,7 +230,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
           <div className="glass-card p-5">
             <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
               <Globe className="w-5 h-5" />
-              {t.languageSelection}
+              {t('languageSelection')}
             </h3>
             
             <div className="flex flex-col gap-2">
@@ -256,7 +256,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
           <div className="glass-card p-5">
             <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
               {isPermissionGranted ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
-              {t.notificationsHeader}
+              {t('notificationsHeader')}
             </h3>
             
             <button
@@ -270,12 +270,12 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
               {isPermissionGranted ? (
                 <>
                   <Bell className="w-5 h-5" />
-                  {t.enabled}
+                  {t('enabled')}
                 </>
               ) : (
                 <>
                   <BellOff className="w-5 h-5" />
-                  {t.enableAction}
+                  {t('enableAction')}
                 </>
               )}
             </button>
@@ -287,7 +287,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
                 border border-blue-500/30 font-medium text-sm hover:bg-blue-500/30 
                 transition-all disabled:opacity-50"
             >
-              {t.notificationSettingsButton}
+              {t('notificationSettingsButton')}
             </button>
           </div>
 
@@ -295,7 +295,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
           <div className="glass-card p-5">
             <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
               <MapPin className="w-5 h-5" />
-              {t.locationHeader}
+              {t('locationHeader')}
             </h3>
             
             <button
@@ -305,13 +305,13 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
                 navigator.geolocation.getCurrentPosition(
                   () => {
                     setIsRequestingLocation(false);
-                    showToast(t.locationSuccess, 'success');
+                    showToast(t('locationSuccess'), 'success');
                     // Force page reload to pick up new location
                     globalThis.location.reload();
                   },
                   () => {
                     setIsRequestingLocation(false);
-                    showToast(t.locationDenied, 'error');
+                    showToast(t('locationDenied'), 'error');
                   },
                   { enableHighAccuracy: true, timeout: 10000 }
                 );
@@ -321,7 +321,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
                 bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
             >
               <MapPin className="w-5 h-5" />
-              {isRequestingLocation ? t.locationRequesting : t.requestLocationPermission}
+              {isRequestingLocation ? t('locationRequesting') : t('requestLocationPermission')}
             </button>
           </div>
 
@@ -332,7 +332,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
               hover:bg-red-600/30 transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
           >
             <LogOut className="w-5 h-5" />
-            {t.signOut}
+            {t('signOut')}
           </button>
         </div>
       </div>
