@@ -62,6 +62,20 @@ const getCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rej
   });
 };
 
+// Marker icons are cached so unchanged markers keep the same icon reference: react-leaflet calls
+// setIcon (rebuilding the marker DOM) whenever the reference changes.
+const iconCache = new Map<string, L.DivIcon>();
+
+const getCachedCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rejected', isHighlighted: boolean, size: number) => {
+  const key = `${category}|${status}|${isHighlighted ? 1 : 0}|${size}`;
+  let icon = iconCache.get(key);
+  if (!icon) {
+    icon = getCategoryIcon(category, status, isHighlighted, size);
+    iconCache.set(key, icon);
+  }
+  return icon;
+};
+
 const userLocationIcon = L.divIcon({
   html: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="8" fill="#007AFF" stroke="white" stroke-width="3"/>
@@ -204,6 +218,9 @@ export default function MapView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Highlight-expiry reference time, computed once per render (not per marker)
+  const nowIso = new Date().toISOString();
+
   return (
     <div className="absolute inset-0 w-full h-full z-0">
       {isAddingSpot && (
@@ -246,14 +263,13 @@ export default function MapView({
 
         {/* Spot markers */}
         {spots.map((spot) => {
-          const now = new Date().toISOString();
-          const isHighlighted = (spot.highlighted || []).some((h) => h.expiresAt > now);
+          const isHighlighted = (spot.highlighted || []).some((h) => h.expiresAt > nowIso);
           const size = getMarkerSize(zoomLevel) * (isHighlighted ? 1.2 : 1);
           return (
             <Marker
               key={spot.id}
               position={[spot.location.lat, spot.location.lng]}
-              icon={getCategoryIcon(spot.category, spot.status, isHighlighted, Math.round(size))}
+              icon={getCachedCategoryIcon(spot.category, spot.status, isHighlighted, Math.round(size))}
               zIndexOffset={isHighlighted ? 1000 : 0}
               eventHandlers={{
                 click: () => setSelectedSpot(spot),

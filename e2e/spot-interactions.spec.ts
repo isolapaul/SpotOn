@@ -138,9 +138,8 @@ test('review is stored without email or style metadata and shows after reopening
 
   await closeDetails(page);
   await openDetails(page, E2E.interactionSpot.emoji);
-  // .first(): the pre-existing local append in addReview can race the listener and list the new
-  // review twice until the next snapshot (unchanged by T11b).
-  await expect(page.getByText(reviewComment).first()).toBeVisible();
+  await expect(page.getByText(reviewComment)).toBeVisible();
+  await expect(page.getByText(reviewComment)).toHaveCount(1);
 
   const reviews: Array<Record<string, unknown>> = (await spotData(E2E.interactionSpot.id))?.reviews ?? [];
   const last = reviews[reviews.length - 1];

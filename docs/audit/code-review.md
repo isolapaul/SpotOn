@@ -127,6 +127,8 @@ The fallback language also differs: `hu` in some places, `en` in others. The fix
 | BUG-23 | Tailwind `content` does not scan `src/lib`, so level/name-style classes defined there are never generated | `tailwind.config.ts` | T22 |
 | BUG-24 | The loading screen can stay stuck forever: MapView's `MapReadyNotifier` 100 ms timer is cancelled by any re-render inside that window and is never restarted, so `onMapLoad` never fires. Reproduced 100% against the fast emulators. | `MapView.tsx:85-96` | T04 (minimal fix, needed for e2e) |
 | BUG-25 | A new review can show twice: `addReview` appends locally after `updateDoc` while the spots listener has already delivered the same review; visible after close/reopen until the next snapshot (found during T11b) | `useSpotStore.ts` `addReview` | T21 |
+| BUG-26 | The hero's Close button sits inside the clickable hero, so closing also opens the fullscreen gallery; because the panel never unmounts, the next spot opens straight into the gallery (found during T21) | `SpotDetailsPanel.tsx` hero | T28 |
+| BUG-27 | Deleting an image before the primary one keeps the old index, so the hero silently moves to the next image (found in the T21 review) | `useSpotStore.ts` `deleteSpotImage` | T21 |
 | BUG-22 | SettingsPanel renders at z-40/50 inside ProfilePanel's z-60 stacking context | `SettingsPanel.tsx` | T25 (z-index scale in `lib/`) |
 
 ---

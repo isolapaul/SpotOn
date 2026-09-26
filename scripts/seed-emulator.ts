@@ -141,6 +141,23 @@ async function seed(): Promise<void> {
     reviews: [],
   });
 
+  // T21: LEGACY spot dedicated to primary-image.spec.ts: only `imageUrls` with the placeholder
+  // first, `primaryImageIndex: 0`, no `spotImages`, category `scenic` (unused by other fixtures),
+  // ~0.9 km from the map centre.
+  await db.doc(`spots/${E2E.primaryImageSpot.id}`).set({
+    name: E2E.primaryImageSpot.name,
+    category: 'scenic',
+    description: 'Legacy-shaped primary image fixture',
+    location: { lat: 47.4960, lng: 19.0520 },
+    createdBy: E2E.user.uid,
+    createdByName: E2E.user.username,
+    status: 'approved',
+    createdAt: t,
+    imageUrls: [...E2E.primaryImageSpot.imageUrls],
+    primaryImageIndex: 0,
+    reviews: [],
+  });
+
   // Level-5 owner (T09): 20 spots, category `random` (unused by other fixtures). Only spot-01 is
   // approved (near the map centre, apart from the other fixtures); spots 02-20 are pending and
   // sit ~2.5 km away. spotsCount is not seeded (the functions/backfill compute it).

@@ -247,16 +247,8 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         Object.entries(reviewWithTimestamp).filter(([, v]) => v !== undefined)
       );
 
+      // No local append: the spots listener already delivers the new review (BUG-25).
       await updateDoc(doc(db, 'spots', spotId), { reviews: arrayUnion(cleanReview) });
-
-      updateSpotInState(set, spotId, (spot) => {
-        const updatedReviews = [...(spot.reviews || []), reviewWithTimestamp];
-        return {
-          ...spot,
-          reviews: updatedReviews,
-          averageRating: updatedReviews.reduce((acc, r) => acc + r.rating, 0) / updatedReviews.length,
-        };
-      });
     } catch (error: any) {
       console.error('Error adding review:', error);
       throw error;
@@ -338,7 +330,10 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       let updatedImageUrls = (spot.imageUrls || []).filter((url) => url !== imageUrl);
       const updatedSpotImages = (spot.spotImages || []).filter((img) => img.url !== imageUrl);
 
-      let newPrimaryIndex = Math.min(spot.primaryImageIndex || 0, Math.max(0, updatedImageUrls.length - 1));
+      // Keep the same image as primary: shift the index by the entries removed before it.
+      const oldPrimaryIndex = spot.primaryImageIndex || 0;
+      const removedBefore = (spot.imageUrls || []).slice(0, oldPrimaryIndex).filter((url) => url === imageUrl).length;
+      let newPrimaryIndex = Math.min(oldPrimaryIndex - removedBefore, Math.max(0, updatedImageUrls.length - 1));
       if (updatedImageUrls.length === 0) {
         updatedImageUrls = [PLACEHOLDER_URL];
         newPrimaryIndex = 0;

@@ -13,7 +13,8 @@ export default function LanguageSelector() {
     // Show language selector if user hasn't selected a language yet
     if (!hasSelectedLanguage) {
       // Small delay for smooth entrance
-      setTimeout(() => setIsOpen(true), 300);
+      const id = setTimeout(() => setIsOpen(true), 300);
+      return () => clearTimeout(id);
     }
   }, [hasSelectedLanguage]);
 

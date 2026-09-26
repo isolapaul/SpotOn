@@ -136,6 +136,8 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const [reviewerMeta, setReviewerMeta] = useState<Record<string, ReviewerMeta>>({});
 
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const approveCloseTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const shownSpotIdRef = useRef<string | undefined>(undefined);
 
   // Swipe to dismiss the panel
   const { swipe: panelSwipe, onTouchStart, onTouchMove, onTouchEnd } = useSwipeDismiss(onClose);
@@ -178,6 +180,12 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
     setIgnoreHeroClicks(true);
     const id = setTimeout(() => setIgnoreHeroClicks(false), 300);
     return () => clearTimeout(id);
+  }, [spot?.id]);
+
+  // Cancel a pending close-after-approve when the shown spot changes (the component never unmounts)
+  useEffect(() => {
+    shownSpotIdRef.current = spot?.id;
+    return () => clearTimeout(approveCloseTimerRef.current);
   }, [spot?.id]);
 
   // Keyboard navigation for gallery
@@ -264,6 +272,16 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const averageRating = spot.reviews?.length
     ? spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length
     : 0;
+  // Manager tiles: imageUrls entries keep their original index (primaryImageIndex indexes imageUrls);
+  // images only in spotImages have no index, so they can be deleted but not made primary.
+  const imageUrlSet = new Set(spot.imageUrls || []);
+  const managedImages: Array<{ url: string; index?: number }> = [
+    ...(spot.imageUrls || []).map((url, index) => ({ url, index })).filter((e) => e.url !== PLACEHOLDER_URL),
+    ...getSpotImages(spot)
+      .map((img) => img.url)
+      .filter((url, i, self) => url !== PLACEHOLDER_URL && !imageUrlSet.has(url) && self.indexOf(url) === i)
+      .map((url) => ({ url })),
+  ];
   const heroImageUrl =
     spot.imageUrls?.[spot.primaryImageIndex || 0] ||
     spot.imageUrls?.[0] ||
@@ -330,9 +348,13 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
   const handleApprove = async () => {
     setIsApproving(true);
     try {
-      await approveSpot(spot.id);
+      const approvedId = spot.id;
+      await approveSpot(approvedId);
       showToast(t('spotApproved'), 'success');
-      setTimeout(() => onClose(), 1000);
+      // Another spot may have been opened while the write was pending: only close the approved one.
+      if (shownSpotIdRef.current === approvedId) {
+        approveCloseTimerRef.current = setTimeout(() => onClose(), 1000);
+      }
     } catch (error) {
       showToast(t('approveError'), 'error');
     } finally {
@@ -592,16 +614,18 @@ export default function SpotDetailsPanel({ spot, isAdmin = false, onClose }: Rea
                 </button>
                 {showManageImages && (
                   <div className="mt-3 grid grid-cols-3 gap-2">
-                    {(spot.imageUrls || []).filter((url) => url !== '/placeholder-spot.jpg').map((url, index) => (
+                    {managedImages.map(({ url, index }, position) => (
                       <div key={url} className="relative group rounded-xl overflow-hidden aspect-square">
-                        <Image src={url} alt={`Image ${index + 1}`} fill sizes="120px" className="object-cover" />
-                        {(spot.primaryImageIndex || 0) === index && (
+                        <Image src={url} alt={`Image ${position + 1}`} fill sizes="120px" className="object-cover" />
+                        {index !== undefined && (spot.primaryImageIndex || 0) === index && (
                           <div className="absolute top-1 left-1 bg-primary-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">★</div>
                         )}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
-                          <button onClick={() => handleSetPrimaryImage(index)} className="p-1.5 rounded-full bg-primary-500/80 text-white hover:bg-primary-500 transition-colors" title={t('setPrimaryImage')}>
-                            <Star className="w-3.5 h-3.5" />
-                          </button>
+                          {index !== undefined && (
+                            <button onClick={() => handleSetPrimaryImage(index)} className="p-1.5 rounded-full bg-primary-500/80 text-white hover:bg-primary-500 transition-colors" title={t('setPrimaryImage')}>
+                              <Star className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <button onClick={() => handleDeleteImage(url)} className="p-1.5 rounded-full bg-red-500/80 text-white hover:bg-red-500 transition-colors" title={t('deleteImage')}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

@@ -7,6 +7,7 @@ import { useLanguageStore } from '@/store/useLanguageStore';
 import { X, MapPin, Upload, Loader2 } from 'lucide-react';
 import { useState, useRef, ChangeEvent } from 'react';
 import type { SpotCategory } from '@/store/useSpotStore';
+import { MAX_SPOT_IMAGES } from '@/lib/constants';
 
 interface AddSpotModalProps {
   isOpen: boolean;
@@ -41,8 +42,8 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Check if adding these files would exceed the 20 image limit
-    if (imageFiles.length + files.length > 20) {
+    // Check if adding these files would exceed the image limit
+    if (imageFiles.length + files.length > MAX_SPOT_IMAGES) {
       setError(t('maxSpotImages'));
       return;
     }
@@ -282,7 +283,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {/* Image Upload */}
           <div>
             <label htmlFor="spot-image" className="block text-white font-medium mb-2">
-              {t('photoOptional')} <span className="text-white/60 text-sm">({imageFiles.length}/15)</span>
+              {t('photoOptional')} <span className="text-white/60 text-sm">({imageFiles.length}/{MAX_SPOT_IMAGES})</span>
             </label>
             <input
               id="spot-image"
@@ -299,7 +300,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={loading || imageFiles.length >= 15}
+              disabled={loading || imageFiles.length >= MAX_SPOT_IMAGES}
               className="w-full py-8 rounded-xl glass border-2 border-dashed border-white/20
                 hover:border-white/40 hover:bg-white/5
                 transition-all duration-200 flex flex-col items-center gap-2
@@ -307,7 +308,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             >
               <Upload className="w-8 h-8 text-white/60" />
               <span className="text-white/80 font-medium">{t('clickToUpload')}</span>
-              <span className="text-white/40 text-xs">{t('maxSize')} • Max 15 kép</span>
+              <span className="text-white/40 text-xs">{t('maxSize')} • {t('maxImagesShort').replace('{max}', String(MAX_SPOT_IMAGES))}</span>
             </button>
             
             {/* Image Previews Grid */}

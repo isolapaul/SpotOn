@@ -79,6 +79,7 @@ export const translations = {
     spotPhotosAdded: 'Képek hozzáadva!',
     spotPhotoAddError: 'Hiba a képek hozzáadásakor',
     maxSpotImages: 'Legfeljebb 20 képet tölthetsz fel egy helyhez.',
+    maxImagesShort: 'Max {max} kép',
     
     // Empty States
     noSpotsFound: '🗺️ Még nincsenek helyek. Légy az első, aki hozzáad egyet!',
@@ -393,6 +394,7 @@ export const translations = {
     spotPhotosAdded: 'Photos added!',
     spotPhotoAddError: 'Error adding photos',
     maxSpotImages: 'You can upload up to 20 photos per spot.',
+    maxImagesShort: 'Max {max} photos',
     
     // Empty States
     noSpotsFound: '🗺️ No spots found yet. Be the first to add one!',
@@ -707,6 +709,7 @@ export const translations = {
     spotPhotosAdded: 'Fotos hinzugefügt!',
     spotPhotoAddError: 'Fehler beim Hinzufügen der Fotos',
     maxSpotImages: 'Maximal 20 Fotos pro Ort erlaubt.',
+    maxImagesShort: 'Max. {max} Fotos',
     
     // Empty States
     noSpotsFound: '🗺️ Noch keine Orte gefunden. Seien Sie der Erste, der einen hinzufügt!',

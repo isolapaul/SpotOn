@@ -50,7 +50,7 @@ export default function Home() {
   
   const { user, needsUsername, setNeedsUsername, initAuth } = useUserStore();
   const { theme: currentMapTheme, setTheme } = useMapThemeStore();
-  const { spots, fetchSpots, unsubscribeSpots } = useSpotStore();
+  const { spots, fetchSpots } = useSpotStore();
   const { t } = useLanguageStore();
   const movedBannerVisible = useUiStore((s) => s.movedBannerVisible);
 
@@ -70,14 +70,17 @@ export default function Home() {
     const allLoaded = loadingStates.auth && loadingStates.spots && loadingStates.map;
     if (allLoaded && !isAppReady) {
       // Small delay for smooth transition
-      setTimeout(() => {
+      const id = setTimeout(() => {
         setIsAppReady(true);
       }, 500);
+      return () => clearTimeout(id);
     }
   }, [loadingStates, isAppReady]);
 
   useEffect(() => {
     setIsClient(true);
+    let spotsTimer: ReturnType<typeof setTimeout> | undefined;
+    let cancelled = false;
     
     // Initialize Firebase auth listener
     const initializeAuth = async () => {
@@ -88,8 +91,9 @@ export default function Home() {
     // Fetch spots
     const initializeSpots = async () => {
       await fetchSpots();
+      if (cancelled) return;
       // Wait a bit to ensure spots are populated
-      setTimeout(() => {
+      spotsTimer = setTimeout(() => {
         setLoadingStates(prev => ({ ...prev, spots: true }));
       }, 300);
     };
@@ -115,9 +119,13 @@ export default function Home() {
     
     // Cleanup
     return () => {
-      // Clean up spots listener
-      if (unsubscribeSpots) {
-        unsubscribeSpots();
+      cancelled = true;
+      clearTimeout(spotsTimer);
+      // Clean up spots listener: read it at cleanup time (the render-time value is always null)
+      const unsub = useSpotStore.getState().unsubscribeSpots;
+      if (unsub) {
+        unsub();
+        useSpotStore.setState({ unsubscribeSpots: null });
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
