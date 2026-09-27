@@ -135,7 +135,14 @@ describe('reviews (addReview append)', () => {
     await assertSucceeds(append(db, SPOT_APPROVED, newReview(ALICE)));
     await assertSucceeds(append(db, SPOT_NO_REVIEWS, newReview(ALICE)));
     await assertSucceeds(append(db, SPOT_LEGACY, newReview(ALICE)));
-    await assertSucceeds(append(db, SPOT_PENDING, newReview(ALICE)));
+  });
+  it('denies appending to a pending spot for other users and the owner; admins still may (isAdmin)', async () => {
+    await assertFails(append(dbAs(env, BOB), SPOT_PENDING, newReview(BOB)));
+    await assertFails(append(dbAs(env, ALICE), SPOT_PENDING, newReview(ALICE)));
+    await assertFails(append(dbAs(env, null), SPOT_PENDING, newReview('anon')));
+    // same denial as for an id that does not exist: the response does not reveal pending ids
+    await assertFails(append(dbAs(env, BOB), 'noSuchSpot', newReview(BOB)));
+    await assertSucceeds(append(dbAs(env, ADMIN), SPOT_PENDING, newReview(ADMIN)));
   });
   it('allows with and without userPhoto, rating 1 and 5, a 1000-char comment', async () => {
     const db = dbAs(env, BOB);

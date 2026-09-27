@@ -131,6 +131,7 @@ The fallback language also differs: `hu` in some places, `en` in others. The fix
 | BUG-27 | Deleting an image before the primary one keeps the old index, so the hero silently moves to the next image (found in the T21 review) | `useSpotStore.ts` `deleteSpotImage` | T21 |
 | BUG-28 | Highlighting shows the server's raw English reason (e.g. "No highlight bonus available" for level 1-2 users, "Spot must be approved to highlight"); four of five reasons share `permission-denied`, so the client cannot map them (found in the T22 review) | `SpotDetailsPanel.tsx` `handleHighlightSpot`, `functions/src/lib/highlights.ts` | follow-up: server sends `details: { reason }`, client maps each reason to a key |
 | BUG-22 | SettingsPanel renders at z-40/50 inside ProfilePanel's z-60 stacking context | `SettingsPanel.tsx` | T25 (z-index scale in `lib/`) |
+| BUG-29 | The review form is shown on non-approved spots, but the final rules accept reviews on approved spots only (admins excepted): an owner who opens their own pending spot (e.g. from Favourites) can submit and gets the review error (found in the rollout review) | `spot-details/ReviewsSection.tsx` (`<ReviewForm>`) | follow-up: hide ReviewForm for non-approved spots (non-admins) |
 
 ---
 

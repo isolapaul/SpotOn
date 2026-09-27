@@ -108,17 +108,19 @@ Additional review gates:
 0. **Emergency rules patch** (`docs/audit/current-rules.md` → "Emergency patch"): lock `admins` and `categories` writes to Paul's verified email, and restrict Storage `spot-images` to image creates under 5 MB. It is compatible with the current client. **Must be live before step 1:** while `admins/*` is writable by any signed-in user, the T08 functions would trust a self-written `role: 'super'` (LR-01).
 1. Deploy the Cloud Functions (T07–T10), with `APP_URL=https://spoton.isolapaul.hu`.
 2. Run `scripts/bootstrap-super-admin.ts` (T08). Paul becomes `admins/{uid}` with `role: 'super'`.
-3. Run `scripts/backfill-profiles.ts`: dry run first, then apply, then resolve any duplicate usernames it reports (T09). If it reports `admins invalid` greater than 0, stop and ask.
+3. Run `scripts/backfill-profiles.ts`: dry run first, then apply, then resolve any duplicate usernames it reports (T09). `admins invalid` may list only the legacy auto-id admin docs from the step 0 inventory; any other entry means stop and ask (`docs/security-rollout.md` §4).
    - **Step 3.5**, only if T12 produced `docs/audit/transitional-firestore.rules`: deploy those transitional Firestore rules (the live rules plus the reads the new client needs), before step 4.
-4. Deploy the client container (T16–T18) to `spoton.isolapaul.hu`, and keep Vercel serving the same build.
-5. Save the current production rules to a file, then run `firebase deploy --only firestore:rules,storage` (T12). Watch for denied requests.
+   - **Step 3.6**: deploy the Firestore indexes (`firebase deploy --only firestore:indexes`) and wait until they are Enabled. The step 4 client already contains the T30 own-spots query.
+4. Deploy the client container (T16–T18, including the T30 client) to `spoton.isolapaul.hu`, and keep Vercel serving the same build.
+5. About 1 h after step 4 is live everywhere (open old windows then need a reload: the old client's unfiltered spots query is denied by T30): save the current production rules to a file, then run `firebase deploy --only firestore:rules,storage` (T12 + T30 + approved-only review appends). Watch for denied requests.
 6. Run `scripts/strip-review-pii.ts`: dry run, then apply (T13).
 7. Vercel Stage A: set `NEXT_PUBLIC_MOVED_TO` on Vercel and redeploy (T19). About 30 days later, Stage B: 308 redirect. About 90 days later, delete the Vercel project.
-8. Later: the T30 client deploy, followed by the T30 rules deploy.
+
+Functions, indexes, rules and both client builds come from **one commit** (the merged tip of `main`). Every commit from `7609c90` on contains T30, so it ships with steps 3.6–5; there is no separate T30 deploy.
 
 **Rollback:**
 - Rules: redeploy the saved rules file.
-- Container: point back at the previous digest in `docker-compose.yml`.
+- Client (only while the transitional rules are live; roll back the rules first): the container's first release has no previous digest, so stop it (`docker compose down` in `/srv/docker/spoton`); later releases roll back with `docs/deploy.md` §11. Vercel: Instant Rollback to the last production deployment before the deploy commit (`docs/security-rollout.md` §9).
 - Functions: redeploy the previous git tag.
 
 ---

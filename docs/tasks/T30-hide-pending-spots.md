@@ -97,7 +97,7 @@ The client change ships and deploys **first**, because rules do not filter queri
    - the admin's `get` of a pending spot succeeds.
 9. `docs/security-rollout.md`, T30 section:
    1. Deploy client commit A (container) and `firebase deploy --only firestore:indexes`. **Wait until the new index is built** (Firebase console shows "Enabled").
-   2. Wait ≥ 24 h, so open tabs of the old client reload. Old clients use the unfiltered query and would see **no spots at all** once the rules land.
+   2. Wait about 1 h after the client is live everywhere (ROADMAP §4 step 5). Old windows still open then use the unfiltered query: once the rules land it is denied, so they keep stale spots until reloaded.
    3. Save the current rules, then `firebase deploy --only firestore:rules`.
    4. Watch the Firestore "denied" metrics.
    5. Rollback: redeploy the saved rules.

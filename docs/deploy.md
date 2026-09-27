@@ -24,7 +24,7 @@ Browser
 - It runs as uid/gid 1000, with a read-only root filesystem, all capabilities dropped and `no-new-privileges`. Writes go only to two tmpfs mounts (`/tmp`, `/app/.next/cache`).
 - It is pinned by tag **and** digest and labelled `com.centurylinklabs.watchtower.enable=false`, so Watchtower never touches it. Updates happen only through `./update.sh` (§7), which verifies the cosign signature first.
 
-**Where this fits:** ROADMAP §4 step 4 (after the Cloud Functions deploy and the backfill, before the rules deploy).
+**Where this fits:** ROADMAP §4 step 4 (after the Cloud Functions deploy, the backfill, the transitional rules and the index deploy; about 1 h before the final rules deploy, in the same session). Release from the same commit as the rules and indexes (`docs/security-rollout.md` §0).
 
 ## 2. Prerequisites
 
@@ -158,6 +158,8 @@ cd /srv/docker/spoton
 ./update.sh v2.1.0                           # tag from the release / Dependabot PR
 ```
 
+A release starts when a `vX.Y.Z` tag is pushed on the commit to release; the release workflow then builds, scans, signs and publishes the image. For the first release (the security rollout) the tag is created on the deploy commit in `docs/security-rollout.md` §0.
+
 What the script (`deploy/update.sh`) does, in order:
 
 1. Accepts final release tags only (`vX.Y.Z`); `-rc` images are for testing and are refused.
@@ -219,6 +221,7 @@ cp docker-compose.yml.<timestamp>.bak docker-compose.yml && docker compose up -d
 
 The newest `.bak` (written by the failed/bad update) holds the previous `tag@digest`; check with `grep -H image: docker-compose.yml.*.bak`.
 The previous digest is still in GHCR, because releases never overwrite tags, and it was already verified when it was first deployed.
+First release: there is no previous digest (the only `.bak` holds the `v0.0.0` placeholder); stop the container with `docker compose down` instead (`docs/security-rollout.md` §9).
 
 ## 12. Backups
 

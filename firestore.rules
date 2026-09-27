@@ -53,10 +53,12 @@ service cloud.firestore {
         && r.createdAt is timestamp && r.createdAt <= request.time + duration.value(5, 'm');
     }
     // Exactly one review appended; existing (incl. legacy) entries untouched and in order.
+    // Approved spots only: a pending spot is not reviewable (and a write must not reveal that a pending id exists).
     function isReviewAppend() {
       let oldR = resource.data.get('reviews', []);
       let newR = request.resource.data.get('reviews', []);
       return signedIn()
+        && resource.data.status == 'approved'
         && changed().hasOnly(['reviews'])
         && newR is list
         && newR.size() == oldR.size() + 1

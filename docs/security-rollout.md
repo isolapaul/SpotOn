@@ -1,8 +1,10 @@
-# SpotOn — security rollout runbook (T08–T12 to production)
+# SpotOn — security rollout runbook (T08–T12 and T30 to production)
 
-The exact, ordered steps Paul follows to ship the server-side security work (Cloud Functions T07–T10, client T11a/T11b, rules T12) to production, with backups, verification and rollback.
+The exact, ordered steps Paul follows to ship the server-side security work (Cloud Functions T07–T10, client T11a/T11b and T30, rules T12 + T30) to production, with backups, verification and rollback.
 The order is ROADMAP §4 and it is **one-way** (ROADMAP trap 2): do not skip or reorder steps. Every step is a manual action by Paul; nothing here runs automatically.
 The container deploy itself (step 4) is in `docs/deploy.md`. The rules baseline and audit are in `docs/audit/current-rules.md`.
+
+**One commit.** Functions, indexes, rules, the container and the Vercel build all come from the **same commit**: the tip of `main` after this branch is merged (recorded in §0). It contains the T12 rules, the T30 client and T30 spot-read rule (every commit from `7609c90` on) and the approved-only review rule. So the new client goes live in §5 and the final rules (T12 + T30) follow about 1 hour later, in the same session, in §6; there is no separate T30 deploy.
 
 **Placeholders** you replace yourself before running a command:
 
@@ -12,9 +14,10 @@ The container deploy itself (step 4) is in `docs/deploy.md`. The rules baseline 
 | `<BUCKET>` | the default Storage bucket, e.g. `<PROJECT_ID>.appspot.com` or `<PROJECT_ID>.firebasestorage.app` (Console → Storage, shown above the file list) |
 | `<PAUL_EMAIL>` | your own sign-in email, exactly as it appears in the deployed emergency patch |
 | `<SA_KEY_PATH>` | path of the service-account key file, **outside** the repository |
+| `<RELEASE_TAG>` | the container release tag (`vX.Y.Z`, `docs/deploy.md` §7) you push on the deploy commit in §0 |
 
 **Conventions**
-- Run every command in **bash**, from the **repository root**, on an up-to-date `main` checkout (`git switch main && git pull`).
+- Run every command in **bash**, from the **repository root**, on the `main` checkout at the deploy commit recorded in §0. Do not `git pull` or switch branches again until §7 is done (except inside the §9 functions rollback).
 - `npx firebase …` runs the repository's pinned firebase-tools (15.31.0). Do not use a globally installed `firebase` of another version.
 - The scripts (`scripts/*.ts`) are **dry-run by default**, need `--project`, and print a banner `TARGET=<id> MODE=dry-run|APPLY EMULATOR=no`. Check the banner before reading the rest of the output.
 - Rollback files go to `~/spoton-rollback/` (outside the repo). Never commit them.
@@ -47,9 +50,22 @@ If either is missing, re-apply the patch from `docs/audit/current-rules.md` firs
 ## §0 Preconditions (checklist)
 
 - [ ] Step 0 is verified live (above).
-- [ ] **Pause Vercel production deploys before merging** if Vercel builds from the branch you merge into (Vercel → Project → Settings → Git shows the Production Branch). Use Settings → Git → Ignored Build Step → "Don't build anything" (or disconnect the Git repository). Otherwise the merge ships the new client to the Vercel domain before steps 1–3.5 and it breaks there (trap 2). The container is safe: it is built only from `v*` tags.
-- [ ] T08–T12 are merged on `main`; CI is green (`verify`, `verify:fn`, `test:rules`, `test:e2e`).
-- [ ] A release tag exists for the functions deploy, for example:
+- [ ] **Pause Vercel production deploys before merging** if Vercel builds from the branch you merge into (Vercel → Project → Settings → Git shows the Production Branch). Use Settings → Git → Ignored Build Step → "Don't build anything" (or disconnect the Git repository). Otherwise the merge ships the new client to the Vercel domain before steps 1–3.6 and it breaks there (trap 2). The container is safe: it is built only from `v*` tags.
+- [ ] This branch (T08–T32 and the hardening commits) is merged on `main`; CI is green (`verify`, `verify:fn`, `test:rules`, `test:e2e`).
+- [ ] **Record the deploy commit** (every later step deploys from it):
+  ```bash
+  git switch main && git pull
+  mkdir -p ~/spoton-rollback && chmod 700 ~/spoton-rollback && git rev-parse HEAD | tee ~/spoton-rollback/deploy-commit.txt
+  grep -qF "allow read: if resource.data.status == 'approved'" firestore.rules && grep -A6 'function isReviewAppend' firestore.rules | grep -qF "resource.data.status == 'approved'" && echo "OK: T30 + approved-only reviews"
+  ```
+  The last line must print `OK: T30 + approved-only reviews` (the T30 spot read rule and the approved-only review append are in the rules). Otherwise stop and ask: this runbook assumes the rules of that commit.
+- [ ] **Create the container release tag** on the deploy commit (`<RELEASE_TAG>` is a final `vX.Y.Z` tag, the only form `update.sh` accepts, `docs/deploy.md` §7):
+  ```bash
+  git tag <RELEASE_TAG> "$(cat ~/spoton-rollback/deploy-commit.txt)" && git push origin <RELEASE_TAG>
+  [ "$(git rev-parse '<RELEASE_TAG>^{commit}')" = "$(cat ~/spoton-rollback/deploy-commit.txt)" ] && echo "OK: release tag"
+  ```
+  It must print `OK: release tag`. Pushing the tag starts the release pipeline (`.github/workflows/release.yml`: build, Trivy, SBOM, cosign, GHCR), so the image is ready by §5. It deploys nothing by itself: the server only changes when you run `update.sh` in §5.
+- [ ] A release tag exists for the functions deploy (on the deploy commit), for example:
   ```bash
   git tag security-v1 && git push origin security-v1
   ```
@@ -83,7 +99,7 @@ If either is missing, re-apply the patch from `docs/audit/current-rules.md` firs
   export ADMIN_EMAIL='<PAUL_EMAIL>'
   ```
 - [ ] The Blaze plan is active (required for v2 functions).
-- [ ] Put the client in a maintenance window, or at least tell users that old PWA windows may show errors during the switch (trap 2).
+- [ ] Put the client in a maintenance window, or at least tell users that old PWA windows may show errors during the switch and must be reloaded (trap 2).
 
 ---
 
@@ -127,12 +143,17 @@ Differences only in comments or whitespace are fine, including a `<`/`>` pair th
 
 ## §2 Step 1: deploy the Cloud Functions
 
+Check that the checkout is still the deploy commit, with the functions sources unmodified; it must print `OK: deploy commit`, otherwise stop:
+```bash
+[ "$(git rev-parse HEAD)" = "$(cat ~/spoton-rollback/deploy-commit.txt)" ] && [ -z "$(git status --porcelain -- functions firebase.json)" ] && echo "OK: deploy commit"
+```
+Then:
 ```bash
 npm --prefix functions ci && npm --prefix functions run build
 npx firebase deploy --only functions --project <PROJECT_ID>
 ```
 - When prompted for `APP_URL`, enter `https://spoton.isolapaul.hu`. It is saved to `functions/.env.<PROJECT_ID>` (git-ignored; never commit it). A `--non-interactive` deploy without that file fails.
-- **If the CLI offers to delete any function, answer No and abort** (trap 6: a deleted function is gone).
+- **If the CLI offers to delete any function, answer No** (the default; it keeps them and the deploy continues; trap 6: a deleted function is gone). To stop instead, press Ctrl-C at the prompt; nothing has been deployed yet.
 - A first deploy of new Firestore triggers can fail while Eventarc permissions propagate. Wait a few minutes and re-run the same command.
 
 Verify in Console → Functions that all of these exist, in `europe-west3`, on Node.js 22:
@@ -174,7 +195,7 @@ Apply, then verify:
 npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID> --apply
 npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID>
 ```
-The last run must print `planned writes: 0`.
+The last run must print `planned writes: 0`. If it is non-zero only because of new activity (sign-ups, renames by the old client), run `--apply` again.
 Spot-check a few `publicProfiles/<uid>` documents: `spotsCount` includes pending spots (trap 7).
 
 ---
@@ -218,18 +239,52 @@ Rollback: `npx firebase deploy --only firestore:rules --project <PROJECT_ID> --c
 
 ---
 
+## §4.6 Step 3.6: deploy the Firestore indexes
+
+The §5 client already contains the T30 own-spots query, which needs a new index. Deploy it before the client (the old client does not use it, so this is harmless).
+
+Check that the checkout is still the deploy commit, with the index files unmodified; it must print `OK: deploy commit`, otherwise stop:
+```bash
+[ "$(git rev-parse HEAD)" = "$(cat ~/spoton-rollback/deploy-commit.txt)" ] && [ -z "$(git status --porcelain -- firebase.json firestore.indexes.json)" ] && echo "OK: deploy commit"
+```
+Then:
+```bash
+npx firebase deploy --only firestore:indexes --project <PROJECT_ID>
+```
+If the CLI lists indexes or field overrides that exist in production but not in `firestore.indexes.json` and asks to delete them, answer **No** (the default): the CLI keeps them and continues creating the missing ones. Copy the listed items into a file in `~/spoton-rollback/` and ask afterwards. Never pass `--force`.
+
+Console → Firestore → Indexes must then show all three `spots` indexes from `firestore.indexes.json` as **Enabled** before you start §5 (building takes minutes to hours):
+- `createdBy ↑ createdAt ↓` (T30: the own-spots query);
+- `status ↑ createdAt ↓` (the approved-spots query);
+- `createdBy ↑ status ↑ createdAt ↑` (legacy).
+
+Without the enabled index, signed-in users' own-spots listener fails with `The query requires an index` in the DevTools console (the map is unaffected).
+Rollback: none needed; the new index is harmless and can stay.
+
+---
+
 ## §5 Step 4: deploy the client
 
-Follow `docs/deploy.md` (T16–T18; including its §10 one-time console settings for the new domain) to `https://spoton.isolapaul.hu`, and redeploy Vercel from the **same commit** (do not set `NEXT_PUBLIC_MOVED_TO` yet; that is step 7). If you paused Vercel in §0, re-enable the build step (or reconnect Git) now, deploy, check that the Vercel deployment's commit SHA matches the container's release commit, and run the sign-in / add-review smoke test on the Vercel URL too.
+**Container.** `<RELEASE_TAG>` was pushed on the deploy commit in §0; its release workflow run (GitHub → Actions) must be green. Follow `docs/deploy.md` (T16–T18; including its §10 one-time console settings for the new domain) with that tag to `https://spoton.isolapaul.hu`.
+
+**Vercel**, from the **same commit** (do not set `NEXT_PUBLIC_MOVED_TO` yet; that is step 7). Check these dashboard labels; Vercel renames them occasionally.
+1. Before redeploying, note how long browsers may cache the old HTML: `curl -sI https://spot-on-rho.vercel.app/ | grep -i cache-control`. If it shows a long `max-age` (more than 1 hour), §6 waits at least that long instead of about 1 hour.
+2. If you paused Vercel in §0: Settings → Git → Ignored Build Step → back to "Automatic" (or reconnect Git).
+3. Deployments → the (canceled/ignored) deployment whose commit is the deploy commit → ⋯ → Redeploy (or "Create Deployment" with the deploy commit SHA). Do **not** redeploy the current production deployment (old commit).
+4. Check that the new deployment's commit SHA equals `~/spoton-rollback/deploy-commit.txt`, then run the sign-in / add-review smoke test on the Vercel URL.
+
+This client already contains the T30 client: it reads approved spots, the user's own spots and (admins) all spots with separate queries. They all work under the transitional rules, which keep spots publicly readable. Intended change from now on (ROADMAP Q7): a pending spot of **another** user that someone favourited no longer appears in their Favourites. Owners still see their own pending spots in My Spots; admins still see everything.
 
 **Smoke test on the new domain:**
 - [ ] sign in; change the username;
 - [ ] Paul sees the admin tab; a normal account does not;
-- [ ] add a spot with a photo (it becomes pending);
-- [ ] approve it as Paul;
-- [ ] add a review; add a photo to an existing spot;
+- [ ] add a spot with a photo (it becomes pending); Profile → My Spots shows it as pending; the map does not show it;
+- [ ] signed out: the map shows the approved spots, no pending (yellow) markers;
+- [ ] as Paul: pending markers on the map and the Pending Approval tab with its count; approve the spot;
+- [ ] add a review to an approved spot; add a photo to an existing spot;
 - [ ] highlight (with a level ≥ 3 account);
-- [ ] enable notifications, then sign out.
+- [ ] enable notifications, then sign out;
+- [ ] no `permission` or `index` errors in the DevTools console.
 
 **Do not expect in this window** (until §6): an admin deleting **another user's** spot. The live delete rule checks `admins/{token.email}` (LR-09), which no admin doc matches; this is already the case in production today. It works after the final rules (§6).
 
@@ -239,28 +294,46 @@ Follow `docs/deploy.md` (T16–T18; including its §10 one-time console settings
 
 ## §6 Step 5: deploy the final rules
 
-Only after step 4 is live everywhere (trap 1): the container on the new domain **and** Vercel serving the new build.
+Only after step 4 is live everywhere (trap 2): the container on the new domain **and** Vercel serving the new build (SHA checked), and both smoke tests passed. Then **wait about 1 hour** while watching DevTools, Functions logs and rules denials; do §5 and §6 in the same session, at a low-traffic time. If §5 noted a long `max-age` on the Vercel HTML, wait at least that long instead.
+
+Why not longer: after §5 every page load runs the new client (no caching service worker, no version pinning), so only windows opened before the Vercel redeploy still run the old client. Under these rules (the T30 spot read rule: pending spots only for their creator and admins) their unfiltered spots query is denied: they keep the spots they had, get no updates, and their writes fail until reloaded (trap 2, accepted). Every extra hour keeps LR-02–LR-05 (`docs/audit/current-rules.md`) open.
+Spots stored without a `status` field (only possible from old data; the create rule requires it) are treated like pending spots: visible to their creator and admins only.
 
 Re-run the §1 **rules** backup commands (the `mkdir` … `OK: rules saved` block, then the `firebase.json` line); the live rules could have changed. Because §4.5 was applied, the saved Firestore rules now equal `~/spoton-transitional/firestore.rules` rather than the §1 baseline (check with `diff -wB ~/spoton-transitional/firestore.rules ~/spoton-rollback/firestore.rules`, no output expected). That is expected: they are the rollback target from now on, because the new client needs their read grants.
 
+Check that the checkout is still the deploy commit, with the rules files unmodified; it must print `OK: deploy commit`, otherwise stop:
+```bash
+[ "$(git rev-parse HEAD)" = "$(cat ~/spoton-rollback/deploy-commit.txt)" ] && [ -z "$(git status --porcelain -- firebase.json firestore.rules storage.rules)" ] && echo "OK: deploy commit"
+```
+Then:
 ```bash
 npx firebase deploy --only firestore:rules,storage --project <PROJECT_ID> --dry-run
 npx firebase deploy --only firestore:rules,storage --project <PROJECT_ID>
 ```
-This uses the repo's `firebase.json`, so it deploys the repo's `firestore.rules` and `storage.rules` (T12).
+This uses the repo's `firebase.json`, so it deploys the repo's `firestore.rules` (T12 + T30 spot reads + approved-only review appends) and `storage.rules` (T12).
+From now on reviews can be added to **approved** spots only (admins can still review pending ones). Normal accounts reach a pending spot only if it is their own and in their Favourites; submitting a review there shows the review error. Accepted.
 
 Immediately repeat the §5 smoke test, plus:
 - [ ] as an admin, delete a test spot created by another account (works now);
-- [ ] a re-added admin still sees the pending tab and can approve.
+- [ ] a re-added admin still sees the pending tab and can approve;
+- [ ] a normal account's Favourites still show its approved favourites.
 
 Monitor for 24 to 48 hours:
 - Console → Firestore → Usage (security rules evaluations: allowed / denied / errors);
 - Cloud Monitoring metric `firestore.googleapis.com/rules/evaluation_count` filtered by `result=DENY`;
 - client reports.
 
-Expected: a small, steady trickle of denies from old PWA windows (trap 2). A spike correlated with a user flow means **roll back the rules** (§9) and report.
+Expected: a small, steady trickle of denies from old windows that did not reload (trap 2): they show stale spots and their writes fail until reloaded. A spike correlated with a user flow means **roll back the rules** (§9) and report.
 
-**Clean up the legacy admin docs** once the final rules are live, the smoke test passes and the admins you want are re-added: Console → Firestore → `admins` → delete each legacy auto-id doc from the step 0 inventory. Under the new rules they grant nothing. Do **not** delete any doc whose id is an Auth uid and that has a `role` field (those are the current admins).
+**Clean up the legacy admin docs** only after the monitoring window above ended without a rollback (a client rollback, §9, brings back the old client, which reads these docs for its admin UI), the smoke test passed and the admins you want are re-added: Console → Firestore → `admins` → delete each legacy auto-id doc from the step 0 inventory. Under the new rules they grant nothing. Do **not** delete any doc whose id is an Auth uid and that has a `role` field (those are the current admins).
+
+**Re-run the backfill.** Until the final rules went live, users could still write their own `spotsCount` and `username` (LR-05); this closes that window:
+```bash
+npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID> | tee ~/spoton-rollback/backfill-post-rules.txt
+npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID> --apply
+npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID>
+```
+The last run must print `planned writes: 0`; `admins invalid` may list only the legacy docs from the step 0 inventory (0 once they are cleaned up). Resolve new `duplicates` as in §4.
 
 ---
 
@@ -270,6 +343,9 @@ Only after §6. Until the T12 rules are live, old clients can still write `userE
 
 ```bash
 npx tsx scripts/strip-review-pii.ts --project <PROJECT_ID>
+```
+Every admin reloads or closes all open SpotOn tabs and PWA windows first (an old admin tab could still write reviews with `userEmail`, because admins may update any spot). Then:
+```bash
 npx tsx scripts/strip-review-pii.ts --project <PROJECT_ID> --apply
 npx tsx scripts/strip-review-pii.ts --project <PROJECT_ID> --check; echo "exit=$?"
 ```
@@ -282,46 +358,13 @@ This step is irreversible except by restoring the §1 export, so do not restore 
 
 ---
 
-## §8 Step 7 and later
+## §8 Step 7: leave Vercel
 
-Vercel Stage A / Stage B and deleting the Vercel project (T19; `docs/deploy.md` §15), then the T30 client followed by the T30 rules. See `docs/ROADMAP.md` §4 steps 7–8.
+Vercel Stage A / Stage B and deleting the Vercel project (T19; `docs/deploy.md` §15). See `docs/ROADMAP.md` §4 step 7.
 
-### §8.1 Step 8: hide pending spots (T30), client first, then rules
+### §8.1 Hiding pending spots (T30): already done
 
-Two deploys at least 24 h apart, in this order (trap 1: rules do not filter queries). The old client reads **all** spots with one unfiltered query, which the T30 rules deny: a freshly loaded old client stays on the **loading screen** (its loading gate waits for that query), and an already-open old window keeps the spots it had but gets no updates. Spots stored without a `status` field (only possible from old data; the create rule requires it) are treated like pending spots: visible to their creator and admins only.
-
-Intended change from the client deploy on (ROADMAP Q7): a pending spot of **another** user that someone favourited no longer appears in their Favourites. Owners still see their own pending spots; admins still see everything.
-
-1. **Index, then client.** Deploy the new index first (the old client does not use it, so this is harmless):
-   ```bash
-   npx firebase deploy --only firestore:indexes --project <PROJECT_ID>
-   ```
-   If the CLI offers to **delete** indexes (ones that exist in production but not in `firestore.indexes.json`), answer **No**, abort and ask. Console → Firestore → Indexes must then show both `spots` indexes as **Enabled** (building takes minutes to hours):
-   - `createdBy ↑ createdAt ↓` (new, T30: the own-spots query);
-   - `status ↑ createdAt ↓` (existing: the approved-spots query). If it is missing in production, stop and ask.
-
-   Then deploy the container from a commit that contains the T30 client (`docs/deploy.md`). If Vercel still serves the app (Stage A), redeploy Vercel from the same commit too, keeping `NEXT_PUBLIC_MOVED_TO`; after Stage B (308 redirect) or Stage C, Vercel needs nothing. (Without the enabled index, signed-in users' own-spots listener fails with `The query requires an index` in the DevTools console; the map is unaffected.) Smoke test:
-   - [ ] signed out: the map shows the approved spots, no pending (yellow) markers;
-   - [ ] a normal account: Profile → My Spots shows its own pending spot; the map still hides it;
-   - [ ] an admin: pending markers on the map and the Pending Approval tab with its count;
-   - [ ] no `permission` or `index` errors in the DevTools console.
-2. **Wait at least 24 h**, so open tabs and PWA windows of the old client reload.
-3. **Rules.** Save the live rules into a separate folder: run the §1 **rules** backup block (`mkdir` … `OK: rules saved`) with every `~/spoton-rollback` replaced by `~/spoton-rollback/pre-t30`, then
-   ```bash
-   echo '{"firestore":{"rules":"firestore.rules"}}' > ~/spoton-rollback/pre-t30/firebase.json
-   diff -wB ~/spoton-rollback/pre-t30/firestore.rules firestore.rules
-   ```
-   The `diff` must show only the T30 changes: the `spots` `allow read` rule and its comment, and the header comment line. Any other difference: stop and ask. Then:
-   ```bash
-   npx firebase deploy --only firestore:rules --project <PROJECT_ID> --dry-run
-   npx firebase deploy --only firestore:rules --project <PROJECT_ID>
-   ```
-   Repeat the step 1 smoke test, plus: a normal account's Favourites still show its approved favourites.
-4. **Monitor** the Firestore denies for 24 to 48 hours (as in §6: Console → Firestore → Usage, and `firestore.googleapis.com/rules/evaluation_count` with `result=DENY`). Expected: a small trickle from old windows that did not reload (stuck loading screen or stale spots until reloaded). A spike correlated with a user flow means roll back.
-5. **Rollback:**
-   - Rules: `npx firebase deploy --only firestore:rules --project <PROJECT_ID> --config ~/spoton-rollback/pre-t30/firebase.json` (instant).
-   - Client: only **after** the rules rollback (the pre-T30 client does not work under the T30 rules); then point `docker-compose.yml` back to the previous digest.
-   - The new index is harmless and can stay.
+Every commit from `7609c90` on contains the T30 client, its index and its spot read rule, so this rollout already shipped T30: the index in §4.6, the client in §5, the rules in §6. There is nothing separate to deploy.
 
 ---
 
@@ -329,18 +372,23 @@ Intended change from the client deploy on (ROADMAP Q7): a pending spot of **anot
 
 Never roll back past step 0: every rollback target below already contains the emergency patch.
 
-- **T30 rules and client (§8.1):** see §8.1 step 5 (rules first, then the client).
+- **PII strip (§7):** not reversible by design.
 - **Rules (§6):**
   ```bash
   npx firebase deploy --only firestore:rules,storage --project <PROJECT_ID> --config ~/spoton-rollback/firebase.json
   ```
-  This restores the rules saved in §6 (the transitional Firestore rules and the patched Storage rules) instantly. The data written since then is compatible.
-- **Client (§5):** point `docker-compose.yml` back to the previous image digest (`docs/deploy.md` §11); redeploy Vercel's previous deployment. **Only while the old rules are live**, because old clients break under the T12 rules.
+  This restores the rules saved in §6 (the transitional Firestore rules and the patched Storage rules) instantly. The data written since then is compatible. The transitional rules allow every spot query (including the old unfiltered one), and the new client works under them, so a rules problem needs **no** client rollback.
+- **Client (§5):** **only while the transitional rules are live** (roll back §6 first), because old clients break under the §6 rules (their unfiltered spots query is denied).
+  - Container: this first release has no previous digest; stop it with `cd /srv/docker/spoton && docker compose down` (for later releases use `docs/deploy.md` §11).
+  - Vercel: Deployments → the last production deployment before the deploy commit → ⋯ → Instant Rollback (or "Promote to Production"). After an instant rollback Vercel stops auto-promoting new deployments until one is promoted by hand: remember this at step 7 (§8).
+- **Indexes (§4.6):** no rollback needed; the new index is harmless and can stay.
 - **Transitional rules (§4.5):**
   ```bash
   npx firebase deploy --only firestore:rules --project <PROJECT_ID> --config ~/spoton-rollback/pre-transitional/firebase.json
   ```
   Restores the §1 baseline. Only while the old client is live, or after the client rollback (the new client needs the transitional read grants).
+- **Backfill (§4, and its §6 re-run):** no rollback needed (additive fields and collections).
+- **Bootstrap (§3):** delete `admins/<uid>` in the console, but only after the client rollback (the old client uses `NEXT_PUBLIC_ADMIN_EMAIL`). Keep the legacy admin docs until then; the old client reads them.
 - **Functions (§2):**
   ```bash
   git checkout pre-security
@@ -348,9 +396,6 @@ Never roll back past step 0: every rollback target below already contains the em
   git checkout main && npm ci
   ```
   Accept deleting only the new functions, and **only after** the client has been rolled back.
-- **Bootstrap (§3):** delete `admins/<uid>` in the console, but only after the client rollback (the old client uses `NEXT_PUBLIC_ADMIN_EMAIL`). Keep the legacy admin docs until then; the old client reads them.
-- **Backfill (§4):** no rollback needed (additive fields and collections).
-- **PII strip (§7):** not reversible by design.
 
 ---
 
@@ -359,16 +404,17 @@ Never roll back past step 0: every rollback target below already contains the em
 | Step | Done (date, initials) |
 |---|---|
 | Step 0 emergency patch verified live; admin inventory taken; unknown admin docs deleted | |
-| §0 preconditions; `pre-security` tag pushed | |
+| §0 preconditions; deploy commit recorded (SHA: …); `<RELEASE_TAG>` pushed on it (`OK: release tag`); `pre-security` tag pushed | |
 | §1 Firestore export; rules saved (method: REST API / console copy); baseline compared | |
 | §2 functions deployed; all 16 functions on Node 22 in `europe-west3` | |
 | §3 super admin bootstrapped | |
 | §4 backfill applied; `planned writes: 0`; `admins invalid` = legacy docs only | |
 | §4.5 transitional rules deployed | |
-| §5 client live on the new domain and Vercel; smoke test; admins re-added | |
-| §6 final rules deployed; smoke test; 24–48 h monitoring clean; legacy admin docs deleted | |
+| §4.6 indexes deployed; all three `spots` indexes Enabled | |
+| §5 client (container `<RELEASE_TAG>` + Vercel, deploy commit) live; smoke test; admins re-added | |
+| §6 about 1 h after §5 is live everywhere (or the noted Vercel `max-age`), same session: final rules (T12 + T30 + approved-only reviews) deployed; smoke test; 24–48 h monitoring clean; legacy admin docs deleted | |
+| §6 backfill re-run applied; `planned writes: 0`; `admins invalid` = legacy docs only | |
 | §7 PII strip applied; `--check` exit 0 | |
-| §8.1 T30 index enabled, then T30 client; ≥ 24 h later T30 rules deployed; smoke test; monitoring clean | |
 
 Then:
 - [ ] Once the rollout is confirmed stable, let the backups expire after N days (you choose N, for example 30):
@@ -390,9 +436,9 @@ Then:
 |---|---|
 | The **currently deployed (old)** app sometimes does not load after signing in (reported after step 0) | Most likely **BUG-24**, not the patch: the loading screen can stay stuck when the map's ready timer is cancelled by a re-render (`docs/audit/code-review.md`). It is timing-dependent, a reload usually helps, and the fix (T04) ships with the step 4 client. The step 0 patch only restricts writes to `admins`, `categories` and Storage `spot-images` / `spots`, and the old client does none of these while loading. To confirm: open DevTools → Console on the stuck page. `FirebaseError: Missing or insufficient permissions` means a rules denial; no such error means BUG-24. Also check Console → Firestore → Usage (security rules evaluations: denied) and the Storage rules monitoring for denies at that time. |
 | A denial **is** proven to come from a rules change | Roll back that change: after §4.5 or §6 use §9. For the step 0 patch there is no local file: Console → Firestore (or Storage) → Rules keeps the published versions in its history panel; open the version before 2026-09-26, compare, and publish only the part that must go back. **Never** re-open `admins` writes to every signed-in user (LR-01), and never while the T08 functions are deployed. Report the denial. |
-| Old PWA windows show permission errors after §6 | Expected (trap 2). The user reloads the page or reinstalls the PWA from the new domain. |
+| Old windows (opened before the §5 Vercel redeploy) show permission errors or stale spots after §6 | Expected (trap 2): the old client's unfiltered spots query is denied, so these windows keep stale spots and their writes fail; they do not get stuck on the loading screen. The user reloads the page or reinstalls the PWA from the new domain. |
 | A script prints `refusing: real project … must not be combined with emulator env` | Emulator variables are set in this shell. Run the `unset` line from §0, or open a new shell. |
 | A script fails with a permission or quota error | Use the SA key from §0 instead of `gcloud` user credentials. |
 | §1 REST calls return nothing or `null` | Use the console copy fallback and note it in §10. |
-| `npx firebase deploy` prompts to delete functions | Answer **No** and abort (trap 6), except in the §9 functions rollback. |
+| `npx firebase deploy` prompts to delete functions | Answer **No** (trap 6), except in the §9 functions rollback: it keeps them and the deploy continues. To stop instead, press Ctrl-C at the prompt; nothing has been deployed yet. |
 | `strip-review-pii.ts` reports `still failing its precondition after 3 retries` | Reviews are being added to those spots right now. Wait and re-run `--apply`; it is idempotent and only rewrites spots that still need it. |
