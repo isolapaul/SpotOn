@@ -286,12 +286,50 @@ This step is irreversible except by restoring the §1 export, so do not restore 
 
 Vercel Stage A / Stage B and deleting the Vercel project (T19; `docs/deploy.md` §15), then the T30 client followed by the T30 rules. See `docs/ROADMAP.md` §4 steps 7–8.
 
+### §8.1 Step 8: hide pending spots (T30), client first, then rules
+
+Two deploys at least 24 h apart, in this order (trap 1: rules do not filter queries). The old client reads **all** spots with one unfiltered query, which the T30 rules deny: a freshly loaded old client stays on the **loading screen** (its loading gate waits for that query), and an already-open old window keeps the spots it had but gets no updates. Spots stored without a `status` field (only possible from old data; the create rule requires it) are treated like pending spots: visible to their creator and admins only.
+
+Intended change from the client deploy on (ROADMAP Q7): a pending spot of **another** user that someone favourited no longer appears in their Favourites. Owners still see their own pending spots; admins still see everything.
+
+1. **Index, then client.** Deploy the new index first (the old client does not use it, so this is harmless):
+   ```bash
+   npx firebase deploy --only firestore:indexes --project <PROJECT_ID>
+   ```
+   If the CLI offers to **delete** indexes (ones that exist in production but not in `firestore.indexes.json`), answer **No**, abort and ask. Console → Firestore → Indexes must then show both `spots` indexes as **Enabled** (building takes minutes to hours):
+   - `createdBy ↑ createdAt ↓` (new, T30: the own-spots query);
+   - `status ↑ createdAt ↓` (existing: the approved-spots query). If it is missing in production, stop and ask.
+
+   Then deploy the container from a commit that contains the T30 client (`docs/deploy.md`). If Vercel still serves the app (Stage A), redeploy Vercel from the same commit too, keeping `NEXT_PUBLIC_MOVED_TO`; after Stage B (308 redirect) or Stage C, Vercel needs nothing. (Without the enabled index, signed-in users' own-spots listener fails with `The query requires an index` in the DevTools console; the map is unaffected.) Smoke test:
+   - [ ] signed out: the map shows the approved spots, no pending (yellow) markers;
+   - [ ] a normal account: Profile → My Spots shows its own pending spot; the map still hides it;
+   - [ ] an admin: pending markers on the map and the Pending Approval tab with its count;
+   - [ ] no `permission` or `index` errors in the DevTools console.
+2. **Wait at least 24 h**, so open tabs and PWA windows of the old client reload.
+3. **Rules.** Save the live rules into a separate folder: run the §1 **rules** backup block (`mkdir` … `OK: rules saved`) with every `~/spoton-rollback` replaced by `~/spoton-rollback/pre-t30`, then
+   ```bash
+   echo '{"firestore":{"rules":"firestore.rules"}}' > ~/spoton-rollback/pre-t30/firebase.json
+   diff -wB ~/spoton-rollback/pre-t30/firestore.rules firestore.rules
+   ```
+   The `diff` must show only the T30 changes: the `spots` `allow read` rule and its comment, and the header comment line. Any other difference: stop and ask. Then:
+   ```bash
+   npx firebase deploy --only firestore:rules --project <PROJECT_ID> --dry-run
+   npx firebase deploy --only firestore:rules --project <PROJECT_ID>
+   ```
+   Repeat the step 1 smoke test, plus: a normal account's Favourites still show its approved favourites.
+4. **Monitor** the Firestore denies for 24 to 48 hours (as in §6: Console → Firestore → Usage, and `firestore.googleapis.com/rules/evaluation_count` with `result=DENY`). Expected: a small trickle from old windows that did not reload (stuck loading screen or stale spots until reloaded). A spike correlated with a user flow means roll back.
+5. **Rollback:**
+   - Rules: `npx firebase deploy --only firestore:rules --project <PROJECT_ID> --config ~/spoton-rollback/pre-t30/firebase.json` (instant).
+   - Client: only **after** the rules rollback (the pre-T30 client does not work under the T30 rules); then point `docker-compose.yml` back to the previous digest.
+   - The new index is harmless and can stay.
+
 ---
 
 ## §9 Rollback (per component, newest first)
 
 Never roll back past step 0: every rollback target below already contains the emergency patch.
 
+- **T30 rules and client (§8.1):** see §8.1 step 5 (rules first, then the client).
 - **Rules (§6):**
   ```bash
   npx firebase deploy --only firestore:rules,storage --project <PROJECT_ID> --config ~/spoton-rollback/firebase.json
@@ -330,6 +368,7 @@ Never roll back past step 0: every rollback target below already contains the em
 | §5 client live on the new domain and Vercel; smoke test; admins re-added | |
 | §6 final rules deployed; smoke test; 24–48 h monitoring clean; legacy admin docs deleted | |
 | §7 PII strip applied; `--check` exit 0 | |
+| §8.1 T30 index enabled, then T30 client; ≥ 24 h later T30 rules deployed; smoke test; monitoring clean | |
 
 Then:
 - [ ] Once the rollout is confirmed stable, let the backups expire after N days (you choose N, for example 30):

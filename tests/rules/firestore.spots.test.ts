@@ -1,4 +1,5 @@
-// Firestore rules for spots (T12): client write paths from T11b + SEC-02/03/05/09/10 denials.
+// Firestore rules for spots (T12): client write paths from T11b + SEC-02/03/05/09/10 denials;
+// reads limited to the T30 client queries (SEC-13).
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
 import {
   addDoc, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp,
@@ -6,7 +7,7 @@ import {
 } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 import {
-  ADMIN, ALICE, BOB, IMAGES, PLACEHOLDER, SPOT_APPROVED, SPOT_LEGACY, SPOT_NO_REVIEWS, SPOT_PENDING,
+  ADMIN, ALICE, BOB, IMAGES, PLACEHOLDER, SPOT_APPROVED, SPOT_LEGACY, SPOT_NO_REVIEWS, SPOT_PENDING, SUPER,
   dbAs, review, seed, setupEnv, spotImage,
 } from './helpers';
 
@@ -39,14 +40,50 @@ function without(obj: Record<string, unknown>, key: string) {
   return copy;
 }
 
-describe('reads', () => {
-  it('anyone reads spots (list ordered by createdAt, and get), incl. pending', async () => {
-    const anon = dbAs(env, null);
-    await assertSucceeds(getDocs(query(collection(anon, 'spots'), orderBy('createdAt', 'desc'))));
-    await assertSucceeds(getDoc(doc(anon, 'spots', SPOT_PENDING)));
+describe('reads (T30: pending spots only for owner and admins)', () => {
+  const spots = (db: Firestore) => collection(db, 'spots');
+  const approvedQuery = (db: Firestore) =>
+    query(spots(db), where('status', '==', 'approved'), orderBy('createdAt', 'desc'));
+  const ownQuery = (db: Firestore, uid: string) =>
+    query(spots(db), where('createdBy', '==', uid), orderBy('createdAt', 'desc'));
+  const allQuery = (db: Firestore) => query(spots(db), orderBy('createdAt', 'desc'));
+
+  it('anyone lists approved spots (the client approved query), signed in or not', async () => {
+    await assertSucceeds(getDocs(approvedQuery(dbAs(env, null))));
+    await assertSucceeds(getDocs(approvedQuery(dbAs(env, BOB))));
   });
-  it('owner queries own spots (createdBy == me)', async () => {
-    await assertSucceeds(getDocs(query(collection(dbAs(env, ALICE), 'spots'), where('createdBy', '==', ALICE))));
+  it('denies unfiltered spot lists to anonymous users and non-admins', async () => {
+    await assertFails(getDocs(allQuery(dbAs(env, null))));
+    await assertFails(getDocs(allQuery(dbAs(env, BOB))));
+    await assertFails(getDocs(query(spots(dbAs(env, BOB)), where('status', '==', 'pending'))));
+  });
+  it('owner queries own spots (createdBy == me), with and without orderBy', async () => {
+    await assertSucceeds(getDocs(ownQuery(dbAs(env, ALICE), ALICE)));
+    await assertSucceeds(getDocs(query(spots(dbAs(env, ALICE)), where('createdBy', '==', ALICE))));
+  });
+  it("denies querying another user's spots and anonymous createdBy queries", async () => {
+    await assertFails(getDocs(ownQuery(dbAs(env, BOB), ALICE)));
+    await assertFails(getDocs(query(spots(dbAs(env, BOB)), where('createdBy', '==', ALICE))));
+    await assertFails(getDocs(ownQuery(dbAs(env, null), ALICE)));
+  });
+  it("get: another user's pending spot is denied, approved spots are allowed", async () => {
+    const bob = dbAs(env, BOB);
+    await assertFails(getDoc(doc(bob, 'spots', SPOT_PENDING)));
+    await assertSucceeds(getDoc(doc(bob, 'spots', SPOT_APPROVED)));
+    await assertSucceeds(getDoc(doc(bob, 'spots', SPOT_LEGACY)));
+    const anon = dbAs(env, null);
+    await assertFails(getDoc(doc(anon, 'spots', SPOT_PENDING)));
+    await assertSucceeds(getDoc(doc(anon, 'spots', SPOT_APPROVED)));
+  });
+  it('get: the owner reads their own pending spot', async () => {
+    await assertSucceeds(getDoc(doc(dbAs(env, ALICE), 'spots', SPOT_PENDING)));
+  });
+  it('admins list all spots and get pending ones', async () => {
+    for (const uid of [ADMIN, SUPER]) {
+      const db = dbAs(env, uid);
+      await assertSucceeds(getDocs(allQuery(db)));
+      await assertSucceeds(getDoc(doc(db, 'spots', SPOT_PENDING)));
+    }
   });
 });
 

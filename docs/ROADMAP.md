@@ -192,5 +192,6 @@ Additional review gates:
 | T26 Data hooks (usePublicProfile(s) cache, useIsAdmin, useUserSpots, useFavoriteToggle) | done, review PASS-WITH-NITS; publicProfiles reads 9 -> 6 for two opens | 384da69 |
 | T27 Split ProfilePanel into src/components/profile/** | done, review PASS-WITH-NITS; 15 panel states DOM-identical to HEAD | 2d7443f |
 | T28 Split SpotDetailsPanel into src/components/spot-details/** (+ BUG-09/17/26) | done, review PASS-WITH-NITS + fixes | 8ea2c57 |
-| T29 Panel state machine (activePanel in useUiStore; page.tsx 315 -> 156 lines) | done, review PASS-WITH-NITS + fixes (edit baseline, close-this-spot) | (this commit) |
+| T29 Panel state machine (activePanel in useUiStore; page.tsx 315 -> 156 lines) | done, review PASS-WITH-NITS + fixes (edit baseline, close-this-spot) | 0f7f528 |
+| T30 Hide pending spots (scoped listeners + index, then rules) | done, review PASS-WITH-NITS; rules attack tests clean | (this commit and the one before) |
 | T07 Functions toolchain | done, review PASS | d38d859 |
