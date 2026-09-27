@@ -21,13 +21,13 @@ Firebase stays the backend (decision: *app container only*).
 
 | Layer | Tech |
 |---|---|
-| Framework | Next.js 16 App Router (`src/app`), TypeScript strict |
-| UI | React 18, Tailwind CSS 3 (glassmorphism utilities in `src/app/globals.css`), lucide-react |
-| Map | Leaflet + react-leaflet 4 (OpenStreetMap / Carto / Esri tiles) |
-| State | Zustand 4 (`src/store/*`, several persisted to localStorage) |
+| Framework | Next.js 16 App Router (`src/app`, `src/proxy.ts`), TypeScript strict |
+| UI | React 19, Tailwind CSS 3 (glassmorphism utilities in `src/app/globals.css`), lucide-react |
+| Map | Leaflet + react-leaflet 5 (OpenStreetMap / Carto / Esri tiles) |
+| State | Zustand 5 (`src/store/*`, several persisted to localStorage) |
 | Backend (BaaS) | Firebase: Auth, Firestore, Storage, Cloud Messaging (web push) |
 | Server code | Cloud Functions v2 in `functions/` (region `europe-west3`) |
-| Next API routes | `/api/feedback` (nodemailer → SMTP), `/api/firebase-messaging-sw` (generated FCM service worker) |
+| Next API routes | `/api/feedback` (nodemailer → SMTP), `/api/firebase-messaging-sw` (generated FCM service worker), `/api/health` (container healthcheck) |
 
 ## 3. Repository map
 
@@ -36,22 +36,33 @@ src/app/page.tsx                 Orchestrator: wires useUiStore (activePanel, lo
 src/app/layout.tsx               Metadata, viewport, <InstallGate/> overlay
 src/app/api/feedback/route.ts    Feedback email endpoint (SMTP)
 src/app/api/firebase-messaging-sw/route.ts  FCM service worker (generated from NEXT_PUBLIC_* config)
-src/components/                  All UI (panels, modals, map). God components: ProfilePanel, SpotDetailsPanel
-src/store/useSpotStore.ts        Spots listener + all spot mutations; admin state lives in useUserStore (isAdmin / isSuperAdmin, from admins/{uid})
+src/app/api/health/route.ts      Liveness endpoint for the container healthcheck (docker/healthcheck.mjs)
+src/proxy.ts                     Per-request nonce CSP for pages (T32); policy built by src/lib/csp.mjs
+src/components/                  All UI (panels, modals, map)
+src/components/profile/**        ProfilePanel split into header, tabs, admin tools (T27); components/ProfilePanel.tsx re-exports it
+src/components/spot-details/**   SpotDetailsPanel split into hero, gallery, reviews, edit/admin parts (T28); components/SpotDetailsPanel.tsx re-exports it
+src/components/ui/               Shared primitives (T25): PanelShell, ModalShell, StarRating
+src/store/useSpotStore.ts        Spot scopes (startSpots / syncSpotScopes / stopSpots) + all spot mutations; admin state lives in useUserStore (isAdmin / isSuperAdmin, from admins/{uid})
+src/store/spotListeners.ts       The approved / own / admin spot listeners behind the scopes (T30), merged by lib/mergeSpots
 src/store/useUserStore.ts        Auth flows, user doc, admins, username, profile images, highlights
 src/store/useLocationStore.ts    Location status + sessionStorage cache; the only geolocation caller
-src/store/use*Store.ts           language (t()), map theme, notifications, toast (forwards to notifications), ui
+src/store/use*Store.ts           language (selected language only), map theme, notifications, toast (forwards to notifications), ui
 src/hooks/usePushNotifications.ts FCM permission/token handling
 src/hooks/useAppBootstrap.ts     Loading orchestration: auth + spots listeners, map ready, app-ready delays
 src/hooks/useUserLocation.ts     The user's location (one automatic request + manual request), from useLocationStore
 src/hooks/useVisibleSpots.ts     Map spots filtered by role (admins: all, others: approved)
+src/hooks/useT.ts                useT() translation hook (T24), over src/lib/i18n.ts
 src/lib/firebase.ts              Firebase client init (auth, db, storage, functions)
 src/lib/translations.ts          hu/en/de dictionaries (TranslationKey type)
+src/lib/i18n.ts                  Pure translate()/interpolate() and the Language type (T24)
+src/lib/csp.mjs                  CSP builder shared by src/proxy.ts (pages) and next.config.mjs (/api/*)
 src/lib/levelUtils.ts            Level thresholds 3/10/15/20 spots, perks
 src/lib/spotUtils.ts             Category emoji/i18n maps, navigation URLs
-functions/src/index.ts           Firestore triggers (notifications) + `highlightSpot` callable
+functions/src/index.ts           Exports only: triggers (functions/src/triggers: notifications, publicProfiles/spotsCount/admin-flag sync)
+                                 and callables (functions/src/callables: highlights, spot images/likes, admins, username/name style)
+firestore.rules, storage.rules   Security rules (T12, T30); tests in tests/rules/ (`npm run test:rules`)
 firestore.indexes.json           Composite indexes
-firebase.json                    Functions config (+ stale static-hosting block, see audit)
+firebase.json                    Firestore rules/indexes, Storage rules, Functions config, emulator ports
 docs/                            Audits, roadmap, task specs, deploy/rollout runbooks
 ```
 
@@ -61,13 +72,15 @@ docs/                            Audits, roadmap, task specs, deploy/rollout run
   primaryImageIndex, **reviews[] embedded array**, highlighted[], isHighlighted.
   Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
 - `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmTokens[], language,
-  notificationsEnabled, notificationSettings, questProgress/questRewards (legacy Valentine event).
-- `admins/{uid}`: email, username, photoURL, addedAt, addedBy.
+  notificationsEnabled, notificationSettings, spotsCount (server-maintained, all statuses),
+  questProgress/questRewards (legacy Valentine event).
+- `publicProfiles/{uid}`: server-maintained public mirror of a user (username, profilePictureURL,
+  customNameColor/Font, isAdmin, spotsCount); public `get`, no client writes.
+- `usernames/{name}`: `{uid}` registry, written only by the `claimUsername` callable.
+- `admins/{uid}`: email, username, photoURL, addedAt, addedBy, role ('super' | 'admin').
 - `categories/{id}`: name, icon (admin-managed; half-finished feature).
-- Storage: `spot-images/…`, `profile-pictures/{uid}/…`, `profile-banners/{uid}/…`.
-
-Planned additions (see tasks T08–T12): `publicProfiles/{uid}`, `usernames/{name}`, `admins/{uid}.role`,
-`users/{uid}.spotsCount`, Storage path `spot-images/{uid}/…`.
+- Storage: `spot-images/{uid}/…` (new uploads; legacy flat `spot-images/…` stays readable),
+  `profile-pictures/{uid}/…`, `profile-banners/{uid}/…`.
 
 ## 4. Commands
 
@@ -120,8 +133,8 @@ Never commit `.env*` files — sole exception: `functions/.env.demo-spoton` (emu
 - **Layers:** `components/` render only → `hooks/` compose data + UI state → `store/` app state + Firebase side effects → `lib/` pure functions (unit-tested, no React, no Firebase).
 - Components do **not** import `firebase/*` directly; go through a store action or a hook.
 - No new file over ~300 lines; extract sub-components/hooks instead.
-- One way to translate: `useT()` (after T24; until then `useLanguageStore().t`). No hardcoded user-visible strings — add keys to all three languages in `lib/translations.ts`.
-- Shared primitives (after T25): `PanelShell`, `ModalShell`, `useSwipeToClose`, `StarRating`. Don't hand-roll new overlays.
+- One way to translate: `useT()` (React) or `translate()` from `lib/i18n` (non-React code). No hardcoded user-visible strings — add keys to all three languages in `lib/translations.ts`.
+- Shared primitives (T25): `PanelShell`, `ModalShell`, `StarRating` (`components/ui/`), `useSwipeToClose` (`hooks/`). Don't hand-roll new overlays.
 - Constants (limits, thresholds, categories, z-index) live in `lib/` — no magic numbers in JSX.
 - Tailwind classes must be static strings (JIT cannot see `replace()`-built class names).
 - Types: shared domain types live next to their store (`Spot`, `Review`, `SpotImage` in `useSpotStore.ts`) until a `src/domain/` module is introduced; no `any` in new code.
