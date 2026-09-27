@@ -20,6 +20,9 @@ export const E2E = {
     id: 'e2e-primary-image-spot', name: 'E2E Primary Image Spot', emoji: '🌅',
     imageUrls: ['/placeholder-spot.jpg', '/icon-192x192.png', '/icon-512x512.png'],
   },
+  // T28: two images (gallery), owned by `admin`, saved in `user`'s savedSpots; dedicated to
+  // spot-details.spec.ts (no other spec may use it).
+  detailsSpot: { id: 'e2e-details-spot', name: 'E2E Details Spot', emoji: '💨' },
   // T09: 20 spots (level 5); only approvedSpot is approved, the other 19 are pending.
   level5: {
     uid: 'e2e-level5',
@@ -29,4 +32,4 @@ export const E2E = {
   },
 } as const;
 
-export const EXPECTED_APPROVED_MARKERS = 5; // legacySpot + modernSpot + level5.approvedSpot + interactionSpot + primaryImageSpot; update whenever an approved fixture is added
+export const EXPECTED_APPROVED_MARKERS = 6; // legacySpot + modernSpot + level5.approvedSpot + interactionSpot + primaryImageSpot + detailsSpot; update whenever an approved fixture is added

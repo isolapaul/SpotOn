@@ -43,6 +43,8 @@ async function seed(): Promise<void> {
     await auth.createUser({ uid: account.uid, email: account.email, password: E2E.password });
     await db.doc(`users/${account.uid}`).set(userDoc(account.uid, account.username, account.email));
   }
+  // T28: spot-details.spec.ts starts with detailsSpot saved (favourite sync, BUG-09).
+  await db.doc(`users/${E2E.user.uid}`).update({ savedSpots: [E2E.detailsSpot.id] });
 
   // Backfill fixtures (T09), users docs only (no Auth users): a duplicate username pair and an
   // invalid legacy username. The backfill must report them and never rewrite them.
@@ -155,6 +157,21 @@ async function seed(): Promise<void> {
     createdAt: t,
     imageUrls: [...E2E.primaryImageSpot.imageUrls],
     primaryImageIndex: 0,
+    reviews: [],
+  });
+
+  // T28: dedicated to spot-details.spec.ts: two images (for the gallery), owned by `admin`,
+  // category `smoke-spot` (unused by other fixtures), ~1 km from the map centre.
+  await db.doc(`spots/${E2E.detailsSpot.id}`).set({
+    name: E2E.detailsSpot.name,
+    category: 'smoke-spot',
+    description: 'Details panel fixture',
+    location: { lat: 47.5055, lng: 19.0490 },
+    createdBy: E2E.admin.uid,
+    createdByName: E2E.admin.username,
+    status: 'approved',
+    createdAt: t,
+    imageUrls: ['/icon-192x192.png', '/icon-512x512.png'],
     reviews: [],
   });
 

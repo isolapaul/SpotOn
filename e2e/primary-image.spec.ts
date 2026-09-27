@@ -69,11 +69,8 @@ test('set primary in the image manager targets the clicked image', async ({ page
   const hero = page.getByRole('img', { name: spot.name, exact: true });
   await expect.poll(() => hero.getAttribute('src')).toContain(fileName(urlB));
 
-  // Pre-existing (not part of T21): the hero's Close click also bubbles to the hero and opens the
-  // gallery, and panel state survives close/reopen until T28. Esc closes the gallery; the manager
-  // is opened only if it is not still open. TODO(T28): click Manage images unconditionally once panel state resets.
-  await page.keyboard.press('Escape');
-  if (!(await tileB.isVisible())) await page.getByRole('button', { name: /Manage images/ }).click();
+  // The reopened panel starts with the image manager collapsed and no gallery (T28, BUG-26).
+  await page.getByRole('button', { name: /Manage images/ }).click();
   await expect(tileB.getByText('★')).toBeVisible();
   await expect(managerTile(page, urlA).getByText('★')).toHaveCount(0);
 });
