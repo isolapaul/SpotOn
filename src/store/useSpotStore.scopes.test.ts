@@ -31,8 +31,10 @@ vi.mock('firebase/functions', () => ({ httpsCallable: () => vi.fn() }));
 vi.mock('@/lib/firebase', () => ({ db: {}, functions: {}, storage: {} }));
 vi.mock('@/lib/imageCompression', () => ({ compressImage: vi.fn() }));
 vi.mock('@/store/publicProfiles', () => ({ invalidatePublicProfile: vi.fn() }));
+vi.mock('@/store/useUserStore', () => ({ useUserStore: {} }));
 
 import { useSpotStore } from './useSpotStore';
+import { settleApprovedSpots } from '@/hooks/useAppBootstrap';
 
 const ORDER: Constraint = { type: 'orderBy', field: 'createdAt', dir: 'desc' };
 const APPROVED = [{ type: 'where', field: 'status', op: '==', value: 'approved' }, ORDER];
@@ -165,6 +167,40 @@ describe('spots listener scopes (T30)', () => {
     find(own('alice'))!.error(new Error('denied'));
     expect(store().error).toBe('denied');
     expect(ids()).toEqual(['q-approved']);
+  });
+
+  it('an approved error before the first snapshot: startSpots rejects, the error stays in the store', async () => {
+    const ready = store().startSpots();
+    store().syncSpotScopes({ uid: null, isAdmin: false });
+    find(APPROVED)!.error(new Error('The query requires an index'));
+    await expect(ready).rejects.toThrow('The query requires an index');
+    expect(store().error).toBe('The query requires an index');
+    expect(store().isLoading).toBe(false);
+    expect(store().spots).toEqual([]);
+  });
+
+  it('the loading gate (settleApprovedSpots) resolves and logs when the approved listener fails', async () => {
+    let settled = false;
+    const gate = settleApprovedSpots(() => store().startSpots()).then(() => { settled = true; });
+    store().syncSpotScopes({ uid: null, isAdmin: false });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    find(APPROVED)!.error(new Error('Missing or insufficient permissions.'));
+    await gate;
+    expect(settled).toBe(true);
+    expect(store().error).toBe('Missing or insufficient permissions.');
+    expect(console.error).toHaveBeenCalledWith(
+      'Approved spots failed to load; continuing without them:',
+      expect.objectContaining({ message: 'Missing or insufficient permissions.' }),
+    );
+  });
+
+  it('the loading gate resolves on the first approved snapshot as before', async () => {
+    const gate = settleApprovedSpots(() => store().startSpots());
+    emit(find(APPROVED)!, [Q]);
+    await gate;
+    expect(ids()).toEqual(['q-approved']);
+    expect(store().error).toBeNull();
   });
 
   it('stopSpots stops every listener and clears the spots', async () => {

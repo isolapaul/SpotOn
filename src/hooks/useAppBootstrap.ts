@@ -13,6 +13,20 @@ function spotScopeOf(state: { user: { uid: string } | null; loading: boolean; is
 }
 
 /**
+ * Waits for the approved spots, never failing: if their listener errors before the first snapshot
+ * (a missing or building index, permission-denied), the store keeps the error (`error`) and this
+ * logs it and resolves, so the app still renders (a map without spots) instead of an endless
+ * loading screen.
+ */
+export async function settleApprovedSpots(start: () => Promise<void>): Promise<void> {
+  try {
+    await start();
+  } catch (error) {
+    console.error('Approved spots failed to load; continuing without them:', error);
+  }
+}
+
+/**
  * Loading orchestration (moved out of page.tsx in T29): starts the auth listener and the spots
  * listeners, and reports the app ready DELAYS.appReady ms after auth, approved spots
  * (+ DELAYS.spotsSettle) and the map (onMapLoad) are all loaded. The own/admin spots listeners
@@ -48,9 +62,10 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
       setLoadingStates(prev => ({ ...prev, auth: true }));
     };
 
-    // Approved spots gate the loading screen; anonymous visitors never wait for auth (T30)
+    // Approved spots gate the loading screen; anonymous visitors never wait for auth (T30).
+    // A failed approved listener also opens the gate (settleApprovedSpots).
     const initializeSpots = async () => {
-      await useSpotStore.getState().startSpots();
+      await settleApprovedSpots(() => useSpotStore.getState().startSpots());
       if (cancelled) return;
       // Wait a bit to ensure spots are populated
       spotsTimer = setTimeout(() => {
