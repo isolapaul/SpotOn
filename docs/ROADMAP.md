@@ -193,5 +193,6 @@ Additional review gates:
 | T27 Split ProfilePanel into src/components/profile/** | done, review PASS-WITH-NITS; 15 panel states DOM-identical to HEAD | 2d7443f |
 | T28 Split SpotDetailsPanel into src/components/spot-details/** (+ BUG-09/17/26) | done, review PASS-WITH-NITS + fixes | 8ea2c57 |
 | T29 Panel state machine (activePanel in useUiStore; page.tsx 315 -> 156 lines) | done, review PASS-WITH-NITS + fixes (edit baseline, close-this-spot) | 0f7f528 |
-| T30 Hide pending spots (scoped listeners + index, then rules) | done, review PASS-WITH-NITS; rules attack tests clean | (this commit and the one before) |
+| T30 Hide pending spots (scoped listeners + index, then rules) | done, review PASS-WITH-NITS; rules attack tests clean | 523f968, 7609c90 |
+| T31 React 19.3.0, react-leaflet 5.0.0, zustand 5.0.15, lucide-react 0.577.0 | done, review PASS-WITH-NITS | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |

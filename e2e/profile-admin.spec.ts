@@ -1,6 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { E2E } from './fixtures';
-import { blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstRunOverlays } from './helpers';
+import { test, blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstRunOverlays } from './helpers';
 
 // T11a: admin state from admins/{uid}, usernames via the claimUsername callable, sign-out.
 // Username changes use the dedicated E2E.rename fixture only (see fixtures.ts).

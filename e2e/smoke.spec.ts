@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { E2E, EXPECTED_APPROVED_MARKERS } from './fixtures';
-import { blockMapTiles, openApp, signInWithEmail, skipFirstRunOverlays, spotMarker } from './helpers';
+import { test, blockMapTiles, openApp, signInWithEmail, skipFirstRunOverlays, spotMarker } from './helpers';
 
 test.beforeEach(async ({ page }) => {
   await skipFirstRunOverlays(page);

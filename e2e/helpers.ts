@@ -1,4 +1,28 @@
-import { expect, type Page } from '@playwright/test';
+import { test as base, expect, type Page } from '@playwright/test';
+
+// T31: React render-loop symptoms (zustand 5 uses React's native useSyncExternalStore, so a selector
+// returning a new object/array each call loops). Dev builds log "getSnapshot should be cached" /
+// "Maximum update depth exceeded"; production builds throw the minified errors #185 / #301.
+const RENDER_LOOP = /getSnapshot|Maximum update depth|Too many re-renders|Minified React error #(185|301)\b/;
+
+/** Playwright `test` with an automatic guard: fails if any page logs or throws a React render-loop error. */
+export const test = base.extend<{ renderLoopGuard: void }>({
+  renderLoopGuard: [
+    async ({ context }, use) => {
+      const hits: string[] = [];
+      context.on('console', (m) => {
+        if (RENDER_LOOP.test(m.text())) hits.push(`console.${m.type()}: ${m.text()}`);
+      });
+      context.on('weberror', (e) => {
+        const err = e.error();
+        if (RENDER_LOOP.test(`${err.message}\n${err.stack ?? ''}`)) hits.push(`pageerror: ${err.message}`);
+      });
+      await use();
+      expect(hits, 'React render-loop errors in the browser console').toEqual([]);
+    },
+    { auto: true },
+  ],
+});
 
 /** Pre-seeds localStorage so InstallGate and LanguageSelector never render. Call before page.goto. */
 export async function skipFirstRunOverlays(page: Page, language: 'en' | 'hu' | 'de' = 'en') {

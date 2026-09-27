@@ -1,6 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { E2E } from './fixtures';
-import { blockMapTiles, openApp, signInWithEmail, skipFirstRunOverlays } from './helpers';
+import { test, blockMapTiles, openApp, signInWithEmail, skipFirstRunOverlays } from './helpers';
 
 // T29: the panel state machine (activePanel in useUiStore) and the add-spot location selection.
 // Read-only: the add form is closed without submitting, so no fixture is changed. Tiles are

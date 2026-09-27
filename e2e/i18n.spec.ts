@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { E2E } from './fixtures';
-import { blockMapTiles, openApp, skipFirstRunOverlays, spotMarker } from './helpers';
+import { test, blockMapTiles, openApp, skipFirstRunOverlays, spotMarker } from './helpers';
 
 // T24: one translation mechanism (useT / translate). Visible text per language must be unchanged.
 

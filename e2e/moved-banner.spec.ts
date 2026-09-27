@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { blockMapTiles, openApp } from './helpers';
+import { expect, type Page } from '@playwright/test';
+import { test, blockMapTiles, openApp } from './helpers';
 
 // T19: domain-move banner. It exists only in a build with NEXT_PUBLIC_MOVED_TO set (the Vercel build);
 // Playwright passes the variable through to the webServer build (playwright.config.ts).

@@ -1,8 +1,8 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { E2E } from './fixtures';
-import { blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstRunOverlays, spotMarker } from './helpers';
+import { test, blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstRunOverlays, spotMarker } from './helpers';
 
 // T30: pending spots reach only their owner (profile list) and admins (map + pending tab).
 // P = E2E.pendingSpot (owned by `user`); Q = E2E.level5.approvedSpot (owned by `level5`, whose other
