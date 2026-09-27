@@ -1,8 +1,12 @@
-# SpotOn — biztonsági bevezetési kézikönyv (T08–T12 élesbe)
+> Fordítás. A mérvadó változat az angol `docs/security-rollout.md` (commit `847f034`). Eltérés esetén az angol változat érvényes.
 
-A pontos, sorrendbe rendezett lépések, amelyeket Paul követ a szerveroldali biztonsági munka (Cloud Functions T07–T10, kliens T11a/T11b, szabályok T12) éles környezetbe való kiszállításához, biztonsági mentésekkel, ellenőrzéssel és visszaállítással.
+# SpotOn — biztonsági bevezetési kézikönyv (T08–T12 és T30 élesbe)
+
+A pontos, sorrendbe rendezett lépések, amelyeket Paul követ a szerveroldali biztonsági munka (Cloud Functions T07–T10, kliens T11a/T11b és T30, szabályok T12 + T30) éles környezetbe való kiszállításához, biztonsági mentésekkel, ellenőrzéssel és visszaállítással.
 A sorrend a ROADMAP §4, és **egyirányú** (ROADMAP trap 2): ne hagyj ki és ne rendezz át lépéseket. Minden lépés Paul manuális beavatkozása; itt semmi sem fut automatikusan.
 Maga a konténer telepítése (4. lépés) a `docs/deploy.md` fájlban van. A szabályok alapállapota és auditja a `docs/audit/current-rules.md` fájlban található.
+
+**Egy commit.** A függvények, az indexek, a szabályok, a konténer és a Vercel build mind **ugyanabból a commitból** származnak: a `main` csúcsáról, miután ezt az ágat beolvasztották (a §0-ban rögzítve). Ez tartalmazza a T12 szabályokat, a T30 klienst és a T30 spot-olvasási szabályt (minden commit a `7609c90`-tól kezdve), valamint a csak jóváhagyott spotokra vonatkozó értékelési szabályt. Így az új kliens a §5-ben élesedik, a végleges szabályok (T12 + T30) pedig körülbelül 1 órával később, ugyanabban a munkamenetben követik a §6-ban; nincs külön T30 telepítés.
 
 **Helykitöltők**, amelyeket magad cserélsz ki, mielőtt egy parancsot futtatnál:
 
@@ -12,9 +16,10 @@ Maga a konténer telepítése (4. lépés) a `docs/deploy.md` fájlban van. A sz
 | `<BUCKET>` | az alapértelmezett Storage bucket, pl. `<PROJECT_ID>.appspot.com` vagy `<PROJECT_ID>.firebasestorage.app` (Console → Storage, a fájllista fölött látható) |
 | `<PAUL_EMAIL>` | a saját bejelentkezési e-mail-címed, pontosan úgy, ahogy a telepített vészhelyzeti javításban szerepel |
 | `<SA_KEY_PATH>` | a service-account kulcsfájl útvonala, a repón **kívül** |
+| `<RELEASE_TAG>` | a konténer release tagje (`vX.Y.Z`, `docs/deploy.md` §7), amelyet a §0-ban a deploy commitra pusholsz |
 
 **Konvenciók**
-- Minden parancsot **bash**-ben futtass, a **repó gyökeréből**, egy naprakész `main` checkouton (`git switch main && git pull`).
+- Minden parancsot **bash**-ben futtass, a **repó gyökeréből**, a `main` checkouton, a §0-ban rögzített deploy commiton. Ne futtass újra `git pull`-t és ne válts ágat, amíg a §7 el nem készült (kivéve a §9 függvény-visszaállításon belül).
 - Az `npx firebase …` a repó rögzített firebase-tools verzióját (15.31.0) futtatja. Ne használj más verziójú, globálisan telepített `firebase`-t.
 - A szkriptek (`scripts/*.ts`) **alapból száraz futásúak (dry-run)**, szükségük van a `--project` opcióra, és kiírnak egy `TARGET=<id> MODE=dry-run|APPLY EMULATOR=no` fejlécet. A fejlécet ellenőrizd, mielőtt a kimenet többi részét olvasnád.
 - A visszaállítási fájlok a `~/spoton-rollback/` mappába kerülnek (a repón kívülre). Soha ne commitold őket.
@@ -47,9 +52,22 @@ Ha bármelyik hiányzik, először alkalmazd újra a javítást a `docs/audit/cu
 ## §0 Előfeltételek (ellenőrzőlista)
 
 - [ ] A Step 0 igazoltan él (fent).
-- [ ] **Szüneteltesd a Vercel éles telepítéseket az összevonás (merge) előtt**, ha a Vercel abból az ágból épít, amelybe beolvasztasz (Vercel → Project → Settings → Git mutatja a Production Branch-et). Használd a Settings → Git → Ignored Build Step → "Don't build anything" beállítást (vagy válaszd le a Git repót). Máskülönben a merge az 1–3.5. lépések előtt kiszállítja az új klienst a Vercel domainre, és ott elromlik (trap 2). A konténer biztonságos: csak `v*` tagekből épül.
-- [ ] A T08–T12 be van olvasztva a `main`-be; a CI zöld (`verify`, `verify:fn`, `test:rules`, `test:e2e`).
-- [ ] Létezik egy release tag a függvények telepítéséhez, például:
+- [ ] **Szüneteltesd a Vercel éles telepítéseket az összevonás (merge) előtt**, ha a Vercel abból az ágból épít, amelybe beolvasztasz (Vercel → Project → Settings → Git mutatja a Production Branch-et). Használd a Settings → Git → Ignored Build Step → "Don't build anything" beállítást (vagy válaszd le a Git repót). Máskülönben a merge az 1–3.6. lépések előtt kiszállítja az új klienst a Vercel domainre, és ott elromlik (trap 2). A konténer biztonságos: csak `v*` tagekből épül.
+- [ ] Ez az ág (T08–T32 és a hardening commitok) be van olvasztva a `main`-be; a CI zöld (`verify`, `verify:fn`, `test:rules`, `test:e2e`).
+- [ ] **Rögzítsd a deploy commitot** (minden későbbi lépés ebből telepít):
+  ```bash
+  git switch main && git pull
+  mkdir -p ~/spoton-rollback && chmod 700 ~/spoton-rollback && git rev-parse HEAD | tee ~/spoton-rollback/deploy-commit.txt
+  grep -qF "allow read: if resource.data.status == 'approved'" firestore.rules && grep -A6 'function isReviewAppend' firestore.rules | grep -qF "resource.data.status == 'approved'" && echo "OK: T30 + approved-only reviews"
+  ```
+  Az utolsó sornak `OK: T30 + approved-only reviews`-t kell kiírnia (a T30 spot-olvasási szabály és a csak jóváhagyott spotokra engedett értékelés-hozzáfűzés benne van a szabályokban). Egyébként állj meg és kérdezz: ez a kézikönyv annak a commitnak a szabályait feltételezi.
+- [ ] **Hozd létre a konténer release tagjét** a deploy commiton (a `<RELEASE_TAG>` egy végleges `vX.Y.Z` tag, az egyetlen forma, amelyet az `update.sh` elfogad, `docs/deploy.md` §7):
+  ```bash
+  git tag <RELEASE_TAG> "$(cat ~/spoton-rollback/deploy-commit.txt)" && git push origin <RELEASE_TAG>
+  [ "$(git rev-parse '<RELEASE_TAG>^{commit}')" = "$(cat ~/spoton-rollback/deploy-commit.txt)" ] && echo "OK: release tag"
+  ```
+  `OK: release tag`-et kell kiírnia. A tag pusholása elindítja a release pipeline-t (`.github/workflows/release.yml`: build, Trivy, SBOM, cosign, GHCR), így az image a §5-re elkészül. Magától semmit sem telepít: a szerver csak akkor változik, amikor a §5-ben lefuttatod az `update.sh`-t.
+- [ ] Létezik egy release tag a függvények telepítéséhez (a deploy commiton), például:
   ```bash
   git tag security-v1 && git push origin security-v1
   ```
@@ -83,7 +101,7 @@ Ha bármelyik hiányzik, először alkalmazd újra a javítást a `docs/audit/cu
   export ADMIN_EMAIL='<PAUL_EMAIL>'
   ```
 - [ ] A Blaze csomag aktív (a v2 függvényekhez szükséges).
-- [ ] Helyezd a klienst karbantartási időablakba, vagy legalább tájékoztasd a felhasználókat, hogy a régi PWA-ablakok hibákat mutathatnak az átállás alatt (trap 2).
+- [ ] Helyezd a klienst karbantartási időablakba, vagy legalább tájékoztasd a felhasználókat, hogy a régi PWA-ablakok hibákat mutathatnak az átállás alatt, és újra kell tölteni őket (trap 2).
 
 ---
 
@@ -127,12 +145,17 @@ A csak kommentekben vagy szóközökben lévő eltérések rendben vannak, bele�
 
 ## §2 1. lépés: a Cloud Functions telepítése
 
+Ellenőrizd, hogy a checkout még mindig a deploy commit, módosítatlan függvényforrásokkal; `OK: deploy commit`-et kell kiírnia, különben állj meg:
+```bash
+[ "$(git rev-parse HEAD)" = "$(cat ~/spoton-rollback/deploy-commit.txt)" ] && [ -z "$(git status --porcelain -- functions firebase.json)" ] && echo "OK: deploy commit"
+```
+Azután:
 ```bash
 npm --prefix functions ci && npm --prefix functions run build
 npx firebase deploy --only functions --project <PROJECT_ID>
 ```
 - Amikor az `APP_URL`-t kéri, add meg a `https://spoton.isolapaul.hu`-t. Ez a `functions/.env.<PROJECT_ID>` fájlba mentődik (git-ignored; soha ne commitold). Egy `--non-interactive` telepítés e fájl nélkül meghiúsul.
-- **Ha a CLI felajánlja bármely függvény törlését, válaszolj Nemet, és szakítsd meg** (trap 6: egy törölt függvény elveszett).
+- **Ha a CLI felajánlja bármely függvény törlését, válaszolj Nemmel** (ez az alapértelmezés; megtartja őket, és a telepítés folytatódik; trap 6: egy törölt függvény elveszett). Ha inkább meg akarsz állni, nyomj Ctrl-C-t a kérdésnél; addig még semmi sem lett telepítve.
 - Az új Firestore triggerek első telepítése meghiúsulhat, amíg az Eventarc jogosultságok elterjednek. Várj néhány percet, és futtasd újra ugyanazt a parancsot.
 
 Ellenőrizd a Console → Functions helyen, hogy mindezek léteznek, `europe-west3`-ban, Node.js 22-n:
@@ -167,14 +190,14 @@ npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID> | tee ~/spoton-rollb
 - **Ha egy felsorolt azonosító nem 20 karakteres automatikus azonosító** (például egy 28 karakteres uid, amelyet a step 0-nál megtartottál): állj meg és kérdezz, mert egy invalidként felsorolt uid-kulcsú dokumentum azt jelenti, hogy az e-mailje nem egyezik azzal a fiókkal.
 - Egyébként folytasd. A többi admin elveszíti az adminjogokat az **új** kliensben, amíg újra hozzá nem adod őket a §5-ben (a jelenleg telepített kliens még mindig a legacy dokumentumokat olvassa).
 
-**Vizsgáld át a `duplicates`, `conflicts` és `invalid`-ot** (trap 10). Minden duplikátumnál döntsd el, ki tartja meg a nevet, és a másik felhasználó `users/<uid>.username` mezőjét szerkeszd a konzolban egy egyedi, érvényes névre (`^[a-z0-9_]{3,20}$`). A tükör-trigger frissíti a `publicProfiles`-t. Ismételd a száraz futást, amíg `duplicates: 0` nem lesz. Az `invalid` bejegyzések maradhatnak: azokat a felhasználókat felszólítja a rendszer, amikor megváltoztatják a nevüket.
+**Vizsgáld át a `duplicates`, `conflicts` és `invalid` bejegyzéseket** (trap 10). Minden duplikátumnál döntsd el, ki tartja meg a nevet, és a másik felhasználó `users/<uid>.username` mezőjét szerkeszd a konzolban egy egyedi, érvényes névre (`^[a-z0-9_]{3,20}$`). A tükör-trigger frissíti a `publicProfiles`-t. Ismételd a száraz futást, amíg `duplicates: 0` nem lesz. Az `invalid` bejegyzések maradhatnak: azokat a felhasználókat felszólítja a rendszer, amikor megváltoztatják a nevüket.
 
 Alkalmazd, majd ellenőrizd:
 ```bash
 npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID> --apply
 npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID>
 ```
-Az utolsó futásnak `planned writes: 0`-t kell kiírnia.
+Az utolsó futásnak `planned writes: 0`-t kell kiírnia. Ha csak új aktivitás miatt nem nulla (regisztrációk, a régi kliens általi átnevezések), futtasd újra az `--apply`-t.
 Szúrópróbaszerűen ellenőrizz néhány `publicProfiles/<uid>` dokumentumot: a `spotsCount` tartalmazza a függőben lévő (pending) spotokat (trap 7).
 
 ---
@@ -203,7 +226,7 @@ mkdir -p ~/spoton-transitional && rm -f ~/spoton-transitional/firestore.rules ~/
   echo "OK: transitional rules ready"
 ) || { rm -f ~/spoton-transitional/firestore.rules ~/spoton-transitional/firebase.json; echo "FAILED: nothing to deploy"; }
 ```
-`OK: transitional rules ready`-t kell kiírnia. A `sed` escapelés kezeli az értékben lévő `&`, `/` és `\` karaktereket (egy `&` egyébként beszúrná az illesztett helykitöltőt); az idézőjelet vagy szóközt tartalmazó e-mail elutasításra kerül, mert megtörné a szabálysztringet. A `diff docs/audit/transitional-firestore.rules ~/spoton-transitional/firestore.rules` csak a behelyettesített sorokat mutatja: a két `request.auth.token.email == '…'` sort és a helykitöltőt megnevező fejlécet. (A blokk minden ellenőrzése explicit módon lép ki: a `set -e` figyelmen kívül lenne hagyva egy `||`-t követő alhéjon (subshell) belül.)
+`OK: transitional rules ready`-t kell kiírnia. A `sed` escapelés kezeli az értékben lévő `&`, `/` és `\` karaktereket (egy `&` egyébként beszúrná az illesztett helykitöltőt); az idézőjelet vagy szóközt tartalmazó e-mail elutasításra kerül, mert megtörné a szabálysztringet. A `diff docs/audit/transitional-firestore.rules ~/spoton-transitional/firestore.rules` csak a behelyettesített sorokat mutatja: a két `request.auth.token.email == '…'` sort és a helykitöltőt megnevező fejléc-kommentet. (A blokk minden ellenőrzése explicit módon lép ki: a `set -e` figyelmen kívül lenne hagyva egy `||`-t követő alhéjon (subshell) belül.)
 
 **3. Telepítsd csak ezeket a Firestore szabályokat:**
 ```bash
@@ -218,18 +241,52 @@ Visszaállítás: `npx firebase deploy --only firestore:rules --project <PROJECT
 
 ---
 
+## §4.6 3.6. lépés: a Firestore indexek telepítése
+
+A §5 kliense már tartalmazza a T30 saját-spotok lekérdezést, amelynek új indexre van szüksége. Telepítsd a kliens előtt (a régi kliens nem használja, így ez ártalmatlan).
+
+Ellenőrizd, hogy a checkout még mindig a deploy commit, módosítatlan indexfájlokkal; `OK: deploy commit`-et kell kiírnia, különben állj meg:
+```bash
+[ "$(git rev-parse HEAD)" = "$(cat ~/spoton-rollback/deploy-commit.txt)" ] && [ -z "$(git status --porcelain -- firebase.json firestore.indexes.json)" ] && echo "OK: deploy commit"
+```
+Azután:
+```bash
+npx firebase deploy --only firestore:indexes --project <PROJECT_ID>
+```
+Ha a CLI olyan indexeket vagy field override-okat sorol fel, amelyek léteznek az éles környezetben, de nem a `firestore.indexes.json`-ban, és felajánlja a törlésüket, válaszolj **Nemmel** (ez az alapértelmezés): a CLI megtartja őket, és folytatja a hiányzók létrehozását. Másold a felsorolt elemeket egy fájlba a `~/spoton-rollback/` mappában, és utána kérdezz. Soha ne add meg a `--force` opciót.
+
+A Console → Firestore → Indexes helyen ezután a `firestore.indexes.json` mindhárom `spots` indexének **Enabled** állapotban kell lennie, mielőtt elkezded a §5-öt (az építés percektől órákig tart):
+- `createdBy ↑ createdAt ↓` (T30: a saját-spotok lekérdezés);
+- `status ↑ createdAt ↓` (a jóváhagyott-spotok lekérdezés);
+- `createdBy ↑ status ↑ createdAt ↑` (legacy).
+
+Az engedélyezett index nélkül a bejelentkezett felhasználók saját-spotok figyelője (listener) `The query requires an index` hibával hiúsul meg a DevTools konzolban (a térképet ez nem érinti).
+Visszaállítás: nincs rá szükség; az új index ártalmatlan, és maradhat.
+
+---
+
 ## §5 4. lépés: a kliens telepítése
 
-Kövesd a `docs/deploy.md`-t (T16–T18; beleértve annak §10 egyszeri konzolbeállításait az új domainhez) a `https://spoton.isolapaul.hu`-hoz, és telepítsd újra a Vercelt **ugyanabból a commitból** (ne állítsd be még a `NEXT_PUBLIC_MOVED_TO`-t; az a 7. lépés). Ha a §0-ban szüneteltetted a Vercelt, most engedélyezd újra a build lépést (vagy csatlakoztasd újra a Gitet), telepíts, ellenőrizd, hogy a Vercel telepítés commit SHA-ja megegyezik a konténer release commitjával, és futtasd a bejelentkezés / értékelés-hozzáadás füstpróbát a Vercel URL-en is.
+**Konténer.** A `<RELEASE_TAG>` a §0-ban a deploy commitra lett pusholva; a hozzá tartozó release workflow futásnak (GitHub → Actions) zöldnek kell lennie. Kövesd a `docs/deploy.md`-t (T16–T18; beleértve annak §10 egyszeri konzolbeállításait az új domainhez) ezzel a taggel a `https://spoton.isolapaul.hu`-hoz.
+
+**Vercel**, **ugyanabból a commitból** (ne állítsd be még a `NEXT_PUBLIC_MOVED_TO`-t; az a 7. lépés). Ellenőrizd ezeket a dashboard-feliratokat; a Vercel időnként átnevezi őket.
+1. Az újratelepítés előtt jegyezd fel, meddig cache-elhetik a böngészők a régi HTML-t: `curl -sI https://spot-on-rho.vercel.app/ | grep -i cache-control`. Ha hosszú `max-age`-et mutat (több mint 1 óra), a §6 legalább ennyit vár kb. 1 óra helyett.
+2. Ha a §0-ban szüneteltetted a Vercelt: Settings → Git → Ignored Build Step → vissza "Automatic"-ra (vagy csatlakoztasd újra a Gitet).
+3. Deployments → az a (canceled/ignored) telepítés, amelynek a commitja a deploy commit → ⋯ → Redeploy (vagy "Create Deployment" a deploy commit SHA-jával). **Ne** a jelenlegi production telepítést (régi commit) telepítsd újra.
+4. Ellenőrizd, hogy az új telepítés commit SHA-ja megegyezik a `~/spoton-rollback/deploy-commit.txt` tartalmával, majd futtasd a bejelentkezés / értékelés-hozzáadás füstpróbát a Vercel URL-en.
+
+Ez a kliens már tartalmazza a T30 klienst: a jóváhagyott spotokat, a felhasználó saját spotjait és (adminoknak) az összes spotot külön lekérdezésekkel olvassa. Ezek mind működnek az átmeneti szabályok alatt, amelyek a spotokat nyilvánosan olvashatóan tartják. Szándékolt változás mostantól (ROADMAP Q7): egy **másik** felhasználó függőben lévő (pending) spotja, amelyet valaki kedvencelt, többé nem jelenik meg a Kedvencei között. A tulajdonosok továbbra is látják a saját függőben lévő spotjaikat a My Spots alatt; az adminok továbbra is mindent látnak.
 
 **Füstpróba az új domainen:**
 - [ ] jelentkezz be; változtasd meg a felhasználónevet;
 - [ ] Paul látja az admin fület; egy normál fiók nem;
-- [ ] adj hozzá egy spotot fényképpel (függőben lévő (pending) lesz);
-- [ ] hagyd jóvá Paulként;
-- [ ] adj hozzá egy értékelést; adj egy fényképet egy meglévő spothoz;
+- [ ] adj hozzá egy spotot fényképpel (függőben lévő (pending) lesz); a Profile → My Spots függőben lévőként mutatja; a térkép nem mutatja;
+- [ ] kijelentkezve: a térkép mutatja a jóváhagyott spotokat, nincsenek függőben lévő (sárga) jelölők;
+- [ ] Paulként: függőben lévő jelölők a térképen és a Pending Approval fül a számlálójával; hagyd jóvá a spotot;
+- [ ] adj hozzá egy értékelést egy jóváhagyott spothoz; adj egy fényképet egy meglévő spothoz;
 - [ ] kiemelés (highlight) (egy ≥ 3 szintű fiókkal);
-- [ ] engedélyezd az értesítéseket, majd jelentkezz ki.
+- [ ] engedélyezd az értesítéseket, majd jelentkezz ki;
+- [ ] nincsenek `permission` vagy `index` hibák a DevTools konzolban.
 
 **Ne várd ebben az időablakban** (a §6-ig): hogy egy admin törölje **egy másik felhasználó** spotját. Az élő törlési szabály az `admins/{token.email}`-t ellenőrzi (LR-09), amelynek egyetlen admin-dokumentum sem felel meg; ez már ma is így van az éles környezetben. Ez a végleges szabályok után (§6) működik.
 
@@ -239,28 +296,46 @@ Kövesd a `docs/deploy.md`-t (T16–T18; beleértve annak §10 egyszeri konzolbe
 
 ## §6 5. lépés: a végleges szabályok telepítése
 
-Csak azután, hogy a 4. lépés mindenhol él (trap 1): a konténer az új domainen **és** a Vercel az új buildet szolgálja ki.
+Csak azután, hogy a 4. lépés mindenhol él (trap 2): a konténer az új domainen **és** a Vercel az új buildet szolgálja ki (SHA ellenőrizve), és mindkét füstpróba sikeres volt. Ezután **várj kb. 1 órát**, miközben figyeled a DevToolst, a Functions logokat és a szabály-megtagadásokat; a §5-öt és a §6-ot ugyanabban a munkamenetben, alacsony forgalmú időszakban végezd. Ha a §5-ben hosszú `max-age`-et jegyeztél fel a Vercel HTML-jén, várj inkább legalább ennyit.
+
+Miért nem tovább: a §5 után minden oldalbetöltés az új klienst futtatja (nincs cache-elő service worker, nincs verziórögzítés), így csak a Vercel újratelepítése előtt megnyitott ablakok futtatják még a régi klienst. Ezek alatt a szabályok alatt (a T30 spot-olvasási szabály: a függőben lévő spotokat csak a létrehozójuk és az adminok látják) a szűretlen spot-lekérdezésüket a szabályok megtagadják: megtartják a meglévő spotjaikat, nem kapnak frissítést, és az írásaik meghiúsulnak, amíg újra nem töltődnek (trap 2, elfogadott). Minden további óra nyitva tartja az LR-02–LR-05 réseket (`docs/audit/current-rules.md`).
+A `status` mező nélkül tárolt spotokat (csak régi adatokból lehetséges; a létrehozási szabály megköveteli) a szabályok függőben lévő spotként kezelik: csak a létrehozójuk és az adminok látják.
 
 Futtasd újra a §1 **szabály**-mentési parancsokat (a `mkdir` … `OK: rules saved` blokkot, majd a `firebase.json` sort); az élő szabályok megváltozhattak. Mivel a §4.5 alkalmazva lett, a mentett Firestore szabályok most a `~/spoton-transitional/firestore.rules`-szal egyeznek, nem a §1 alapállapottal (ellenőrizd a `diff -wB ~/spoton-transitional/firestore.rules ~/spoton-rollback/firestore.rules` paranccsal, nem várható kimenet). Ez elvárt: mostantól ezek a visszaállítási célpont, mert az új kliensnek szüksége van azok olvasási jogosultságaira.
 
+Ellenőrizd, hogy a checkout még mindig a deploy commit, módosítatlan szabályfájlokkal; `OK: deploy commit`-et kell kiírnia, különben állj meg:
+```bash
+[ "$(git rev-parse HEAD)" = "$(cat ~/spoton-rollback/deploy-commit.txt)" ] && [ -z "$(git status --porcelain -- firebase.json firestore.rules storage.rules)" ] && echo "OK: deploy commit"
+```
+Azután:
 ```bash
 npx firebase deploy --only firestore:rules,storage --project <PROJECT_ID> --dry-run
 npx firebase deploy --only firestore:rules,storage --project <PROJECT_ID>
 ```
-Ez a repó `firebase.json`-ját használja, tehát a repó `firestore.rules`-át és `storage.rules`-át (T12) telepíti.
+Ez a repó `firebase.json`-ját használja, tehát a repó `firestore.rules`-át (T12 + T30 spot-olvasások + csak jóváhagyott spotokra engedett értékelés-hozzáfűzések) és `storage.rules`-át (T12) telepíti.
+Mostantól értékelést csak **jóváhagyott** spotokhoz lehet hozzáadni (az adminok továbbra is értékelhetik a függőben lévőket). Normál fiókok csak akkor érnek el egy függőben lévő spotot, ha az a sajátjuk és a Kedvenceik között van; ha ott értékelést küldenek be, az értékelési hibaüzenet jelenik meg. Elfogadott.
 
 Azonnal ismételd meg a §5 füstpróbát, plusz:
 - [ ] adminként törölj egy másik fiók által létrehozott teszt-spotot (most működik);
-- [ ] egy újra hozzáadott admin továbbra is látja a függőben lévő (pending) fület, és jóvá tud hagyni.
+- [ ] egy újra hozzáadott admin továbbra is látja a függőben lévő (pending) fület, és jóvá tud hagyni;
+- [ ] egy normál fiók Kedvencei továbbra is mutatják a jóváhagyott kedvenceit.
 
 Figyeld 24–48 órán át:
 - Console → Firestore → Usage (biztonsági szabály kiértékelések: engedélyezett / megtagadott / hibák);
 - Cloud Monitoring metrika `firestore.googleapis.com/rules/evaluation_count` `result=DENY`-re szűrve;
 - kliens-jelentések.
 
-Elvárt: kis, egyenletes megtagadás-csordogálás a régi PWA-ablakoktól (trap 2). Egy felhasználói folyamathoz köthető kiugrás azt jelenti, hogy **állítsd vissza a szabályokat** (§9), és jelentsd.
+Elvárt: kis, egyenletes megtagadás-csordogálás a régi ablakoktól, amelyek nem töltődtek újra (trap 2): elavult spotokat mutatnak, és az írásaik meghiúsulnak, amíg újra nem töltődnek. Egy felhasználói folyamathoz köthető kiugrás azt jelenti, hogy **állítsd vissza a szabályokat** (§9), és jelentsd.
 
-**Takarítsd ki a legacy admin-dokumentumokat**, amint a végleges szabályok élnek, a füstpróba sikeres, és a kívánt adminok újra hozzá lettek adva: Console → Firestore → `admins` → töröld minden legacy automatikus-azonosítójú dokumentumot a step 0 leltárból. Az új szabályok alatt ezek semmit sem adnak. **Ne** törölj olyan dokumentumot, amelynek az azonosítója egy Auth uid, és van `role` mezője (azok a jelenlegi adminok).
+**Takarítsd ki a legacy admin-dokumentumokat** csak azután, hogy a fenti figyelési időszak visszaállítás nélkül lezárult (egy kliens-visszaállítás, §9, visszahozza a régi klienst, amely ezeket a dokumentumokat olvassa az admin felületéhez), a füstpróba sikeres volt, és a kívánt adminok újra hozzá lettek adva: Console → Firestore → `admins` → töröld minden legacy automatikus-azonosítójú dokumentumot a step 0 leltárból. Az új szabályok alatt ezek semmit sem adnak. **Ne** törölj olyan dokumentumot, amelynek az azonosítója egy Auth uid, és van `role` mezője (azok a jelenlegi adminok).
+
+**Futtasd újra a backfillt.** Amíg a végleges szabályok nem élesedtek, a felhasználók még írhatták a saját `spotsCount` és `username` mezőjüket (LR-05); ez lezárja ezt a rést:
+```bash
+npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID> | tee ~/spoton-rollback/backfill-post-rules.txt
+npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID> --apply
+npx tsx scripts/backfill-profiles.ts --project <PROJECT_ID>
+```
+Az utolsó futásnak `planned writes: 0`-t kell kiírnia; az `admins invalid` csak a step 0 leltár legacy dokumentumait sorolhatja fel (0-t, ha már ki lettek takarítva). Az új `duplicates` bejegyzéseket a §4 szerint oldd fel.
 
 ---
 
@@ -270,6 +345,9 @@ Csak a §6 után. Amíg a T12 szabályok nem élnek, a régi kliensek még mindi
 
 ```bash
 npx tsx scripts/strip-review-pii.ts --project <PROJECT_ID>
+```
+Előbb minden admin töltse újra vagy zárja be az összes nyitott SpotOn lapot és PWA-ablakot (egy régi admin lap még írhat értékeléseket `userEmail`-lel, mert az adminok bármely spotot frissíthetik). Azután:
+```bash
 npx tsx scripts/strip-review-pii.ts --project <PROJECT_ID> --apply
 npx tsx scripts/strip-review-pii.ts --project <PROJECT_ID> --check; echo "exit=$?"
 ```
@@ -282,46 +360,13 @@ Ez a lépés visszafordíthatatlan, kivéve a §1 export visszaállításával, 
 
 ---
 
-## §8 7. lépés és utána
+## §8 7. lépés: a Vercel elhagyása
 
-Vercel Stage A / Stage B és a Vercel projekt törlése (T19; `docs/deploy.md` §15), majd a T30 kliens, amelyet a T30 szabályok követnek. Lásd a `docs/ROADMAP.md` §4 7–8. lépéseit.
+Vercel Stage A / Stage B és a Vercel projekt törlése (T19; `docs/deploy.md` §15). Lásd a `docs/ROADMAP.md` §4 7. lépését.
 
-### §8.1 8. lépés: függőben lévő (pending) spotok elrejtése (T30), előbb a kliens, azután a szabályok
+### §8.1 Függőben lévő (pending) spotok elrejtése (T30): már kész
 
-Legalább 24 órás eltéréssel két telepítés, ebben a sorrendben (trap 1: a szabályok nem szűrik a lekérdezéseket). A régi kliens **az összes** spotot egyetlen szűretlen lekérdezéssel olvassa, amelyet a T30 szabályok megtagadnak: egy frissen betöltött régi kliens a **betöltő képernyőn** marad (a betöltési kapuja arra a lekérdezésre vár), egy már megnyitott régi ablak pedig megtartja a meglévő spotjait, de nem kap frissítést. A `status` mező nélkül tárolt spotokat (csak régi adatokból lehetséges; a létrehozási szabály megköveteli) függőben lévő (pending) spotként kezeli: csak a létrehozójuk és az adminok látják.
-
-A kliens-telepítéstől szándékozott változás (ROADMAP Q7): egy **másik** felhasználó függőben lévő (pending) spotja, amelyet valaki kedvencelt, többé nem jelenik meg a Kedvencei között. A tulajdonosok továbbra is látják a saját függőben lévő spotjaikat; az adminok továbbra is mindent látnak.
-
-1. **Index, azután kliens.** Előbb telepítsd az új indexet (a régi kliens nem használja, így ez ártalmatlan):
-   ```bash
-   npx firebase deploy --only firestore:indexes --project <PROJECT_ID>
-   ```
-   Ha a CLI felajánlja indexek **törlését** (olyanoké, amelyek léteznek az éles környezetben, de nem a `firestore.indexes.json`-ban), válaszolj **Nemet**, szakítsd meg és kérdezz. A Console → Firestore → Indexes ekkor mindkét `spots` indexet **Enabled** állapotban kell mutassa (az építés percektől órákig tart):
-   - `createdBy ↑ createdAt ↓` (új, T30: a saját-spotok lekérdezés);
-   - `status ↑ createdAt ↓` (meglévő: a jóváhagyott-spotok lekérdezés). Ha ez hiányzik az éles környezetben, állj meg és kérdezz.
-
-   Ezután telepítsd a konténert egy olyan commitból, amely tartalmazza a T30 klienst (`docs/deploy.md`). Ha a Vercel még mindig kiszolgálja az appot (Stage A), telepítsd újra a Vercelt is ugyanabból a commitból, megtartva a `NEXT_PUBLIC_MOVED_TO`-t; a Stage B (308 átirányítás) vagy Stage C után a Vercelnek semmire sincs szüksége. (Az engedélyezett index nélkül a bejelentkezett felhasználók saját-spotok figyelője (listener) `The query requires an index` hibával hiúsul meg a DevTools konzolban; a térképet ez nem érinti.) Füstpróba:
-   - [ ] kijelentkezve: a térkép mutatja a jóváhagyott spotokat, nincsenek függőben lévő (sárga) jelölők;
-   - [ ] egy normál fiók: Profile → My Spots mutatja a saját függőben lévő spotját; a térkép továbbra is elrejti;
-   - [ ] egy admin: függőben lévő jelölők a térképen és a Pending Approval fül a számlálójával;
-   - [ ] nincsenek `permission` vagy `index` hibák a DevTools konzolban.
-2. **Várj legalább 24 órát**, hogy a régi kliens nyitott lapjai és PWA-ablakai újratöltődjenek.
-3. **Szabályok.** Mentsd az élő szabályokat egy külön mappába: futtasd a §1 **szabály**-mentési blokkot (`mkdir` … `OK: rules saved`) minden `~/spoton-rollback`-et `~/spoton-rollback/pre-t30`-ra cserélve, majd
-   ```bash
-   echo '{"firestore":{"rules":"firestore.rules"}}' > ~/spoton-rollback/pre-t30/firebase.json
-   diff -wB ~/spoton-rollback/pre-t30/firestore.rules firestore.rules
-   ```
-   A `diff` csak a T30 változásokat kell mutassa: a `spots` `allow read` szabályt és a kommentjét, valamint a fejléc-komment sort. Bármely más eltérés: állj meg és kérdezz. Azután:
-   ```bash
-   npx firebase deploy --only firestore:rules --project <PROJECT_ID> --dry-run
-   npx firebase deploy --only firestore:rules --project <PROJECT_ID>
-   ```
-   Ismételd meg az 1. lépés füstpróbáját, plusz: egy normál fiók Kedvencei továbbra is mutatják a jóváhagyott kedvenceit.
-4. **Figyeld** a Firestore megtagadásokat 24–48 órán át (mint a §6-ban: Console → Firestore → Usage, és `firestore.googleapis.com/rules/evaluation_count` `result=DENY`-vel). Elvárt: kis csordogálás a régi ablakoktól, amelyek nem töltődtek újra (beragadt betöltő képernyő vagy elavult spotok, amíg újra nem töltődnek). Egy felhasználói folyamathoz köthető kiugrás azt jelenti, hogy állítsd vissza.
-5. **Visszaállítás:**
-   - Szabályok: `npx firebase deploy --only firestore:rules --project <PROJECT_ID> --config ~/spoton-rollback/pre-t30/firebase.json` (azonnali).
-   - Kliens: csak a szabályok visszaállítása **után** (a T30 előtti kliens nem működik a T30 szabályok alatt); ezután irányítsd a `docker-compose.yml`-t vissza az előző digestre.
-   - Az új index ártalmatlan, és maradhat.
+Minden commit a `7609c90`-tól kezdve tartalmazza a T30 klienst, annak indexét és spot-olvasási szabályát, így ez a bevezetés már kiszállította a T30-at: az indexet a §4.6-ban, a klienst a §5-ben, a szabályokat a §6-ban. Nincs semmi külön telepítendő.
 
 ---
 
@@ -329,18 +374,23 @@ A kliens-telepítéstől szándékozott változás (ROADMAP Q7): egy **másik** 
 
 Soha ne állíts vissza a step 0 elé: az alábbi minden visszaállítási célpont már tartalmazza a vészhelyzeti javítást.
 
-- **T30 szabályok és kliens (§8.1):** lásd a §8.1 5. lépését (előbb a szabályok, azután a kliens).
+- **PII-eltávolítás (§7):** tervezetten nem visszafordítható.
 - **Szabályok (§6):**
   ```bash
   npx firebase deploy --only firestore:rules,storage --project <PROJECT_ID> --config ~/spoton-rollback/firebase.json
   ```
-  Ez azonnal visszaállítja a §6-ban mentett szabályokat (az átmeneti Firestore szabályokat és a javított Storage szabályokat). Az azóta írt adatok kompatibilisek.
-- **Kliens (§5):** irányítsd a `docker-compose.yml`-t vissza az előző image digestre (`docs/deploy.md` §11); telepítsd újra a Vercel korábbi telepítését. **Csak amíg a régi szabályok élnek**, mert a régi kliensek elromlanak a T12 szabályok alatt.
+  Ez azonnal visszaállítja a §6-ban mentett szabályokat (az átmeneti Firestore szabályokat és a javított Storage szabályokat). Az azóta írt adatok kompatibilisek. Az átmeneti szabályok minden spot-lekérdezést engedélyeznek (a régi szűretlent is), és az új kliens működik alattuk, így egy szabályproblémához **nem** kell kliens-visszaállítás.
+- **Kliens (§5):** **csak amíg az átmeneti szabályok élnek** (előbb a §6-ot állítsd vissza), mert a régi kliensek elromlanak a §6 szabályai alatt (a szűretlen spot-lekérdezésüket a szabályok megtagadják).
+  - Konténer: ennek az első release-nek nincs előző digestje; állítsd le a `cd /srv/docker/spoton && docker compose down` paranccsal (későbbi release-eknél használd a `docs/deploy.md` §11-et).
+  - Vercel: Deployments → az utolsó production telepítés a deploy commit előtt → ⋯ → Instant Rollback (vagy "Promote to Production"). Egy instant rollback után a Vercel leállítja az új telepítések automatikus előléptetését, amíg egyet kézzel elő nem léptetsz: ezt tartsd észben a 7. lépésnél (§8).
+- **Indexek (§4.6):** nincs szükség visszaállításra; az új index ártalmatlan, és maradhat.
 - **Átmeneti szabályok (§4.5):**
   ```bash
   npx firebase deploy --only firestore:rules --project <PROJECT_ID> --config ~/spoton-rollback/pre-transitional/firebase.json
   ```
   Visszaállítja a §1 alapállapotot. Csak amíg a régi kliens él, vagy a kliens visszaállítása után (az új kliensnek szüksége van az átmeneti olvasási jogosultságokra).
+- **Backfill (§4, és annak §6-beli újrafuttatása):** nincs szükség visszaállításra (additív mezők és gyűjtemények).
+- **Bootstrap (§3):** töröld az `admins/<uid>`-t a konzolban, de csak a kliens visszaállítása után (a régi kliens a `NEXT_PUBLIC_ADMIN_EMAIL`-t használja). Tartsd meg addig a legacy admin-dokumentumokat; a régi kliens olvassa őket.
 - **Függvények (§2):**
   ```bash
   git checkout pre-security
@@ -348,9 +398,6 @@ Soha ne állíts vissza a step 0 elé: az alábbi minden visszaállítási célp
   git checkout main && npm ci
   ```
   Fogadd el csak az új függvények törlését, és **csak azután**, hogy a kliens vissza lett állítva.
-- **Bootstrap (§3):** töröld az `admins/<uid>`-t a konzolban, de csak a kliens visszaállítása után (a régi kliens a `NEXT_PUBLIC_ADMIN_EMAIL`-t használja). Tartsd meg addig a legacy admin-dokumentumokat; a régi kliens olvassa őket.
-- **Backfill (§4):** nincs szükség visszaállításra (additív mezők és gyűjtemények).
-- **PII-eltávolítás (§7):** tervezetten nem visszafordítható.
 
 ---
 
@@ -359,16 +406,17 @@ Soha ne állíts vissza a step 0 elé: az alábbi minden visszaállítási célp
 | Lépés | Kész (dátum, kézjegy) |
 |---|---|
 | Step 0 vészhelyzeti javítás igazoltan él; adminleltár elkészült; ismeretlen admin-dokumentumok törölve | |
-| §0 előfeltételek; `pre-security` tag pusholva | |
+| §0 előfeltételek; deploy commit rögzítve (SHA: …); `<RELEASE_TAG>` pusholva rá (`OK: release tag`); `pre-security` tag pusholva | |
 | §1 Firestore export; szabályok mentve (módszer: REST API / konzolmásolás); alapállapot összehasonlítva | |
 | §2 függvények telepítve; mind a 16 függvény Node 22-n, `europe-west3`-ban | |
 | §3 szuperadmin bootstrapolva | |
 | §4 backfill alkalmazva; `planned writes: 0`; `admins invalid` = csak legacy dokumentumok | |
 | §4.5 átmeneti szabályok telepítve | |
-| §5 kliens él az új domainen és a Vercelen; füstpróba; adminok újra hozzáadva | |
-| §6 végleges szabályok telepítve; füstpróba; 24–48 órás figyelés tiszta; legacy admin-dokumentumok törölve | |
+| §4.6 indexek telepítve; mindhárom `spots` index Enabled | |
+| §5 kliens (konténer `<RELEASE_TAG>` + Vercel, deploy commit) él; füstpróba; adminok újra hozzáadva | |
+| §6 kb. 1 órával azután, hogy a §5 mindenhol él (vagy a feljegyzett Vercel `max-age` után), ugyanabban a munkamenetben: végleges szabályok (T12 + T30 + csak jóváhagyott spotokra engedett értékelések) telepítve; füstpróba; 24–48 órás figyelés tiszta; legacy admin-dokumentumok törölve | |
+| §6 backfill újrafuttatás alkalmazva; `planned writes: 0`; `admins invalid` = csak legacy dokumentumok | |
 | §7 PII-eltávolítás alkalmazva; `--check` exit 0 | |
-| §8.1 T30 index engedélyezve, majd T30 kliens; ≥ 24 órával később T30 szabályok telepítve; füstpróba; figyelés tiszta | |
 
 Azután:
 - [ ] Amint a bevezetés igazoltan stabil, hagyd, hogy a biztonsági mentések N nap után lejárjanak (te választod meg az N-t, például 30):
@@ -390,9 +438,9 @@ Azután:
 |---|---|
 | A **jelenleg telepített (régi)** app néha nem töltődik be a bejelentkezés után (a step 0 után jelentve) | Valószínűleg **BUG-24**, nem a javítás: a betöltő képernyő beragadhat, amikor a térkép készenléti időzítőjét egy újrarenderelés megszakítja (`docs/audit/code-review.md`). Ez időzítésfüggő, egy újratöltés általában segít, és a javítás (T04) a step 4 klienssel érkezik. A step 0 javítás csak az `admins`, `categories` és Storage `spot-images` / `spots` írásait korlátozza, és a régi kliens betöltés közben egyiket sem teszi. Ellenőrzéshez: nyisd meg a DevTools → Console-t a beragadt oldalon. A `FirebaseError: Missing or insufficient permissions` szabály-megtagadást jelent; ilyen hiba hiánya BUG-24-et jelent. Ellenőrizd a Console → Firestore → Usage-t is (biztonsági szabály kiértékelések: megtagadott), és a Storage szabályok figyelését az akkori megtagadásokra. |
 | Egy megtagadásról **bizonyítottan** kiderül, hogy egy szabályváltozásból ered | Állítsd vissza azt a változást: a §4.5 vagy §6 után használd a §9-et. A step 0 javításhoz nincs helyi fájl: a Console → Firestore (vagy Storage) → Rules az előzménypaneljében megtartja a publikált verziókat; nyisd meg a 2026-09-26 előtti verziót, hasonlítsd össze, és csak azt a részt publikáld, aminek vissza kell mennie. **Soha** ne nyisd meg újra az `admins` írásait minden bejelentkezett felhasználó számára (LR-01), és soha, amíg a T08 függvények telepítve vannak. Jelentsd a megtagadást. |
-| A régi PWA-ablakok jogosultsági hibákat mutatnak a §6 után | Elvárt (trap 2). A felhasználó újratölti az oldalt, vagy újratelepíti a PWA-t az új domainről. |
+| A régi ablakok (a §5 Vercel-újratelepítés előtt megnyitva) jogosultsági hibákat vagy elavult spotokat mutatnak a §6 után | Elvárt (trap 2): a régi kliens szűretlen spot-lekérdezését a szabályok megtagadják, így ezek az ablakok elavult spotokat tartanak meg, és az írásaik meghiúsulnak; nem ragadnak be a betöltő képernyőn. A felhasználó újratölti az oldalt, vagy újratelepíti a PWA-t az új domainről. |
 | Egy szkript ezt írja ki: `refusing: real project … must not be combined with emulator env` | Emulátor-változók vannak beállítva ebben a shellben. Futtasd a §0 `unset` sorát, vagy nyiss egy új shellt. |
 | Egy szkript jogosultsági vagy kvótahibával hiúsul meg | Használd a §0 SA kulcsát a `gcloud` felhasználói hitelesítő adatai helyett. |
 | A §1 REST hívások semmit vagy `null`-t adnak vissza | Használd a konzolmásolásos tartalék megoldást, és jegyezd fel a §10-ben. |
-| Az `npx firebase deploy` függvények törlését kéri | Válaszolj **Nemet**, és szakítsd meg (trap 6), kivéve a §9 függvény-visszaállításban. |
+| Az `npx firebase deploy` függvények törlését kéri | Válaszolj **Nemmel** (trap 6), kivéve a §9 függvény-visszaállításban: megtartja őket, és a telepítés folytatódik. Ha inkább meg akarsz állni, nyomj Ctrl-C-t a kérdésnél; addig még semmi sem lett telepítve. |
 | A `strip-review-pii.ts` ezt jelenti: `still failing its precondition after 3 retries` | Éppen most adnak értékeléseket azokhoz a spotokhoz. Várj, és futtasd újra az `--apply`-t; idempotens, és csak azokat a spotokat írja újra, amelyeknek még szüksége van rá. |

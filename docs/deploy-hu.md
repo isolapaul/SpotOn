@@ -1,8 +1,10 @@
+> Fordítás. A mérvadó változat az angol `docs/deploy.md` (commit `847f034`). Eltérés esetén az angol változat érvényes.
+
 # SpotOn — szerver telepítési runbook
 
 Hogyan futtasd az aláírt SpotOn image-et az otthoni szerveren a meglévő Cloudflare Tunnel mögött, és hogyan frissítsd vagy állítsd vissza.
 Az itt hivatkozott fájlok a repository `deploy/` könyvtárában találhatók: `docker-compose.yml`, `.env.example`, `update.sh`.
-Ebben a dokumentumban minden manuális lépés Paul számára. Semmi nem fut le automatikusan.
+Ebben a dokumentumban minden lépés Paul manuális lépése. Semmi nem fut le automatikusan.
 
 Helykitöltők, amelyeket magadnak kell kicserélned: `<server>` (a szerver SSH host neve), `<timestamp>` (a backup fájl nevéből).
 
@@ -24,7 +26,7 @@ Browser
 - uid/gid 1000 alatt fut, csak olvasható root filesystemmel, minden capability eldobva és `no-new-privileges`. Írás csak két tmpfs mountra megy (`/tmp`, `/app/.next/cache`).
 - Tag **és** digest szerint van rögzítve, valamint `com.centurylinklabs.watchtower.enable=false` címkével ellátva, így a Watchtower soha nem nyúl hozzá. A frissítések kizárólag a `./update.sh` (§7) segítségével történnek, amely előbb ellenőrzi a cosign aláírást.
 
-**Hova illik ez:** ROADMAP §4 4. lépés (a Cloud Functions deploy és a backfill után, a rules deploy előtt).
+**Hova illik ez:** ROADMAP §4 4. lépés (a Cloud Functions deploy, a backfill, az átmeneti szabályok és az index deploy után; kb. 1 órával a végleges rules deploy előtt, ugyanabban a munkamenetben). A release ugyanabból a commitból készüljön, mint a szabályok és az indexek (`docs/security-rollout.md` §0).
 
 ## 2. Előfeltételek
 
@@ -80,7 +82,7 @@ Egyszeri beállítások a GitHub repositoryban, mielőtt az első `v*` taget pus
 
 Ezt csak **azután** csináld, hogy az első valódi release telepítve van, azaz ha a repositoryban lévő `deploy/docker-compose.yml` már valódi `tag@digest`-et tartalmaz a csupa nullás helykitöltő helyett. Alapból nincs beállítva.
 
-1. Hozz létre egy klasszikus PAT-ot az egyetlen `read:packages` scope-pal (ugyanolyan fajta, mint a §4, de külön token), és add hozzá `DEPENDABOT_GHCR_TOKEN` repository **secret**-ként (Settings → Secrets and variables → **Dependabot** → New repository secret).
+1. Hozz létre egy klasszikus PAT-ot az egyetlen `read:packages` scope-pal (ugyanolyan fajta, mint a §4-ben, de külön token), és add hozzá `DEPENDABOT_GHCR_TOKEN` repository **secret**-ként (Settings → Secrets and variables → **Dependabot** → New repository secret).
 2. A `.github/dependabot.yml`-ben adj hozzá egy legfelső szintű registry-t:
    ```yaml
    registries:
@@ -103,7 +105,7 @@ Ha a Dependabot nem tud autentikálni a privát csomaghoz, távolítsd el újra 
 
 ## 4. GHCR bejelentkezés a szerveren
 
-`brvpaul`-ként futtatva.
+Futtasd `brvpaul`-ként.
 
 - Hozz létre egy klasszikus PAT-ot: GitHub → Settings → Developer settings → Personal access tokens → **Tokens (classic)** → Generate new token (classic).
   - Scope: **csak** `read:packages`.
@@ -158,6 +160,8 @@ cd /srv/docker/spoton
 ./update.sh v2.1.0                           # tag from the release / Dependabot PR
 ```
 
+Egy release akkor indul, amikor egy `vX.Y.Z` taget push-olsz a kiadandó commitra; a release workflow ezután buildeli, szkenneli, aláírja és publikálja az image-et. Az első release-nél (a biztonsági bevezetés) a tag a `docs/security-rollout.md` §0 szerinti deploy commiton jön létre.
+
 Mit csinál a szkript (`deploy/update.sh`), sorrendben:
 
 1. Csak végleges release tageket fogad el (`vX.Y.Z`); az `-rc` image-ek tesztelésre valók, és elutasításra kerülnek.
@@ -168,7 +172,7 @@ Mit csinál a szkript (`deploy/update.sh`), sorrendben:
 
 Az első sikertelen ellenőrzésnél megáll, mielőtt hozzányúlna a compose fájlhoz. **Soha** ne telepíts kézzel, ha a szkript elbukik; előbb derítsd ki, miért.
 Ha egy ellenőrzés átment, de a `docker compose pull` ezután elbukik, a futó container változatlan, de a `docker-compose.yml` már az új release-t nevezi meg: állítsd vissza az előzőt a §11 szerint. Ha az `up` elbukik vagy az új container nem lesz időben egészséges, a szkript hibával lép ki, és az új release lehet, hogy egészségtelenül fut: szintén állítsd vissza a §11 szerint.
-Ha maga az `update.sh` módosul egy release-ben, előbb másold az új verziót a szerverre (ugyanaz az `scp` sor, mint a §6, majd `chmod 750`).
+Ha maga az `update.sh` módosul egy release-ben, előbb másold az új verziót a szerverre (ugyanaz az `scp` sor, mint a §6-ban, majd `chmod 750`).
 
 ## 8. Egészség és logok
 
@@ -194,7 +198,7 @@ docker exec spoton /nodejs/bin/node -e 'fetch("http://127.0.0.1:3000/api/health"
   - Caching: hagyd az alapértelmezettet. A `/_next/static` immutable; az API `no-store`-t küld.
     **Ne** adj hozzá *Cache Everything*-et vagy bármely cache szabályt, amely HTML-t cache-el ezen a hostnéven: a cache-elt oldalak most elavult CSP-t szolgálnának ki, és a T32 után megtörnék a nonce alapú CSP-t.
   - Nonce alapú CSP (T32): az oldalak most dinamikusan renderelődnek, kérésenként friss script nonce-szal (`Cache-Control: private, no-cache, no-store`). A container méretezése változatlan: egyetlen page route van.
-    Bárminek, ami scripteket injektál a HTML-be (Rocket Loader, Zaraz, Web Analytics auto-inject, Bot Fight Mode / JavaScript Detections) kikapcsolva kell maradnia, vagy újra kell tesztelni a konzolban CSP hibákra: `'strict-dynamic'` alatt egy nonce nélkül injektált script blokkolásra kerül.
+    Bárminek, ami scripteket injektál a HTML-be (Rocket Loader, Zaraz, Web Analytics auto-inject, Bot Fight Mode / JavaScript Detections), kikapcsolva kell maradnia, vagy újra kell tesztelni a konzolban CSP hibákra: `'strict-dynamic'` alatt egy nonce nélkül injektált script blokkolásra kerül.
     Ellenőrzés: `curl -sI https://spoton.isolapaul.hu/` kétszer → két különböző `'nonce-…'` érték, és a `cf-cache-status` nem `HIT`.
 
 ## 10. Firebase és Google Cloud konzolok
@@ -219,6 +223,7 @@ cp docker-compose.yml.<timestamp>.bak docker-compose.yml && docker compose up -d
 
 A legújabb `.bak` (amelyet a sikertelen/rossz frissítés írt) tartalmazza az előző `tag@digest`-et; ellenőrizd a `grep -H image: docker-compose.yml.*.bak` paranccsal.
 Az előző digest még mindig a GHCR-ben van, mert a release-ek soha nem írják felül a tageket, és már ellenőrizve lett, amikor először telepítették.
+Első release: nincs előző digest (az egyetlen `.bak` a `v0.0.0` helykitöltőt tartalmazza); ehelyett állítsd le a containert a `docker compose down` paranccsal (`docs/security-rollout.md` §9).
 
 ## 12. Backupok
 
@@ -232,7 +237,7 @@ Az `.env` tartalmazza az SMTP jelszót, ezért a backupot titkosítva tárold.
 - [ ] Google bejelentkezés: asztali popup; iOS Safari átirányítás; iOS home-screen PWA.
 - [ ] Térkép csempék mind az 5 témában.
 - [ ] Adj hozzá egy spotot képpel (teszt felhasználóként); a kép megjelenik.
-- [ ] Push: engedélyezd az értesítéseket és váltsd ki egyet (pl. hagyj jóvá egy teszt spotot); az értesítés megérkezik, és rákattintva megnyílik az app.
+- [ ] Push: engedélyezd az értesítéseket és válts ki egyet (pl. hagyj jóvá egy teszt spotot); az értesítés megérkezik, és rákattintva megnyílik az app.
 - [ ] Feedback: küldj egyet képpel; az email megérkezik `SpotOn_feedback` tárggyal.
 - [ ] DevTools konzol: nincs CSP hiba a fenti folyamatokon.
 - [ ] `docker inspect spoton --format '{{json .HostConfig.PortBindings}}'` → `{}` (nincs közzétett port).
@@ -255,9 +260,9 @@ bejelentkezését, kedvencek cache-ét, telepítését és push feliratkozását
 
 Csak azután, hogy a telepítés utáni ellenőrzőlista (§13) zöld a `spoton.isolapaul.hu`-n.
 
-1. Vercel → Project → Settings → Environment Variables → add hozzá `NEXT_PUBLIC_MOVED_TO` = `https://spoton.isolapaul.hu`
+1. Vercel → Project → Settings → Environment Variables → add hozzá: `NEXT_PUBLIC_MOVED_TO` = `https://spoton.isolapaul.hu`
    (csak **Production**).
-2. Deployments → Redeploy a legutóbbi production deploymentet. Ez egy build-idejű változó: redeploy nélküli
+2. Deployments → Redeploy a legutóbbi production deploymentre. Ez egy build-idejű változó: redeploy nélkül a
    beállításának nincs hatása.
 3. Tartsd a Vercel `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`-jét a `<project>.firebaseapp.com`-on (a `/__/auth` proxy ott nincs használatban).
 
@@ -287,10 +292,10 @@ curl -sI 'https://spot-on-rho.vercel.app/some/path?x=1'
 ```
 
 - A `vercel.json`-t csak a Vercel olvassa. Nincs hatása a Docker image-re (a `.dockerignore` kizárja).
-- A böngészők cache-elnek egy 308-at, ezért kezeld visszafordíthatatlanként. A `vercel.json` törlése és újra deployolás megállítja az új
-  átirányításokat, de a böngészők, amelyek cache-elték a 308-at, továbbra is átirányítanak; ezért fut az A szakasz előbb 30 napig.
+- A böngészők cache-elik a 308-at, ezért kezeld visszafordíthatatlanként. A `vercel.json` törlése és az újra deployolás megállítja az új
+  átirányításokat, de azok a böngészők, amelyek cache-elték a 308-at, továbbra is átirányítanak; ezért fut előbb 30 napig az A szakasz.
 - A régi telepített PWA-k induláskor követik az átirányítást.
-- A régi origin push tokenjei addig működnek, amíg le nem takarítják őket; egy ilyen értesítésre kattintva a régi
+- A régi origin push tokenjei addig működnek, amíg ki nem takarítják őket; egy ilyen értesítésre kattintva a régi
   URL nyílik meg, amely átirányít.
 
 ### C szakasz: a Vercel projekt törlése (kb. 90 nappal a B szakasz után)
