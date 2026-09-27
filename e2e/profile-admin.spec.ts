@@ -43,6 +43,8 @@ test('super admin sees the admin tab without its own entry in the admin list', a
   await adminTab(page).click();
   await expect(page.getByRole('heading', { name: 'Current Admins' })).toBeVisible();
   await expect(page.getByText(E2E.admin.email, { exact: true })).toBeVisible();
+  // The admin doc stores `username`: the list shows it (not "undefined").
+  await expect(page.getByRole('heading', { name: E2E.admin.username, exact: true })).toBeVisible();
   await expect(page.getByText(E2E.superAdmin.email, { exact: true })).toHaveCount(0);
 });
 

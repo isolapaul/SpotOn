@@ -20,18 +20,9 @@ import { generateUsername, normalizeUsername } from '@/lib/username';
 import { extForMime } from '@/lib/spotImages';
 import type { TranslationKey } from '@/lib/translations';
 import { compressImage } from '@/lib/imageCompression';
+import { mapAdminDoc, type AdminUser } from '@/lib/mapAdminDoc';
 
 export type { User } from '@/lib/mapUserDoc';
-
-interface AdminUser {
-  id: string;
-  email: string;
-  name: string;
-  photoURL?: string;
-  addedAt: any;
-  addedBy: string;
-  role?: string;
-}
 
 export interface LookedUpUser {
   uid: string;
@@ -183,7 +174,7 @@ function startAdminListeners(uid: string, set: SetState) {
           collection(db, 'admins'),
           (snapshot) => {
             const adminUsers = snapshot.docs
-              .map((d) => ({ id: d.id, ...d.data() }) as AdminUser)
+              .map((d) => mapAdminDoc(d.id, d.data()))
               .filter((a) => a.role !== 'super');
             set({ adminUsers });
           },
