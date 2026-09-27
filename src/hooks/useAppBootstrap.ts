@@ -1,12 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useUserStore } from '@/store/useUserStore';
-import { useSpotStore } from '@/store/useSpotStore';
+import { useSpotStore, type SpotScope } from '@/store/useSpotStore';
 import { DELAYS } from '@/lib/constants';
 
 /**
+ * The spots listeners' scope for a user-store state (T30). A persisted user counts only once auth
+ * has confirmed it (`loading` false), so a stale cached uid never starts a query.
+ */
+function spotScopeOf(state: { user: { uid: string } | null; loading: boolean; isAdmin: boolean }): SpotScope {
+  const uid = !state.loading && state.user ? state.user.uid : null;
+  return { uid, isAdmin: uid !== null && state.isAdmin };
+}
+
+/**
  * Loading orchestration (moved out of page.tsx in T29): starts the auth listener and the spots
- * listener, and reports the app ready DELAYS.appReady ms after auth, spots (+ DELAYS.spotsSettle)
- * and the map (onMapLoad) are all loaded. Stops the spots listener on unmount (T21, BUG-01).
+ * listeners, and reports the app ready DELAYS.appReady ms after auth, approved spots
+ * (+ DELAYS.spotsSettle) and the map (onMapLoad) are all loaded. The own/admin spots listeners
+ * follow sign-in, sign-out and admin status (T30). Stops all spots listeners on unmount (T21, BUG-01).
  */
 export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void } {
   const [isAppReady, setIsAppReady] = useState(false);
@@ -38,9 +48,9 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
       setLoadingStates(prev => ({ ...prev, auth: true }));
     };
 
-    // Fetch spots
+    // Approved spots gate the loading screen; anonymous visitors never wait for auth (T30)
     const initializeSpots = async () => {
-      await useSpotStore.getState().fetchSpots();
+      await useSpotStore.getState().startSpots();
       if (cancelled) return;
       // Wait a bit to ensure spots are populated
       spotsTimer = setTimeout(() => {
@@ -48,20 +58,28 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
       }, DELAYS.spotsSettle);
     };
 
+    // Own/admin spots follow the signed-in user and admin status, synchronously on every change,
+    // so another user's (or a signed-out user's) pending spots are dropped at once (T30).
+    let scope = spotScopeOf(useUserStore.getState());
+    const unsubscribeUser = useUserStore.subscribe((state) => {
+      const next = spotScopeOf(state);
+      if (next.uid === scope.uid && next.isAdmin === scope.isAdmin) return;
+      scope = next;
+      useSpotStore.getState().syncSpotScopes(scope);
+    });
+
     // Start both initializations in parallel
     initializeAuth();
     initializeSpots();
+    useSpotStore.getState().syncSpotScopes(scope);
 
     // Cleanup
     return () => {
       cancelled = true;
       clearTimeout(spotsTimer);
-      // Clean up spots listener: read it at cleanup time (the render-time value is always null)
-      const unsub = useSpotStore.getState().unsubscribeSpots;
-      if (unsub) {
-        unsub();
-        useSpotStore.setState({ unsubscribeSpots: null });
-      }
+      unsubscribeUser();
+      // Clean up all spots listeners (read from the store at cleanup time)
+      useSpotStore.getState().stopSpots();
     };
   }, []);
 

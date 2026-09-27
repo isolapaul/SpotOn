@@ -5,6 +5,7 @@ import {
   serverTimestamp,
   onSnapshot,
   query,
+  where,
   orderBy,
   doc,
   updateDoc,
@@ -18,6 +19,7 @@ import { db, functions, storage } from '@/lib/firebase';
 import { MAX_SPOT_IMAGES, PLACEHOLDER_URL, extForMime, realImageCount } from '@/lib/spotImages';
 import { compressImage } from '@/lib/imageCompression';
 import { invalidatePublicProfile } from '@/store/publicProfiles';
+import { mergeSpotSources } from '@/lib/mergeSpots';
 
 export interface Review {
   id: string;
@@ -83,8 +85,12 @@ interface SpotStore {
   spots: Spot[];
   isLoading: boolean;
   error: string | null;
-  unsubscribeSpots: (() => void) | null;
-  fetchSpots: () => Promise<void>;
+  /** Starts the approved-spots listener (T30); resolves on its first snapshot (the loading gate). */
+  startSpots: () => Promise<void>;
+  /** Starts/stops the own-spots and all-spots listeners for the signed-in user (idempotent). */
+  syncSpotScopes: (scope: SpotScope) => void;
+  /** Stops every spots listener and clears the spots (unmount, T21). */
+  stopSpots: () => void;
   addSpot: (spotData: Omit<Spot, 'id' | 'imageUrls' | 'createdAt' | 'status' | 'primaryImageIndex'>, imageFiles: File[], primaryIndex: number, userId: string, isAdmin: boolean) => Promise<void>;
   addReview: (spotId: string, review: NewReview) => Promise<void>;
   addSpotImages: (spotId: string, imageFiles: File[], userId: string) => Promise<void>;
@@ -143,46 +149,136 @@ function updateSpotInState(
   }));
 }
 
+/** Who is signed in, as far as the spots listeners are concerned (T30). */
+export interface SpotScope {
+  uid: string | null;
+  isAdmin: boolean;
+}
+
+type ScopeName = 'approved' | 'own' | 'admin';
+interface ScopeSlot {
+  /** The uid the listener was started for ('' for approved). */
+  uid: string;
+  unsubscribe: () => void;
+  /** null until the first snapshot. */
+  spots: Spot[] | null;
+}
+type SpotSet = (partial: Partial<SpotStore>) => void;
+
+// T30: up to three spots listeners, so pending spots only reach their owner and admins:
+// `approved` (always), `own` (signed in, not admin), `admin` (all spots). `spots` is their merge.
+// Module-level, like the admin listeners in useUserStore.
+const slots: Partial<Record<ScopeName, ScopeSlot>> = {};
+
+function recompute(set: SpotSet, extra: Partial<SpotStore> = {}) {
+  set({
+    spots: mergeSpotSources({
+      admin: slots.admin?.spots ?? [],
+      own: slots.own?.spots ?? [],
+      approved: slots.approved?.spots ?? [],
+    }),
+    ...extra,
+  });
+}
+
+/** Stops one listener and forgets its data (the caller recomputes). Returns whether it was running. */
+function stopScope(name: ScopeName): boolean {
+  const slot = slots[name];
+  if (!slot) return false;
+  delete slots[name];
+  slot.unsubscribe();
+  return true;
+}
+
+function scopeQuery(name: ScopeName, uid: string) {
+  const spots = collection(db, 'spots');
+  if (name === 'approved') return query(spots, where('status', '==', 'approved'), orderBy('createdAt', 'desc'));
+  if (name === 'own') return query(spots, where('createdBy', '==', uid), orderBy('createdAt', 'desc'));
+  return query(spots, orderBy('createdAt', 'desc'));
+}
+
+function startScope(
+  name: ScopeName,
+  uid: string,
+  set: SpotSet,
+  hooks: { first?: () => void; failed?: (error: Error) => void } = {},
+) {
+  const slot: ScopeSlot = { uid, spots: null, unsubscribe: () => {} };
+  slots[name] = slot;
+  slot.unsubscribe = onSnapshot(
+    scopeQuery(name, uid),
+    (snapshot) => {
+      if (slots[name] !== slot) return; // stopped meanwhile
+      const first = slot.spots === null;
+      slot.spots = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Spot);
+      // `admin` supersedes `own` only once it has data, so the switch never empties anything.
+      if (name === 'admin' && first) stopScope('own');
+      recompute(set, name === 'approved' ? { isLoading: false, error: null } : {});
+      if (first) hooks.first?.();
+    },
+    (error) => {
+      if (slots[name] !== slot) return;
+      console.error(`Error fetching spots (${name}):`, error);
+      if (name === 'approved') {
+        // Keep the last approved spots, as before T30.
+        set({ error: error.message, isLoading: false });
+      } else {
+        // The listener is dead: drop only its data; the approved spots stay.
+        delete slots[name];
+        recompute(set, { error: error.message });
+      }
+      hooks.failed?.(error);
+    },
+  );
+}
+
+function startApprovedScope(set: SpotSet): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    try {
+      stopScope('approved');
+      set({ isLoading: true });
+      startScope('approved', '', set, { first: resolve, failed: reject });
+    } catch (error) {
+      console.error('Error setting up spots listener:', error);
+      set({ error: error instanceof Error ? error.message : String(error), isLoading: false });
+      reject(error);
+    }
+  });
+}
+
+function syncScopes({ uid, isAdmin }: SpotScope, set: SpotSet) {
+  let dropped = false;
+  // Data of a previous user (or of a signed-in user after sign-out) is dropped at once.
+  for (const name of ['own', 'admin'] as const) {
+    if (slots[name] && slots[name].uid !== uid) dropped = stopScope(name) || dropped;
+  }
+  if (uid && isAdmin) {
+    // `own` keeps its data until the new `admin` listener's first snapshot (see startScope).
+    if (!slots.admin) startScope('admin', uid, set);
+  } else {
+    dropped = stopScope('admin') || dropped;
+    if (uid && !slots.own) startScope('own', uid, set);
+  }
+  if (dropped) recompute(set);
+}
+
+function stopAllScopes(set: SpotSet) {
+  stopScope('admin');
+  stopScope('own');
+  stopScope('approved');
+  set({ spots: [] });
+}
+
 export const useSpotStore = create<SpotStore>((set, get) => ({
   spots: [],
   isLoading: false,
   error: null,
-  unsubscribeSpots: null,
 
-  fetchSpots: () => {
-    return new Promise<void>((resolve, reject) => {
-      try {
-        const existingUnsubscribe = get().unsubscribeSpots;
-        if (existingUnsubscribe) {
-          existingUnsubscribe();
-          set({ unsubscribeSpots: null });
-        }
+  startSpots: () => startApprovedScope(set),
 
-        set({ isLoading: true });
-        const q = query(collection(db, 'spots'), orderBy('createdAt', 'desc'));
-        let isFirstSnapshot = true;
+  syncSpotScopes: (scope) => syncScopes(scope, set),
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const spotsList: Spot[] = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Spot));
-          set({ spots: spotsList, isLoading: false, error: null });
-          if (isFirstSnapshot) {
-            isFirstSnapshot = false;
-            resolve();
-          }
-        }, (error) => {
-          console.error('Error fetching spots:', error);
-          set({ error: error.message, isLoading: false });
-          reject(error);
-        });
-
-        set({ unsubscribeSpots: unsubscribe });
-      } catch (error: any) {
-        console.error('Error setting up spots listener:', error);
-        set({ error: error.message, isLoading: false });
-        reject(error);
-      }
-    });
-  },
+  stopSpots: () => stopAllScopes(set),
 
   addSpot: async (spotData, imageFiles, primaryIndex, userId, isAdmin) => {
     try {
