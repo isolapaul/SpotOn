@@ -30,7 +30,11 @@ export function useSpotEdit(spot: Spot | null): SpotEdit {
   // The draft remembers which spot it belongs to. When another spot (or none) is shown, it is
   // dropped during render (React's "adjust state on prop change" pattern, guarded by the draft
   // itself), so no frame shows the previous spot's draft and Save can never target another spot.
-  const [draft, setDraft] = useState<{ spotId: string; name: string; description: string } | null>(null);
+  // baseName/baseDescription: the values when editing started. Save compares against them, so a
+  // field changed remotely meanwhile is not overwritten unless the user edited it.
+  const [draft, setDraft] = useState<{
+    spotId: string; name: string; description: string; baseName: string; baseDescription: string;
+  } | null>(null);
   if (draft && draft.spotId !== spot?.id) setDraft(null);
   const current = draft && draft.spotId === spot?.id ? draft : null;
 
@@ -42,7 +46,8 @@ export function useSpotEdit(spot: Spot | null): SpotEdit {
 
   const start = () => {
     if (!spot) return;
-    setDraft({ spotId: spot.id, name: spot.name, description: spot.description ?? '' });
+    const description = spot.description ?? '';
+    setDraft({ spotId: spot.id, name: spot.name, description, baseName: spot.name, baseDescription: description });
   };
 
   const cancel = () => setDraft(null);
@@ -50,8 +55,8 @@ export function useSpotEdit(spot: Spot | null): SpotEdit {
   const save = async () => {
     if (!spot || !current) return;
     try {
-      const nameChanged = !!editName.trim() && editName.trim() !== spot.name;
-      const descChanged = editDescription.trim() !== (spot.description ?? '');
+      const nameChanged = !!editName.trim() && editName.trim() !== current.baseName;
+      const descChanged = editDescription.trim() !== current.baseDescription;
       if (nameChanged) await updateSpotName(spot.id, editName.trim());
       if (descChanged) await updateSpotDescription(spot.id, editDescription.trim());
       setDraft(null);

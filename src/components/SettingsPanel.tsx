@@ -11,6 +11,7 @@ import { compressImage } from '@/lib/imageCompression';
 import { MAX_UPLOAD_BYTES, Z } from '@/lib/constants';
 import { translate, type Language } from '@/lib/i18n';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useUserLocation } from '@/hooks/useUserLocation';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
 
 interface SettingsPanelProps {
@@ -24,6 +25,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
   const t = useT();
   const { showToast } = useToastStore();
   const { isPermissionGranted, isLoading: isNotificationLoading, requestPermission, disableNotifications } = usePushNotifications();
+  const { request: requestLocation } = useUserLocation();
   
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
@@ -302,22 +304,19 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
             </h3>
             
             <button
-              onClick={() => {
+              onClick={async () => {
+                // Unsupported: silent, as before (no spinner, no toast)
                 if (!navigator.geolocation) return;
                 setIsRequestingLocation(true);
-                navigator.geolocation.getCurrentPosition(
-                  () => {
-                    setIsRequestingLocation(false);
-                    showToast(t('locationSuccess'), 'success');
-                    // Force page reload to pick up new location
-                    globalThis.location.reload();
-                  },
-                  () => {
-                    setIsRequestingLocation(false);
-                    showToast(t('locationDenied'), 'error');
-                  },
-                  { enableHighAccuracy: true, timeout: 10000 }
-                );
+                const result = await requestLocation();
+                setIsRequestingLocation(false);
+                if (result === 'granted') {
+                  showToast(t('locationSuccess'), 'success');
+                  // Force page reload so the map re-pans to the new (now cached) location
+                  globalThis.location.reload();
+                } else if (result === 'denied') {
+                  showToast(t('locationDenied'), 'error');
+                }
               }}
               disabled={isRequestingLocation}
               className="w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2

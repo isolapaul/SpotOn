@@ -6,8 +6,8 @@ import { blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstR
 
 // T11b: spot interactions via callables, review payload, upload paths, no write on read.
 // Data assertions use firebase-admin against the Firestore emulator (FIRESTORE_EMULATOR_HOST is set
-// by `firebase emulators:exec`). The details panel shows a snapshot of the spot (T29), so it is
-// closed and reopened before asserting review/photo changes in the UI.
+// by `firebase emulators:exec`). The details panel reads the live spot (T29); the tests still close
+// and reopen it before asserting review/photo changes in the UI.
 // Mutated fixtures (interactionSpot, level5.approvedSpot, spots created here) are reset before and
 // after the run, so other specs and retries always see the seeded state.
 

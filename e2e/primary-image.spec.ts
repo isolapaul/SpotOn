@@ -6,8 +6,8 @@ import { blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstR
 
 // T21 (BUG-03): "set primary" in the image manager targets the clicked image, even when imageUrls
 // starts with the placeholder. The fixture is reset before and after the run, so retries always
-// see the seeded state. The details panel shows a snapshot of the spot (T29), so it is closed and
-// reopened before asserting.
+// see the seeded state. The details panel reads the live spot (T29); it is still closed and reopened
+// before asserting, which also checks the reopened state.
 
 const spot = E2E.primaryImageSpot;
 const [, urlA, urlB] = spot.imageUrls;

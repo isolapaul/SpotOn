@@ -6,8 +6,8 @@ import { blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstR
 
 // T28: the split SpotDetailsPanel. Uses only E2E.detailsSpot (two images, owned by admin, seeded
 // as saved by `user`). The favourite and the review are reset before and after the run, so the
-// fixture and the user doc always end as seeded. The panel shows a snapshot of the spot (T29), so
-// it is closed and reopened before asserting a new review.
+// fixture and the user doc always end as seeded. The panel reads the live spot from the store
+// (T29); the review test still closes and reopens it, which also checks the reopened state.
 
 const spot = E2E.detailsSpot;
 const reviewComment = `E2E details review ${Date.now().toString(36)}`;

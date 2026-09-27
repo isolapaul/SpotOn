@@ -33,7 +33,7 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
 
     setIsSubmitting(true);
     try {
-      // BUG-25: no local append; the review shows once the spot is reopened (snapshot, T29).
+      // BUG-25: no local append; the spots listener delivers the new review and the panel shows it live (T29).
       await addReview(spot.id, {
         userId: user.uid,
         userName: user.username || t('anonymous'),

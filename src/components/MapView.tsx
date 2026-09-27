@@ -6,17 +6,14 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Spot } from '@/store/useSpotStore';
 import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
-import { useT } from '@/hooks/useT';
 import SpotInfoWindow from './SpotInfoWindow';
 import { buildMarkerSvg, getMarkerSize, type MarkerStatus } from '@/lib/mapMarkers';
 import {
   DEFAULT_MAP_CENTER,
   DEFAULT_MAP_ZOOM,
   DELAYS,
-  GEOLOCATION_TIMEOUT_MS,
   INITIAL_MARKER_ZOOM,
   LOCATE_ZOOM,
-  LOCATION_CACHE_MAX_AGE_MS,
   Z,
 } from '@/lib/constants';
 
@@ -25,6 +22,8 @@ interface MapViewProps {
   onLocationSelect?: (location: { lat: number; lng: number }) => void;
   tempMarker?: { lat: number; lng: number } | null;
   spots?: Spot[];
+  /** Blue dot and one-time pan target (page: the shared location, or the default centre once denied). */
+  userLocation?: { lat: number; lng: number } | null;
   onSpotDetailsOpen?: (spot: Spot) => void;
   onMapLoad?: () => void;
   onMapClick?: () => void;
@@ -148,57 +147,22 @@ export default function MapView({
   onLocationSelect,
   tempMarker,
   spots = [],
+  userLocation = null,
   onSpotDetailsOpen,
   onMapLoad,
   onMapClick,
 }: Readonly<MapViewProps>) {
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   // Marker sizing starts at INITIAL_MARKER_ZOOM (13), not the map's opening zoom: kept as is.
   const [zoomLevel, setZoomLevel] = useState(INITIAL_MARKER_ZOOM);
 
   const { theme } = useMapThemeStore();
-  const t = useT();
-
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-
-    const cachedLocation = sessionStorage.getItem('userLocation');
-    const cachedTime = sessionStorage.getItem('userLocationTime');
-
-    if (cachedLocation && cachedTime) {
-      const age = Date.now() - Number.parseInt(cachedTime, 10);
-      if (age < LOCATION_CACHE_MAX_AGE_MS) {
-        setUserLocation(JSON.parse(cachedLocation));
-        return;
-      }
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
-        setUserLocation(loc);
-        sessionStorage.setItem('userLocation', JSON.stringify(loc));
-        sessionStorage.setItem('userLocationTime', Date.now().toString());
-      },
-      () => setUserLocation({ lat: DEFAULT_MAP_CENTER[0], lng: DEFAULT_MAP_CENTER[1] }),
-      { enableHighAccuracy: false, timeout: GEOLOCATION_TIMEOUT_MS, maximumAge: LOCATION_CACHE_MAX_AGE_MS }
-    );
-  }, []);
 
   // Highlight-expiry reference time, computed once per render (not per marker)
   const nowIso = new Date().toISOString();
 
   return (
     <div className={`absolute inset-0 w-full h-full ${Z.mapBase}`}>
-      {isAddingSpot && (
-        <div className={`absolute top-20 left-1/2 -translate-x-1/2 ${Z.mapInner} glass-card px-6 py-3 pointer-events-none animate-fade-in`}>
-          <p className="text-white font-medium text-center">
-            {t('clickMapToSelect')}
-          </p>
-        </div>
-      )}
-
       <MapContainer
         center={DEFAULT_MAP_CENTER}
         zoom={DEFAULT_MAP_ZOOM}

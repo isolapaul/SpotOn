@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserStore } from '@/store/useUserStore';
 import { useT } from '@/hooks/useT';
-import { useUiStore } from '@/store/useUiStore';
 import { getMovedTo } from '@/lib/movedTo';
 import { DELAYS } from '@/lib/constants';
 
@@ -14,7 +13,6 @@ export default function NotificationPrompt() {
   const { user } = useUserStore();
   const t = useT();
   const { isPermissionGranted, isLoading, initializePush } = usePushNotifications();
-  const { setNotificationPromptVisible } = useUiStore();
 
   // Keyed on the uid, not the user object: store updates that replace the object must not restart the timer.
   const uid = user?.uid;
@@ -51,17 +49,10 @@ export default function NotificationPrompt() {
     return () => clearTimeout(id);
   }, [uid, isPermissionGranted]);
 
-  // Sync visibility with global UI store so other components can react
-  useEffect(() => {
-    setNotificationPromptVisible(!!showPrompt && !isDismissed);
-    return () => setNotificationPromptVisible(false);
-  }, [showPrompt, isDismissed, setNotificationPromptVisible]);
-
   const handleEnable = async () => {
     const success = await initializePush();
     if (success) {
       setShowPrompt(false);
-      setNotificationPromptVisible(false);
     }
   };
 
@@ -69,7 +60,6 @@ export default function NotificationPrompt() {
     setShowPrompt(false);
     setIsDismissed(true);
     sessionStorage.setItem('notification-prompt-dismissed', 'true');
-    setNotificationPromptVisible(false);
   };
 
   if (!showPrompt || !user || isDismissed) {

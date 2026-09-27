@@ -32,15 +32,19 @@ Firebase stays the backend (decision: *app container only*).
 ## 3. Repository map
 
 ```
-src/app/page.tsx                 Orchestrator: loads auth/spots/map, owns panel open/close state
+src/app/page.tsx                 Orchestrator: wires useUiStore (activePanel, location selection), useAppBootstrap, useVisibleSpots and useUserLocation to the panels and the map
 src/app/layout.tsx               Metadata, viewport, <InstallGate/> overlay
 src/app/api/feedback/route.ts    Feedback email endpoint (SMTP)
 src/app/api/firebase-messaging-sw/route.ts  FCM service worker (generated from NEXT_PUBLIC_* config)
 src/components/                  All UI (panels, modals, map). God components: ProfilePanel, SpotDetailsPanel
 src/store/useSpotStore.ts        Spots listener + all spot mutations; admin state lives in useUserStore (isAdmin / isSuperAdmin, from admins/{uid})
 src/store/useUserStore.ts        Auth flows, user doc, admins, username, profile images, highlights
+src/store/useLocationStore.ts    Location status + sessionStorage cache; the only geolocation caller
 src/store/use*Store.ts           language (t()), map theme, notifications, toast (forwards to notifications), ui
 src/hooks/usePushNotifications.ts FCM permission/token handling
+src/hooks/useAppBootstrap.ts     Loading orchestration: auth + spots listeners, map ready, app-ready delays
+src/hooks/useUserLocation.ts     The user's location (one automatic request + manual request), from useLocationStore
+src/hooks/useVisibleSpots.ts     Map spots filtered by role (admins: all, others: approved)
 src/lib/firebase.ts              Firebase client init (auth, db, storage, functions)
 src/lib/translations.ts          hu/en/de dictionaries (TranslationKey type)
 src/lib/levelUtils.ts            Level thresholds 3/10/15/20 spots, perks
