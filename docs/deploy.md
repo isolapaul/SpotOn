@@ -190,9 +190,12 @@ docker exec spoton /nodejs/bin/node -e 'fetch("http://127.0.0.1:3000/api/health"
   - Security → WAF → rate limiting rule (optional):
     `http.request.uri.path eq "/api/feedback" and http.request.method eq "POST"`, counted per IP, action Block.
     On the Free plan the period is 10 s, so use e.g. 3 requests / 10 s. The app's own limit (T14) stays authoritative.
-  - Bot Fight Mode: optional. If you enable it, re-test sign-in, feedback and push registration.
+  - Bot Fight Mode: **off**. It injects Cloudflare's JavaScript Detections script into the HTML, which the nonce CSP (T32) blocks unless Cloudflare adds the page's nonce. If you turn it on, load `/`, sign in with Google and register push with DevTools open: the console must show no CSP errors.
   - Caching: leave the default. `/_next/static` is immutable; the API sends `no-store`.
     Do **not** add *Cache Everything* or any cache rule that caches HTML on this hostname: cached pages would serve a stale CSP now, and would break the nonce-based CSP after T32.
+  - Nonce-based CSP (T32): pages are now dynamically rendered, with a fresh script nonce per request (`Cache-Control: private, no-cache, no-store`). Container sizing is unchanged: there is a single page route.
+    Anything that injects scripts into the HTML (Rocket Loader, Zaraz, Web Analytics auto-inject, Bot Fight Mode / JavaScript Detections) must stay off, or be re-tested for CSP errors in the console: under `'strict-dynamic'` an injected script without the nonce is blocked.
+    Check: `curl -sI https://spoton.isolapaul.hu/` twice → two different `'nonce-…'` values, and `cf-cache-status` is not `HIT`.
 
 ## 10. Firebase and Google Cloud consoles
 

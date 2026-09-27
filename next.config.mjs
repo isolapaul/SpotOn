@@ -1,32 +1,11 @@
+import { buildCsp } from './src/lib/csp.mjs';
+
 const isDev = process.env.NODE_ENV !== 'production';
 const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === '1';
 
-// Content-Security-Policy built from the hosts the app actually uses (T15).
-// headers()/rewrites() are evaluated at build time, so every env var read here is a build-time input.
-// - dev (`next dev`) adds 'unsafe-eval' (React Refresh) and drops upgrade-insecure-requests;
-// - emulator test builds (NEXT_PUBLIC_USE_EMULATORS=1) allow the local http/ws emulator endpoints and
-//   must not upgrade http:// sub-resources.
-function buildCsp() {
-  const local = useEmulators ? ['http://127.0.0.1:*', 'http://localhost:*'] : [];
-  const d = {
-    'default-src': ["'self'"],
-    'script-src': ["'self'", "'unsafe-inline'", ...(isDev ? ["'unsafe-eval'"] : []), 'https://apis.google.com', 'https://www.gstatic.com'],
-    'style-src': ["'self'", "'unsafe-inline'"],
-    'img-src': ["'self'", 'data:', 'blob:', 'https://*.tile.openstreetmap.org', 'https://*.basemaps.cartocdn.com', 'https://server.arcgisonline.com', 'https://firebasestorage.googleapis.com', 'https://*.googleusercontent.com', ...local],
-    'font-src': ["'self'", 'data:'],
-    'connect-src': ["'self'", 'https://*.googleapis.com', 'https://*.cloudfunctions.net', 'https://apis.google.com', ...local, ...(useEmulators ? ['ws://127.0.0.1:*', 'ws://localhost:*'] : [])],
-    'frame-src': ["'self'", 'https://*.firebaseapp.com', 'https://apis.google.com', 'https://accounts.google.com', ...local],
-    'worker-src': ["'self'", 'blob:'],
-    'manifest-src': ["'self'"],
-    'object-src': ["'none'"],
-    'base-uri': ["'self'"],
-    'form-action': ["'self'"],
-    'frame-ancestors': ["'none'"],
-  };
-  const parts = Object.entries(d).map(([k, v]) => `${k} ${v.join(' ')}`);
-  if (!isDev && !useEmulators) parts.push('upgrade-insecure-requests');
-  return parts.join('; ');
-}
+// Content-Security-Policy (T15; nonce-based page policy T32). headers()/rewrites() are evaluated at build
+// time, so every env var read here is a build-time input. Pages get a per-request nonce policy from
+// src/proxy.ts; only /api/* keeps the static policy here (see src/lib/csp.mjs).
 
 const HSTS = { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' };
 const NOSNIFF = { key: 'X-Content-Type-Options', value: 'nosniff' };
@@ -68,11 +47,10 @@ const nextConfig = {
         // Everything except the proxied Firebase auth paths: the SDK embeds /__/auth/iframe and the
         // handler page runs Firebase's own scripts, so our CSP / X-Frame-Options must never apply there.
         // (Next 16.3.6 sends no headers() entries on external-rewrite responses anyway; this exclusion
-        // is defence in depth for future versions.) This also covers /api/firebase-messaging-sw: the
-        // global CSP is the service worker's policy.
+        // is defence in depth for future versions.) No CSP here since T32: pages get a per-request nonce
+        // policy from src/proxy.ts, and /api/* gets the static one below.
         source: '/:path((?!__/auth(?:/|$)|__/firebase/init\\.json$).*)',
         headers: [
-          { key: 'Content-Security-Policy', value: buildCsp() },
           NOSNIFF,
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-XSS-Protection', value: '0' },
@@ -82,6 +60,12 @@ const nextConfig = {
           // Not 'same-origin': that breaks the Google sign-in popup.
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
         ],
+      },
+      {
+        // Static T15 policy for the API routes: the FCM service worker (/api/firebase-messaging-sw) takes
+        // its CSP from its own response and needs importScripts from gstatic (no nonce possible).
+        source: '/api/:path*',
+        headers: [{ key: 'Content-Security-Policy', value: buildCsp({ nonce: null, isDev, useEmulators }) }],
       },
       {
         // Upstream Firebase headers pass through on the proxied paths; only transport-level headers here

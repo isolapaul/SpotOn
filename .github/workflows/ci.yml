@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Non-secret demo values: `next build` prerenders `/` and Firebase Auth rejects an empty apiKey.
+  # Non-secret demo values: `next build` needs the Firebase config and Firebase Auth rejects an empty apiKey.
   NEXT_PUBLIC_FIREBASE_API_KEY: demo-api-key
   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: demo-spoton.firebaseapp.com
   NEXT_PUBLIC_FIREBASE_PROJECT_ID: demo-spoton
