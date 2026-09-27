@@ -15,7 +15,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
 import { getMessaging, getToken, deleteToken, isSupported } from 'firebase/messaging';
 import { app, auth, db, functions, googleProvider, storage } from '@/lib/firebase';
-import { mapUserDoc, type User } from '@/lib/mapUserDoc';
+import { mapUserDoc, type NotificationSettings, type User } from '@/lib/mapUserDoc';
 import { generateUsername, normalizeUsername } from '@/lib/username';
 import { extForMime } from '@/lib/spotImages';
 import type { TranslationKey } from '@/lib/translations';
@@ -66,6 +66,7 @@ interface UserStore {
   unhighlightSpot: (spotId: string) => Promise<void>;
   updateCustomNameColor: (color: string) => Promise<void>;
   updateCustomNameFont: (font: string) => Promise<void>;
+  updateNotificationSettings: (settings: NotificationSettings) => Promise<void>;
   rememberFcmToken: (token: string) => void;
   getIdToken: () => Promise<string | null>;
 }
@@ -784,6 +785,15 @@ export const useUserStore = create<UserStore>()(
 
         await updateNameStyleCallable({ font });
         set({ user: { ...user, customNameFont: font } });
+      },
+
+      // Per-type push preferences (users/{uid}.notificationSettings, validated by the users rules)
+      updateNotificationSettings: async (settings: NotificationSettings) => {
+        const { user, setUser } = get();
+        if (!user) throw new Error('NOT_AUTHENTICATED');
+
+        await updateDoc(doc(db, 'users', user.uid), { notificationSettings: settings });
+        setUser({ ...user, notificationSettings: settings });
       },
 
       // Remember this device's FCM token so signOut can remove it

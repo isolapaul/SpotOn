@@ -5,8 +5,6 @@ import { X, Bell } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { useNotificationStore } from '@/store/useNotificationStore';
 
 interface NotificationSettingsModalProps {
@@ -84,7 +82,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 }) => {
   const t = useT();
   const isAdmin = useIsAdmin();
-  const { user, setUser } = useUserStore();
+  const { user, updateNotificationSettings } = useUserStore();
   const { addNotification } = useNotificationStore();
 
   // Default settings if none exist
@@ -118,16 +116,8 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
     
     setIsSaving(true);
     try {
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        notificationSettings: settings
-      });
-
-      // Update local user state
-      setUser({
-        ...user,
-        notificationSettings: settings
-      });
+      // Writes users/{uid}.notificationSettings and updates the local user state
+      await updateNotificationSettings(settings);
 
       addNotification({
         title: t('notificationSettingsSaved'),
