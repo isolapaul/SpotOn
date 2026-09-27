@@ -15,6 +15,9 @@ const REFERRER = { key: 'Referrer-Policy', value: 'strict-origin-when-cross-orig
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // `next dev` would otherwise append its managed "nextjs-agent-rules" block to CLAUDE.md whenever it
+  // detects an AI coding agent; CLAUDE.md is maintained by hand (official opt-out, Next 16).
+  agentRules: false,
   // Self-contained server bundle for the Docker image (T16).
   output: 'standalone',
   // Images are unoptimized; keep libvips out of the image (SEC-07).
