@@ -37,6 +37,22 @@ export interface AddImagesPlan<T> {
   primaryImageIndex?: number;
 }
 
+/** The fields of a spots/{id} document that decide who may change its images. */
+export interface SpotAccessFields {
+  status?: unknown;
+  createdBy?: unknown;
+}
+
+/**
+ * Who may change a spot's images, following the T30 read rule: an approved spot → any signed-in
+ * user ("allowed"); a non-approved spot → its creator ("allowed"), else only an admin ("admin").
+ * The callables answer a non-admin on "admin" exactly like a missing spot (same code and message),
+ * so the response never reveals whether a pending id exists.
+ */
+export function imageAccess(spot: SpotAccessFields, uid: string): "allowed" | "admin" {
+  return spot.status === "approved" || spot.createdBy === uid ? "allowed" : "admin";
+}
+
 function stringArray(x: unknown): string[] {
   return Array.isArray(x) ? x.filter((v): v is string => typeof v === "string") : [];
 }

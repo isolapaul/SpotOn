@@ -2,20 +2,24 @@
  * Spot image callables (T10): toggleImageLike and addSpotImages. Both rewrite the spot's image
  * arrays inside a transaction, so concurrent users cannot lose or forge each other's data.
  * Legacy spots (only imageUrls) are materialised to spotImages only by these user actions,
- * never on read. Logs only {uid, spotId, outcome}.
+ * never on read. A non-approved spot answers like a missing one unless the caller is its creator
+ * or an admin (T30). Logs only {uid, spotId, outcome}.
  */
-import {Timestamp} from "firebase-admin/firestore";
+import {DocumentSnapshot, Timestamp} from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import {getAdminRole} from "../lib/admin";
 import {db} from "../lib/app";
 import {isValidSpotId} from "../lib/ids";
 import {
   currentImages,
+  imageAccess,
   isOwnSpotImagePath,
   MAX_SPOT_IMAGES,
   parseStorageDownloadUrl,
   planAddImages,
+  SpotAccessFields,
   SpotImageFields,
   toggleLikeInImages,
 } from "../lib/spotImages";
@@ -34,6 +38,22 @@ function requireUid(request: CallableRequest): string {
 
 function isImageId(x: unknown): x is string {
   return typeof x === "string" && x.length > 0 && x.length <= MAX_IMAGE_ID_LENGTH;
+}
+
+/**
+ * The spot's data if the caller may change its images, else the "Spot not found" error a missing
+ * id gets: a non-approved spot is only for its creator and admins (T30), and the error must not
+ * reveal that a pending id exists. The admin lookup runs only for someone else's non-approved spot.
+ */
+async function readableSpot(
+  snap: DocumentSnapshot,
+  uid: string,
+): Promise<SpotImageFields & SpotAccessFields> {
+  const spot = snap.exists ? snap.data() as SpotImageFields & SpotAccessFields : undefined;
+  if (!spot || (imageAccess(spot, uid) === "admin" && (await getAdminRole(uid)) === null)) {
+    throw new HttpsError("not-found", "Spot not found");
+  }
+  return spot;
 }
 
 function outcomeOf(error: unknown): string {
@@ -72,11 +92,8 @@ export const toggleImageLike = onCall(async (request) => {
     const spotRef = db.collection("spots").doc(rawSpotId);
 
     const result = await db.runTransaction(async (tx) => {
-      const snap = await tx.get(spotRef);
-      if (!snap.exists) {
-        throw new HttpsError("not-found", "Spot not found");
-      }
-      const images = currentImages(snap.data() as SpotImageFields, rawSpotId, Timestamp.now());
+      const spot = await readableSpot(await tx.get(spotRef), uid);
+      const images = currentImages(spot, rawSpotId, Timestamp.now());
       let toggled;
       try {
         toggled = toggleLikeInImages(images, imageId, uid);
@@ -136,11 +153,7 @@ export const addSpotImages = onCall(async (request) => {
 
     const spotRef = db.collection("spots").doc(rawSpotId);
     await db.runTransaction(async (tx) => {
-      const snap = await tx.get(spotRef);
-      if (!snap.exists) {
-        throw new HttpsError("not-found", "Spot not found");
-      }
-      const spot = snap.data() as SpotImageFields;
+      const spot = await readableSpot(await tx.get(spotRef), uid);
       const existingUrls = Array.isArray(spot.imageUrls) ? spot.imageUrls : [];
       if (urls.some((url) => existingUrls.includes(url))) {
         throw new HttpsError("invalid-argument", "Image already added");

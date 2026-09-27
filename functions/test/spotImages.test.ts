@@ -1,6 +1,7 @@
 import {describe, expect, it} from "vitest";
 import {
   currentImages,
+  imageAccess,
   MAX_SPOT_IMAGES,
   materializeSpotImages,
   PLACEHOLDER_URL,
@@ -182,5 +183,26 @@ describe("toggleLikeInImages", () => {
 
   it("image not found throws", () => {
     expect(() => toggleLikeInImages(base(), "zzz", "me")).toThrow("IMAGE_NOT_FOUND");
+  });
+});
+
+describe("imageAccess", () => {
+  it("approved spot → allowed for anyone", () => {
+    expect(imageAccess({status: "approved", createdBy: "owner"}, "me")).toBe("allowed");
+    expect(imageAccess({status: "approved"}, "me")).toBe("allowed");
+  });
+
+  it("non-approved spot → allowed for its creator", () => {
+    for (const status of ["pending", "rejected", undefined, 1]) {
+      expect(imageAccess({status, createdBy: "me"}, "me")).toBe("allowed");
+    }
+  });
+
+  it("someone else's non-approved spot → admin only (answered like a missing spot)", () => {
+    for (const status of ["pending", "rejected", undefined, "Approved"]) {
+      expect(imageAccess({status, createdBy: "owner"}, "me")).toBe("admin");
+    }
+    expect(imageAccess({status: "pending"}, "me")).toBe("admin");
+    expect(imageAccess({}, "me")).toBe("admin");
   });
 });

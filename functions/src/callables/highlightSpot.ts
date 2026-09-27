@@ -19,6 +19,7 @@ import {
   highlightCandidateIds,
   planHighlight,
   planUnhighlight,
+  SPOT_NOT_FOUND,
 } from "../lib/highlights";
 
 function requireUid(request: CallableRequest, message: string): string {
@@ -62,7 +63,7 @@ export const highlightSpot = onCall(async (request: CallableRequest) => {
       }
       const spotSnap = await tx.get(spotRef);
       if (!spotSnap.exists) {
-        throw new HttpsError("not-found", "Spot not found");
+        throw new HttpsError(SPOT_NOT_FOUND.code, SPOT_NOT_FOUND.message);
       }
       const user = userSnap.data() ?? {};
       const spot = spotSnap.data() ?? {};

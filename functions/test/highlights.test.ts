@@ -10,6 +10,7 @@ import {
   MAX_HIGHLIGHT_CANDIDATES,
   planHighlight,
   planUnhighlight,
+  SPOT_NOT_FOUND,
 } from "../src/lib/highlights";
 
 const NOW = new Date("2026-02-14T12:00:00.000Z");
@@ -193,9 +194,17 @@ describe("planHighlight", () => {
     }
   });
 
-  it("not owner → permission-denied", () => {
+  it("not owner of an approved spot → permission-denied", () => {
     expect(plan({spot: ownSpot({createdBy: "other"})})).toEqual({error: {
       code: "permission-denied", message: "You can only highlight your own spots"}});
+  });
+
+  it("not owner of a non-approved spot → exactly the missing-spot error (T30)", () => {
+    expect(SPOT_NOT_FOUND).toEqual({code: "not-found", message: "Spot not found"});
+    for (const status of ["pending", undefined, "rejected"]) {
+      expect(plan({spot: ownSpot({status, createdBy: "other"})})).toEqual({error: SPOT_NOT_FOUND});
+      expect(plan({spot: {status}})).toEqual({error: SPOT_NOT_FOUND});
+    }
   });
 
   it("already active → permission-denied", () => {
@@ -219,14 +228,16 @@ describe("planHighlight", () => {
       code: "permission-denied", message: "You have reached your highlight limit"}});
   });
 
-  it("checks run in order: approved, owner, already, allowance, limit", () => {
+  it("checks run in order: owner, approved, already, allowance, limit", () => {
     const worst = {
       spot: {status: "pending", createdBy: "other", highlighted: [entry(UID, FUTURE)]},
       allowance: 0,
     };
-    expect(plan(worst)).toMatchObject({error: {message: "Spot must be approved to highlight"}});
+    expect(plan(worst)).toEqual({error: SPOT_NOT_FOUND});
     expect(plan({...worst, spot: {...worst.spot, status: "approved"}}))
       .toMatchObject({error: {message: "You can only highlight your own spots"}});
+    expect(plan({...worst, spot: {...worst.spot, createdBy: UID}}))
+      .toMatchObject({error: {message: "Spot must be approved to highlight"}});
     expect(plan({...worst, spot: {...worst.spot, status: "approved", createdBy: UID}}))
       .toMatchObject({error: {message: "You have already highlighted this spot"}});
   });
@@ -281,6 +292,13 @@ describe("planUnhighlight", () => {
       uid: UID, spotId: "s", spot: {highlighted: [entry("other", FUTURE)]}, user: undefined,
     })).toEqual({});
     expect(planUnhighlight({uid: UID, spotId: "s", spot: {}, user: undefined})).toEqual({});
+  });
+
+  it("someone else's pending spot plans exactly like a missing one (no existence oracle)", () => {
+    const user = {highlightedSpots: ["s"]};
+    const pending = {status: "pending", createdBy: "other", highlighted: [entry("other", FUTURE)]};
+    expect(planUnhighlight({uid: UID, spotId: "s", spot: pending, user}))
+      .toEqual(planUnhighlight({uid: UID, spotId: "s", spot: undefined, user}));
   });
 
   it("cleans the user side, including legacy activeHighlights, even without the spot", () => {

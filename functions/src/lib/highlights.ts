@@ -34,7 +34,7 @@ export interface CandidateSpot {
   data: DocData | undefined;
 }
 
-export type HighlightErrorCode = "failed-precondition" | "permission-denied";
+export type HighlightErrorCode = "failed-precondition" | "not-found" | "permission-denied";
 
 export interface HighlightError {
   code: HighlightErrorCode;
@@ -110,7 +110,15 @@ export function activeHighlightIds(
     .map((c) => c.id);
 }
 
-/** Writes for highlighting `spotId`, or the first failing check (in the order below). */
+/** The error a missing spot gets; someone else's non-approved spot gets exactly the same (T30). */
+export const SPOT_NOT_FOUND: HighlightError = {code: "not-found", message: "Spot not found"};
+
+/**
+ * Writes for highlighting `spotId`, or the first failing check (in the order below). Ownership is
+ * checked before status, so someone else's non-approved spot answers like a missing one and never
+ * reveals that a pending id exists; an approved spot is public, so its non-owners keep the
+ * "own spots" message, and the owner of a non-approved spot keeps "must be approved".
+ */
 export function planHighlight({uid, spotId, spot, candidateSpots, allowance, now}: {
   uid: string;
   spotId: string;
@@ -122,11 +130,12 @@ export function planHighlight({uid, spotId, spot, candidateSpots, allowance, now
   const activeIds = activeHighlightIds(candidateSpots, uid, now)
     .filter((id) => id !== spotId);
 
+  if (spot.createdBy !== uid) {
+    if (spot.status !== "approved") return {error: SPOT_NOT_FOUND};
+    return {error: {code: "permission-denied", message: "You can only highlight your own spots"}};
+  }
   if (spot.status !== "approved") {
     return {error: {code: "failed-precondition", message: "Spot must be approved to highlight"}};
-  }
-  if (spot.createdBy !== uid) {
-    return {error: {code: "permission-denied", message: "You can only highlight your own spots"}};
   }
   if (hasActiveEntry(spot, uid, now)) {
     return {error: {code: "permission-denied", message: "You have already highlighted this spot"}};
