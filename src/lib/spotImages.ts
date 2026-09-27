@@ -55,6 +55,38 @@ export function realImageCount(spot: Pick<Spot, 'imageUrls'>): number {
   return urls?.length ?? 0;
 }
 
+/** The image fields of a spots/{id} doc that deleting an image rewrites (legacy docs may lack them). */
+export type RemovableImageFields<I extends { url: string } = SpotImage> = {
+  imageUrls?: string[];
+  spotImages?: I[];
+  primaryImageIndex?: number;
+};
+
+/**
+ * The image fields after deleting every entry with `imageUrl` (the owner/admin "delete image"):
+ * - imageUrls and spotImages drop every matching entry (legacy docs without spotImages → []);
+ * - the primary index shifts by the entries removed before it, so the same image stays primary
+ *   (BUG-27), clamped to the last remaining entry;
+ * - removing the last image leaves `[placeholder]` with primary index 0.
+ * Only removes entries, so the result passes the owner-edit rule (onlyRemoved / placeholder).
+ */
+export function removeImage<I extends { url: string }>(
+  spot: RemovableImageFields<I>,
+  imageUrl: string,
+): { imageUrls: string[]; spotImages: I[]; primaryImageIndex: number } {
+  let imageUrls = (spot.imageUrls || []).filter((url) => url !== imageUrl);
+  const spotImages = (spot.spotImages || []).filter((img) => img.url !== imageUrl);
+
+  const oldPrimaryIndex = spot.primaryImageIndex || 0;
+  const removedBefore = (spot.imageUrls || []).slice(0, oldPrimaryIndex).filter((url) => url === imageUrl).length;
+  let primaryImageIndex = Math.min(oldPrimaryIndex - removedBefore, Math.max(0, imageUrls.length - 1));
+  if (imageUrls.length === 0) {
+    imageUrls = [PLACEHOLDER_URL];
+    primaryImageIndex = 0;
+  }
+  return { imageUrls, spotImages, primaryImageIndex };
+}
+
 /** File extension for an upload content type accepted by the Storage rules, else null. */
 export function extForMime(mime: string): 'jpg' | 'png' | 'webp' | null {
   switch (mime) {

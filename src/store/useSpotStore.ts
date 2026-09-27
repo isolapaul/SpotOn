@@ -7,12 +7,13 @@ import {
   updateDoc,
   deleteDoc,
   arrayUnion,
+  runTransaction,
   Timestamp,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions, storage } from '@/lib/firebase';
-import { MAX_SPOT_IMAGES, PLACEHOLDER_URL, extForMime, realImageCount } from '@/lib/spotImages';
+import { MAX_SPOT_IMAGES, PLACEHOLDER_URL, extForMime, realImageCount, removeImage, type RemovableImageFields } from '@/lib/spotImages';
 import { compressImage } from '@/lib/imageCompression';
 import { invalidatePublicProfile } from '@/store/publicProfiles';
 import { startApprovedScope, stopAllScopes, syncScopes, type SpotScope } from '@/store/spotListeners';
@@ -297,33 +298,22 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
 
   deleteSpotImage: async (spotId, imageUrl) => {
     try {
-      const spot = get().spots.find((item) => item.id === spotId);
-      if (!spot) throw new Error('Spot not found');
-
-      let updatedImageUrls = (spot.imageUrls || []).filter((url) => url !== imageUrl);
-      const updatedSpotImages = (spot.spotImages || []).filter((img) => img.url !== imageUrl);
-
-      // Keep the same image as primary: shift the index by the entries removed before it.
-      const oldPrimaryIndex = spot.primaryImageIndex || 0;
-      const removedBefore = (spot.imageUrls || []).slice(0, oldPrimaryIndex).filter((url) => url === imageUrl).length;
-      let newPrimaryIndex = Math.min(oldPrimaryIndex - removedBefore, Math.max(0, updatedImageUrls.length - 1));
-      if (updatedImageUrls.length === 0) {
-        updatedImageUrls = [PLACEHOLDER_URL];
-        newPrimaryIndex = 0;
-      }
-
-      await updateDoc(doc(db, 'spots', spotId), {
-        imageUrls: updatedImageUrls,
-        spotImages: updatedSpotImages,
-        primaryImageIndex: newPrimaryIndex,
+      // Computed from the fresh doc inside a transaction, so an image or like another user added
+      // meanwhile is kept (the listener copy may be stale); writes only the three image fields.
+      const updated = await runTransaction(db, async (tx) => {
+        const spotRef = doc(db, 'spots', spotId);
+        const snap = await tx.get(spotRef);
+        if (!snap.exists()) throw new Error('Spot not found');
+        const next = removeImage(snap.data() as RemovableImageFields, imageUrl);
+        tx.update(spotRef, {
+          imageUrls: next.imageUrls,
+          spotImages: next.spotImages,
+          primaryImageIndex: next.primaryImageIndex,
+        });
+        return next;
       });
 
-      updateSpotInState(set, spotId, (spot) => ({
-        ...spot,
-        imageUrls: updatedImageUrls,
-        spotImages: updatedSpotImages,
-        primaryImageIndex: newPrimaryIndex,
-      }));
+      updateSpotInState(set, spotId, (spot) => ({ ...spot, ...updated }));
     } catch (error: any) {
       console.error('Error deleting spot image:', error);
       throw error;

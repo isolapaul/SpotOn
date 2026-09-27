@@ -12,6 +12,7 @@ import {
   getThumbnailUrl,
   isImageUnoptimized,
   realImageCount,
+  removeImage,
   sortSpotImagesByLikes,
 } from './spotImages';
 import * as oracle from './__oracles__/legacy';
@@ -64,6 +65,62 @@ describe('realImageCount', () => {
 
   it('treats a missing imageUrls (e.g. legacy singular imageUrl only) as 0', () => {
     expect(realImageCount({} as never)).toBe(0);
+  });
+});
+
+describe('removeImage', () => {
+  const img = (url: string, likes = 0) => ({ id: `id-${url}`, url, likes, likedBy: [] as string[] });
+
+  it('removing an image after the primary keeps the index', () => {
+    expect(removeImage({ imageUrls: ['/a', '/b', '/c'], spotImages: [img('/a'), img('/b'), img('/c')], primaryImageIndex: 1 }, '/c'))
+      .toEqual({ imageUrls: ['/a', '/b'], spotImages: [img('/a'), img('/b')], primaryImageIndex: 1 });
+  });
+
+  it('removing an image before the primary shifts the index to the same image (BUG-27)', () => {
+    expect(removeImage({ imageUrls: ['/a', '/b', '/c'], spotImages: [img('/a'), img('/b'), img('/c')], primaryImageIndex: 2 }, '/a'))
+      .toEqual({ imageUrls: ['/b', '/c'], spotImages: [img('/b'), img('/c')], primaryImageIndex: 1 });
+  });
+
+  it('removing the primary itself keeps the index, clamped to the last entry', () => {
+    expect(removeImage({ imageUrls: ['/a', '/b', '/c'], primaryImageIndex: 1 }, '/b').primaryImageIndex).toBe(1);
+    expect(removeImage({ imageUrls: ['/a', '/b', '/c'], primaryImageIndex: 2 }, '/c').primaryImageIndex).toBe(1);
+  });
+
+  it('removes every duplicate and shifts by the duplicates before the primary', () => {
+    expect(removeImage({ imageUrls: ['/a', '/x', '/a', '/b', '/a'], spotImages: [img('/a'), img('/x'), img('/a', 3)], primaryImageIndex: 3 }, '/a'))
+      .toEqual({ imageUrls: ['/x', '/b'], spotImages: [img('/x')], primaryImageIndex: 1 });
+  });
+
+  it('removing the last image leaves the placeholder at index 0', () => {
+    expect(removeImage({ imageUrls: ['/a'], spotImages: [img('/a')], primaryImageIndex: 0 }, '/a'))
+      .toEqual({ imageUrls: [PLACEHOLDER_URL], spotImages: [], primaryImageIndex: 0 });
+    expect(removeImage({ imageUrls: ['/a', '/a'], primaryImageIndex: 1 }, '/a'))
+      .toEqual({ imageUrls: [PLACEHOLDER_URL], spotImages: [], primaryImageIndex: 0 });
+  });
+
+  it('legacy spot (only imageUrls, no primaryImageIndex) → spotImages []', () => {
+    expect(removeImage({ imageUrls: [PLACEHOLDER_URL, '/a', '/b'] }, '/a'))
+      .toEqual({ imageUrls: [PLACEHOLDER_URL, '/b'], spotImages: [], primaryImageIndex: 0 });
+    expect(removeImage({ imageUrls: [PLACEHOLDER_URL, '/a', '/b'], primaryImageIndex: 2 }, '/a'))
+      .toEqual({ imageUrls: [PLACEHOLDER_URL, '/b'], spotImages: [], primaryImageIndex: 1 });
+  });
+
+  it('an image only in spotImages is removed there; imageUrls and the index are unchanged', () => {
+    expect(removeImage({ imageUrls: ['/a', '/b'], spotImages: [img('/a'), img('/b'), img('/s')], primaryImageIndex: 1 }, '/s'))
+      .toEqual({ imageUrls: ['/a', '/b'], spotImages: [img('/a'), img('/b')], primaryImageIndex: 1 });
+  });
+
+  it('keeps entries (and their likes) that are not removed, and never mutates the input', () => {
+    const spot = { imageUrls: ['/a', '/b'], spotImages: [img('/a', 5), img('/b', 2)], primaryImageIndex: 0 };
+    const copy = structuredClone(spot);
+    const result = removeImage(spot, '/b');
+    expect(result.spotImages).toEqual([img('/a', 5)]);
+    expect(result.spotImages[0]).toBe(spot.spotImages[0]);
+    expect(spot).toEqual(copy);
+  });
+
+  it('a missing imageUrls (legacy singular imageUrl only) → placeholder', () => {
+    expect(removeImage({}, '/a')).toEqual({ imageUrls: [PLACEHOLDER_URL], spotImages: [], primaryImageIndex: 0 });
   });
 });
 
