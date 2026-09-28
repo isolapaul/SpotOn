@@ -2,25 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Full viewport support for mobile browsers */
+/* Full screen (design 1A). The page is painted in the map's base colour, never black: in the
+   installed iOS app the reported viewport can be one status bar short, and any strip left below it
+   must not show as a black band. --app-h is the app height (Tailwind `h-app`): 100dvh by default,
+   the real screen height in the installed iOS app (hooks/useAppViewport). */
 :root {
-  --vh: 1vh;
+  --app-h: 100dvh;
+  --map-bg: #f2efe9;
 }
+html[data-map-theme="light"] { --map-bg: #fafaf8; }
+html[data-map-theme="silver"] { --map-bg: #f3f1ec; }
+html[data-map-theme="dark"] { --map-bg: #1b1c1e; }
+html[data-map-theme="satellite"] { --map-bg: #1f2a1d; }
 
 html,
 body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100vh;
-  height: 100dvh; /* Dynamic viewport height for iOS */
+  height: 100%;
   overflow: hidden;
-  position: fixed;
-  /* True edge-to-edge: black background extends to physical edges */
-  background-color: #000000;
   overscroll-behavior: none;
   overscroll-behavior-y: none; /* Prevent bounce effect on iOS */
-  -webkit-overflow-scrolling: touch;
+}
+
+html {
+  background-color: var(--map-bg);
+}
+
+body {
+  background-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+.leaflet-container {
+  background: var(--map-bg);
 }
 
 html {
@@ -90,16 +106,8 @@ a:not(.no-min-size),
   pointer-events: auto;
 }
 
-body {
-  /* Safe area insets for notched devices */
-  /* Map fills entire screen - safe area is handled by individual UI components */
-  padding: 0;
-  /* Keep right/left insets for horizontal safe areas */
-  padding-right: env(safe-area-inset-right, 0);
-  padding-left: env(safe-area-inset-left, 0);
-  /* Bottom padding to match the navigation bar - makes background seamless */
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
+/* Safe-area insets are applied per component (bars, sheets), never on body: a body padding shrank
+   the full-screen app and left a strip at the bottom. */
 
 /* Glassmorphism utility classes for Apple Liquid Glass effect */
 @layer components {

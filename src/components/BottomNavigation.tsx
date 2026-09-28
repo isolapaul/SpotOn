@@ -44,7 +44,7 @@ export default function BottomNavigation({
   return (
     <div 
       className="
-        fixed left-1/2 -translate-x-1/2 z-50
+        absolute left-1/2 -translate-x-1/2 z-50
         w-auto min-w-[320px]
         rounded-full
         bg-[#0f172a]/90 backdrop-blur-2xl

@@ -57,7 +57,7 @@ function GalleryView({ urls, startIndex, onClose, alt }: Readonly<Omit<GalleryPr
   }, [nextImage, prevImage, onClose]);
 
   return (
-    <div className={`fixed inset-0 ${Z.gallery} bg-black`} {...swipe.handlers}>
+    <div className={`fixed inset-x-0 top-0 h-app ${Z.gallery} bg-black`} {...swipe.handlers}>
       <button
         onClick={onClose}
         className="absolute z-20 p-3 rounded-full bg-black/50 active:bg-black/70 transition-colors touch-manipulation"

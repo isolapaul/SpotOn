@@ -53,7 +53,7 @@ export default function LevelInfoModal({ levelInfo, spotsCount, onClose }: Reado
   const progress = getLevelProgress(spotsCount);
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div className="fixed inset-x-0 top-0 h-app z-[70] flex items-center justify-center p-4">
       <button
         type="button"
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"

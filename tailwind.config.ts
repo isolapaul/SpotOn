@@ -30,6 +30,9 @@ const config: Config = {
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
         'glass-lg': '0 20px 48px 0 rgba(31, 38, 135, 0.2)',
       },
+      // App height (design 1A): 100dvh, or the real screen height in the installed iOS app.
+      height: { app: 'var(--app-h)' },
+      maxHeight: { app: 'var(--app-h)' },
       animation: {
         'slide-up': 'slideUp 0.3s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',

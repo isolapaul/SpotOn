@@ -43,7 +43,7 @@ export default function MapThemeSwitcher() {
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-x-0 top-0 h-app z-[2000] flex items-center justify-center p-4 animate-fade-in">
           <button
             type="button"
             className="absolute inset-0 bg-black/60 backdrop-blur-sm touch-manipulation"

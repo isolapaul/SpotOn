@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixed (design 1A)
+- The installed iPhone app now fills the whole screen: no black band at the bottom, and the dock sits at the real bottom edge. The page background follows the map style instead of black.
+
 ### Fixed
 - Every push notification arrived twice; now it arrives once.
 - Your own pending spots now show on your map as yellow markers (only yours; other users' pending spots stay hidden).

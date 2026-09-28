@@ -32,7 +32,7 @@ interface PanelShellProps {
 export default function PanelShell({ onClose, backdropLabel, variant, swipe, children, overlays }: Readonly<PanelShellProps>) {
   const styles = VARIANTS[variant];
   return (
-    <div className={`fixed inset-0 ${Z.panel} animate-slide-up`} style={{ backgroundColor: '#0f172a' }}>
+    <div className={`fixed inset-x-0 top-0 h-app ${Z.panel} animate-slide-up`} style={{ backgroundColor: '#0f172a' }}>
       <button
         type="button"
         className={styles.backdrop}

@@ -22,6 +22,8 @@ import { isSpotPanel, useUiStore } from '@/store/useUiStore';
 import { useT } from '@/hooks/useT';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 import { useInitialLanguage } from '@/hooks/useInitialLanguage';
+import { useAppViewport } from '@/hooks/useAppViewport';
+import { useMapThemeAttribute } from '@/hooks/useMapThemeAttribute';
 import { useVisibleSpots } from '@/hooks/useVisibleSpots';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { DEFAULT_MAP_CENTER } from '@/lib/constants';
@@ -36,6 +38,8 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const { isAppReady, onMapLoad } = useAppBootstrap();
   useInitialLanguage();
+  useAppViewport();
+  useMapThemeAttribute();
   const visibleSpots = useVisibleSpots();
   const { location: userLocation, status: locationStatus } = useUserLocation();
   const { user, needsUsername, setNeedsUsername } = useUserStore();
@@ -89,7 +93,7 @@ export default function Home() {
       )}
       {/* Main App - hidden until ready, then fades in */}
       <main
-        className={`relative w-full h-[100dvh] overflow-hidden transition-opacity duration-700 ${
+        className={`fixed inset-x-0 top-0 h-app w-full overflow-hidden transition-opacity duration-700 ${
           isAppReady ? 'opacity-100' : 'opacity-0'
         }`}
       >

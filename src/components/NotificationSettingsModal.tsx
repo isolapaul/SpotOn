@@ -162,7 +162,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
   const statusCardClass = isEnabled ? 'border border-green-500/30' : 'border border-red-500/30';
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-x-0 top-0 h-app z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div className="relative w-full max-w-md bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
         {/* Header */}
         <div className="relative p-6 border-b border-white/10">
