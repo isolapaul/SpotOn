@@ -7,11 +7,12 @@ import { useT } from '@/hooks/useT';
 import DeleteAccountModal from './DeleteAccountModal';
 
 interface AccountSectionProps {
-  username: string;
+  /** What the user types to confirm deletion: username, else e-mail, else "delete" (as the server). */
+  confirmWord: string;
 }
 
 /** Settings → Account: legal documents (A1) and account deletion (A2). */
-export default function AccountSection({ username }: Readonly<AccountSectionProps>) {
+export default function AccountSection({ confirmWord }: Readonly<AccountSectionProps>) {
   const t = useT();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const row = 'w-full flex items-center gap-3 px-1 py-3 text-left text-white/90 hover:text-white transition';
@@ -33,7 +34,7 @@ export default function AccountSection({ username }: Readonly<AccountSectionProp
         <UserX className="w-5 h-5" />
         <span className="flex-1">{t('deleteAccount')}</span>
       </button>
-      {isDeleteOpen && <DeleteAccountModal username={username} onClose={() => setIsDeleteOpen(false)} />}
+      {isDeleteOpen && <DeleteAccountModal confirmWord={confirmWord} onClose={() => setIsDeleteOpen(false)} />}
     </div>
   );
 }

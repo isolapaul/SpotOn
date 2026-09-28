@@ -334,7 +334,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
           </div>
 
           {/* Account: legal documents and deletion (A1, A2) */}
-          <AccountSection username={user.username ?? ''} />
+          <AccountSection confirmWord={user.username || user.email || 'delete'} />
 
           {/* Sign Out */}
           <button

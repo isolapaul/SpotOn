@@ -79,6 +79,20 @@ describe("planSpotCleanup", () => {
   });
 });
 
+describe("planSpotCleanup (confused deputy)", () => {
+  it("unlinks a photo with a spoofed addedBy but never deletes someone else's file", () => {
+    const victim = path("spot-images/victim/v.jpg");
+    const legacyFlat = path("spot-images/flat.jpg");
+    const plan = planSpotCleanup({
+      createdBy: "attacker",
+      imageUrls: [victim, legacyFlat],
+      spotImages: [img(victim, UID), img(legacyFlat, UID)],
+    }, UID, pathOf);
+    expect(plan.update?.imageUrls).toEqual(["/placeholder-spot.jpg"]);
+    expect(plan.deletePaths).toEqual([]);
+  });
+});
+
 describe("orphanedUploads", () => {
   it("keeps the files the own spots still show", () => {
     expect(orphanedUploads(["a", "b", "c"], new Set(["b"]))).toEqual(["a", "c"]);

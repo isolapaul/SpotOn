@@ -25,7 +25,7 @@ export interface SpotCleanupPlan {
   update: DocData | null;
   /** Remove createdByName / createdByPhoto (own spot). */
   anonymize: boolean;
-  /** Storage paths of removed photos, to delete (only paths under spot-images/). */
+  /** Storage paths of removed photos, to delete (only paths under spot-images/{uid}/). */
   deletePaths: string[];
 }
 
@@ -112,9 +112,12 @@ export function planSpotCleanup(
   }
 
   const anonymize = own && (spot.createdByName !== undefined || spot.createdByPhoto !== undefined);
+  // Only the user's own upload folder: spot documents are client-written, so a URL (or a spoofed
+  // addedBy) may point at anyone's file; deleting outside spot-images/{uid}/ would let a caller
+  // delete other users' photos with admin rights. Legacy flat uploads are unlinked but kept.
   const deletePaths = removedUrls
     .map((url) => pathOf(url))
-    .filter((p): p is string => typeof p === "string" && p.startsWith("spot-images/"));
+    .filter((p): p is string => typeof p === "string" && p.startsWith(ownPrefix));
 
   return {update: Object.keys(update).length ? update : null, anonymize, deletePaths};
 }

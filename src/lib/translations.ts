@@ -24,6 +24,7 @@ export const translations = {
     deleteAccountAdmin: 'Adminként nem törölheted a fiókodat. Előbb kérd meg a super admint, hogy vegye el az admin jogodat.',
     deleteAccountMismatch: 'A beírt név nem egyezik a felhasználóneveddel.',
     deleteAccountError: 'Nem sikerült törölni a fiókot. Próbáld újra.',
+    deleteAccountUploadsPending: 'Előbb várd meg, amíg a feltöltéseid befejeződnek (a hibásakat zárd be).',
     pleaseSignIn: 'Jelentkezz be a folytatáshoz',
     
     // Add Spot
@@ -471,6 +472,7 @@ export const translations = {
     deleteAccountAdmin: 'Admins cannot delete their account. Ask the super admin to remove your admin role first.',
     deleteAccountMismatch: 'That does not match your username.',
     deleteAccountError: 'Could not delete your account. Please try again.',
+    deleteAccountUploadsPending: 'Wait until your uploads finish first (dismiss any failed ones).',
     pleaseSignIn: 'Please sign in to continue',
     
     // Add Spot
@@ -918,6 +920,7 @@ export const translations = {
     deleteAccountAdmin: 'Als Admin kannst du dein Konto nicht löschen. Bitte den Super-Admin, dir zuerst die Admin-Rolle zu entziehen.',
     deleteAccountMismatch: 'Das stimmt nicht mit deinem Benutzernamen überein.',
     deleteAccountError: 'Das Konto konnte nicht gelöscht werden. Bitte versuche es erneut.',
+    deleteAccountUploadsPending: 'Warte zuerst, bis deine Uploads fertig sind (schließe fehlgeschlagene).',
     pleaseSignIn: 'Bitte melden Sie sich an, um fortzufahren',
     
     // Add Spot

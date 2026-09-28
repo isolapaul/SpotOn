@@ -9,25 +9,28 @@ import { useT } from '@/hooks/useT';
 import { deleteAccountErrorKey } from '@/lib/accountDeletion';
 import { translate } from '@/lib/i18n';
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { useUploadStore } from '@/store/useUploadStore';
 import ModalShell from '../ui/ModalShell';
 
 interface DeleteAccountModalProps {
-  username: string;
+  confirmWord: string;
   onClose: () => void;
 }
 
 /** Permanent account deletion (A2): what goes, what stays, typed username confirmation. */
-export default function DeleteAccountModal({ username, onClose }: Readonly<DeleteAccountModalProps>) {
+export default function DeleteAccountModal({ confirmWord, onClose }: Readonly<DeleteAccountModalProps>) {
   const deleteAccount = useUserStore((s) => s.deleteAccount);
   const showToast = useToastStore((s) => s.showToast);
   const t = useT();
   const [typed, setTyped] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const matches = typed.trim().toLowerCase() === username.toLowerCase();
+  const matches = typed.trim().toLowerCase() === confirmWord.toLowerCase();
+  // A background upload finishing after the server's cleanup would leave data behind (A2 review).
+  const uploadsPending = useUploadStore((s) => s.jobs.some((j) => j.status !== 'done'));
 
   const handleDelete = async () => {
-    if (!matches || isDeleting) return;
+    if (!matches || isDeleting || uploadsPending) return;
     setIsDeleting(true);
     setError(null);
     try {
@@ -60,7 +63,7 @@ export default function DeleteAccountModal({ username, onClose }: Readonly<Delet
       <p className="text-white/70 text-sm leading-relaxed mb-5">{t('deleteAccountKeeps')}</p>
 
       <label htmlFor="delete-account-confirm" className="block text-white/80 text-sm mb-2">
-        {t('deleteAccountConfirm', { username })}
+        {t('deleteAccountConfirm', { username: confirmWord })}
       </label>
       <input
         id="delete-account-confirm"
@@ -72,6 +75,7 @@ export default function DeleteAccountModal({ username, onClose }: Readonly<Delet
         disabled={isDeleting}
         className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500"
       />
+      {uploadsPending && <p className="text-amber-300 text-sm mt-3">{t('deleteAccountUploadsPending')}</p>}
       {error && <p className="text-red-300 text-sm mt-3">{error}</p>}
 
       <div className="flex gap-2 mt-5">
@@ -84,7 +88,7 @@ export default function DeleteAccountModal({ username, onClose }: Readonly<Delet
         </button>
         <button
           onClick={handleDelete}
-          disabled={!matches || isDeleting}
+          disabled={!matches || isDeleting || uploadsPending}
           className="flex-1 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-500 active:scale-[0.97] transition disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}

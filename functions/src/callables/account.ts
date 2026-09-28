@@ -49,12 +49,13 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
   const userRef = db.collection("users").doc(uid);
   const userSnap = await userRef.get();
   const username = userSnap.get("username");
-  // Case-insensitive: legacy usernames may predate the lowercase rule (normalizeUsername).
+  // The word to type: the username, else the account e-mail, else "delete" (same fallback as the
+  // client's DeleteAccountModal). Case-insensitive: legacy usernames may predate lowercase.
+  const expected = (typeof username === "string" && username) ||
+    request.auth?.token?.email || "delete";
   const typed = request.data?.confirmUsername;
-  if (typeof username === "string" && username !== "") {
-    if (typeof typed !== "string" || typed.trim().toLowerCase() !== username.toLowerCase()) {
-      refuse("invalid-argument", "confirmation-mismatch", "The confirmation does not match");
-    }
+  if (typeof typed !== "string" || typed.trim().toLowerCase() !== expected.toLowerCase()) {
+    refuse("invalid-argument", "confirmation-mismatch", "The confirmation does not match");
   }
   if ((await db.collection("admins").doc(uid).get()).exists) {
     refuse("failed-precondition", "is-admin", "Admins cannot delete their account");
@@ -73,24 +74,24 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
   for (const doc of spots.docs) {
     const own = doc.get("createdBy") === uid;
     if (!own && !planSpotCleanup(doc.data(), uid, pathOf).update) continue;
-    const changed = await db.runTransaction(async (tx) => {
+    // Paths are collected from the committed attempt only (a transaction may retry).
+    const result = await db.runTransaction(async (tx) => {
       const snap = await tx.get(doc.ref);
       const data = snap.data();
-      if (!data) return false;
+      if (!data) return {changed: false, deletePaths: [] as string[], kept: [] as string[]};
       const plan = planSpotCleanup(data, uid, pathOf);
-      if (data.createdBy === uid) {
-        for (const url of Array.isArray(data.imageUrls) ? data.imageUrls : []) {
-          const path = typeof url === "string" ? pathOf(url) : null;
-          if (path) keptPaths.add(path);
-        }
-      }
-      if (!plan.update && !plan.anonymize) return false;
+      const kept = data.createdBy === uid && Array.isArray(data.imageUrls) ?
+        data.imageUrls.map((url: unknown) => (typeof url === "string" ? pathOf(url) : null))
+          .filter((p: string | null): p is string => !!p) :
+        [];
+      if (!plan.update && !plan.anonymize) return {changed: false, deletePaths: [], kept};
       const anonymized = {createdByName: FieldValue.delete(), createdByPhoto: FieldValue.delete()};
       tx.update(doc.ref, {...plan.update, ...(plan.anonymize ? anonymized : {})});
-      plan.deletePaths.forEach((p) => removedPaths.add(p));
-      return true;
+      return {changed: true, deletePaths: plan.deletePaths, kept};
     });
-    if (changed) spotsChanged += 1;
+    result.kept.forEach((p) => keptPaths.add(p));
+    result.deletePaths.forEach((p) => removedPaths.add(p));
+    if (result.changed) spotsChanged += 1;
   }
 
   // 2. Storage.
