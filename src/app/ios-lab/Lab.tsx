@@ -42,8 +42,6 @@ export default function Lab() {
   const [info, setInfo] = useState('');
   const [log, setLog] = useState<string[]>([]);
 
-  const note = (line: string) => setLog((l) => [`${new Date().toLocaleTimeString()} ${line}`, ...l].slice(0, 6));
-
   const measure = useCallback(() => {
     const root = document.documentElement;
     const nav = navigator as Navigator & { standalone?: boolean };
@@ -59,12 +57,22 @@ export default function Lab() {
     );
   }, []);
 
+  // Logs the step with the viewport height it left behind (844 on a 390x844 phone = no band).
+  const note = (line: string) =>
+    setTimeout(() => {
+      setLog((l) => [`${new Date().toLocaleTimeString()} ${line} -> inner ${window.innerHeight}`, ...l].slice(0, 6));
+      measure();
+    }, 400);
+
   useEffect(() => {
     const loaded = load();
     // Deliberately synchronous: the lab applies saved settings on the very first paint.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setS(loaded);
     setReady(true);
+    note(`launch (E ${loaded.htmlScreen ? 'on' : 'off'}, F ${loaded.deviceHeightMeta ? 'on' : 'off'})`);
+    // Mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -99,8 +107,7 @@ export default function Lab() {
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         meta.content = full;
-        note('viewport-fit removed and re-added');
-        setTimeout(measure, 300);
+        note('G fit toggle');
       }),
     );
   };
@@ -108,15 +115,14 @@ export default function Lab() {
   const keyboard = () => {
     const input = document.getElementById('lab-input') as HTMLInputElement | null;
     input?.focus();
-    note('keyboard opened, close it, then look');
+    note('H keyboard opened');
   };
 
   const nudge = () => {
     window.scrollTo(0, 1);
     setTimeout(() => {
       window.scrollTo(0, 0);
-      note('scroll nudge done');
-      measure();
+      note('I scroll');
     }, 100);
   };
 
@@ -149,10 +155,16 @@ export default function Lab() {
             </button>
           ))}
         </div>
-        <button className={btn(s.htmlScreen)} onClick={() => setS({ ...s, htmlScreen: !s.htmlScreen })}>
+        <button className={btn(s.htmlScreen)} onClick={() => {
+            setS({ ...s, htmlScreen: !s.htmlScreen });
+            note(`E ${s.htmlScreen ? 'off' : 'on'}`);
+          }}>
           E: html + body = screen height
         </button>
-        <button className={btn(s.deviceHeightMeta)} onClick={() => setS({ ...s, deviceHeightMeta: !s.deviceHeightMeta })}>
+        <button className={btn(s.deviceHeightMeta)} onClick={() => {
+            setS({ ...s, deviceHeightMeta: !s.deviceHeightMeta });
+            note(`F ${s.deviceHeightMeta ? 'off' : 'on'}`);
+          }}>
           F: viewport height=device-height
         </button>
         <div className="grid grid-cols-3 gap-1.5">
@@ -164,7 +176,7 @@ export default function Lab() {
           <button className={btn(false)} onClick={() => window.location.reload()}>Reload</button>
           <button className={btn(false)} onClick={() => setS(DEFAULTS)}>Reset</button>
         </div>
-        <input id="lab-input" aria-label="keyboard test" className="h-9 rounded-lg bg-white/10 px-2 text-[16px]" placeholder="keyboard test" onBlur={() => setTimeout(measure, 500)} />
+        <input id="lab-input" aria-label="keyboard test" className="h-9 rounded-lg bg-white/10 px-2 text-[16px]" placeholder="keyboard test" onBlur={() => note('H keyboard closed')} />
       </div>
     </div>
   );
