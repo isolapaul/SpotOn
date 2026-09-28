@@ -10,6 +10,20 @@ export const translations = {
     // Auth
     signIn: 'Bejelentkezés',
     signOut: 'Kijelentkezés',
+    accountHeader: 'Fiók',
+    privacyPolicy: 'Adatvédelmi tájékoztató',
+    termsOfUse: 'Felhasználási feltételek (ÁSZF)',
+    deleteAccount: 'Fiók törlése',
+    deleteAccountTitle: 'Fiók végleges törlése',
+    deleteAccountBody: 'Ez nem vonható vissza. Törlődik a profilod, a felhasználóneved, a profil- és borítóképed, az összes értékelésed, a mások helyeihez feltöltött fotóid, a kedveléseid és a kiemeléseid.',
+    deleteAccountKeeps: 'Az általad feltöltött helyek és azok fotói név nélkül megmaradnak.',
+    deleteAccountConfirm: 'A megerősítéshez írd be a felhasználóneved: {username}',
+    deleteAccountButton: 'Végleges törlés',
+    deleteAccountRunning: 'Törlés…',
+    accountDeleted: 'A fiókodat töröltük.',
+    deleteAccountAdmin: 'Adminként nem törölheted a fiókodat. Előbb kérd meg a super admint, hogy vegye el az admin jogodat.',
+    deleteAccountMismatch: 'A beírt név nem egyezik a felhasználóneveddel.',
+    deleteAccountError: 'Nem sikerült törölni a fiókot. Próbáld újra.',
     pleaseSignIn: 'Jelentkezz be a folytatáshoz',
     
     // Add Spot
@@ -443,6 +457,20 @@ export const translations = {
     // Auth
     signIn: 'Sign In',
     signOut: 'Sign Out',
+    accountHeader: 'Account',
+    privacyPolicy: 'Privacy policy (in Hungarian)',
+    termsOfUse: 'Terms of use (in Hungarian)',
+    deleteAccount: 'Delete account',
+    deleteAccountTitle: 'Delete your account permanently',
+    deleteAccountBody: 'This cannot be undone. Your profile, username, profile and banner pictures, all your reviews, the photos you added to other people\'s spots, your likes and your highlights are deleted.',
+    deleteAccountKeeps: 'The spots you uploaded and their photos stay, without your name.',
+    deleteAccountConfirm: 'To confirm, type your username: {username}',
+    deleteAccountButton: 'Delete permanently',
+    deleteAccountRunning: 'Deleting…',
+    accountDeleted: 'Your account has been deleted.',
+    deleteAccountAdmin: 'Admins cannot delete their account. Ask the super admin to remove your admin role first.',
+    deleteAccountMismatch: 'That does not match your username.',
+    deleteAccountError: 'Could not delete your account. Please try again.',
     pleaseSignIn: 'Please sign in to continue',
     
     // Add Spot
@@ -876,6 +904,20 @@ export const translations = {
     // Auth
     signIn: 'Anmelden',
     signOut: 'Abmelden',
+    accountHeader: 'Konto',
+    privacyPolicy: 'Datenschutzerklärung (auf Ungarisch)',
+    termsOfUse: 'Nutzungsbedingungen (auf Ungarisch)',
+    deleteAccount: 'Konto löschen',
+    deleteAccountTitle: 'Konto endgültig löschen',
+    deleteAccountBody: 'Das kann nicht rückgängig gemacht werden. Gelöscht werden dein Profil, dein Benutzername, dein Profil- und Bannerbild, alle deine Bewertungen, die Fotos, die du zu Orten anderer hinzugefügt hast, sowie deine Likes und Hervorhebungen.',
+    deleteAccountKeeps: 'Die von dir hochgeladenen Orte und ihre Fotos bleiben ohne deinen Namen erhalten.',
+    deleteAccountConfirm: 'Gib zur Bestätigung deinen Benutzernamen ein: {username}',
+    deleteAccountButton: 'Endgültig löschen',
+    deleteAccountRunning: 'Wird gelöscht…',
+    accountDeleted: 'Dein Konto wurde gelöscht.',
+    deleteAccountAdmin: 'Als Admin kannst du dein Konto nicht löschen. Bitte den Super-Admin, dir zuerst die Admin-Rolle zu entziehen.',
+    deleteAccountMismatch: 'Das stimmt nicht mit deinem Benutzernamen überein.',
+    deleteAccountError: 'Das Konto konnte nicht gelöscht werden. Bitte versuche es erneut.',
     pleaseSignIn: 'Bitte melden Sie sich an, um fortzufahren',
     
     // Add Spot

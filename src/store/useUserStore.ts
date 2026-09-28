@@ -54,6 +54,11 @@ interface UserStore {
   updateProfileBanner: (file: File) => Promise<void>;
   setNeedsUsername: (needs: boolean) => void;
   highlightSpot: (spotId: string) => Promise<void>;
+  /**
+   * Deletes the account on the server (deleteAccount callable, A2), then signs out locally only
+   * (the user doc is gone, so no token cleanup write). Throws the callable error.
+   */
+  deleteAccount: (confirmUsername: string) => Promise<void>;
   unhighlightSpot: (spotId: string) => Promise<void>;
   updateCustomNameColor: (color: string) => Promise<void>;
   updateCustomNameFont: (font: string) => Promise<void>;
@@ -80,6 +85,10 @@ const removeAdminCallable = httpsCallable<{ uid: string }, unknown>(functions, '
 const updateNameStyleCallable = httpsCallable<{ color?: string; font?: string }, unknown>(functions, 'updateNameStyle');
 // T10: highlights are written server-side only.
 const highlightSpotCallable = httpsCallable<{ spotId: string }, unknown>(functions, 'highlightSpot');
+// Deleting touches every spot and several Storage folders: allow more than the default 70 s.
+const deleteAccountCallable = httpsCallable<{ confirmUsername: string }, unknown>(functions, 'deleteAccount', {
+  timeout: 300_000,
+});
 const unhighlightSpotCallable = httpsCallable<{ spotId: string }, unknown>(functions, 'unhighlightSpot');
 
 function errorCode(error: unknown): unknown {
@@ -469,6 +478,17 @@ export const useUserStore = create<UserStore>()(
         }
       },
       
+      deleteAccount: async (confirmUsername: string) => {
+        await deleteAccountCallable({ confirmUsername });
+        if (readRememberedFcmToken()) {
+          await deleteDeviceFcmToken().catch((error) => console.error('Failed to delete the FCM token:', error));
+        }
+        clearRememberedFcmToken();
+        stopAdminListeners(set);
+        await firebaseSignOut(auth);
+        set({ user: null, loading: false });
+      },
+
       signOut: async () => {
         const { user } = get();
         const token = readRememberedFcmToken();

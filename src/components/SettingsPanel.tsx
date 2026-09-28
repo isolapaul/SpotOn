@@ -13,6 +13,7 @@ import { translate, type Language } from '@/lib/i18n';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
+import AccountSection from './settings/AccountSection';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -331,6 +332,9 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
               {isRequestingLocation ? t('locationRequesting') : t('requestLocationPermission')}
             </button>
           </div>
+
+          {/* Account: legal documents and deletion (A1, A2) */}
+          <AccountSection username={user.username ?? ''} />
 
           {/* Sign Out */}
           <button

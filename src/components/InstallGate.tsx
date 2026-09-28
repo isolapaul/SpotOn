@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Share, MoreVertical, X, Monitor } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { splitBold } from '@/lib/i18n';
@@ -22,6 +23,8 @@ export default function InstallGate() {
   const [isIOS, setIsIOS] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const t = useT();
+  // The legal pages must stay readable without installing (A1).
+  const isLegalPage = ['/privacy', '/terms'].includes(usePathname() ?? '');
 
   useEffect(() => {
     // Old (Vercel) domain: installing it would install the wrong origin (T19)
@@ -57,7 +60,7 @@ export default function InstallGate() {
     setShowPrompt(false);
   };
 
-  if (!showPrompt) {
+  if (!showPrompt || isLegalPage) {
     return null;
   }
 

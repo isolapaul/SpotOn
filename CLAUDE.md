@@ -111,6 +111,7 @@ In the Claude Code sandbox, the functions emulator cannot register Firestore tri
 | `NEXT_PUBLIC_FIREBASE_*` (API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, MESSAGING_SENDER_ID, APP_ID, VAPID_KEY) | **build time** (inlined in bundle) | `lib/firebase.ts`, SW route, push hook |
 | `NEXT_PUBLIC_USE_EMULATORS` | build time, tests only (T04) | `lib/firebase.ts` |
 | `NEXT_PUBLIC_MOVED_TO` | build time, Vercel only (T19) | domain-move banner |
+| `NEXT_PUBLIC_CONTROLLER_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` | build time (required by the container build) | legal pages `/privacy`, `/terms` (A1) |
 | `SMTP_HOST/PORT/USER/PASS`, `FEEDBACK_RECIPIENT` | runtime (container `.env`) | `/api/feedback` |
 
 Never commit `.env*` files — sole exception: `functions/.env.demo-spoton` (emulator-only, non-secret params such as `APP_URL`, whitelisted in `.gitignore`). Never hardcode personal emails, keys or tokens.
