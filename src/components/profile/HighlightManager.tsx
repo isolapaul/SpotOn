@@ -8,7 +8,7 @@ import { useUserStore, userErrorKey } from '@/store/useUserStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useT } from '@/hooks/useT';
 import type { LevelInfo } from '@/lib/levelUtils';
-import { isHighlightedBy } from '@/lib/highlights';
+import { highlightErrorKey, isHighlightedBy } from '@/lib/highlights';
 import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
 
 interface HighlightManagerProps {
@@ -40,7 +40,7 @@ export default function HighlightManager({ spots, uid, levelInfo }: Readonly<Hig
         showToast(t('spotHighlighted'), 'success');
       }
     } catch (error) {
-      showToast(t(userErrorKey(error) ?? 'genericError'), 'error');
+      showToast(t(highlightErrorKey(error) ?? userErrorKey(error) ?? 'genericError'), 'error');
     } finally {
       setIsHighlighting(false);
     }

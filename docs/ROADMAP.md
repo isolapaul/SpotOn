@@ -21,7 +21,7 @@ Firebase stays the backend. Only the Next.js app moves off Vercel.
 | D6 | Proxy `/__/auth/*` so that `authDomain = spoton.isolapaul.hu`. | **Paul** |
 | D7 | Optional tasks approved: hide pending spots (T30), React 19 (T31), nonce CSP (T32). | **Paul** |
 | D8 | The level count keeps including pending spots, which is current behaviour. | default |
-| D9 | The legacy Valentine `highlightBonus` stays honoured. | default |
+| D9 | ~~The legacy Valentine `highlightBonus` stays honoured.~~ Overridden 2026-09-28: the quest is over; `highlightSpot` no longer reads `questRewards.valentine2026` (SEC-22). | **Paul** |
 | D10 | Anonymous feedback stays allowed, with a rate limit. | default |
 | D11 | Trivy runs with `ignore-unfixed: true`, plus a `.trivyignore` whose entries have expiry dates. | default |
 | D12 | The image limit per spot is 20. The UI text gets fixed to match. | default |

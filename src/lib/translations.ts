@@ -263,11 +263,17 @@ export const translations = {
     levelDiamond: 'Világutazó',
 
     // Spot Highlight
-    highlightSpot: 'Spot kiemeléése',
+    highlightSpot: 'Spot kiemelése',
     spotHasHighlight: '⭐ Ez a spot ki van emelve',
-    youHighlightedThis: 'Te emeltél ki ezt',
+    youHighlightedThis: 'Ezt te emelted ki',
     highlightSuccess: 'Spot kiemelt! 7 napig lesz látható',
-    highlightError: 'Hiba a kiemeléés során',
+    highlightError: 'Hiba a kiemelés során',
+    highlightNotOwner: 'Csak a saját helyeidet emelheted ki',
+    highlightNotApproved: 'Csak jóváhagyott helyet lehet kiemelni',
+    highlightAlready: 'Ezt a helyet már kiemelted',
+    highlightLevelTooLow: 'A kiemelés a 3. szinttől érhető el',
+    highlightLimitReached: 'Elérted a kiemelési korlátodat',
+    highlightSpotNotFound: 'Ez a hely már nem létezik',
 
     // Settings
     settings: 'Beállítások',
@@ -674,6 +680,12 @@ export const translations = {
     youHighlightedThis: 'You highlighted this',
     highlightSuccess: 'Spot highlighted! Visible for 7 days',
     highlightError: 'Error highlighting spot',
+    highlightNotOwner: 'You can only highlight your own spots',
+    highlightNotApproved: 'Only approved spots can be highlighted',
+    highlightAlready: 'You have already highlighted this spot',
+    highlightLevelTooLow: 'Highlighting unlocks at level 3',
+    highlightLimitReached: 'You have reached your highlight limit',
+    highlightSpotNotFound: 'This spot no longer exists',
 
     // Settings
     settings: 'Settings',
@@ -1069,6 +1081,12 @@ export const translations = {
     youHighlightedThis: 'Du hast dies hervorgehoben',
     highlightSuccess: 'Ort hervorgehoben! Sichtbar für 7 Tage',
     highlightError: 'Fehler beim Hervorheben des Ortes',
+    highlightNotOwner: 'Du kannst nur deine eigenen Orte hervorheben',
+    highlightNotApproved: 'Nur freigegebene Orte können hervorgehoben werden',
+    highlightAlready: 'Du hast diesen Ort bereits hervorgehoben',
+    highlightLevelTooLow: 'Hervorheben ist ab Level 3 möglich',
+    highlightLimitReached: 'Du hast dein Hervorhebungslimit erreicht',
+    highlightSpotNotFound: 'Dieser Ort existiert nicht mehr',
 
     // Settings
     settings: 'Einstellungen',

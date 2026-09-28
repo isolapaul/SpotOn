@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isActiveHighlight, isHighlightedBy } from './highlights';
+import { highlightErrorKey, isActiveHighlight, isHighlightedBy } from './highlights';
 
 const now = new Date('2026-01-10T12:00:00.000Z');
 const entry = (userId: string, expiresAt: string) => ({ userId, highlightedAt: '2026-01-05T12:00:00.000Z', expiresAt });
@@ -49,5 +49,27 @@ describe('isHighlightedBy', () => {
   it('is false when the array is missing or empty', () => {
     expect(isHighlightedBy({}, 'u1', now)).toBe(false);
     expect(isHighlightedBy({ highlighted: [] }, 'u1', now)).toBe(false);
+  });
+});
+
+describe('highlightErrorKey', () => {
+  it('maps every server refusal reason to its own key', () => {
+    const reasons = ['not-found', 'not-owner', 'not-approved', 'already-highlighted', 'level-too-low', 'limit-reached'];
+    const keys = reasons.map((reason) => highlightErrorKey({ code: 'functions/permission-denied', details: { reason } }));
+    expect(keys).toEqual([
+      'highlightSpotNotFound',
+      'highlightNotOwner',
+      'highlightNotApproved',
+      'highlightAlready',
+      'highlightLevelTooLow',
+      'highlightLimitReached',
+    ]);
+  });
+
+  it('is undefined without a known reason', () => {
+    for (const error of [null, undefined, 'x', new Error('boom'), { details: null }, { details: { reason: 'nope' } },
+      { details: { reason: 'toString' } }, { details: { reason: 7 } }]) {
+      expect(highlightErrorKey(error)).toBeUndefined();
+    }
   });
 });

@@ -35,7 +35,7 @@ Severity scale: **Critical**: remote, unauthenticated or any signed-in user, int
 | SEC-19 | Low | Cloud Functions log request payloads and user data | T08 |
 | SEC-20 | Low | Stale `firebase.json` hosting block and deprecated headers | T12, T15 |
 | SEC-21 | Info | Container and supply-chain requirements for the new deployment | T16–T18 |
-| SEC-22 | Low | `highlightSpot` still trusts `users/{uid}.questRewards.valentine2026.highlightBonus` without a cap (`functions/src/callables/highlightSpot.ts` ~:84 → `computeAllowance`), same as the old function: a value forged while users could write any own field (LR-05, until the §6 rules of `docs/security-rollout.md`) keeps granting extra highlights. T12 blocks new forgery; existing values are not reset | follow-up |
+| SEC-22 | Low | `highlightSpot` still trusts `users/{uid}.questRewards.valentine2026.highlightBonus` without a cap (`functions/src/callables/highlightSpot.ts` ~:84 → `computeAllowance`), same as the old function: a value forged while users could write any own field (LR-05, until the §6 rules of `docs/security-rollout.md`) keeps granting extra highlights. T12 blocks new forgery; existing values are not reset | fixed: the Valentine quest is over, `highlightSpot` no longer reads `questRewards` (D9 overridden) |
 
 ---
 

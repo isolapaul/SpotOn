@@ -1,11 +1,10 @@
 /**
  * Highlight callables (T10): highlightSpot (same export name, input and success shape as before)
- * and unhighlightSpot. They unify the client-side level system (users.highlightedSpots) and the
- * Valentine callable (questRewards.valentine2026): the source of truth for "active" is the
- * spots/{id}.highlighted[] entry by the caller with expiresAt > now. All writes are computed inside
- * a transaction and use the existing field shapes. The legacy activeHighlights[] is read only
- * (unhighlightSpot may remove entries from it).
- * Error messages are the exact English strings the client shows via error.message.
+ * and unhighlightSpot. The source of truth for "active" is the spots/{id}.highlighted[] entry by
+ * the caller with expiresAt > now. All writes are computed inside a transaction and use the
+ * existing field shapes. The allowance is the level slots only (Valentine bonus gone, SEC-22).
+ * Refusals carry `details.reason` (HighlightRefusal), which the client translates (BUG-28); the
+ * English message stays for older clients.
  * Logs only {uid, spotId, outcome}.
  */
 import {DocumentReference} from "firebase-admin/firestore";
@@ -63,7 +62,8 @@ export const highlightSpot = onCall(async (request: CallableRequest) => {
       }
       const spotSnap = await tx.get(spotRef);
       if (!spotSnap.exists) {
-        throw new HttpsError(SPOT_NOT_FOUND.code, SPOT_NOT_FOUND.message);
+        throw new HttpsError(SPOT_NOT_FOUND.code, SPOT_NOT_FOUND.message,
+          {reason: SPOT_NOT_FOUND.reason});
       }
       const user = userSnap.data() ?? {};
       const spot = spotSnap.data() ?? {};
@@ -82,11 +82,12 @@ export const highlightSpot = onCall(async (request: CallableRequest) => {
         spotId: targetId,
         spot,
         candidateSpots,
-        allowance: computeAllowance(spotsCount, user.questRewards),
+        allowance: computeAllowance(spotsCount),
         now: new Date(),
       });
       if ("error" in result) {
-        throw new HttpsError(result.error.code, result.error.message);
+        throw new HttpsError(result.error.code, result.error.message,
+          {reason: result.error.reason});
       }
 
       tx.update(spotRef, result.plan.spotUpdate);

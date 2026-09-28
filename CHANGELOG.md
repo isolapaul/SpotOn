@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Every push notification arrived twice; now it arrives once.
+- Your own pending spots now show on your map as yellow markers (only yours; other users' pending spots stay hidden).
+- The review form is no longer shown on pending spots, where reviews are not accepted (BUG-29).
+- Highlight refusals show a translated reason (not your spot, not approved yet, level too low, limit reached) instead of the server's English text (BUG-28).
+
+### Changed
+- The Valentine quest bonus no longer adds highlight slots; highlights come from your level only (SEC-22).
+- My Spots in the profile is ordered newest first.
+
 ## v2.1.0 — 2026-09-26
 
 ### Changed
