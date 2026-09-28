@@ -30,8 +30,5 @@ export const useToastStore = create<ToastStore>(() => ({
       body: message,
       type: type, // 'success' | 'error' | 'info' now valid types
     });
-
-    // Silently logged - no visual popup
-    console.log(`[Silent Toast → Notification] ${type}: ${message}`);
   },
 }));

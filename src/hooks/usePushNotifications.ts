@@ -189,16 +189,11 @@ export const usePushNotifications = () => {
   // Setup foreground message listener (when app is open) - SINGLETON
   const setupForegroundListener = (messaging: any) => {
     // Prevent duplicate listeners
-    if (listenerSetup) {
-      console.log('Foreground listener already set up, skipping...');
-      return;
-    }
+    if (listenerSetup) return;
     
     listenerSetup = true;
     
     onMessage(messaging, (payload) => {
-      console.log('Foreground message received:', payload);
-      
       // Read the language at message time: this listener is registered once (no stale closure).
       const title = payload.notification?.title || translate(useLanguageStore.getState().language ?? 'hu', 'newNotification');
       const body = payload.notification?.body || '';
