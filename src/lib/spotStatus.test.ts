@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TranslationKey } from './translations';
-import { STATUS_CLASS, STATUS_LABEL_KEY, statusClass, statusLabelKey } from './spotStatus';
+import { STATUS_CLASS, STATUS_LABEL_KEY, isVisibleOnMap, statusClass, statusLabelKey } from './spotStatus';
 
 // Oracles: ProfilePanel's pre-T27 helpers, verbatim (getStatusText returned t(key); the key is compared).
 const getStatusClassName = (status: string) => {
@@ -28,5 +28,30 @@ describe('spotStatus', () => {
       expect(STATUS_CLASS[status]).toBe(getStatusClassName(status));
       expect(STATUS_LABEL_KEY[status]).toBe(getStatusText(status));
     }
+  });
+});
+
+describe('isVisibleOnMap', () => {
+  const approved = { status: 'approved', createdBy: 'other' };
+  const ownPending = { status: 'pending', createdBy: 'me' };
+  const otherPending = { status: 'pending', createdBy: 'other' };
+
+  it('shows approved spots to everyone, signed in or not', () => {
+    expect(isVisibleOnMap(approved, null, false)).toBe(true);
+    expect(isVisibleOnMap(approved, 'me', false)).toBe(true);
+  });
+
+  it("shows a user's own pending spot, never someone else's", () => {
+    expect(isVisibleOnMap(ownPending, 'me', false)).toBe(true);
+    expect(isVisibleOnMap(otherPending, 'me', false)).toBe(false);
+    expect(isVisibleOnMap(ownPending, null, false)).toBe(false);
+  });
+
+  it('shows every spot to admins', () => {
+    expect(isVisibleOnMap(otherPending, 'me', true)).toBe(true);
+  });
+
+  it('does not match a spot without createdBy to a signed-out user', () => {
+    expect(isVisibleOnMap({ status: 'pending' }, undefined, false)).toBe(false);
   });
 });

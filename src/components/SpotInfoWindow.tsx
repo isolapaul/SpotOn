@@ -5,12 +5,10 @@ import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { usePublicProfile } from '@/hooks/usePublicProfile';
 import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { categoryEmojis, categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
-import { getUserNameColor } from '@/lib/levelUtils';
 import { averageRating } from '@/lib/rating';
 import { getPreviewImageUrl, isImageUnoptimized, sortSpotImagesByLikes } from '@/lib/spotImages';
 import { useState } from 'react';
@@ -30,8 +28,6 @@ export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonl
   // Heart reflects the store's savedSpots (BUG-09, T26)
   const { isFavorite, toggle: handleFavoriteToggle, canToggle: canToggleFavorite } = useFavoriteToggle(spot.id);
   const [isApproving, setIsApproving] = useState(false);
-  // Creator's public profile (own values overlaid from the store)
-  const creatorProfile = usePublicProfile(spot.createdBy);
 
   const avgRating = averageRating(spot.reviews);
   const reviewCount = spot.reviews?.length || 0;
@@ -52,11 +48,6 @@ export default function SpotInfoWindow({ spot, onClose, onViewDetails }: Readonl
 
   const navigationUrl = getNavigationUrl(spot.location.lat, spot.location.lng);
 
-  const creatorDisplayName = creatorProfile?.username || spot.createdByName || t('anonymous');
-  const creatorNameColor = getUserNameColor(
-    creatorProfile?.spotsCount ?? 0,
-    creatorProfile?.customNameColor ?? undefined
-  );
 
   // Most-liked image first ('bothRequired' tie-break: the info window's own order, kept as is).
   const sortedSpotImages = sortSpotImagesByLikes(spot.spotImages || [], 'bothRequired');

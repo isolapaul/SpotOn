@@ -29,3 +29,16 @@ export function statusClass(status: string): string {
 export function statusLabelKey(status: string): TranslationKey {
   return STATUS_LABEL_KEY[knownStatus(status)];
 }
+
+/**
+ * Whether a spot is shown on the map: admins see every spot, everyone else the approved ones and
+ * their own (any status; non-approved markers are yellow). Other users' pending spots never reach
+ * a non-admin client anyway (T30 rules); the filter keeps the map correct while scopes switch.
+ */
+export function isVisibleOnMap(
+  spot: { status: string; createdBy?: string },
+  uid: string | null | undefined,
+  isAdmin: boolean,
+): boolean {
+  return isAdmin || spot.status === 'approved' || (!!uid && spot.createdBy === uid);
+}

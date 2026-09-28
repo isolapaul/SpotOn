@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useSwipeToClose } from '@/hooks/useSwipeToClose';
 import { useIsAdmin, useIsSuperAdmin } from '@/hooks/useIsAdmin';
-import { useUserSpots } from '@/hooks/useUserSpots';
 import { useCategories } from '@/hooks/useCategories';
 import { getLevelInfo } from '@/lib/levelUtils';
 import { SWIPE_THRESHOLDS } from '@/lib/constants';
@@ -40,8 +39,10 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const userIsAdmin = useIsAdmin();
   const userIsSuperAdmin = useIsSuperAdmin();
 
-  // ALL of the user's spots (approved + pending), live while the panel is open
-  const myAllSpots = useUserSpots(user?.uid, isOpen);
+  // ALL of the user's spots (approved + pending), newest first: the store already holds them (own or
+  // admin spots listener, T30), so no second listener is needed.
+  const uid = user?.uid;
+  const myAllSpots = useMemo(() => (uid ? spots.filter((spot) => spot.createdBy === uid) : []), [spots, uid]);
 
   // Dynamic categories (super admin only), live while the panel is open
   const { categories, addCategory, isAdding } = useCategories(isOpen && userIsSuperAdmin);
