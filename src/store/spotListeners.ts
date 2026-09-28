@@ -83,6 +83,9 @@ function startScope(
         // The listener is dead: drop only its data; the approved spots stay.
         delete slots[name];
         recompute(set, { error: error.message });
+        // A dead admin listener falls back to the own-spots one, so the admin's own pending spots
+        // stay on the map and in My Spots (ProfilePanel reads them from the store).
+        if (name === 'admin' && !slots.own) startScope('own', uid, set);
       }
       hooks.failed?.(error);
     },
