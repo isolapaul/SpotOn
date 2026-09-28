@@ -75,7 +75,7 @@ export default function ModalShell({
   children,
 }: Readonly<ModalShellProps>) {
   const styles = VARIANTS[variant];
-  const outer = join('fixed inset-x-0 top-0 h-app', Z[z], 'flex', ALIGN[align], 'justify-center', outerClassName, 'animate-fade-in');
+  const outer = join('fixed inset-0', Z[z], 'flex', ALIGN[align], 'justify-center', outerClassName, 'animate-fade-in');
 
   let backdrop: ReactNode;
   if (!onBackdropClick) {

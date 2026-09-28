@@ -119,13 +119,13 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
       {/* Backdrop */}
       <button
         type="button"
-        className={`fixed inset-x-0 top-0 h-app bg-black/60 backdrop-blur-sm ${Z.panelInnerBackdrop} transition-opacity cursor-default`}
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm ${Z.panelInnerBackdrop} transition-opacity cursor-default`}
         onClick={onClose}
         aria-label="Close settings"
       />
       
       {/* Settings Panel */}
-      <div className={`fixed top-0 h-app right-0 w-full sm:w-96 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl ${Z.panelInnerSheet} overflow-y-auto border-l border-white/10`}>
+      <div className={`fixed inset-y-0 right-0 w-full sm:w-96 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl ${Z.panelInnerSheet} overflow-y-auto border-l border-white/10`}>
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-xl border-b border-white/10 p-4 z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
           <div className="flex items-center justify-between">

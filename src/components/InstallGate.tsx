@@ -62,7 +62,7 @@ export default function InstallGate() {
   }
 
   return (
-    <div className="fixed inset-x-0 top-0 h-app z-[9999] bg-gray-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center text-white">
+    <div className="fixed inset-0 z-[9999] bg-gray-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center text-white">
       {/* Close button */}
       <button
         onClick={handleDismiss}

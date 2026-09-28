@@ -53,9 +53,6 @@ const config: Config = {
         exit: 'cubic-bezier(0.4, 0, 1, 1)',
       },
       transitionDuration: { 250: '250ms', 350: '350ms', 450: '450ms' },
-      // App height (design 1A): 100dvh, or the real screen height in the installed iOS app.
-      height: { app: 'var(--app-h)' },
-      maxHeight: { app: 'var(--app-h)' },
       animation: {
         'slide-up': 'slideUp 0.3s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',

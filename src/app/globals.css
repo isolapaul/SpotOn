@@ -3,11 +3,9 @@
 @tailwind utilities;
 
 /* Full screen (design 1A). The page is painted in the map's base colour, never black, so no edge
-   of the screen can show as a black band. --app-h is the app height (Tailwind `h-app`). The
-   installed iOS app uses the opaque status bar (layout.tsx): with a translucent one, iOS 26 sizes
-   the page one status bar short and leaves a strip at the bottom that no CSS can reach. */
+   of the screen can show as a black band. The installed iPhone app gets its screen height from
+   hooks/useStandaloneFullHeight. */
 :root {
-  --app-h: 100dvh;
   --map-bg: #f2efe9;
 }
 html[data-map-theme="light"] { --map-bg: #fafaf8; }

@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    // Opaque on purpose: with 'black-translucent', iOS 26 leaves a strip at the bottom of the
-    // installed app (WebKit bug 301108). iOS reads this only when the app is added to the home screen.
-    statusBarStyle: 'black',
+    // See-through: the map runs under the status bar. iOS 26 then sizes the page a status bar short;
+    // hooks/useStandaloneFullHeight corrects that (design 1A).
+    statusBarStyle: 'black-translucent',
     title: 'SpotOn',
     startupImage: [
       {
