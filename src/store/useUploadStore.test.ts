@@ -15,7 +15,7 @@ vi.mock('@/store/usePushPromptStore', () => ({ usePushPromptStore: { getState: (
 
 import * as steps from '@/store/spotUploads';
 import { TIMEOUT } from '@/lib/withTimeout';
-import { useUploadStore, isSpotUploadRunning } from './useUploadStore';
+import { useUploadStore, hasUnsentReview, isSpotUploadRunning } from './useUploadStore';
 
 const store = () => useUploadStore.getState();
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -41,7 +41,7 @@ describe('useUploadStore', () => {
     expect(store().jobs).toMatchObject([{ kind: 'spot', label: 'Sunset', status: 'running' }]);
 
     await vi.advanceTimersByTimeAsync(0);
-    expect(steps.createSpot).toHaveBeenCalledWith('new-spot-id', fields, uploaded, 0, 'u1', false);
+    expect(steps.createSpot).toHaveBeenCalledWith('new-spot-id', fields, uploaded, 0, 'u1', false, false);
     expect(store().jobs[0].status).toBe('done');
     expect(showToast).toHaveBeenCalledWith(expect.any(String), 'success');
     expect(request).toHaveBeenCalledTimes(1);
@@ -50,7 +50,7 @@ describe('useUploadStore', () => {
     expect(store().jobs).toEqual([]);
   });
 
-  it('a timeout fails with the timeout text; Retry reuses the uploaded photos and the same spot id', async () => {
+  it('a timeout fails with the timeout text; Retry keeps the photo cache and the spot id, and checks first', async () => {
     vi.mocked(steps.uploadSpotImages).mockResolvedValue(uploaded as never);
     vi.mocked(steps.createSpot).mockRejectedValueOnce(new Error(TIMEOUT)).mockResolvedValueOnce();
     store().submitSpot({ fields, files: [file('a')], primaryIndex: 0, userId: 'u1', isAdmin: false });
@@ -61,8 +61,13 @@ describe('useUploadStore', () => {
 
     store().retry(store().jobs[0].id);
     await flush();
-    expect(steps.uploadSpotImages).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(steps.createSpot).mock.calls.map((c) => c[0])).toEqual(['new-spot-id', 'new-spot-id']);
+    const caches = vi.mocked(steps.uploadSpotImages).mock.calls.map((c) => c[2]);
+    expect(caches).toHaveLength(2);
+    expect(caches[0]).toBe(caches[1]); // same per-file cache: finished files are not uploaded again
+    expect(vi.mocked(steps.createSpot).mock.calls.map((c) => [c[0], c[6]])).toEqual([
+      ['new-spot-id', false],
+      ['new-spot-id', true],
+    ]);
     expect(store().jobs[0].status).toBe('done');
   });
 
@@ -76,10 +81,12 @@ describe('useUploadStore', () => {
     await flush();
     expect(store().jobs[0]).toMatchObject({ status: 'failed', errorKey: 'reviewError' });
     expect(isSpotUploadRunning(store().jobs, 's1')).toBe(false);
+    expect(hasUnsentReview(store().jobs, 's1')).toBe(true); // blocks a second review until Retry or dismiss
 
     store().retry(store().jobs[0].id);
     await flush();
     expect(steps.attachSpotImages).toHaveBeenCalledTimes(1);
+    expect(hasUnsentReview(store().jobs, 's1')).toBe(false);
     expect(steps.appendReview).toHaveBeenCalledTimes(2);
     expect(vi.mocked(steps.appendReview).mock.calls[1]).toEqual(['s1', { ...review, id: 'review-id' }]);
     expect(store().jobs[0].status).toBe('done');

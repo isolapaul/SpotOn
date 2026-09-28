@@ -68,9 +68,19 @@ async function compressAndUpload(imageFile: File, userId: string): Promise<Uploa
   };
 }
 
-/** Uploads the photos in parallel, each with its own deadline. */
-export function uploadSpotImages(files: File[], userId: string): Promise<UploadedImage[]> {
-  return Promise.all(files.map((file) => withTimeout(compressAndUpload(file, userId), UPLOAD_TIMEOUT_MS)));
+/**
+ * Uploads the photos in parallel, each with its own deadline. `done` keeps each finished file's
+ * result across retries, so a Retry uploads only the files that failed (no new orphans for the rest).
+ */
+export async function uploadSpotImages(
+  files: File[],
+  userId: string,
+  done: Array<UploadedImage | undefined> = [],
+): Promise<UploadedImage[]> {
+  await Promise.all(files.map(async (file, i) => {
+    done[i] ??= await withTimeout(compressAndUpload(file, userId), UPLOAD_TIMEOUT_MS);
+  }));
+  return done as UploadedImage[];
 }
 
 /** A new spot id, chosen on the client so a retried create targets the same document. */
@@ -87,7 +97,8 @@ async function serverSpot(spotId: string): Promise<Record<string, unknown> | und
 /**
  * Creates spots/{spotId} (exactly the keys the T12 create rule allows). Without photos the spot
  * gets the placeholder image. A failed or timed-out write counts as done when the server already
- * has this user's spot under that id (an earlier attempt landed).
+ * has this user's spot under that id (an earlier attempt landed). On a retry (`isRetry`) the server
+ * is checked first: an admin's second setDoc would be an allowed update that resets the spot.
  */
 export async function createSpot(
   spotId: string,
@@ -96,7 +107,12 @@ export async function createSpot(
   primaryIndex: number,
   userId: string,
   isAdmin: boolean,
+  isRetry = false,
 ): Promise<void> {
+  if (isRetry && (await serverSpot(spotId))?.createdBy === userId) {
+    invalidatePublicProfile(userId);
+    return;
+  }
   const images: UploadedImage[] = uploaded.length > 0
     ? uploaded
     : [{
@@ -149,7 +165,9 @@ export async function attachSpotImages(spotId: string, urls: string[]): Promise<
     if (errorCode(error) === 'functions/invalid-argument') {
       const existing = await serverSpot(spotId).catch(() => undefined);
       const stored = Array.isArray(existing?.imageUrls) ? (existing.imageUrls as unknown[]) : [];
-      if (urls.every((url) => stored.includes(url))) return;
+      // The callable adds all URLs or none: any one of them on the spot means this batch landed
+      // (one may have been deleted since).
+      if (urls.some((url) => stored.includes(url))) return;
     }
     throw error;
   }

@@ -33,6 +33,8 @@ export interface UploadJob {
   label: string;
   /** Target spot (photos / review), to block a second submit while one runs. */
   spotId?: string;
+  /** A review job that carries a review (not photos only). */
+  hasReview?: boolean;
   status: 'running' | 'failed' | 'done';
   /** Message key of the last failure. */
   errorKey?: TranslationKey;
@@ -42,6 +44,7 @@ interface JobSpec {
   kind: UploadKind;
   label: string;
   spotId?: string;
+  hasReview?: boolean;
   doneKey: TranslationKey;
   /** Generic failure text; a multi-step task may switch it per step. */
   failKey: TranslationKey;
@@ -112,7 +115,10 @@ export const useUploadStore = create<UploadStore>((set, get) => {
     const id = `upload_${Date.now()}_${seq}`;
     tasks.set(id, { spec, run });
     set((state) => ({
-      jobs: [...state.jobs, { id, kind: spec.kind, label: spec.label, spotId: spec.spotId, status: 'running' }],
+      jobs: [
+        ...state.jobs,
+        { id, kind: spec.kind, label: spec.label, spotId: spec.spotId, hasReview: spec.hasReview, status: 'running' },
+      ],
     }));
     execute(id);
   };
@@ -130,22 +136,25 @@ export const useUploadStore = create<UploadStore>((set, get) => {
 
     submitSpot: ({ fields, files, primaryIndex, userId, isAdmin }) => {
       const spotId = newSpotId();
-      let uploaded: UploadedImage[] | null = null;
+      const uploaded: Array<UploadedImage | undefined> = [];
+      let attempted = false;
       start(
         { kind: 'spot', label: fields.name, doneKey: 'spotUploaded', failKey: 'spotUploadFailed' },
         async () => {
-          uploaded ??= await uploadSpotImages(files, userId);
-          await createSpot(spotId, fields, uploaded, primaryIndex, userId, isAdmin);
+          const images = await uploadSpotImages(files, userId, uploaded);
+          const isRetry = attempted;
+          attempted = true;
+          await createSpot(spotId, fields, images, primaryIndex, userId, isAdmin, isRetry);
         },
       );
     },
 
     submitPhotos: ({ spotId, spotName, files, userId }) => {
-      let urls: string[] | null = null;
+      const uploaded: Array<UploadedImage | undefined> = [];
       start(
         { kind: 'photos', label: spotName, spotId, doneKey: 'spotPhotosAdded', failKey: 'spotPhotoAddError' },
         async () => {
-          urls ??= (await uploadSpotImages(files, userId)).map((u) => u.url);
+          const urls = (await uploadSpotImages(files, userId, uploaded)).map((u) => u.url);
           await attachSpotImages(spotId, urls);
         },
       );
@@ -153,12 +162,13 @@ export const useUploadStore = create<UploadStore>((set, get) => {
 
     submitReview: ({ spotId, spotName, review, files, userId }) => {
       const stored = review ? buildReview(review) : null;
-      let urls: string[] | null = null;
+      const uploaded: Array<UploadedImage | undefined> = [];
       let photosAttached = files.length === 0;
       const spec: JobSpec = {
         kind: 'review',
         label: spotName,
         spotId,
+        hasReview: !!stored,
         doneKey: stored && files.length > 0 ? 'reviewAndPhotosAdded' : stored ? 'reviewAdded' : 'spotPhotosAdded',
         failKey: stored ? 'reviewError' : 'spotPhotoAddError',
       };
@@ -166,7 +176,7 @@ export const useUploadStore = create<UploadStore>((set, get) => {
         // The failure text follows the step that failed.
         if (!photosAttached) {
           spec.failKey = 'spotPhotoAddError';
-          urls ??= (await uploadSpotImages(files, userId)).map((u) => u.url);
+          const urls = (await uploadSpotImages(files, userId, uploaded)).map((u) => u.url);
           await attachSpotImages(spotId, urls);
           photosAttached = true;
         }
@@ -182,4 +192,13 @@ export const useUploadStore = create<UploadStore>((set, get) => {
 /** Whether a photos/review job for this spot is still running (blocks a second submit). */
 export function isSpotUploadRunning(jobs: UploadJob[], spotId: string): boolean {
   return jobs.some((job) => job.spotId === spotId && job.status === 'running');
+}
+
+/**
+ * Whether a review for this spot is still on its way (running, or failed and retryable): a new
+ * review is blocked until it lands or is dismissed, so Retry can never add a second review
+ * (the rules do not enforce one review per user).
+ */
+export function hasUnsentReview(jobs: UploadJob[], spotId: string): boolean {
+  return jobs.some((job) => job.spotId === spotId && job.hasReview === true && job.status !== 'done');
 }

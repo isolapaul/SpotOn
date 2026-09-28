@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { ImagePlus, Send, X } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
-import { isSpotUploadRunning, useUploadStore } from '@/store/useUploadStore';
+import { hasUnsentReview, isSpotUploadRunning, useUploadStore } from '@/store/useUploadStore';
 import { useT } from '@/hooks/useT';
 import type { User } from '@/lib/mapUserDoc';
 import { MAX_SPOT_IMAGES, realImageCount } from '@/lib/spotImages';
@@ -24,6 +24,7 @@ interface ReviewFormProps {
 export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
   const submitReview = useUploadStore((s) => s.submitReview);
   const isUploading = useUploadStore((s) => isSpotUploadRunning(s.jobs, spot.id));
+  const reviewPending = useUploadStore((s) => hasUnsentReview(s.jobs, spot.id));
   const showToast = useToastStore((s) => s.showToast);
   const t = useT();
   const [rating, setRating] = useState(0);
@@ -64,7 +65,7 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
       showToast(t('ratingRequired'), 'error');
       return;
     }
-    if (hasReview && spot.reviews?.some((r) => r.userId === user.uid)) {
+    if (hasReview && (reviewPending || spot.reviews?.some((r) => r.userId === user.uid))) {
       showToast(t('alreadyReviewed'), 'error');
       return;
     }
