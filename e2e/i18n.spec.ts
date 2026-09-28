@@ -34,16 +34,20 @@ for (const lang of ['hu', 'en'] as const) {
   });
 }
 
-test('first visit: LanguageSelector follows the tapped language', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem('spoton-install-prompt-dismissed', 'true');
-    window.localStorage.removeItem('spoton-language');
+test.describe('first visit, German browser', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('takes the browser language, no language dialog', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('spoton-install-prompt-dismissed', 'true');
+      window.localStorage.removeItem('spoton-language');
+    });
+    await openApp(page);
+    await expect(page.getByRole('button', { name: 'Entdecken', exact: true })).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    const stored = await page.evaluate(() => window.localStorage.getItem('spoton-language'));
+    expect(JSON.parse(stored ?? '{}').state).toMatchObject({ language: 'de', hasSelectedLanguage: true });
   });
-  await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Select Language' })).toBeVisible();
-  await page.getByRole('button', { name: /Magyar/ }).click();
-  await expect(page.getByRole('heading', { name: 'Válassz Nyelvet' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Folytatás' })).toBeVisible();
 });
 
 test('InstallGate keeps its rich-text DOM (hu, Android)', async ({ page }) => {

@@ -69,6 +69,12 @@ export const translations = {
     addSpotPhotos: 'Képek hozzáadása a helyhez',
     addPhotos: 'Képek hozzáadása',
     uploadingPhotos: 'Képek feltöltése...',
+    uploadRunning: '{name} feltöltése…',
+    uploadRunningMany: '{count} feltöltés folyamatban…',
+    uploadDone: 'Feltöltve',
+    uploadRetry: 'Újra',
+    uploadTimeout: 'Nem jött válasz 60 másodpercen belül. Ellenőrizd a kapcsolatot, és próbáld újra.',
+    reviewAndPhotosAdded: 'Értékelés és fotók hozzáadva!',
     spotPhotosAdded: 'Képek hozzáadva!',
     spotPhotoAddError: 'Hiba a képek hozzáadásakor',
     maxSpotImages: 'Legfeljebb 20 képet tölthetsz fel egy helyhez.',
@@ -108,6 +114,10 @@ export const translations = {
     // Notifications
     enableNotifications: 'Értesítések engedélyezése',
     notificationPromptText: 'Értesítést kapsz, ha jóváhagyják a helyedet, vagy értékelést kap',
+    notificationPromptTitle: 'Szóljunk, ha történik valami?',
+    notificationsToday: 'Ma',
+    notificationsEarlier: 'Korábban',
+    notificationsUnread: '{count} olvasatlan',
     enable: 'Engedélyezés',
     enabling: 'Engedélyezés...',
     notNow: 'Most nem',
@@ -263,11 +273,17 @@ export const translations = {
     levelDiamond: 'Világutazó',
 
     // Spot Highlight
-    highlightSpot: 'Spot kiemeléése',
+    highlightSpot: 'Spot kiemelése',
     spotHasHighlight: '⭐ Ez a spot ki van emelve',
-    youHighlightedThis: 'Te emeltél ki ezt',
+    youHighlightedThis: 'Ezt te emelted ki',
     highlightSuccess: 'Spot kiemelt! 7 napig lesz látható',
-    highlightError: 'Hiba a kiemeléés során',
+    highlightError: 'Hiba a kiemelés során',
+    highlightNotOwner: 'Csak a saját helyeidet emelheted ki',
+    highlightNotApproved: 'Csak jóváhagyott helyet lehet kiemelni',
+    highlightAlready: 'Ezt a helyet már kiemelted',
+    highlightLevelTooLow: 'A kiemelés a 3. szinttől érhető el',
+    highlightLimitReached: 'Elérted a kiemelési korlátodat',
+    highlightSpotNotFound: 'Ez a hely már nem létezik',
 
     // Settings
     settings: 'Beállítások',
@@ -400,10 +416,6 @@ export const translations = {
     installDontShowAgain: 'Ne mutassa többet',
     installFooter: 'Az app telepítése után automatikusan elindul a főképernyőről 🚀',
 
-    // LanguageSelector (T24)
-    langSelectTitle: 'Válassz Nyelvet',
-    langSelectDesc: 'Válaszd ki az előnyben részesített nyelvet',
-    langSelectContinue: 'Folytatás',
   },
   en: {
     // Navigation
@@ -475,6 +487,12 @@ export const translations = {
     addSpotPhotos: 'Add photos to this spot',
     addPhotos: 'Add photos',
     uploadingPhotos: 'Uploading photos...',
+    uploadRunning: 'Uploading {name}…',
+    uploadRunningMany: '{count} uploads in progress…',
+    uploadDone: 'Uploaded',
+    uploadRetry: 'Retry',
+    uploadTimeout: 'No response within 60 seconds. Check your connection and try again.',
+    reviewAndPhotosAdded: 'Review and photos added!',
     spotPhotosAdded: 'Photos added!',
     spotPhotoAddError: 'Error adding photos',
     maxSpotImages: 'You can upload up to 20 photos per spot.',
@@ -514,6 +532,10 @@ export const translations = {
     // Notifications
     enableNotifications: 'Enable Notifications',
     notificationPromptText: 'Get notified when your spot is approved or receives reviews',
+    notificationPromptTitle: 'Want a heads-up?',
+    notificationsToday: 'Today',
+    notificationsEarlier: 'Earlier',
+    notificationsUnread: '{count} unread',
     enable: 'Enable',
     enabling: 'Enabling...',
     notNow: 'Not now',
@@ -674,6 +696,12 @@ export const translations = {
     youHighlightedThis: 'You highlighted this',
     highlightSuccess: 'Spot highlighted! Visible for 7 days',
     highlightError: 'Error highlighting spot',
+    highlightNotOwner: 'You can only highlight your own spots',
+    highlightNotApproved: 'Only approved spots can be highlighted',
+    highlightAlready: 'You have already highlighted this spot',
+    highlightLevelTooLow: 'Highlighting unlocks at level 3',
+    highlightLimitReached: 'You have reached your highlight limit',
+    highlightSpotNotFound: 'This spot no longer exists',
 
     // Settings
     settings: 'Settings',
@@ -806,10 +834,6 @@ export const translations = {
     installDontShowAgain: "Don't show again",
     installFooter: 'After installation, the app will launch automatically from your home screen 🚀',
 
-    // LanguageSelector (T24)
-    langSelectTitle: 'Select Language',
-    langSelectDesc: 'Choose your preferred language',
-    langSelectContinue: 'Continue',
   },
   de: {
     // Navigation
@@ -881,6 +905,12 @@ export const translations = {
     addSpotPhotos: 'Fotos zu diesem Ort hinzufügen',
     addPhotos: 'Fotos hinzufügen',
     uploadingPhotos: 'Fotos werden hochgeladen...',
+    uploadRunning: '{name} wird hochgeladen…',
+    uploadRunningMany: '{count} Uploads laufen…',
+    uploadDone: 'Hochgeladen',
+    uploadRetry: 'Erneut',
+    uploadTimeout: 'Keine Antwort innerhalb von 60 Sekunden. Prüfe deine Verbindung und versuche es erneut.',
+    reviewAndPhotosAdded: 'Bewertung und Fotos hinzugefügt!',
     spotPhotosAdded: 'Fotos hinzugefügt!',
     spotPhotoAddError: 'Fehler beim Hinzufügen der Fotos',
     maxSpotImages: 'Maximal 20 Fotos pro Ort erlaubt.',
@@ -919,6 +949,10 @@ export const translations = {
     // Notifications
     enableNotifications: 'Benachrichtigungen aktivieren',
     notificationPromptText: 'Erhalten Sie Benachrichtigungen, wenn Ihr Ort genehmigt oder bewertet wird',
+    notificationPromptTitle: 'Sollen wir dir Bescheid geben?',
+    notificationsToday: 'Heute',
+    notificationsEarlier: 'Früher',
+    notificationsUnread: '{count} ungelesen',
     enable: 'Aktivieren',
     enabling: 'Aktivierung...',
     notNow: 'Nicht jetzt',
@@ -1069,6 +1103,12 @@ export const translations = {
     youHighlightedThis: 'Du hast dies hervorgehoben',
     highlightSuccess: 'Ort hervorgehoben! Sichtbar für 7 Tage',
     highlightError: 'Fehler beim Hervorheben des Ortes',
+    highlightNotOwner: 'Du kannst nur deine eigenen Orte hervorheben',
+    highlightNotApproved: 'Nur freigegebene Orte können hervorgehoben werden',
+    highlightAlready: 'Du hast diesen Ort bereits hervorgehoben',
+    highlightLevelTooLow: 'Hervorheben ist ab Level 3 möglich',
+    highlightLimitReached: 'Du hast dein Hervorhebungslimit erreicht',
+    highlightSpotNotFound: 'Dieser Ort existiert nicht mehr',
 
     // Settings
     settings: 'Einstellungen',
@@ -1213,10 +1253,6 @@ export const translations = {
     installDontShowAgain: 'Nicht mehr anzeigen',
     installFooter: 'Nach der Installation startet die App automatisch vom Startbildschirm 🚀',
 
-    // LanguageSelector (T24)
-    langSelectTitle: 'Sprache wählen',
-    langSelectDesc: 'Wählen Sie Ihre bevorzugte Sprache',
-    langSelectContinue: 'Weiter',
   },
 };
 

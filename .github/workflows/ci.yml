@@ -20,6 +20,7 @@ env:
   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: demo-spoton.appspot.com
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '000000000000'
   NEXT_PUBLIC_FIREBASE_APP_ID: '1:000000000000:web:0000000000000000000000'
+  NEXT_TELEMETRY_DISABLED: '1'
 
 jobs:
   app:
@@ -34,6 +35,12 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      # Next.js build cache (incremental builds; also silences "No build cache found").
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**', 'next.config.mjs', 'tailwind.config.ts') }}
+          restore-keys: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
       - run: npm ci
       - run: npm run verify
 

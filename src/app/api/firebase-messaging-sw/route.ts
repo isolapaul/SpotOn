@@ -21,6 +21,9 @@ firebase.initializeApp(${JSON.stringify(firebaseConfig)});
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
+  // A message with a notification payload (what our functions send) is already shown by the
+  // Firebase SDK itself; showing it here as well made every push arrive twice.
+  if (payload.notification) return;
   const notificationTitle = payload.notification?.title || 'SpotOn Notification';
   const notificationOptions = {
     body: payload.notification?.body || 'You have a new notification',

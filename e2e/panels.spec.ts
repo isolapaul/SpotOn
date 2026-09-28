@@ -14,8 +14,10 @@ const addButton = (page: Page) => page.getByRole('button', { name: 'Add', exact:
 test.beforeEach(async ({ page }) => {
   await skipFirstRunOverlays(page, 'en');
   await blockMapTiles(page);
-  // The signed-in NotificationPrompt (z-50) would otherwise cover the Cancel button (z-10, same slot).
-  await page.addInitScript(() => sessionStorage.setItem('notification-prompt-dismissed', 'true'));
+  // The push offer (after a contribution) would otherwise cover the top of the screen.
+  await page.addInitScript(() =>
+    localStorage.setItem('spoton-push-prompt', JSON.stringify({ state: { answered: true }, version: 0 })),
+  );
 });
 
 test('add spot: one banner, satellite while selecting, theme restored on cancel and on close', async ({ page }) => {

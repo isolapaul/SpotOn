@@ -6,13 +6,13 @@ import type { TranslationKey } from '@/lib/translations';
 
 export type ToastType = 'success' | 'error' | 'info';
 
-// Notification title per toast type (emoji prefix + translated word), in the current language
+// Notification title per toast type (translated word; the notification center shows the type as an icon)
 function toastTitle(type: ToastType): string {
   const lang = useLanguageStore.getState().language ?? 'hu';
   const t = (key: TranslationKey) => translate(lang, key);
-  if (type === 'success') return `✅ ${t('toastSuccess')}`;
-  if (type === 'error') return `❌ ${t('toastError')}`;
-  if (type === 'info') return `ℹ️ ${t('toastInfo')}`;
+  if (type === 'success') return t('toastSuccess');
+  if (type === 'error') return t('toastError');
+  if (type === 'info') return t('toastInfo');
   return t('notificationDefaultTitle');
 }
 
@@ -30,8 +30,5 @@ export const useToastStore = create<ToastStore>(() => ({
       body: message,
       type: type, // 'success' | 'error' | 'info' now valid types
     });
-
-    // Silently logged - no visual popup
-    console.log(`[Silent Toast → Notification] ${type}: ${message}`);
   },
 }));

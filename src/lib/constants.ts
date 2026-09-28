@@ -30,6 +30,12 @@ export const GEOLOCATION_TIMEOUT_MS = 10_000;
 /** How long a fetched publicProfiles/{uid} document is reused before it is read again (T26). */
 export const PUBLIC_PROFILE_TTL_MS = 5 * 60_000;
 
+/**
+ * Deadline for one network step of a background upload (one photo, the spot write, the callable,
+ * the review write) before the user gets an error with Retry instead of a stuck state (G4, #8).
+ */
+export const UPLOAD_TIMEOUT_MS = 60_000;
+
 /** Spots per "load more" batch in the discovery panel. */
 export const DISCOVERY_BATCH_SIZE = 20;
 
@@ -39,16 +45,14 @@ export const DELAYS = {
   mapReady: 100,
   /** page.tsx: after the spots listener delivered, before marking spots loaded. */
   spotsSettle: 300,
-  /** LanguageSelector entrance. */
-  languageSelector: 300,
   /** SpotDetailsPanel: ignore hero clicks right after opening. */
   heroClickGuard: 300,
   /** page.tsx: all resources loaded → app ready. */
   appReady: 500,
   /** SpotDetailsPanel: close after approving. */
   approveClose: 1000,
-  /** NotificationPrompt: show the prompt after sign-in. */
-  notificationPrompt: 3000,
+  /** UploadStatus: how long the "uploaded" pill stays. */
+  uploadDoneVisible: 2500,
 } as const;
 
 /**

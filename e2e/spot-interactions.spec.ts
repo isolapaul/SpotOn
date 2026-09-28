@@ -168,7 +168,7 @@ test('adding a photo to a legacy spot materialises its images server-side', asyn
   await signInWithEmail(page, E2E.user.email, E2E.password);
   await openDetails(page, E2E.interactionSpot.emoji);
 
-  await page.locator('input[type="file"][multiple]').setInputFiles(await jpegUpload(page));
+  await page.locator('#spot-photos-input').setInputFiles(await jpegUpload(page));
   await expectNotification(page, 'Photos added!');
 
   const spot = await spotData(E2E.interactionSpot.id);
@@ -184,6 +184,28 @@ test('adding a photo to a legacy spot materialises its images server-side', asyn
   await closeDetails(page);
   await openDetails(page, E2E.interactionSpot.emoji);
   await expect(page.getByText('📸 2')).toBeVisible();
+});
+
+test('a review and a photo go up together with one submit', async ({ page }) => {
+  const comment = `E2E review with photo ${Date.now().toString(36)}`;
+  await openApp(page);
+  await signInWithEmail(page, E2E.level5.email, E2E.password);
+  await openDetails(page, E2E.interactionSpot.emoji);
+
+  const form = page.locator('#review-comment').locator('..');
+  await form.getByRole('button').nth(4).click(); // 5th star
+  await page.locator('#review-comment').fill(comment);
+  await page.locator('#review-photos-input').setInputFiles(await jpegUpload(page));
+  await expect(page.getByRole('img', { name: 'Photo 1' })).toBeVisible();
+  await page.getByRole('button', { name: 'Submit Review' }).click();
+  await expectNotification(page, 'Review and photos added!');
+
+  const spot = await spotData(E2E.interactionSpot.id);
+  const reviews: Array<Record<string, unknown>> = spot?.reviews ?? [];
+  expect(reviews.find((r) => r.comment === comment)).toMatchObject({ userId: E2E.level5.uid, rating: 5 });
+  const imageUrls: string[] = spot?.imageUrls ?? [];
+  expect(imageUrls).toHaveLength(3);
+  expect(storagePathOf(imageUrls[2]).startsWith(`spot-images/${E2E.level5.uid}/`)).toBe(true);
 });
 
 test('admin approves the pending spot', async ({ page }) => {
@@ -203,7 +225,9 @@ test('level-5 owner highlights their approved spot via the callable', async ({ p
   const spotId = E2E.level5.approvedSpot.id;
   await openApp(page);
   await signInWithEmail(page, E2E.level5.email, E2E.password);
-  await openDetails(page, E2E.level5.approvedSpot.emoji);
+  // level5 also sees its 19 own pending spots (same emoji, yellow): open the approved (green) one.
+  await spotMarker(page, E2E.level5.approvedSpot.emoji).filter({ has: page.locator('circle[fill="#10b981"]') }).click();
+  await page.getByRole('button', { name: 'View Details' }).click();
 
   const highlightButton = page.getByRole('button', { name: 'Highlight this spot', exact: true });
   await highlightButton.click();

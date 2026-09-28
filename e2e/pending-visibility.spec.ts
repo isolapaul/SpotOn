@@ -4,7 +4,8 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { E2E } from './fixtures';
 import { test, blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstRunOverlays, spotMarker } from './helpers';
 
-// T30: pending spots reach only their owner (profile list) and admins (map + pending tab).
+// T30: pending spots reach only their owner (profile list + yellow marker on their own map) and
+// admins (map + pending tab).
 // P = E2E.pendingSpot (owned by `user`); Q = E2E.level5.approvedSpot (owned by `level5`, whose other
 // 19 spots are pending and share Q's emoji). Read-only for the seeded fixtures; the spot added here
 // is deleted before and after the run.
@@ -54,12 +55,12 @@ test('signed out: approved markers only', async ({ page }) => {
   await expect(page.locator(PENDING_MARKERS)).toHaveCount(0);
 });
 
-test('owner: my spots list shows the pending spot, the map does not', async ({ page }) => {
+test('owner: own pending spot in yellow on the map and in my spots, never other users\' pending', async ({ page }) => {
   await openApp(page);
   await signInWithEmail(page, E2E.user.email, E2E.password);
+  // The own-spots listener follows sign-in; level5's 19 pending spots (same emoji as Q) stay hidden.
+  await expect(spotMarker(page, E2E.pendingSpot.emoji).locator('circle[fill="#eab308"]')).toHaveCount(1);
   await expect(spotMarker(page, E2E.level5.approvedSpot.emoji)).toHaveCount(1);
-  await expect(spotMarker(page, E2E.pendingSpot.emoji)).toHaveCount(0);
-  await expect(page.locator(PENDING_MARKERS)).toHaveCount(0);
 
   await openProfile(page, E2E.user.username);
   const card = page.locator('.glass-card').filter({ has: page.getByRole('heading', { name: E2E.pendingSpot.name }) });
@@ -90,7 +91,8 @@ test('owner: a new spot appears in the profile at once, as pending', async ({ pa
   await page.locator('#spot-name').fill(newSpotName);
   await page.getByRole('button', { name: 'Submit Spot' }).click();
   await expectNotification(page, 'Spot uploaded! Waiting for approval.');
-  await expect(page.locator(PENDING_MARKERS)).toHaveCount(0);
+  // The seeded pending spot plus the new one (other specs may add more of the user's own).
+  await expect.poll(() => page.locator(PENDING_MARKERS).count()).toBeGreaterThanOrEqual(2);
 
   await openProfile(page, E2E.user.username);
   const card = page.locator('.glass-card').filter({ has: page.getByRole('heading', { name: newSpotName }) });

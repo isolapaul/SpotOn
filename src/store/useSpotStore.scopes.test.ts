@@ -169,6 +169,17 @@ describe('spots listener scopes (T30)', () => {
     expect(ids()).toEqual(['q-approved']);
   });
 
+  it('an admin error falls back to the own query for the same user', async () => {
+    await startSignedOut();
+    store().syncSpotScopes({ uid: 'alice', isAdmin: true });
+    emit(find(ALL)!, [Q, P_ALICE, P_BOB]);
+    find(ALL)!.error(new Error('denied'));
+    expect(store().error).toBe('denied');
+    expect(ids()).toEqual(['q-approved']);
+    emit(find(own('alice'))!, [P_ALICE]);
+    expect(ids()).toEqual(['p-alice', 'q-approved']);
+  });
+
   it('an approved error before the first snapshot: startSpots rejects, the error stays in the store', async () => {
     const ready = store().startSpots();
     store().syncSpotScopes({ uid: null, isAdmin: false });

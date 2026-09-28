@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { interpolate, splitBold, translate, type Language } from './i18n';
+import { detectLanguage, interpolate, splitBold, translate, type Language } from './i18n';
 import { translations, type TranslationKey } from './translations';
 
 const dict = translations; // test oracle; aliased so the T24 acceptance grep only flags app code
@@ -118,10 +118,8 @@ describe('T24 keys', () => {
     'installAndroidTitle', 'installAndroidStep1', 'installAndroidStep2', 'installAndroidHint',
     'installContinueWeb', 'installDontShowAgain', 'installFooter',
   ] as const;
-  const LANG_SELECT_KEYS = ['langSelectTitle', 'langSelectDesc', 'langSelectContinue'] as const;
-
-  it.each(['hu', 'en', 'de'] as const)('%s has every auth*, install* and langSelect* key', (lang) => {
-    for (const key of [...AUTH_KEYS, ...INSTALL_KEYS, ...LANG_SELECT_KEYS]) {
+  it.each(['hu', 'en', 'de'] as const)('%s has every auth* and install* key', (lang) => {
+    for (const key of [...AUTH_KEYS, ...INSTALL_KEYS]) {
       expect(dict[lang], `${lang}.${key}`).toHaveProperty(key);
       expect(dict[lang][key].trim(), `${lang}.${key}`).not.toBe('');
     }
@@ -135,12 +133,19 @@ describe('T24 keys', () => {
       }
     }
   });
+});
 
-  it('LanguageSelector texts, verbatim', () => {
-    expect([translations.hu.langSelectTitle, translations.en.langSelectTitle, translations.de.langSelectTitle])
-      .toEqual(['Válassz Nyelvet', 'Select Language', 'Sprache wählen']);
-    expect(translations.de.langSelectDesc).toBe('Wählen Sie Ihre bevorzugte Sprache');
-    expect([translations.hu.langSelectContinue, translations.en.langSelectContinue, translations.de.langSelectContinue])
-      .toEqual(['Folytatás', 'Continue', 'Weiter']);
+describe('detectLanguage', () => {
+  it('takes the first supported primary subtag', () => {
+    expect(detectLanguage(['de-AT', 'en-US'])).toBe('de');
+    expect(detectLanguage(['fr-FR', 'en-GB', 'hu'])).toBe('en');
+    expect(detectLanguage(['HU-hu'])).toBe('hu');
+    expect(detectLanguage(['en_US'])).toBe('en');
+  });
+
+  it('falls back to Hungarian', () => {
+    expect(detectLanguage(['fr-FR'])).toBe('hu');
+    expect(detectLanguage([])).toBe('hu');
+    expect(detectLanguage(undefined)).toBe('hu');
   });
 });

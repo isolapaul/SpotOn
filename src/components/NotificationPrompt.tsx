@@ -1,102 +1,82 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { BellRing } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserStore } from '@/store/useUserStore';
+import { usePushPromptStore } from '@/store/usePushPromptStore';
 import { useT } from '@/hooks/useT';
 import { getMovedTo } from '@/lib/movedTo';
-import { DELAYS } from '@/lib/constants';
+import { Z } from '@/lib/constants';
 
+/**
+ * One-time push offer, shown after the user's first successful contribution (usePushPromptStore),
+ * only while the browser has not decided yet (permission 'default').
+ */
 export default function NotificationPrompt() {
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [isDismissed, setIsDismissed] = useState(false);
-  const { user } = useUserStore();
+  const user = useUserStore((s) => s.user);
+  const requested = usePushPromptStore((s) => s.requested);
+  const answer = usePushPromptStore((s) => s.answer);
   const t = useT();
   const { isPermissionGranted, isLoading, initializePush } = usePushNotifications();
 
-  // Keyed on the uid, not the user object: store updates that replace the object must not restart the timer.
-  const uid = user?.uid;
+  // Old (Vercel) domain: push tokens are per origin, so never ask there (T19)
+  const canAsk =
+    !getMovedTo() &&
+    'Notification' in globalThis &&
+    globalThis.Notification.permission === 'default';
 
-  useEffect(() => {
-    // Check if we should show the prompt; returns the pending timer, if any
-    const checkPrompt = (): ReturnType<typeof setTimeout> | undefined => {
-      // Old (Vercel) domain: push tokens are per origin, so never ask there (T19)
-      if (getMovedTo()) return;
-      if (!uid) return;
-      
-      // Don't show if already granted
-      if (isPermissionGranted) return;
-      
-      // Check if user dismissed it in this session
-      const dismissed = sessionStorage.getItem('notification-prompt-dismissed');
-      if (dismissed) return;
-      
-      // Check notification permission status
-      if ('Notification' in globalThis) {
-        const permission = globalThis.Notification.permission;
-        
-        // Only show if permission is 'default' (not asked yet)
-        if (permission === 'default') {
-          // Wait a bit before showing (better UX)
-          return setTimeout(() => {
-            setShowPrompt(true);
-          }, DELAYS.notificationPrompt);
-        }
-      }
-    };
-
-    const id = checkPrompt();
-    return () => clearTimeout(id);
-  }, [uid, isPermissionGranted]);
+  if (!requested || !user || isPermissionGranted || !canAsk) return null;
 
   const handleEnable = async () => {
-    const success = await initializePush();
-    if (success) {
-      setShowPrompt(false);
-    }
+    // Enabled or refused in the browser dialog: either way the question is answered.
+    await initializePush();
+    answer();
   };
-
-  const handleDismiss = () => {
-    setShowPrompt(false);
-    setIsDismissed(true);
-    sessionStorage.setItem('notification-prompt-dismissed', 'true');
-  };
-
-  if (!showPrompt || !user || isDismissed) {
-    return null;
-  }
 
   return (
-    <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 
-      max-w-md w-[calc(100%-2rem)] animate-fade-in">
-      <div className="glass-card p-4 shadow-lg">
+    <div
+      className={`fixed ${Z.modal} left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm`}
+      style={{ top: 'calc(1rem + env(safe-area-inset-top))' }}
+      role="dialog"
+      aria-labelledby="push-prompt-title"
+    >
+      <div
+        className="rounded-[22px] bg-slate-900 ring-1 ring-white/10 shadow-2xl p-4 motion-safe:animate-prompt-in"
+        style={{ animationDelay: '350ms' }}
+      >
         <div className="flex items-start gap-3">
-          <div className="text-2xl">🔔</div>
-          <div className="flex-1">
-            <h3 className="text-white font-semibold mb-1">
-              {t('enableNotifications')}
+          <div className="flex-shrink-0 w-11 h-11 rounded-full bg-sky-500/15 flex items-center justify-center">
+            <BellRing
+              className="w-5 h-5 text-sky-400 motion-safe:animate-bell-ring"
+              style={{ animationDelay: '800ms' }}
+              strokeWidth={2.2}
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 id="push-prompt-title" className="text-white text-[15px] font-semibold leading-snug">
+              {t('notificationPromptTitle')}
             </h3>
-            <p className="text-white/70 text-sm mb-3">
+            <p className="text-white/60 text-[13px] leading-snug mt-0.5">
               {t('notificationPromptText')}
             </p>
-            <div className="flex gap-2">
-              <button
-                onClick={handleEnable}
-                disabled={isLoading}
-                className="flex-1 py-2 px-4 rounded-lg bg-white/20 text-white font-medium
-                  hover:bg-white/30 active:scale-95 transition-all disabled:opacity-50 touch-manipulation"
-              >
-                {isLoading ? t('enabling') : t('enable')}
-              </button>
-              <button
-                onClick={handleDismiss}
-                className="py-2 px-4 rounded-lg bg-white/10 text-white/70 font-medium
-                  hover:bg-white/20 active:scale-95 transition-all touch-manipulation"
-              >
-                {t('notNow')}
-              </button>
-            </div>
           </div>
+        </div>
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={answer}
+            className="flex-1 py-2.5 rounded-xl bg-white/10 text-white/80 text-sm font-medium
+              hover:bg-white/15 active:scale-[0.97] transition touch-manipulation"
+          >
+            {t('notNow')}
+          </button>
+          <button
+            onClick={handleEnable}
+            disabled={isLoading}
+            className="flex-1 py-2.5 rounded-xl bg-sky-500 text-white text-sm font-semibold
+              hover:bg-sky-400 active:scale-[0.97] transition disabled:opacity-60 touch-manipulation"
+          >
+            {isLoading ? t('enabling') : t('enable')}
+          </button>
         </div>
       </div>
     </div>

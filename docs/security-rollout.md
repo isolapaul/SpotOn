@@ -258,7 +258,7 @@ Console → Firestore → Indexes must then show all three `spots` indexes from 
 - `status ↑ createdAt ↓` (the approved-spots query);
 - `createdBy ↑ status ↑ createdAt ↑` (legacy).
 
-Without the enabled index, signed-in users' own-spots listener fails with `The query requires an index` in the DevTools console (the map is unaffected).
+Without the enabled index, signed-in users' own-spots listener fails with `The query requires an index` in the DevTools console: approved spots still show, but the user's own pending spots are missing from the map and My Spots, and the level shown in the profile counts only approved spots.
 Rollback: none needed; the new index is harmless and can stay.
 
 ---

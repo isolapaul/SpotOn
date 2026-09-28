@@ -61,50 +61,32 @@ describe("isActiveEntry", () => {
 
 describe("computeAllowance", () => {
   it("level slots per spot count", () => {
-    expect(computeAllowance(0, undefined)).toBe(0);
-    expect(computeAllowance(9, undefined)).toBe(0);
-    expect(computeAllowance(10, undefined)).toBe(1);
-    expect(computeAllowance(14, undefined)).toBe(1);
-    expect(computeAllowance(15, undefined)).toBe(2);
-    expect(computeAllowance(20, undefined)).toBe(2);
-  });
-
-  it("plus the Valentine highlightBonus (D9)", () => {
-    const qr = (highlightBonus: unknown) => ({valentine2026: {highlightBonus}});
-    expect(computeAllowance(9, qr(1))).toBe(1);
-    expect(computeAllowance(10, qr(1))).toBe(2);
-    expect(computeAllowance(15, qr(2))).toBe(4);
-    expect(computeAllowance(20, qr(1))).toBe(3);
-  });
-
-  it("bad bonus values count as 0 or are floored", () => {
-    const qr = (highlightBonus: unknown) => ({valentine2026: {highlightBonus}});
-    expect(computeAllowance(10, qr(-3))).toBe(1);
-    expect(computeAllowance(10, qr("x"))).toBe(1);
-    expect(computeAllowance(10, qr(null))).toBe(1);
-    expect(computeAllowance(10, qr(NaN))).toBe(1);
-    expect(computeAllowance(10, qr(1.9))).toBe(2);
-    expect(computeAllowance(10, qr("2"))).toBe(3);
-    expect(computeAllowance(10, {})).toBe(1);
-    expect(computeAllowance(10, "junk")).toBe(1);
+    expect(computeAllowance(0)).toBe(0);
+    expect(computeAllowance(9)).toBe(0);
+    expect(computeAllowance(10)).toBe(1);
+    expect(computeAllowance(14)).toBe(1);
+    expect(computeAllowance(15)).toBe(2);
+    expect(computeAllowance(20)).toBe(2);
   });
 });
 
 describe("highlightCandidateIds", () => {
-  it("unique strings from highlightedSpots and legacy activeHighlights, excluding the target", () => {
+  it("unique strings from highlightedSpots, excluding the target", () => {
+    const user = {highlightedSpots: ["a", "b", "target", 7, "a"]};
+    expect(highlightCandidateIds(user, "target")).toEqual(["a", "b"]);
+  });
+
+  it("ignores the legacy Valentine activeHighlights (SEC-22)", () => {
     const user = {
-      highlightedSpots: ["a", "b", "target", 7, "a"],
-      questRewards: {valentine2026: {activeHighlights: [
-        {spotId: "b"}, {spotId: "c"}, {spotId: "target"}, {spotId: 5}, null,
-      ]}},
+      highlightedSpots: ["a"],
+      questRewards: {valentine2026: {highlightBonus: 5, activeHighlights: [{spotId: "c"}]}},
     };
-    expect(highlightCandidateIds(user, "target")).toEqual(["a", "b", "c"]);
+    expect(highlightCandidateIds(user, "target")).toEqual(["a"]);
   });
 
   it("skips invalid stored ids (paths, dot and reserved ids)", () => {
     const user = {
-      highlightedSpots: ["bad/id", "ok", "..", ".", "__x__", "", "x".repeat(201)],
-      questRewards: {valentine2026: {activeHighlights: [{spotId: "a/b/c"}, {spotId: "ok2"}]}},
+      highlightedSpots: ["bad/id", "ok", "..", ".", "__x__", "", "x".repeat(201), "ok2"],
     };
     expect(highlightCandidateIds(user, "target")).toEqual(["ok", "ok2"]);
   });
@@ -118,7 +100,7 @@ describe("highlightCandidateIds", () => {
   it("missing fields → none", () => {
     expect(highlightCandidateIds(undefined, "t")).toEqual([]);
     expect(highlightCandidateIds({}, "t")).toEqual([]);
-    expect(highlightCandidateIds({highlightedSpots: "x", questRewards: 1}, "t")).toEqual([]);
+    expect(highlightCandidateIds({highlightedSpots: "x"}, "t")).toEqual([]);
   });
 
   it("capped", () => {
@@ -190,17 +172,19 @@ describe("planHighlight", () => {
   it("not approved → failed-precondition", () => {
     for (const status of ["pending", undefined, "rejected"]) {
       expect(plan({spot: ownSpot({status})})).toEqual({error: {
-        code: "failed-precondition", message: "Spot must be approved to highlight"}});
+        code: "failed-precondition", message: "Spot must be approved to highlight",
+        reason: "not-approved"}});
     }
   });
 
   it("not owner of an approved spot → permission-denied", () => {
     expect(plan({spot: ownSpot({createdBy: "other"})})).toEqual({error: {
-      code: "permission-denied", message: "You can only highlight your own spots"}});
+      code: "permission-denied", message: "You can only highlight your own spots",
+      reason: "not-owner"}});
   });
 
   it("not owner of a non-approved spot → exactly the missing-spot error (T30)", () => {
-    expect(SPOT_NOT_FOUND).toEqual({code: "not-found", message: "Spot not found"});
+    expect(SPOT_NOT_FOUND).toEqual({code: "not-found", message: "Spot not found", reason: "not-found"});
     for (const status of ["pending", undefined, "rejected"]) {
       expect(plan({spot: ownSpot({status, createdBy: "other"})})).toEqual({error: SPOT_NOT_FOUND});
       expect(plan({spot: {status}})).toEqual({error: SPOT_NOT_FOUND});
@@ -209,12 +193,13 @@ describe("planHighlight", () => {
 
   it("already active → permission-denied", () => {
     expect(plan({spot: ownSpot({highlighted: [entry(UID, FUTURE)]}), allowance: 5})).toEqual({
-      error: {code: "permission-denied", message: "You have already highlighted this spot"}});
+      error: {code: "permission-denied", message: "You have already highlighted this spot",
+        reason: "already-highlighted"}});
   });
 
-  it("allowance 0 → No highlight bonus available", () => {
+  it("allowance 0 → level too low", () => {
     expect(plan({allowance: 0})).toEqual({error: {
-      code: "permission-denied", message: "No highlight bonus available"}});
+      code: "permission-denied", message: "No highlight bonus available", reason: "level-too-low"}});
   });
 
   it("limit reached → permission-denied", () => {
@@ -225,7 +210,8 @@ describe("planHighlight", () => {
       ],
       allowance: 2,
     })).toEqual({error: {
-      code: "permission-denied", message: "You have reached your highlight limit"}});
+      code: "permission-denied", message: "You have reached your highlight limit",
+      reason: "limit-reached"}});
   });
 
   it("checks run in order: owner, approved, already, allowance, limit", () => {
@@ -240,35 +226,6 @@ describe("planHighlight", () => {
       .toMatchObject({error: {message: "Spot must be approved to highlight"}});
     expect(plan({...worst, spot: {...worst.spot, status: "approved", createdBy: UID}}))
       .toMatchObject({error: {message: "You have already highlighted this spot"}});
-  });
-
-  it("legacy activeHighlights are counted only when the spot entry is active", () => {
-    const user = {
-      questRewards: {valentine2026: {highlightBonus: 1, activeHighlights: [
-        {spotId: "legacy-active", expiresAt: FUTURE},
-        {spotId: "legacy-expired-on-spot", expiresAt: FUTURE},
-      ]}},
-    };
-    const ids = highlightCandidateIds(user, "target");
-    expect(ids).toEqual(["legacy-active", "legacy-expired-on-spot"]);
-
-    // Only the expired-on-spot one exists as active in the user map: not counted.
-    const onlyExpired: CandidateSpot[] = [
-      {id: "legacy-active", data: {highlighted: [entry("other", FUTURE)]}},
-      {id: "legacy-expired-on-spot", data: {highlighted: [entry(UID, PAST)]}},
-    ];
-    const ok = plan({candidateSpots: onlyExpired, allowance: 1});
-    expect(ok).toHaveProperty("plan");
-
-    const withActive: CandidateSpot[] = [
-      {id: "legacy-active", data: {highlighted: [entry(UID, FUTURE)]}},
-      onlyExpired[1],
-    ];
-    expect(plan({candidateSpots: withActive, allowance: 1})).toMatchObject({
-      error: {message: "You have reached your highlight limit"}});
-    const two = plan({candidateSpots: withActive, allowance: 2});
-    if (!("plan" in two)) throw new Error("expected a plan");
-    expect(two.plan.userUpdate).toEqual({highlightedSpots: ["legacy-active", "target"]});
   });
 });
 
@@ -301,18 +258,13 @@ describe("planUnhighlight", () => {
       .toEqual(planUnhighlight({uid: UID, spotId: "s", spot: undefined, user}));
   });
 
-  it("cleans the user side, including legacy activeHighlights, even without the spot", () => {
+  it("cleans the user side even without the spot, never the legacy Valentine map", () => {
     const user = {
       highlightedSpots: ["a", "s"],
-      questRewards: {valentine2026: {highlightBonus: 1, activeHighlights: [
-        {spotId: "s", expiresAt: FUTURE}, {spotId: "b", expiresAt: FUTURE},
-      ]}},
+      questRewards: {valentine2026: {activeHighlights: [{spotId: "s", expiresAt: FUTURE}]}},
     };
     expect(planUnhighlight({uid: UID, spotId: "s", spot: undefined, user})).toEqual({
-      userUpdate: {
-        "highlightedSpots": ["a"],
-        "questRewards.valentine2026.activeHighlights": [{spotId: "b", expiresAt: FUTURE}],
-      },
+      userUpdate: {highlightedSpots: ["a"]},
     });
   });
 

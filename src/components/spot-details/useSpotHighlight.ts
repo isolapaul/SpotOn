@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import type { Spot } from '@/store/useSpotStore';
-import { useUserStore } from '@/store/useUserStore';
+import { useUserStore, userErrorKey } from '@/store/useUserStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useT } from '@/hooks/useT';
-import { isHighlightedBy } from '@/lib/highlights';
+import { highlightErrorKey, isHighlightedBy } from '@/lib/highlights';
 
 export interface SpotHighlight {
   /** Whether the signed-in user has an active highlight on the spot. */
@@ -11,12 +11,6 @@ export interface SpotHighlight {
   isHighlighting: boolean;
   /** Calls the highlightSpot callable (via the store) and toasts the result. */
   highlight: () => Promise<void>;
-}
-
-/** The server's message for a failed callable (HttpsError details first), if any. */
-function callableErrorMessage(error: unknown): string | undefined {
-  const e = error as { details?: { message?: string }; message?: string } | null | undefined;
-  return e?.details?.message || e?.message;
 }
 
 /**
@@ -43,7 +37,7 @@ export function useSpotHighlight(spot: Spot | null): SpotHighlight {
       await highlightSpot(spot.id);
       showToast(t('highlightSuccess'), 'success');
     } catch (error) {
-      showToast(callableErrorMessage(error) || t('highlightError'), 'error');
+      showToast(t(highlightErrorKey(error) ?? userErrorKey(error) ?? 'highlightError'), 'error');
     } finally {
       setIsHighlighting(false);
     }

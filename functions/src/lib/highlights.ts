@@ -2,8 +2,9 @@
  * Pure helpers for the unified highlight model (T10). No Firebase imports; `now` is injected.
  *
  * Source of truth for "active": the spots/{id}.highlighted[] entry by this user with
- * expiresAt > now. users.highlightedSpots and the legacy
- * users.questRewards.valentine2026.activeHighlights[] only nominate candidate spots.
+ * expiresAt > now. users.highlightedSpots only nominates candidate spots. The Valentine 2026
+ * quest (questRewards.valentine2026: highlightBonus, activeHighlights[]) is over and no longer
+ * read (SEC-22); its highlights expired long ago.
  *
  * Stored shapes (must not change):
  * - spots.highlighted[]: {userId, highlightedAt: ISO string, expiresAt: ISO string}
@@ -36,9 +37,23 @@ export interface CandidateSpot {
 
 export type HighlightErrorCode = "failed-precondition" | "not-found" | "permission-denied";
 
+/**
+ * Why a highlight was refused, sent to the client as HttpsError `details.reason` (BUG-28): four
+ * refusals share `permission-denied`, so the client maps the reason, not the code, to its text.
+ */
+export type HighlightRefusal =
+  | "not-found"
+  | "not-owner"
+  | "not-approved"
+  | "already-highlighted"
+  | "level-too-low"
+  | "limit-reached";
+
 export interface HighlightError {
   code: HighlightErrorCode;
+  /** English text, kept for clients that still show error.message. */
   message: string;
+  reason: HighlightRefusal;
 }
 
 export interface HighlightPlan {
@@ -61,11 +76,6 @@ function asArray(x: unknown): unknown[] {
   return Array.isArray(x) ? x : [];
 }
 
-/** Legacy questRewards.valentine2026 map, if any. */
-function valentine(user: DocData | undefined): Record<string, unknown> | undefined {
-  return asRecord(asRecord(user?.questRewards)?.valentine2026);
-}
-
 /** True for a highlighted[] entry by uid that has not expired at `now`. */
 export function isActiveEntry(e: unknown, uid: string, now: Date): boolean {
   const entry = asRecord(e);
@@ -78,23 +88,18 @@ export function hasActiveEntry(spot: DocData | undefined, uid: string, now: Date
   return asArray(spot?.highlighted).some((e) => isActiveEntry(e, uid, now));
 }
 
-/** Level slots (maxHighlightsForCount) plus the Valentine highlightBonus (D9). */
-export function computeAllowance(spotsCount: number, questRewards: unknown): number {
-  const bonusRaw = asRecord(asRecord(questRewards)?.valentine2026)?.highlightBonus;
-  const bonus = Math.max(0, Math.floor(Number(bonusRaw) || 0));
-  return maxHighlightsForCount(spotsCount) + bonus;
+/** Highlight slots for a spot count (level slots only; the Valentine bonus is gone, SEC-22). */
+export function computeAllowance(spotsCount: number): number {
+  return maxHighlightsForCount(spotsCount);
 }
 
 /**
  * Candidate spot ids that may hold an active highlight by this user: unique strings from
- * users.highlightedSpots and the legacy activeHighlights[].spotId, excluding `spotId` and any id
- * that is not a valid spot id (isValidSpotId; such ids are pruned on the next highlight), at most
- * MAX_HIGHLIGHT_CANDIDATES.
+ * users.highlightedSpots, excluding `spotId` and any id that is not a valid spot id
+ * (isValidSpotId; such ids are pruned on the next highlight), at most MAX_HIGHLIGHT_CANDIDATES.
  */
 export function highlightCandidateIds(user: DocData | undefined, spotId: string): string[] {
-  const legacy = asArray(valentine(user)?.activeHighlights)
-    .map((h) => asRecord(h)?.spotId);
-  const ids = [...asArray(user?.highlightedSpots), ...legacy]
+  const ids = asArray(user?.highlightedSpots)
     .filter((id): id is string => isValidSpotId(id) && id !== spotId);
   return [...new Set(ids)].slice(0, MAX_HIGHLIGHT_CANDIDATES);
 }
@@ -111,7 +116,11 @@ export function activeHighlightIds(
 }
 
 /** The error a missing spot gets; someone else's non-approved spot gets exactly the same (T30). */
-export const SPOT_NOT_FOUND: HighlightError = {code: "not-found", message: "Spot not found"};
+export const SPOT_NOT_FOUND: HighlightError = {
+  code: "not-found",
+  message: "Spot not found",
+  reason: "not-found",
+};
 
 /**
  * Writes for highlighting `spotId`, or the first failing check (in the order below). Ownership is
@@ -132,19 +141,39 @@ export function planHighlight({uid, spotId, spot, candidateSpots, allowance, now
 
   if (spot.createdBy !== uid) {
     if (spot.status !== "approved") return {error: SPOT_NOT_FOUND};
-    return {error: {code: "permission-denied", message: "You can only highlight your own spots"}};
+    return {error: {
+      code: "permission-denied",
+      message: "You can only highlight your own spots",
+      reason: "not-owner",
+    }};
   }
   if (spot.status !== "approved") {
-    return {error: {code: "failed-precondition", message: "Spot must be approved to highlight"}};
+    return {error: {
+      code: "failed-precondition",
+      message: "Spot must be approved to highlight",
+      reason: "not-approved",
+    }};
   }
   if (hasActiveEntry(spot, uid, now)) {
-    return {error: {code: "permission-denied", message: "You have already highlighted this spot"}};
+    return {error: {
+      code: "permission-denied",
+      message: "You have already highlighted this spot",
+      reason: "already-highlighted",
+    }};
   }
   if (allowance === 0) {
-    return {error: {code: "permission-denied", message: "No highlight bonus available"}};
+    return {error: {
+      code: "permission-denied",
+      message: "No highlight bonus available",
+      reason: "level-too-low",
+    }};
   }
   if (activeIds.length >= allowance) {
-    return {error: {code: "permission-denied", message: "You have reached your highlight limit"}};
+    return {error: {
+      code: "permission-denied",
+      message: "You have reached your highlight limit",
+      reason: "limit-reached",
+    }};
   }
 
   const expiresAt = new Date(now.getTime() + HIGHLIGHT_TTL_MS).toISOString();
@@ -166,7 +195,7 @@ export function planHighlight({uid, spotId, spot, candidateSpots, allowance, now
 
 /**
  * Writes for removing uid's highlight of `spotId`. The spot is updated only if it held an entry
- * by uid; the user only if highlightedSpots or the legacy activeHighlights[] mention `spotId`.
+ * by uid; the user only if highlightedSpots mentions `spotId`.
  * A missing spot or user yields no write for that side.
  */
 export function planUnhighlight({uid, spotId, spot, user}: {
@@ -186,20 +215,11 @@ export function planUnhighlight({uid, spotId, spot, user}: {
   }
 
   if (user) {
-    const userUpdate: Record<string, unknown> = {};
     const spots = asArray(user.highlightedSpots);
     const keptSpots = spots.filter((id) => id !== spotId);
     if (keptSpots.length !== spots.length) {
-      userUpdate.highlightedSpots = keptSpots;
+      plan.userUpdate = {highlightedSpots: keptSpots};
     }
-    const legacy = valentine(user)?.activeHighlights;
-    if (Array.isArray(legacy)) {
-      const keptLegacy = legacy.filter((h) => asRecord(h)?.spotId !== spotId);
-      if (keptLegacy.length !== legacy.length) {
-        userUpdate["questRewards.valentine2026.activeHighlights"] = keptLegacy;
-      }
-    }
-    if (Object.keys(userUpdate).length) plan.userUpdate = userUpdate;
   }
 
   return plan;

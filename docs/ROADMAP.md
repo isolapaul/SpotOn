@@ -21,7 +21,7 @@ Firebase stays the backend. Only the Next.js app moves off Vercel.
 | D6 | Proxy `/__/auth/*` so that `authDomain = spoton.isolapaul.hu`. | **Paul** |
 | D7 | Optional tasks approved: hide pending spots (T30), React 19 (T31), nonce CSP (T32). | **Paul** |
 | D8 | The level count keeps including pending spots, which is current behaviour. | default |
-| D9 | The legacy Valentine `highlightBonus` stays honoured. | default |
+| D9 | ~~The legacy Valentine `highlightBonus` stays honoured.~~ Overridden 2026-09-28: the quest is over; `highlightSpot` no longer reads `questRewards.valentine2026` (SEC-22). | **Paul** |
 | D10 | Anonymous feedback stays allowed, with a rate limit. | default |
 | D11 | Trivy runs with `ignore-unfixed: true`, plus a `.trivyignore` whose entries have expiry dates. | default |
 | D12 | The image limit per spot is 20. The UI text gets fixed to match. | default |
@@ -199,3 +199,14 @@ Functions, indexes, rules and both client builds come from **one commit** (the m
 | T31 React 19.3.0, react-leaflet 5.0.0, zustand 5.0.15, lucide-react 0.577.0 | done, review PASS-WITH-NITS | b706a3b |
 | T32 Nonce-based strict CSP (proxy.ts, 'strict-dynamic') | done, security review PASS-WITH-NITS + fixes | (this commit) |
 | T07 Functions toolchain | done, review PASS | d38d859 |
+
+## 8. Backlog (agreed for later, 2026-09-28)
+
+From the launch-readiness notes; not started. Each becomes its own task when picked up.
+
+| Item | What | Notes |
+|---|---|---|
+| F37 Automated deploys | Functions, rules and indexes deployed by GitHub Actions with environment approvals, keeping the runbook order (functions → indexes → client → rules). | Needs a deploy credential for the real project (Workload Identity Federation preferred over a key), so it is Paul's setup step first. |
+| F38 Monitoring | Uptime Kuma on the home server for `https://spoton.isolapaul.hu/api/health`; Cloud Functions error alerts; a Firestore usage/cost view. | Ops only, no app code. |
+| A1 Legal pages | Privacy policy and terms (ÁSZF) as static pages, linked from Settings and sign-in. | Next up after the task list; open questions to Paul (controller contact, languages, SMTP provider). |
+| A2 Account deletion | In-app deletion via a callable (user doc, public profile, username, own files, reviews), plus a web link for the Play Store. | Next up; open questions to Paul (what happens to spots, reviews and photos on others' spots). |

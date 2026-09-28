@@ -16,6 +16,9 @@ updates:
       # ESLint 10 breaks eslint-plugin-react (bundled by eslint-config-next 16.3.x).
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
+      # TypeScript 7 (native compiler): typescript-eslint supports <6.1 and Next's type check uses the TS 6 API.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
       # React 19 / react-leaflet 5 / zustand 5 are T31.
       - dependency-name: "react"
         update-types: ["version-update:semver-major"]
@@ -42,6 +45,9 @@ updates:
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7: typescript-eslint supports <6.1 (same reason as the root).
+      - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"

@@ -1,0 +1,13 @@
+# Always check out text files with LF, also on Windows (core.autocrlf=true would otherwise turn
+# them into CRLF). deploy/update.sh, docker-compose.yml and .env files are copied to the Linux
+# server, where CRLF breaks shell scripts and env values.
+* text=auto eol=lf
+
+# Binary assets: never touch line endings.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
