@@ -22,6 +22,15 @@ const config: Config = {
           800: '#075985',
           900: '#0c4a6e',
         },
+        brand: { 50: '#ECFBF3', 100: '#D1F5E2', 200: '#A3EAC6', 300: '#69D9A5', 400: '#3CCB8C', 500: '#16A064', 600: '#12814F', 700: '#0D6A40', 800: '#0A5534', 900: '#083F27' },
+        surface: { 0: '#0E1013', 1: '#16181C', 2: '#1E2126', 3: '#2A2D33', 4: '#363A41' },
+        label: { DEFAULT: '#F4F5F7', secondary: 'rgb(235 238 245 / 0.68)', tertiary: 'rgb(235 238 245 / 0.45)' },
+        separator: 'rgb(255 255 255 / 0.09)',
+        warn: { 500: '#F5B301', 600: '#B98300', ink: '#3B2A00' },
+        gold: '#F7C948',
+        danger: { 400: '#FF6B61', 500: '#FF453A' },
+        locate: '#0A84FF',
+        ink: { DEFAULT: '#111418', secondary: '#5A6069' },
       },
       backdropBlur: {
         'glass': '20px',
@@ -29,7 +38,21 @@ const config: Config = {
       boxShadow: {
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
         'glass-lg': '0 20px 48px 0 rgba(31, 38, 135, 0.2)',
+        float: '0 1px 2px rgb(0 0 0 / .08), 0 6px 20px rgb(0 0 0 / .14)',
+        card: 'inset 0 1px 0 rgb(255 255 255 / .04), 0 8px 24px rgb(0 0 0 / .25)',
+        sheet: 'inset 0 1px 0 rgb(255 255 255 / .06), 0 12px 40px rgb(0 0 0 / .35)',
       },
+      // Design tokens (design 1B; SPEC §2 with the senior UI review). Additive: existing classes keep
+      // their look until the later phases move screens onto these names.
+      // Separate radius names (review M2): redefining rounded-lg/xl would reshape every screen at once.
+      borderRadius: { r1: '8px', r2: '14px', r3: '20px', r4: '28px', r5: '40px' },
+      transitionTimingFunction: {
+        ios: 'cubic-bezier(0.32, 0.72, 0, 1)',
+        'ios-bounce': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'out-quint': 'cubic-bezier(0.22, 1, 0.36, 1)',
+        exit: 'cubic-bezier(0.4, 0, 1, 1)',
+      },
+      transitionDuration: { 250: '250ms', 350: '350ms', 450: '450ms' },
       // App height (design 1A): 100dvh, or the real screen height in the installed iOS app.
       height: { app: 'var(--app-h)' },
       maxHeight: { app: 'var(--app-h)' },

@@ -15,6 +15,31 @@ html[data-map-theme="silver"] { --map-bg: #f3f1ec; }
 html[data-map-theme="dark"] { --map-bg: #1b1c1e; }
 html[data-map-theme="satellite"] { --map-bg: #1f2a1d; }
 
+/* Chrome material (design 1B): controls floating on the map. Light over light map styles, dark over
+   the dark and satellite styles, so they always contrast with the tiles behind them. */
+:root {
+  --chrome-rgb: 255 255 255;
+  --chrome-ink: 17 20 24;
+  --chrome-ink-2: 90 96 105;
+  --chrome-edge: 0 0 0 / 0.06;
+}
+html[data-map-theme="dark"],
+html[data-map-theme="satellite"] {
+  --chrome-rgb: 30 32 36;
+  --chrome-ink: 244 245 247;
+  --chrome-ink-2: 190 194 202;
+  --chrome-edge: 255 255 255 / 0.1;
+}
+.material-chrome {
+  background-color: rgb(var(--chrome-rgb) / 0.86);
+  color: rgb(var(--chrome-ink));
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 0 0 0.5px rgb(var(--chrome-edge)), 0 1px 2px rgb(0 0 0 / 0.08), 0 6px 20px rgb(0 0 0 / 0.14);
+}
+.text-chrome-ink { color: rgb(var(--chrome-ink)); }
+.text-chrome-ink-2 { color: rgb(var(--chrome-ink-2)); }
+
 html,
 body {
   margin: 0;
