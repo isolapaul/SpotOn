@@ -36,11 +36,9 @@ describe('constants', () => {
     expect(DELAYS).toEqual({
       mapReady: 100,
       spotsSettle: 300,
-      languageSelector: 300,
       heroClickGuard: 300,
       appReady: 500,
       approveClose: 1000,
-      notificationPrompt: 3000,
     });
   });
 

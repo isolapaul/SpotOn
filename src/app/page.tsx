@@ -3,7 +3,6 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import BottomNavigation from '@/components/BottomNavigation';
-import LanguageSelector from '@/components/LanguageSelector';
 import AuthModal from '@/components/AuthModal';
 import AddSpotModal from '@/components/AddSpotModal';
 import SpotDetailsPanel from '@/components/SpotDetailsPanel';
@@ -21,6 +20,7 @@ import { useMapThemeStore } from '@/store/useMapThemeStore';
 import { isSpotPanel, useUiStore } from '@/store/useUiStore';
 import { useT } from '@/hooks/useT';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
+import { useInitialLanguage } from '@/hooks/useInitialLanguage';
 import { useVisibleSpots } from '@/hooks/useVisibleSpots';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { DEFAULT_MAP_CENTER } from '@/lib/constants';
@@ -34,6 +34,7 @@ const MapView = dynamic(() => import('@/components/MapView'), {
 export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const { isAppReady, onMapLoad } = useAppBootstrap();
+  useInitialLanguage();
   const visibleSpots = useVisibleSpots();
   const { location: userLocation, status: locationStatus } = useUserLocation();
   const { user, needsUsername, setNeedsUsername } = useUserStore();
@@ -89,8 +90,6 @@ export default function Home() {
           isAppReady ? 'opacity-100' : 'opacity-0'
         }`}
       >
-      {/* Language Selector Modal */}
-      <LanguageSelector />
       {/* Discovery Panel */}
       <DiscoveryPanel
         isOpen={activePanel === 'discovery'}

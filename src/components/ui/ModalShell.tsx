@@ -3,8 +3,9 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Z } from '@/lib/constants';
 
-// T25 (DUP-04): the centred modal shell. Two looks: `glass` (Auth, AddSpot, UsernameSetup) and
-// `slate` (NotificationCenter, Feedback).
+// T25 (DUP-04): the centred modal shell. Three looks: `glass` (Auth, AddSpot, UsernameSetup),
+// `slate` (Feedback) and `sheet` (NotificationCenter: opaque, no built-in animation, so the
+// caller passes its own enter/exit classes).
 
 const VARIANTS = {
   glass: {
@@ -21,6 +22,13 @@ const VARIANTS = {
     backdropButton: 'absolute inset-0 bg-black/50 backdrop-blur-sm touch-manipulation',
     panelStart: 'relative bg-slate-900',
     panelEnd: 'rounded-3xl shadow-2xl border-2 border-white/20 overflow-hidden animate-scale-in flex flex-col',
+  },
+  sheet: {
+    outerStyle: undefined,
+    backdrop: 'absolute inset-0 bg-black/40 backdrop-blur-sm touch-manipulation',
+    backdropButton: 'absolute inset-0 bg-black/40 backdrop-blur-sm touch-manipulation',
+    panelStart: 'relative bg-slate-900',
+    panelEnd: 'rounded-[28px] shadow-2xl ring-1 ring-white/10 overflow-hidden flex flex-col',
   },
 } as const;
 

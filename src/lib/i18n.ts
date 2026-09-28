@@ -32,3 +32,19 @@ export function splitBold(s: string): Array<{ text: string; bold: boolean }> {
     .map((text, i) => ({ text, bold: i % 2 === 1 }))
     .filter((part) => part.text !== '');
 }
+
+const LANGUAGES: readonly Language[] = ['hu', 'en', 'de'];
+
+/**
+ * The UI language for a first visit, from the browser's preferred languages (navigator.languages):
+ * the first one whose primary subtag is hu, en or de; Hungarian otherwise. Replaces the first-run
+ * language dialog; users change it in Settings.
+ */
+export function detectLanguage(preferred: readonly string[] | undefined): Language {
+  for (const tag of preferred ?? []) {
+    const primary = tag.toLowerCase().split(/[-_]/)[0];
+    const match = LANGUAGES.find((lang) => lang === primary);
+    if (match) return match;
+  }
+  return 'hu';
+}

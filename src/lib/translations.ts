@@ -108,6 +108,10 @@ export const translations = {
     // Notifications
     enableNotifications: 'Értesítések engedélyezése',
     notificationPromptText: 'Értesítést kapsz, ha jóváhagyják a helyedet, vagy értékelést kap',
+    notificationPromptTitle: 'Szóljunk, ha történik valami?',
+    notificationsToday: 'Ma',
+    notificationsEarlier: 'Korábban',
+    notificationsUnread: '{count} olvasatlan',
     enable: 'Engedélyezés',
     enabling: 'Engedélyezés...',
     notNow: 'Most nem',
@@ -406,10 +410,6 @@ export const translations = {
     installDontShowAgain: 'Ne mutassa többet',
     installFooter: 'Az app telepítése után automatikusan elindul a főképernyőről 🚀',
 
-    // LanguageSelector (T24)
-    langSelectTitle: 'Válassz Nyelvet',
-    langSelectDesc: 'Válaszd ki az előnyben részesített nyelvet',
-    langSelectContinue: 'Folytatás',
   },
   en: {
     // Navigation
@@ -520,6 +520,10 @@ export const translations = {
     // Notifications
     enableNotifications: 'Enable Notifications',
     notificationPromptText: 'Get notified when your spot is approved or receives reviews',
+    notificationPromptTitle: 'Want a heads-up?',
+    notificationsToday: 'Today',
+    notificationsEarlier: 'Earlier',
+    notificationsUnread: '{count} unread',
     enable: 'Enable',
     enabling: 'Enabling...',
     notNow: 'Not now',
@@ -818,10 +822,6 @@ export const translations = {
     installDontShowAgain: "Don't show again",
     installFooter: 'After installation, the app will launch automatically from your home screen 🚀',
 
-    // LanguageSelector (T24)
-    langSelectTitle: 'Select Language',
-    langSelectDesc: 'Choose your preferred language',
-    langSelectContinue: 'Continue',
   },
   de: {
     // Navigation
@@ -931,6 +931,10 @@ export const translations = {
     // Notifications
     enableNotifications: 'Benachrichtigungen aktivieren',
     notificationPromptText: 'Erhalten Sie Benachrichtigungen, wenn Ihr Ort genehmigt oder bewertet wird',
+    notificationPromptTitle: 'Sollen wir dir Bescheid geben?',
+    notificationsToday: 'Heute',
+    notificationsEarlier: 'Früher',
+    notificationsUnread: '{count} ungelesen',
     enable: 'Aktivieren',
     enabling: 'Aktivierung...',
     notNow: 'Nicht jetzt',
@@ -1231,10 +1235,6 @@ export const translations = {
     installDontShowAgain: 'Nicht mehr anzeigen',
     installFooter: 'Nach der Installation startet die App automatisch vom Startbildschirm 🚀',
 
-    // LanguageSelector (T24)
-    langSelectTitle: 'Sprache wählen',
-    langSelectDesc: 'Wählen Sie Ihre bevorzugte Sprache',
-    langSelectContinue: 'Weiter',
   },
 };
 

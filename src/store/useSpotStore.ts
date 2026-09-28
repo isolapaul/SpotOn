@@ -16,6 +16,7 @@ import { db, functions, storage } from '@/lib/firebase';
 import { MAX_SPOT_IMAGES, PLACEHOLDER_URL, extForMime, realImageCount, removeImage, type RemovableImageFields } from '@/lib/spotImages';
 import { compressImage } from '@/lib/imageCompression';
 import { invalidatePublicProfile } from '@/store/publicProfiles';
+import { usePushPromptStore } from '@/store/usePushPromptStore';
 import { startApprovedScope, stopAllScopes, syncScopes, type SpotScope } from '@/store/spotListeners';
 
 export type { SpotScope } from '@/store/spotListeners';
@@ -201,6 +202,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       invalidatePublicProfile(userId);
 
       set({ isLoading: false });
+      usePushPromptStore.getState().request();
     } catch (error: any) {
       set({ error: error.message, isLoading: false });
       throw error;
@@ -221,6 +223,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
 
       // No local append: the spots listener already delivers the new review (BUG-25).
       await updateDoc(doc(db, 'spots', spotId), { reviews: arrayUnion(cleanReview) });
+      usePushPromptStore.getState().request();
     } catch (error: any) {
       console.error('Error adding review:', error);
       throw error;
@@ -244,6 +247,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         if (errorCode(error) === 'functions/resource-exhausted') throw new Error('MAX_SPOT_IMAGES');
         throw error;
       }
+      usePushPromptStore.getState().request();
     } catch (error: any) {
       console.error('Error adding spot images:', error);
       throw error;

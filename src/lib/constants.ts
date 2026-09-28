@@ -39,16 +39,12 @@ export const DELAYS = {
   mapReady: 100,
   /** page.tsx: after the spots listener delivered, before marking spots loaded. */
   spotsSettle: 300,
-  /** LanguageSelector entrance. */
-  languageSelector: 300,
   /** SpotDetailsPanel: ignore hero clicks right after opening. */
   heroClickGuard: 300,
   /** page.tsx: all resources loaded → app ready. */
   appReady: 500,
   /** SpotDetailsPanel: close after approving. */
   approveClose: 1000,
-  /** NotificationPrompt: show the prompt after sign-in. */
-  notificationPrompt: 3000,
 } as const;
 
 /**
