@@ -11,7 +11,6 @@ import DiscoveryPanel from '@/components/DiscoveryPanel';
 import LoadingScreen from '@/components/LoadingScreen';
 import NotificationPrompt from '@/components/NotificationPrompt';
 import UploadStatus from '@/components/UploadStatus';
-import ViewportDebug from '@/components/ViewportDebug';
 import NotificationCenter from '@/components/NotificationCenter';
 import MapThemeSwitcher from '@/components/MapThemeSwitcher';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
@@ -23,7 +22,6 @@ import { isSpotPanel, useUiStore } from '@/store/useUiStore';
 import { useT } from '@/hooks/useT';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 import { useInitialLanguage } from '@/hooks/useInitialLanguage';
-import { useAppViewport } from '@/hooks/useAppViewport';
 import { useMapThemeAttribute } from '@/hooks/useMapThemeAttribute';
 import { useVisibleSpots } from '@/hooks/useVisibleSpots';
 import { useUserLocation } from '@/hooks/useUserLocation';
@@ -39,7 +37,6 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const { isAppReady, onMapLoad } = useAppBootstrap();
   useInitialLanguage();
-  useAppViewport();
   useMapThemeAttribute();
   const visibleSpots = useVisibleSpots();
   const { location: userLocation, status: locationStatus } = useUserLocation();
@@ -81,8 +78,6 @@ export default function Home() {
       <NotificationPrompt />
       {/* Background uploads (G4): above panels too, so a review sent from a spot panel reports back */}
       <UploadStatus />
-      {/* TEMPORARY: iOS bottom-band diagnostics, branch previews only */}
-      <ViewportDebug />
       {/* Top Buttons - Hidden when modals are open */}
       {!panelCoversMap && (
         <>

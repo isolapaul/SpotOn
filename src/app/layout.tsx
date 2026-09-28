@@ -9,7 +9,9 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    // Opaque on purpose: with 'black-translucent', iOS 26 leaves a strip at the bottom of the
+    // installed app (WebKit bug 301108). iOS reads this only when the app is added to the home screen.
+    statusBarStyle: 'black',
     title: 'SpotOn',
     startupImage: [
       {

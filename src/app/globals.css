@@ -2,10 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Full screen (design 1A). The page is painted in the map's base colour, never black: in the
-   installed iOS app the reported viewport can be one status bar short, and any strip left below it
-   must not show as a black band. --app-h is the app height (Tailwind `h-app`): 100dvh by default,
-   the real screen height in the installed iOS app (hooks/useAppViewport). */
+/* Full screen (design 1A). The page is painted in the map's base colour, never black, so no edge
+   of the screen can show as a black band. --app-h is the app height (Tailwind `h-app`). The
+   installed iOS app uses the opaque status bar (layout.tsx): with a translucent one, iOS 26 sizes
+   the page one status bar short and leaves a strip at the bottom that no CSS can reach. */
 :root {
   --app-h: 100dvh;
   --map-bg: #f2efe9;
@@ -408,22 +408,4 @@ a:not(.no-min-size),
     animation-duration: 1s !important;
     animation-iteration-count: infinite !important;
   }
-}
-
-/* TEMPORARY (ViewportDebug): candidate fixes for the iOS home-screen bottom band, toggled live. */
-html.vpd-doc-tall,
-html.vpd-doc-tall body {
-  height: var(--app-h);
-}
-html.vpd-overflow-visible {
-  overflow: visible;
-}
-html.vpd-root-absolute main {
-  position: absolute;
-}
-html.vpd-paint {
-  background-color: #ff00ff;
-}
-html.vpd-paint .leaflet-container {
-  background-color: #0050ff;
 }

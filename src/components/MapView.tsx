@@ -84,18 +84,6 @@ function ZoomBandTracker() {
   return null;
 }
 
-// Leaflet measures its container once; the installed iOS app grows it afterwards (--app-h, design
-// 1A), so re-measure whenever the container's size changes or no tiles load below the old height.
-function MapResizeWatcher() {
-  const map = useMap();
-  useEffect(() => {
-    const observer = new ResizeObserver(() => map.invalidateSize({ pan: false }));
-    observer.observe(map.getContainer());
-    return () => observer.disconnect();
-  }, [map]);
-  return null;
-}
-
 // Fires onMapLoad once after the map is ready
 function MapReadyNotifier({ onMapLoad }: { onMapLoad?: () => void }) {
   const notified = useRef(false);
@@ -191,7 +179,6 @@ export default function MapView({
         <LocationPanner userLocation={userLocation} />
         <TileLayerSwitcher theme={theme} />
         <ZoomBandTracker />
-        <MapResizeWatcher />
         <MapEventHandler
           isAddingSpot={isAddingSpot}
           onLocationSelect={onLocationSelect}

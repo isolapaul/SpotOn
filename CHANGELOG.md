@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Fixed (design 1A)
-- The installed iPhone app now fills the whole screen: no black band at the bottom, and the dock sits at the real bottom edge. The page background follows the map style instead of black.
+- The installed iPhone app now reaches the bottom of the screen: no band below the map (an iOS 26 bug with the see-through status bar). The status bar is now solid black; existing home-screen icons must be removed and added again to get the fix. The page background follows the map style instead of black.
 
 ### Changed (design 1D)
 - New map pins: one size at every zoom, the tip points at the exact spot, and hand-drawn category icons replace the emoji. Approved spots are green; pending ones are white with a dashed amber ring and a clock; highlighted ones get a gold ring and a star. Zoomed far out, pins become small dots. Your position is a calm iOS-style dot.
