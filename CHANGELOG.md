@@ -14,6 +14,9 @@
 - New notification center: a clean sheet under the bell with one icon per type (no emoji), grouped into Today / Earlier, with subtle animations (respecting reduced motion).
 - The push notification offer no longer pops up after sign-in: it appears once, after your first spot, review or photo, and never again on that device once answered (Settings keeps the switch).
 - No language dialog on the first visit any more: the language follows the browser (Hungarian, English or German; Hungarian otherwise) and can be changed in Settings.
+- Creating a spot, adding photos and sending a review now run in the background: the form closes at once and a small status pill under the top buttons shows the upload; the new spot appears on your map (yellow) once everything is uploaded. Closing the app during an upload cancels it.
+- A review and photos can be sent together with one button; photos alone still work (no rating needed).
+- A network step that gets no answer within 60 seconds fails with a clear message and a Retry button instead of hanging; a retry never duplicates a spot, photo or review.
 
 ## v2.1.0 — 2026-09-26
 

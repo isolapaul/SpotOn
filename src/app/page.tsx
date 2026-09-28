@@ -10,6 +10,7 @@ import ProfilePanel from '@/components/ProfilePanel';
 import DiscoveryPanel from '@/components/DiscoveryPanel';
 import LoadingScreen from '@/components/LoadingScreen';
 import NotificationPrompt from '@/components/NotificationPrompt';
+import UploadStatus from '@/components/UploadStatus';
 import NotificationCenter from '@/components/NotificationCenter';
 import MapThemeSwitcher from '@/components/MapThemeSwitcher';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
@@ -73,6 +74,8 @@ export default function Home() {
       <LoadingScreen isLoading={!isAppReady} />
       {/* Notification Prompt - shown after app loads */}
       <NotificationPrompt />
+      {/* Background uploads (G4): above panels too, so a review sent from a spot panel reports back */}
+      <UploadStatus />
       {/* Top Buttons - Hidden when modals are open */}
       {!panelCoversMap && (
         <>

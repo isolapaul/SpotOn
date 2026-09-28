@@ -1,10 +1,9 @@
 'use client';
 
 import { useUserStore } from '@/store/useUserStore';
-import { useSpotStore } from '@/store/useSpotStore';
-import { useToastStore } from '@/store/useToastStore';
+import { useUploadStore } from '@/store/useUploadStore';
 import { useT } from '@/hooks/useT';
-import { X, MapPin, Upload, Loader2 } from 'lucide-react';
+import { X, MapPin, Upload } from 'lucide-react';
 import { useState, useRef, ChangeEvent } from 'react';
 import type { SpotCategory } from '@/store/useSpotStore';
 import { MAX_SPOT_IMAGES, MAX_UPLOAD_BYTES } from '@/lib/constants';
@@ -20,8 +19,7 @@ interface AddSpotModalProps {
 export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Readonly<AddSpotModalProps>) {
   const { user } = useUserStore();
   const isAdmin = useUserStore((s) => s.isAdmin);
-  const { addSpot } = useSpotStore();
-  const { showToast } = useToastStore();
+  const submitSpot = useUploadStore((st) => st.submitSpot);
   const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,7 +31,6 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
   const [imageFiles, setImageFiles] = useState<File[]>([]); // Changed to array
   const [imagePreviews, setImagePreviews] = useState<string[]>([]); // Changed to array
   const [primaryImageIndex, setPrimaryImageIndex] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Swipe-to-dismiss intentionally disabled to prevent accidental dismissal on iOS
@@ -91,7 +88,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) {
@@ -109,55 +106,33 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
       return;
     }
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Use the store's addSpot method (handles compression & upload)
-      await addSpot(
-        {
-          name: formData.name.trim(),
-          category: formData.category,
-          description: formData.description.trim(),
-          location: selectedLocation,
-          createdBy: user.uid,
-          createdByName: user.username,
-          createdByPhoto: user.photoURL,
-        },
-        imageFiles, // Array of files
-        primaryImageIndex, // Primary image index
-        user.uid,
-        isAdmin // Admins' spots are approved immediately
-      );
-      
-      // Reset form and close
-      setFormData({ name: '', category: 'scenic', description: '' });
-      setImageFiles([]);
-      setImagePreviews([]);
-      setPrimaryImageIndex(0);
-      onClose();
-      
-      showToast(t('spotUploaded'), 'success');
-    } catch (err) {
-      // addSpot throws no store error codes; any failure shows the generic translated message.
-      console.error('Failed to add spot:', err);
-      const errorMessage = t('spotUploadFailed');
-      setError(errorMessage);
-      showToast(errorMessage, 'error');
-    } finally {
-      setLoading(false);
-    }
+    // Runs in the background (G4): the form closes at once; UploadStatus and the notification
+    // center report the result, and the spot shows on the map once it is fully uploaded.
+    submitSpot({
+      fields: {
+        name: formData.name.trim(),
+        category: formData.category,
+        description: formData.description.trim(),
+        location: selectedLocation,
+        createdBy: user.uid,
+        createdByName: user.username,
+        createdByPhoto: user.photoURL,
+      },
+      files: imageFiles,
+      primaryIndex: primaryImageIndex,
+      userId: user.uid,
+      isAdmin, // Admins' spots are approved immediately
+    });
+    handleClose();
   };
 
   const handleClose = () => {
-    if (!loading) {
-      setFormData({ name: '', category: 'scenic', description: '' });
-      setImageFiles([]);
-      setImagePreviews([]);
-      setPrimaryImageIndex(0);
-      setError(null);
-      onClose();
-    }
+    setFormData({ name: '', category: 'scenic', description: '' });
+    setImageFiles([]);
+    setImagePreviews([]);
+    setPrimaryImageIndex(0);
+    setError(null);
+    onClose();
   };
 
   // Swipe-to-dismiss intentionally disabled to prevent accidental dismissal on iOS
@@ -175,7 +150,6 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
         {/* Close Button */}
         <button
           onClick={handleClose}
-          disabled={loading}
           className="absolute top-4 right-4 glass-button p-3 rounded-full disabled:opacity-50 touch-manipulation min-w-[48px] min-h-[48px]"
           aria-label="Close"
         >
@@ -220,7 +194,6 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               className="w-full px-4 py-3 rounded-xl glass text-white placeholder-white/40
                 border border-white/10 focus:border-white/30 focus:outline-none
                 transition-all duration-200"
-              disabled={loading}
               required
             />
           </div>
@@ -238,7 +211,6 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               className="w-full px-4 py-3 rounded-xl glass text-white
                 border border-white/10 focus:border-white/30 focus:outline-none
                 transition-all duration-200 bg-transparent"
-              disabled={loading}
               required
             >
               {CATEGORIES.map((c) => (
@@ -263,7 +235,6 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               className="w-full px-4 py-3 rounded-xl glass text-white placeholder-white/40
                 border border-white/10 focus:border-white/30 focus:outline-none
                 transition-all duration-200 resize-none"
-              disabled={loading}
             />
           </div>
 
@@ -281,13 +252,12 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               multiple
               onChange={handleImageChange}
               className="hidden"
-              disabled={loading}
             />
             
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={loading || imageFiles.length >= MAX_SPOT_IMAGES}
+              disabled={imageFiles.length >= MAX_SPOT_IMAGES}
               className="w-full py-8 rounded-xl glass border-2 border-dashed border-white/20
                 hover:border-white/40 hover:bg-white/5
                 transition-all duration-200 flex flex-col items-center gap-2
@@ -324,7 +294,6 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
                       type="button"
                       onClick={() => handleRemoveImage(index)}
                       className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full transition-colors"
-                      disabled={loading}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -334,7 +303,6 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
                         type="button"
                         onClick={() => setPrimaryImageIndex(index)}
                         className="absolute bottom-1 left-1 right-1 bg-black/60 hover:bg-black/80 text-white text-xs py-1 rounded transition-colors"
-                        disabled={loading}
                       >
                         {t('makePrimary')}
                       </button>
@@ -355,7 +323,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading || !selectedLocation || !formData.name.trim()}
+            disabled={!selectedLocation || !formData.name.trim()}
             className="w-full py-4 rounded-2xl font-semibold text-lg
               bg-gradient-to-r from-primary-500 to-primary-600 text-white
               shadow-lg shadow-primary-500/30 
@@ -364,17 +332,8 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               disabled:opacity-50 disabled:cursor-not-allowed
               flex items-center justify-center gap-2"
           >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>{t('compressing')}</span>
-              </>
-            ) : (
-              <>
-                <MapPin className="w-5 h-5" />
-                <span>{t('submitSpot')}</span>
-              </>
-            )}
+            <MapPin className="w-5 h-5" />
+            <span>{t('submitSpot')}</span>
           </button>
 
           <p className="text-white/50 text-xs text-center">

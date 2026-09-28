@@ -25,7 +25,7 @@ export default function ReviewsSection({ spot }: Readonly<ReviewsSectionProps>) 
 
       {user && canReview && <ReviewForm spot={spot} user={user} />}
 
-      <AddPhotosCard spotId={spot.id} />
+      <AddPhotosCard spot={spot} />
 
       <ReviewList reviews={spot.reviews} />
     </div>

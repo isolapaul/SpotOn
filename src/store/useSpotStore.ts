@@ -1,22 +1,15 @@
 import { create } from 'zustand';
 import {
-  collection,
-  addDoc,
-  serverTimestamp,
   doc,
   updateDoc,
   deleteDoc,
-  arrayUnion,
   runTransaction,
   Timestamp,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
-import { db, functions, storage } from '@/lib/firebase';
-import { MAX_SPOT_IMAGES, PLACEHOLDER_URL, extForMime, realImageCount, removeImage, type RemovableImageFields } from '@/lib/spotImages';
-import { compressImage } from '@/lib/imageCompression';
+import { db, functions } from '@/lib/firebase';
+import { removeImage, type RemovableImageFields } from '@/lib/spotImages';
 import { invalidatePublicProfile } from '@/store/publicProfiles';
-import { usePushPromptStore } from '@/store/usePushPromptStore';
 import { startApprovedScope, stopAllScopes, syncScopes, type SpotScope } from '@/store/spotListeners';
 
 export type { SpotScope } from '@/store/spotListeners';
@@ -35,7 +28,7 @@ export interface Review {
   customNameFont?: string; // legacy, read-only; never written
 }
 
-/** The review fields the client sends; addReview adds `id` and `createdAt`. */
+/** The review fields the client sends; spotUploads.buildReview adds `id` and `createdAt`. */
 export type NewReview = {
   userId: string;
   userName: string;
@@ -91,9 +84,6 @@ interface SpotStore {
   syncSpotScopes: (scope: SpotScope) => void;
   /** Stops every spots listener and clears the spots (unmount, T21). */
   stopSpots: () => void;
-  addSpot: (spotData: Omit<Spot, 'id' | 'imageUrls' | 'createdAt' | 'status' | 'primaryImageIndex'>, imageFiles: File[], primaryIndex: number, userId: string, isAdmin: boolean) => Promise<void>;
-  addReview: (spotId: string, review: NewReview) => Promise<void>;
-  addSpotImages: (spotId: string, imageFiles: File[], userId: string) => Promise<void>;
   toggleSpotImageLike: (spotId: string, imageId: string) => Promise<void>;
   approveSpot: (spotId: string) => Promise<void>;
   deleteSpot: (spotId: string) => Promise<void>;
@@ -104,40 +94,7 @@ interface SpotStore {
 }
 
 // Callables (T10, region europe-west3 via `functions`)
-const addSpotImagesCallable = httpsCallable<{ spotId: string; urls: string[] }, unknown>(functions, 'addSpotImages');
 const toggleImageLikeCallable = httpsCallable<{ spotId: string; imageId: string }, unknown>(functions, 'toggleImageLike');
-
-function errorCode(error: unknown): unknown {
-  return typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
-}
-
-/**
- * Compresses and uploads one spot image to `spot-images/{uid}/{uuid}.{ext}` with an explicit
- * contentType. Output types the Storage rules do not accept (e.g. GIF) are re-encoded as JPEG.
- */
-async function compressAndUpload(imageFile: File, userId: string): Promise<{ url: string; spotImage: SpotImage }> {
-  let blob = await compressImage(imageFile, 'spot');
-  if (!extForMime(blob.type)) {
-    blob = await compressImage(imageFile, 'spot', 'image/jpeg');
-  }
-  const ext = extForMime(blob.type) ?? 'jpg';
-  const imageRef = ref(storage, `spot-images/${userId}/${crypto.randomUUID()}.${ext}`);
-  await uploadBytes(imageRef, blob, { contentType: blob.type });
-  const url = await getDownloadURL(imageRef);
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 10000);
-  return {
-    url,
-    spotImage: {
-      id: `${timestamp}_${random}`,
-      url,
-      addedBy: userId,
-      addedAt: Timestamp.now(),
-      likes: 0,
-      likedBy: [],
-    },
-  };
-}
 
 function updateSpotInState(
   set: (fn: (state: { spots: Spot[] }) => { spots: Spot[] }) => void,
@@ -159,100 +116,6 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
   syncSpotScopes: (scope) => syncScopes(scope, set),
 
   stopSpots: () => stopAllScopes(set),
-
-  addSpot: async (spotData, imageFiles, primaryIndex, userId, isAdmin) => {
-    try {
-      set({ isLoading: true, error: null });
-
-      let imageUrls: string[];
-      let spotImages: SpotImage[];
-
-      if (imageFiles && imageFiles.length > 0) {
-        const uploaded = await Promise.all(imageFiles.map((f) => compressAndUpload(f, userId)));
-        imageUrls = uploaded.map((u) => u.url);
-        spotImages = uploaded.map((u) => u.spotImage);
-      } else {
-        imageUrls = [PLACEHOLDER_URL];
-        spotImages = [{
-          id: `${Date.now()}_placeholder`,
-          url: PLACEHOLDER_URL,
-          addedBy: userId,
-          addedAt: Timestamp.now(),
-          likes: 0,
-          likedBy: [],
-        }];
-      }
-
-      // Exactly the keys the T12 create rule allows.
-      await addDoc(collection(db, 'spots'), {
-        name: spotData.name,
-        category: spotData.category,
-        description: spotData.description,
-        location: { lat: spotData.location.lat, lng: spotData.location.lng },
-        createdBy: userId,
-        createdByName: spotData.createdByName,
-        createdByPhoto: spotData.createdByPhoto,
-        imageUrls,
-        spotImages,
-        primaryImageIndex: imageUrls.length > 0 ? primaryIndex : 0,
-        status: isAdmin ? 'approved' : 'pending',
-        createdAt: serverTimestamp(),
-      });
-      // The server bumps spotsCount; drop the cached profile so the next read sees it (T26).
-      invalidatePublicProfile(userId);
-
-      set({ isLoading: false });
-      usePushPromptStore.getState().request();
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
-      throw error;
-    }
-  },
-
-  addReview: async (spotId, review) => {
-    try {
-      const reviewWithTimestamp: Review = {
-        ...review,
-        id: `${review.userId}_${Date.now()}`,
-        createdAt: Timestamp.now(),
-      };
-
-      const cleanReview = Object.fromEntries(
-        Object.entries(reviewWithTimestamp).filter(([, v]) => v !== undefined)
-      );
-
-      // No local append: the spots listener already delivers the new review (BUG-25).
-      await updateDoc(doc(db, 'spots', spotId), { reviews: arrayUnion(cleanReview) });
-      usePushPromptStore.getState().request();
-    } catch (error: any) {
-      console.error('Error adding review:', error);
-      throw error;
-    }
-  },
-
-  addSpotImages: async (spotId, imageFiles, userId) => {
-    if (!imageFiles || imageFiles.length === 0) return;
-
-    try {
-      const spot = get().spots.find((item) => item.id === spotId);
-      if ((spot ? realImageCount(spot) : 0) + imageFiles.length > MAX_SPOT_IMAGES) throw new Error('MAX_SPOT_IMAGES');
-
-      const uploaded = await Promise.all(imageFiles.map((f) => compressAndUpload(f, userId)));
-      const urls = uploaded.map((u) => u.url);
-
-      // The server appends transactionally; the spots listener delivers the change.
-      try {
-        await addSpotImagesCallable({ spotId, urls });
-      } catch (error) {
-        if (errorCode(error) === 'functions/resource-exhausted') throw new Error('MAX_SPOT_IMAGES');
-        throw error;
-      }
-      usePushPromptStore.getState().request();
-    } catch (error: any) {
-      console.error('Error adding spot images:', error);
-      throw error;
-    }
-  },
 
   toggleSpotImageLike: async (spotId, imageId) => {
     await toggleImageLikeCallable({ spotId, imageId });

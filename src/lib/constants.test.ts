@@ -39,6 +39,7 @@ describe('constants', () => {
       heroClickGuard: 300,
       appReady: 500,
       approveClose: 1000,
+      uploadDoneVisible: 2500,
     });
   });
 
