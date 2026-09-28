@@ -409,3 +409,21 @@ a:not(.no-min-size),
     animation-iteration-count: infinite !important;
   }
 }
+
+/* TEMPORARY (ViewportDebug): candidate fixes for the iOS home-screen bottom band, toggled live. */
+html.vpd-doc-tall,
+html.vpd-doc-tall body {
+  height: var(--app-h);
+}
+html.vpd-overflow-visible {
+  overflow: visible;
+}
+html.vpd-root-absolute main {
+  position: absolute;
+}
+html.vpd-paint {
+  background-color: #ff00ff;
+}
+html.vpd-paint .leaflet-container {
+  background-color: #0050ff;
+}
