@@ -18,11 +18,6 @@ export const DEFAULT_MAP_CENTER: [number, number] = [47.4979, 19.0402];
 export const DEFAULT_MAP_ZOOM = 6;
 /** Zoom used when panning to the user's location. */
 export const LOCATE_ZOOM = 13;
-/**
- * MapView's initial `zoomLevel` state: drives marker size until the first zoom event. It is 13
- * although the map opens at DEFAULT_MAP_ZOOM; keep it separate (changing it changes marker sizes).
- */
-export const INITIAL_MARKER_ZOOM = 13;
 /** Cached user location max age (sessionStorage and geolocation maximumAge). */
 export const LOCATION_CACHE_MAX_AGE_MS = 600_000;
 export const GEOLOCATION_TIMEOUT_MS = 10_000;

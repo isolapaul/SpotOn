@@ -6,7 +6,6 @@ import {
   DISCOVERY_BATCH_SIZE,
   FEEDBACK_MAX_FILES,
   GEOLOCATION_TIMEOUT_MS,
-  INITIAL_MARKER_ZOOM,
   LOCATE_ZOOM,
   LOCATION_CACHE_MAX_AGE_MS,
   MAX_SPOT_IMAGES,
@@ -43,10 +42,6 @@ describe('constants', () => {
     });
   });
 
-  it('keeps the initial marker zoom at 13, independent of the map zoom', () => {
-    expect(INITIAL_MARKER_ZOOM).toBe(13);
-    expect(INITIAL_MARKER_ZOOM).not.toBe(DEFAULT_MAP_ZOOM);
-  });
 });
 
 describe('Z scale', () => {

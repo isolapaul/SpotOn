@@ -36,7 +36,7 @@ async function resetFixture() {
 }
 
 async function openDetails(page: Page) {
-  await spotMarker(page, spot.emoji).click();
+  await spotMarker(page, spot.category).click();
   await page.getByRole('button', { name: 'View Details' }).click();
 }
 

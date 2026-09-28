@@ -273,3 +273,114 @@ a:not(.no-min-size),
 .animate-fade-in {
   animation: fade-in 0.2s ease-out forwards;
 }
+
+/* ---------------------------------------------------------------------------------------------
+   Map pins (design 1D). The markup is an HTML string from src/lib/mapMarkers.ts (Leaflet divIcon),
+   so these are plain classes. One pin size at every zoom; zoomed far out (data-zoom-band="far" on
+   the map container) pins collapse to a 14px status dot centred on the spot. No endless animation.
+   --------------------------------------------------------------------------------------------- */
+.spot-marker {
+  background: none;
+  border: none;
+}
+.spot-pin {
+  position: relative;
+  width: 44px;
+  height: 54px;
+}
+.spot-pin__svg {
+  display: block;
+  transform-origin: 22px 50px;
+  transition: opacity 0.2s, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.spot-pin__dot {
+  position: absolute;
+  box-sizing: border-box;
+  left: 15px;
+  top: 43px;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.18);
+  background: #12814f;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.2s, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.spot-pin[data-variant="pending"] .spot-pin__dot {
+  background: #fff;
+  border-color: #b98300;
+}
+.spot-pin[data-highlighted="true"] .spot-pin__dot {
+  border-color: #f7c948;
+}
+[data-zoom-band="far"] .spot-pin__svg {
+  opacity: 0;
+  transform: scale(0.4);
+}
+[data-zoom-band="far"] .spot-pin__dot {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .spot-pin {
+    animation: pin-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .draft-pin {
+    animation: pin-drop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    transform-origin: 22px 50px;
+  }
+}
+@keyframes pin-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pin-drop {
+  0% { opacity: 0; transform: translateY(-24px) scale(0.9); }
+  60% { opacity: 1; transform: translateY(0) scale(1.06, 0.92); }
+  80% { transform: scale(0.98, 1.02); }
+  100% { transform: none; }
+}
+
+/* The user's position: an iOS-style dot with a soft, static halo. */
+.user-puck {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+.user-puck__halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgb(10 132 255 / 0.16);
+}
+.user-puck__dot {
+  position: absolute;
+  left: 11px;
+  top: 11px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #0a84ff;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+}
+
+/* Reduced motion: effectively no animation or transition, except loading spinners (a frozen
+   spinner reads as a hang). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

@@ -57,7 +57,7 @@ test('smoke flow has no CSP violations', async ({ page }) => {
 
   // 1. Load the app; the seeded markers render.
   await openApp(page);
-  await expect(spotMarker(page, E2E.legacySpot.emoji)).toBeVisible();
+  await expect(spotMarker(page, E2E.legacySpot.category)).toBeVisible();
 
   // 2. Map themes: standard → satellite → dark (tile hosts are checked against img-src).
   for (const theme of ['Satellite', 'Dark']) {
@@ -67,7 +67,7 @@ test('smoke flow has no CSP violations', async ({ page }) => {
   }
 
   // 3. Info window → details → gallery (legacy spot: one image).
-  await spotMarker(page, E2E.legacySpot.emoji).click();
+  await spotMarker(page, E2E.legacySpot.category).click();
   await page.getByRole('button', { name: 'View Details' }).click();
   const img = page.getByRole('img', { name: E2E.legacySpot.name }).first();
   await expect(img).toBeVisible();

@@ -81,8 +81,8 @@ function storagePathOf(downloadUrl: string): string {
   return decodeURIComponent(pathname.slice(pathname.indexOf('/o/') + 3));
 }
 
-async function openDetails(page: Page, emoji: string) {
-  await spotMarker(page, emoji).click();
+async function openDetails(page: Page, category: string) {
+  await spotMarker(page, category).click();
   await page.getByRole('button', { name: 'View Details' }).click();
 }
 
@@ -128,7 +128,7 @@ test('new spot image is uploaded to spot-images/{uid}/ and the spot is pending',
 test('review is stored without email or style metadata and shows after reopening', async ({ page }) => {
   await openApp(page);
   await signInWithEmail(page, E2E.user.email, E2E.password);
-  await openDetails(page, E2E.interactionSpot.emoji);
+  await openDetails(page, E2E.interactionSpot.category);
 
   const form = page.locator('#review-comment').locator('..');
   await form.getByRole('button').nth(3).click(); // 4th star
@@ -137,7 +137,7 @@ test('review is stored without email or style metadata and shows after reopening
   await expectNotification(page, 'Review added successfully!');
 
   await closeDetails(page);
-  await openDetails(page, E2E.interactionSpot.emoji);
+  await openDetails(page, E2E.interactionSpot.category);
   await expect(page.getByText(reviewComment)).toBeVisible();
   await expect(page.getByText(reviewComment)).toHaveCount(1);
 
@@ -150,7 +150,7 @@ test('review is stored without email or style metadata and shows after reopening
 test('viewing a legacy spot does not write to it', async ({ page }) => {
   await openApp(page);
   await signInWithEmail(page, E2E.user.email, E2E.password);
-  await openDetails(page, E2E.interactionSpot.emoji);
+  await openDetails(page, E2E.interactionSpot.category);
 
   const hero = page.getByRole('img', { name: E2E.interactionSpot.name }).first();
   await expect(hero).toBeVisible();
@@ -166,7 +166,7 @@ test('viewing a legacy spot does not write to it', async ({ page }) => {
 test('adding a photo to a legacy spot materialises its images server-side', async ({ page }) => {
   await openApp(page);
   await signInWithEmail(page, E2E.user.email, E2E.password);
-  await openDetails(page, E2E.interactionSpot.emoji);
+  await openDetails(page, E2E.interactionSpot.category);
 
   await page.locator('#spot-photos-input').setInputFiles(await jpegUpload(page));
   await expectNotification(page, 'Photos added!');
@@ -182,7 +182,7 @@ test('adding a photo to a legacy spot materialises its images server-side', asyn
   expect(ids[1]).toMatch(/^\d+_\d+$/);
 
   await closeDetails(page);
-  await openDetails(page, E2E.interactionSpot.emoji);
+  await openDetails(page, E2E.interactionSpot.category);
   await expect(page.getByText('📸 2')).toBeVisible();
 });
 
@@ -190,7 +190,7 @@ test('a review and a photo go up together with one submit', async ({ page }) => 
   const comment = `E2E review with photo ${Date.now().toString(36)}`;
   await openApp(page);
   await signInWithEmail(page, E2E.level5.email, E2E.password);
-  await openDetails(page, E2E.interactionSpot.emoji);
+  await openDetails(page, E2E.interactionSpot.category);
 
   const form = page.locator('#review-comment').locator('..');
   await form.getByRole('button').nth(4).click(); // 5th star
@@ -225,8 +225,8 @@ test('level-5 owner highlights their approved spot via the callable', async ({ p
   const spotId = E2E.level5.approvedSpot.id;
   await openApp(page);
   await signInWithEmail(page, E2E.level5.email, E2E.password);
-  // level5 also sees its 19 own pending spots (same emoji, yellow): open the approved (green) one.
-  await spotMarker(page, E2E.level5.approvedSpot.emoji).filter({ has: page.locator('circle[fill="#10b981"]') }).click();
+  // level5 also sees its 19 own pending spots (same category, pending style): open the approved (green) one.
+  await spotMarker(page, E2E.level5.approvedSpot.category).filter({ has: page.locator('.spot-pin[data-variant="approved"]') }).click();
   await page.getByRole('button', { name: 'View Details' }).click();
 
   const highlightButton = page.getByRole('button', { name: 'Highlight this spot', exact: true });

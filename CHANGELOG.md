@@ -5,6 +5,10 @@
 ### Fixed (design 1A)
 - The installed iPhone app now fills the whole screen: no black band at the bottom, and the dock sits at the real bottom edge. The page background follows the map style instead of black.
 
+### Changed (design 1D)
+- New map pins: one size at every zoom, the tip points at the exact spot, and hand-drawn category icons replace the emoji. Approved spots are green; pending ones are white with a dashed amber ring and a clock; highlighted ones get a gold ring and a star. Zoomed far out, pins become small dots. Your position is a calm iOS-style dot.
+- Animations follow the system's reduced-motion setting everywhere.
+
 ### Fixed
 - Every push notification arrived twice; now it arrives once.
 - Your own pending spots now show on your map as yellow markers (only yours; other users' pending spots stay hidden).

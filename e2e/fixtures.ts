@@ -7,28 +7,28 @@ export const E2E = {
   // T11a: dedicated to profile-admin.spec.ts username changes (no other spec may use it).
   rename: { uid: 'e2e-rename', email: 'rename@spoton.test', username: 'e2e_rename' },
   legacySpot: {
-    id: 'e2e-legacy-spot', name: 'E2E Legacy Spot', emoji: '🏔️',
+    id: 'e2e-legacy-spot', name: 'E2E Legacy Spot', category: 'viewpoint',
     reviewComment: 'E2E legacy review comment',
   },
-  modernSpot: { id: 'e2e-modern-spot', name: 'E2E Modern Spot', emoji: '🌳' },
-  pendingSpot: { id: 'e2e-pending-spot', name: 'E2E Pending Spot', emoji: '🥾' },
+  modernSpot: { id: 'e2e-modern-spot', name: 'E2E Modern Spot', category: 'park' },
+  pendingSpot: { id: 'e2e-pending-spot', name: 'E2E Pending Spot', category: 'hiking' },
   // T11b: legacy-shaped (only imageUrls), dedicated to spot-interactions.spec.ts (no other spec may use it).
-  interactionSpot: { id: 'e2e-interaction-spot', name: 'E2E Interaction Spot', emoji: '🏖️' },
+  interactionSpot: { id: 'e2e-interaction-spot', name: 'E2E Interaction Spot', category: 'part' },
   // T21: legacy-shaped (only imageUrls, placeholder first), owned by `user`, dedicated to
   // primary-image.spec.ts (no other spec may use it).
   primaryImageSpot: {
-    id: 'e2e-primary-image-spot', name: 'E2E Primary Image Spot', emoji: '🌅',
+    id: 'e2e-primary-image-spot', name: 'E2E Primary Image Spot', category: 'scenic',
     imageUrls: ['/placeholder-spot.jpg', '/icon-192x192.png', '/icon-512x512.png'],
   },
   // T28: two images (gallery), owned by `admin`, saved in `user`'s savedSpots; dedicated to
   // spot-details.spec.ts (no other spec may use it).
-  detailsSpot: { id: 'e2e-details-spot', name: 'E2E Details Spot', emoji: '💨' },
+  detailsSpot: { id: 'e2e-details-spot', name: 'E2E Details Spot', category: 'smoke-spot' },
   // T09: 20 spots (level 5); only approvedSpot is approved, the other 19 are pending.
   level5: {
     uid: 'e2e-level5',
     email: 'level5@spoton.test',
     username: 'e2e_level5',
-    approvedSpot: { id: 'e2e-level5-spot-01', name: 'E2E Level5 Spot', emoji: '🎲' },
+    approvedSpot: { id: 'e2e-level5-spot-01', name: 'E2E Level5 Spot', category: 'random' },
   },
 } as const;
 

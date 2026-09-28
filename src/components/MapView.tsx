@@ -7,12 +7,11 @@ import 'leaflet/dist/leaflet.css';
 import type { Spot } from '@/store/useSpotStore';
 import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
 import SpotInfoWindow from './SpotInfoWindow';
-import { buildMarkerSvg, getMarkerSize, type MarkerStatus } from '@/lib/mapMarkers';
+import { buildPinHtml, markerVariant, PIN_ANCHOR, PIN_SIZE, zoomBand, type MarkerVariant } from '@/lib/mapMarkers';
 import {
   DEFAULT_MAP_CENTER,
   DEFAULT_MAP_ZOOM,
   DELAYS,
-  INITIAL_MARKER_ZOOM,
   LOCATE_ZOOM,
   Z,
 } from '@/lib/constants';
@@ -29,48 +28,61 @@ interface MapViewProps {
   onMapClick?: () => void;
 }
 
-const getCategoryIcon = (category: string, status: MarkerStatus, isHighlighted: boolean, size: number) => {
-  return L.divIcon({
-    html: buildMarkerSvg(category, status, isHighlighted, size),
-    className: '',
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2],
-  });
-};
-
-// Marker icons are cached so unchanged markers keep the same icon reference: react-leaflet calls
-// setIcon (rebuilding the marker DOM) whenever the reference changes.
+// Pin icons (design 1D): one size at every zoom, anchored at the pin's tip. Icons are cached so
+// unchanged markers keep the same icon reference: react-leaflet calls setIcon (rebuilding the
+// marker DOM) whenever the reference changes, so zooming never rebuilds markers any more.
 const iconCache = new Map<string, L.DivIcon>();
 
-const getCachedCategoryIcon = (category: string, status: MarkerStatus, isHighlighted: boolean, size: number) => {
-  const key = `${category}|${status}|${isHighlighted ? 1 : 0}|${size}`;
+const getPinIcon = (category: string, variant: MarkerVariant, highlighted: boolean) => {
+  const key = `${category}|${variant}|${highlighted ? 1 : 0}`;
   let icon = iconCache.get(key);
   if (!icon) {
-    icon = getCategoryIcon(category, status, isHighlighted, size);
+    icon = L.divIcon({
+      html: buildPinHtml({ category, variant, highlighted }),
+      className: 'spot-marker',
+      iconSize: [...PIN_SIZE],
+      iconAnchor: [...PIN_ANCHOR],
+    });
     iconCache.set(key, icon);
   }
   return icon;
 };
 
+// The user's position: a static iOS-style dot (no endless pulse, senior UI review M6).
 const userLocationIcon = L.divIcon({
-  html: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="8" fill="#007AFF" stroke="white" stroke-width="3"/>
-  </svg>`,
+  html: '<span class="user-puck" aria-hidden="true"><span class="user-puck__halo"></span><span class="user-puck__dot"></span></span>',
   className: '',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
 });
 
+// The location picked while adding a spot: a brand pin with a plus, dropped in once.
 const tempMarkerIcon = L.divIcon({
-  html: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-    <circle cx="16" cy="16" r="12" fill="#f59e0b" stroke="white" stroke-width="3"/>
-    <text x="16" y="21" font-size="14" text-anchor="middle">📍</text>
-  </svg>`,
+  html:
+    '<div class="draft-pin" aria-hidden="true"><svg width="44" height="54" viewBox="0 0 44 54">' +
+    '<ellipse cx="22" cy="50.6" rx="6" ry="2" fill="#000" opacity=".22"/>' +
+    '<path d="M22 50C20.6 45.5 18 41.8 14.9 36.5A18 18 0 1 1 29.1 36.5C26 41.8 23.4 45.5 22 50Z" fill="#12814F" stroke="#fff" stroke-width="3"/>' +
+    '<path d="M22 13v14M15 20h14" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></div>',
   className: '',
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
+  iconSize: [...PIN_SIZE],
+  iconAnchor: [...PIN_ANCHOR],
 });
+
+// Mirrors the zoom on the map container (data-zoom-band): far zoom collapses pins to dots in CSS.
+function ZoomBandTracker() {
+  const map = useMap();
+  useEffect(() => {
+    const apply = () => {
+      map.getContainer().dataset.zoomBand = zoomBand(map.getZoom());
+    };
+    apply();
+    map.on('zoomend', apply);
+    return () => {
+      map.off('zoomend', apply);
+    };
+  }, [map]);
+  return null;
+}
 
 // Fires onMapLoad once after the map is ready
 function MapReadyNotifier({ onMapLoad }: { onMapLoad?: () => void }) {
@@ -87,17 +99,15 @@ function MapReadyNotifier({ onMapLoad }: { onMapLoad?: () => void }) {
   return null;
 }
 
-// Handles map click events and zoom tracking
+// Handles map clicks (placing a spot, or closing the info window)
 function MapEventHandler({
   isAddingSpot,
   onLocationSelect,
   onMapClick,
-  onZoomChange,
 }: {
   isAddingSpot: boolean;
   onLocationSelect?: (loc: { lat: number; lng: number }) => void;
   onMapClick?: () => void;
-  onZoomChange: (zoom: number) => void;
 }) {
   useMapEvents({
     click(e) {
@@ -106,9 +116,6 @@ function MapEventHandler({
       } else if (onMapClick) {
         onMapClick();
       }
-    },
-    zoomend(e) {
-      onZoomChange(e.target.getZoom());
     },
   });
   return null;
@@ -153,8 +160,6 @@ export default function MapView({
   onMapClick,
 }: Readonly<MapViewProps>) {
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
-  // Marker sizing starts at INITIAL_MARKER_ZOOM (13), not the map's opening zoom: kept as is.
-  const [zoomLevel, setZoomLevel] = useState(INITIAL_MARKER_ZOOM);
 
   const { theme } = useMapThemeStore();
 
@@ -173,6 +178,7 @@ export default function MapView({
         <MapReadyNotifier onMapLoad={onMapLoad} />
         <LocationPanner userLocation={userLocation} />
         <TileLayerSwitcher theme={theme} />
+        <ZoomBandTracker />
         <MapEventHandler
           isAddingSpot={isAddingSpot}
           onLocationSelect={onLocationSelect}
@@ -180,7 +186,6 @@ export default function MapView({
             setSelectedSpot(null);
             onMapClick?.();
           }}
-          onZoomChange={setZoomLevel}
         />
 
         {/* User location dot */}
@@ -196,12 +201,12 @@ export default function MapView({
         {/* Spot markers */}
         {spots.map((spot) => {
           const isHighlighted = (spot.highlighted || []).some((h) => h.expiresAt > nowIso);
-          const size = getMarkerSize(zoomLevel) * (isHighlighted ? 1.2 : 1);
           return (
             <Marker
               key={spot.id}
               position={[spot.location.lat, spot.location.lng]}
-              icon={getCachedCategoryIcon(spot.category, spot.status, isHighlighted, Math.round(size))}
+              title={spot.name}
+              icon={getPinIcon(spot.category, markerVariant(spot.status), isHighlighted)}
               zIndexOffset={isHighlighted ? 1000 : 0}
               eventHandlers={{
                 click: () => setSelectedSpot(spot),

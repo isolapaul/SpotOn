@@ -22,7 +22,7 @@ for (const lang of ['hu', 'en'] as const) {
     await expect(page.getByRole('button', { name: T.explore, exact: true })).toBeVisible();
 
     // Seeded spot (T04): the info window's details button
-    await spotMarker(page, E2E.legacySpot.emoji).click();
+    await spotMarker(page, E2E.legacySpot.category).click();
     await expect(page.getByRole('button', { name: T.viewDetails })).toBeVisible();
 
     // AuthModal (signed out)

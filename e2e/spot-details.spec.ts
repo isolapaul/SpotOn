@@ -36,7 +36,7 @@ async function savedSpots(): Promise<string[]> {
 
 /** Map marker → info window → details panel. */
 async function openDetails(page: Page) {
-  await spotMarker(page, spot.emoji).click();
+  await spotMarker(page, spot.category).click();
   await page.getByRole('button', { name: 'View Details' }).click();
   await expect(page.getByRole('heading', { name: spot.name })).toBeVisible();
 }

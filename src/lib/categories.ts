@@ -38,5 +38,3 @@ export function getMarkerEmoji(category: string | undefined): string {
     : DEFAULT_CATEGORY_EMOJI;
 }
 
-/** Marker background colours: status-based, highlighted overrides both. */
-export const MARKER_COLORS = { approved: '#10b981', other: '#eab308', highlighted: '#FFD700' } as const;
