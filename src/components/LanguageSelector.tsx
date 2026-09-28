@@ -1,9 +1,10 @@
 'use client';
 
 import { useLanguageStore } from '@/store/useLanguageStore';
+import { translate, type Language } from '@/lib/i18n';
 import { Globe, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { translations } from '@/lib/translations';
+import { DELAYS } from '@/lib/constants';
 
 export default function LanguageSelector() {
   const { setLanguage, hasSelectedLanguage } = useLanguageStore();
@@ -14,7 +15,8 @@ export default function LanguageSelector() {
     // Show language selector if user hasn't selected a language yet
     if (!hasSelectedLanguage) {
       // Small delay for smooth entrance
-      setTimeout(() => setIsOpen(true), 300);
+      const id = setTimeout(() => setIsOpen(true), DELAYS.languageSelector);
+      return () => clearTimeout(id);
     }
   }, [hasSelectedLanguage]);
 
@@ -33,11 +35,8 @@ export default function LanguageSelector() {
     return null;
   }
 
-  const t = {
-    selectLanguage: selectedLang === 'hu' ? 'Válassz Nyelvet' : selectedLang === 'de' ? 'Sprache wählen' : 'Select Language',
-    selectLanguageDesc: selectedLang === 'hu' ? 'Válaszd ki az előnyben részesített nyelvet' : selectedLang === 'de' ? 'Wählen Sie Ihre bevorzugte Sprache' : 'Choose your preferred language',
-    continue: selectedLang === 'hu' ? 'Folytatás' : selectedLang === 'de' ? 'Weiter' : 'Continue'
-  };
+  // Follows the language tapped in this dialog (not the store), English until one is tapped.
+  const lang: Language = selectedLang ?? 'en';
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 animate-fade-in">
@@ -55,10 +54,10 @@ export default function LanguageSelector() {
 
         {/* Title */}
         <h2 className="text-2xl font-bold text-white text-center mb-2">
-          {t.selectLanguage}
+          {translate(lang, 'langSelectTitle')}
         </h2>
         <p className="text-white/70 text-center mb-8">
-          {t.selectLanguageDesc}
+          {translate(lang, 'langSelectDesc')}
         </p>
 
         {/* Language Options */}
@@ -167,7 +166,7 @@ export default function LanguageSelector() {
             }
           `}
         >
-          {t.continue}
+          {translate(lang, 'langSelectContinue')}
         </button>
       </div>
     </div>

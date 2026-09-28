@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { connection } from 'next/server';
 import './globals.css';
 import InstallGate from '@/components/InstallGate';
 
@@ -34,15 +35,17 @@ export const viewport: Viewport = {
   themeColor: '#0f172a',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Nonce CSP (T32): render per request, so Next can put src/proxy.ts's fresh nonce on its scripts.
+  await connection();
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/icon-192x192.png" type="image/png" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
       </head>
       <body className="font-sans">

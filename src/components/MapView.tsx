@@ -1,65 +1,56 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Spot } from '@/store/useSpotStore';
 import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
 import SpotInfoWindow from './SpotInfoWindow';
+import { buildMarkerSvg, getMarkerSize, type MarkerStatus } from '@/lib/mapMarkers';
+import {
+  DEFAULT_MAP_CENTER,
+  DEFAULT_MAP_ZOOM,
+  DELAYS,
+  INITIAL_MARKER_ZOOM,
+  LOCATE_ZOOM,
+  Z,
+} from '@/lib/constants';
 
 interface MapViewProps {
   isAddingSpot?: boolean;
   onLocationSelect?: (location: { lat: number; lng: number }) => void;
   tempMarker?: { lat: number; lng: number } | null;
   spots?: Spot[];
-  isAdmin?: boolean;
+  /** Blue dot and one-time pan target (page: the shared location, or the default centre once denied). */
+  userLocation?: { lat: number; lng: number } | null;
   onSpotDetailsOpen?: (spot: Spot) => void;
   onMapLoad?: () => void;
   onMapClick?: () => void;
 }
 
-const getCategoryIcon = (category: string, status: 'approved' | 'pending' | 'rejected', isHighlighted: boolean = false, size = 48) => {
-  let emoji = '📍';
-  switch (category) {
-    case 'scenic': emoji = '🌅'; break;
-    case 'smoke-spot': emoji = '💨'; break;
-    case 'viewpoint': emoji = '🏔️'; break;
-    case 'hiking': emoji = '🥾'; break;
-    case 'random': emoji = '🎲'; break;
-    case 'date-spot': emoji = '❤️'; break;
-    case 'park': emoji = '🌳'; break;
-    case 'part': emoji = '🏖️'; break;
-  }
-
-  let bgColor = status === 'approved' ? '#10b981' : '#eab308';
-  if (isHighlighted) bgColor = '#FFD700';
-
-  const svg = isHighlighted
-    ? `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 56 56">
-        <defs>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-        <circle cx="28" cy="28" r="24" fill="${bgColor}" stroke="#FFA500" stroke-width="3" filter="url(#glow)"/>
-        <text x="28" y="35" font-size="22" text-anchor="middle">${emoji}</text>
-        <text x="46" y="14" font-size="18">⭐</text>
-      </svg>`
-    : `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 48 48">
-        <circle cx="24" cy="24" r="20" fill="${bgColor}" opacity="0.9"/>
-        <text x="24" y="30" font-size="20" text-anchor="middle" fill="white">${emoji}</text>
-      </svg>`;
-
+const getCategoryIcon = (category: string, status: MarkerStatus, isHighlighted: boolean, size: number) => {
   return L.divIcon({
-    html: svg,
+    html: buildMarkerSvg(category, status, isHighlighted, size),
     className: '',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     popupAnchor: [0, -size / 2],
   });
+};
+
+// Marker icons are cached so unchanged markers keep the same icon reference: react-leaflet calls
+// setIcon (rebuilding the marker DOM) whenever the reference changes.
+const iconCache = new Map<string, L.DivIcon>();
+
+const getCachedCategoryIcon = (category: string, status: MarkerStatus, isHighlighted: boolean, size: number) => {
+  const key = `${category}|${status}|${isHighlighted ? 1 : 0}|${size}`;
+  let icon = iconCache.get(key);
+  if (!icon) {
+    icon = getCategoryIcon(category, status, isHighlighted, size);
+    iconCache.set(key, icon);
+  }
+  return icon;
 };
 
 const userLocationIcon = L.divIcon({
@@ -86,11 +77,12 @@ function MapReadyNotifier({ onMapLoad }: { onMapLoad?: () => void }) {
   const notified = useRef(false);
   useMap(); // ensures we're inside MapContainer context
   useEffect(() => {
-    if (!notified.current && onMapLoad) {
+    if (notified.current || !onMapLoad) return;
+    const timer = setTimeout(() => {
       notified.current = true;
-      const timer = setTimeout(onMapLoad, 100);
-      return () => clearTimeout(timer);
-    }
+      onMapLoad();
+    }, DELAYS.mapReady);
+    return () => clearTimeout(timer);
   }, [onMapLoad]);
   return null;
 }
@@ -130,7 +122,7 @@ function LocationPanner({ userLocation }: { userLocation: { lat: number; lng: nu
   useEffect(() => {
     if (userLocation && !panned.current) {
       panned.current = true;
-      map.setView([userLocation.lat, userLocation.lng], 13, { animate: true });
+      map.setView([userLocation.lat, userLocation.lng], LOCATE_ZOOM, { animate: true });
     }
   }, [userLocation, map]);
 
@@ -155,67 +147,25 @@ export default function MapView({
   onLocationSelect,
   tempMarker,
   spots = [],
-  isAdmin = false,
+  userLocation = null,
   onSpotDetailsOpen,
   onMapLoad,
   onMapClick,
 }: Readonly<MapViewProps>) {
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(13);
-  const defaultCenter: [number, number] = [47.4979, 19.0402];
+  // Marker sizing starts at INITIAL_MARKER_ZOOM (13), not the map's opening zoom: kept as is.
+  const [zoomLevel, setZoomLevel] = useState(INITIAL_MARKER_ZOOM);
 
   const { theme } = useMapThemeStore();
-  const { t } = useLanguageStore();
 
-  const getMarkerSize = useCallback((zoom: number) => {
-    if (zoom <= 5) return 24;
-    if (zoom <= 10) return 32;
-    if (zoom <= 14) return 48;
-    if (zoom <= 18) return 64;
-    return 80;
-  }, []);
-
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-
-    const cachedLocation = sessionStorage.getItem('userLocation');
-    const cachedTime = sessionStorage.getItem('userLocationTime');
-
-    if (cachedLocation && cachedTime) {
-      const age = Date.now() - Number.parseInt(cachedTime, 10);
-      if (age < 10 * 60 * 1000) {
-        setUserLocation(JSON.parse(cachedLocation));
-        return;
-      }
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const loc = { lat: position.coords.latitude, lng: position.coords.longitude };
-        setUserLocation(loc);
-        sessionStorage.setItem('userLocation', JSON.stringify(loc));
-        sessionStorage.setItem('userLocationTime', Date.now().toString());
-      },
-      () => setUserLocation({ lat: defaultCenter[0], lng: defaultCenter[1] }),
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
-    );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Highlight-expiry reference time, computed once per render (not per marker)
+  const nowIso = new Date().toISOString();
 
   return (
-    <div className="absolute inset-0 w-full h-full z-0">
-      {isAddingSpot && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[1000] glass-card px-6 py-3 pointer-events-none animate-fade-in">
-          <p className="text-white font-medium text-center">
-            {t('clickMapToSelect')}
-          </p>
-        </div>
-      )}
-
+    <div className={`absolute inset-0 w-full h-full ${Z.mapBase}`}>
       <MapContainer
-        center={defaultCenter}
-        zoom={6}
+        center={DEFAULT_MAP_CENTER}
+        zoom={DEFAULT_MAP_ZOOM}
         style={{ width: '100%', height: '100%' }}
         zoomControl={false}
         attributionControl={false}
@@ -245,14 +195,13 @@ export default function MapView({
 
         {/* Spot markers */}
         {spots.map((spot) => {
-          const now = new Date().toISOString();
-          const isHighlighted = (spot.highlighted || []).some((h) => h.expiresAt > now);
+          const isHighlighted = (spot.highlighted || []).some((h) => h.expiresAt > nowIso);
           const size = getMarkerSize(zoomLevel) * (isHighlighted ? 1.2 : 1);
           return (
             <Marker
               key={spot.id}
               position={[spot.location.lat, spot.location.lng]}
-              icon={getCategoryIcon(spot.category, spot.status, isHighlighted, Math.round(size))}
+              icon={getCachedCategoryIcon(spot.category, spot.status, isHighlighted, Math.round(size))}
               zIndexOffset={isHighlighted ? 1000 : 0}
               eventHandlers={{
                 click: () => setSelectedSpot(spot),
@@ -264,11 +213,10 @@ export default function MapView({
 
       {/* Info popup rendered outside MapContainer (avoids Leaflet popup styling conflicts) */}
       {selectedSpot && (
-        <div className="absolute left-1/2 -translate-x-1/2 z-[1000] animate-fade-in"
+        <div className={`absolute left-1/2 -translate-x-1/2 ${Z.mapInner} animate-fade-in`}
           style={{ bottom: '100px' }}>
           <SpotInfoWindow
             spot={selectedSpot}
-            isAdmin={isAdmin}
             onClose={() => setSelectedSpot(null)}
             onViewDetails={() => {
               onSpotDetailsOpen?.(selectedSpot);

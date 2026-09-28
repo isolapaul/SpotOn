@@ -1,0 +1,201 @@
+# SpotOn Roadmap: Hardening, Containerization, Refactor
+
+Goals:
+1. Close the security gaps in `audit/security-review.md`.
+2. Remove the spaghetti code listed in `audit/code-review.md` without breaking anything.
+3. Run SpotOn as a hardened, signed container on Paul's server at **https://spoton.isolapaul.hu**, behind the existing Cloudflare Tunnel.
+
+Firebase stays the backend. Only the Next.js app moves off Vercel.
+
+---
+
+## 1. Decisions register
+
+| # | Decision | Status |
+|---|---|---|
+| D1 | Containerize the Next.js app only. Firebase (Auth, Firestore, Storage, FCM, Functions) stays. | **Paul** |
+| D2 | Paul provides the current production Firestore and Storage rules. T12 hardens them. | **Paul**: provided 2026-09-26 (`docs/audit/current-rules.md`) |
+| D3 | CI: GitHub Actions → Trivy → SBOM → cosign → **private** GHCR. Dependabot. | **Paul** |
+| D4 | Implement everything. Each task gets an implementer agent, then an independent reviewer agent, then a commit. | **Paul** |
+| D5 | Vercel: a single, tasteful "moved" banner (Stage A), then a 308 redirect (Stage B), then Vercel is deleted. | **Paul** |
+| D6 | Proxy `/__/auth/*` so that `authDomain = spoton.isolapaul.hu`. | **Paul** |
+| D7 | Optional tasks approved: hide pending spots (T30), React 19 (T31), nonce CSP (T32). | **Paul** |
+| D8 | The level count keeps including pending spots, which is current behaviour. | default |
+| D9 | The legacy Valentine `highlightBonus` stays honoured. | default |
+| D10 | Anonymous feedback stays allowed, with a rate limit. | default |
+| D11 | Trivy runs with `ignore-unfixed: true`, plus a `.trivyignore` whose entries have expiry dates. | default |
+| D12 | The image limit per spot is 20. The UI text gets fixed to match. | default |
+| D13 | The container is labelled `com.centurylinklabs.watchtower.enable=false` and pinned by digest. | default |
+| D14 | Node 22 for both the container and functions. Upgrade to 24 before April 2027. | default |
+| D15 | Reviews stay an embedded array. Rules make them append-only. No subcollection migration. | default |
+| D16 | `NEXT_PUBLIC_*` values are Docker build args, taken from GitHub **variables**. One image per environment. | default |
+| D17 | Base images: build on `node:22-trixie-slim`, run on `gcr.io/distroless/nodejs22-debian13:nonroot`, both pinned by digest. Debian 13 matches the server. Never mix Debian releases between the two stages. | default |
+
+A "default" decision can be overridden by Paul at any time. If one changes, update this table and every task spec that depends on it.
+
+---
+
+## 2. Phases and tasks
+
+Specs live in `docs/tasks/`. **Execute in this order**, unless the dependencies explicitly allow otherwise.
+
+| Phase | Task | Title | Depends on | Risk |
+|---|---|---|---|---|
+| 0 Safety net | T01 | Tooling baseline (ESLint 9, Vitest, verify scripts) | — | low |
+| | T02 | CI workflow and Dependabot | T01 | low |
+| | T03 | Remove dead client code | T01 | low |
+| | T04 | Emulator harness, seed data, Playwright smoke | T01 | low-med |
+| 1 Patched stack | T05 | Next 16.3.x and nodemailer 10 | T04 | low-med |
+| | T06 | Firebase JS SDK 12 | T05 | med |
+| | T07 | Functions toolchain (Node 22, admin 14, functions 7, TS 5) | T02 | med |
+| 2 Security | T08 | Functions: admin identity, notifications backbone | T07 | med |
+| | T09 | Functions: public profiles, spotsCount, usernames, name style | T08 | med |
+| | T10 | Functions: spot mutation callables | T09 | med |
+| | T11a | Client: profiles, usernames, admin, sign-out token | T09 | med-high |
+| | T11b | Client: spot interactions via callables, review PII | T10, T11a | med-high |
+| | T12 | Firestore and Storage rules, with emulator tests | **D2**, T11b | high |
+| | T13 | PII strip script and security rollout runbook | T12 | low |
+| | T14 | Harden `/api/feedback` | T05, T11a | low |
+| | T15 | Web hardening (CSP, headers, auth proxy, innerHTML, assets) | T06, T11a | med |
+| 3 Container | T16 | Standalone build and hardened Dockerfile | T14, T15 | med |
+| | T17 | Compose file, `.env.example`, server runbook | T16 | low |
+| | T18 | Release pipeline (Trivy, SBOM, cosign, GHCR) | T16, T02 | med |
+| | T19 | Domain-move notice (Vercel only), then the 308 | T17 | low |
+| | T20 | README, CHANGELOG, env matrix | T17, T18 | low |
+| 4 Bugs | T21 | Data and logic bug fixes | T11b | low |
+| | T22 | i18n and styling bug fixes | T21 | low |
+| 5 Refactor | T23 | Pure `lib/` modules with characterisation tests | T22 | low |
+| | T24 | A single `useT()` translation hook | T23 | low |
+| | T25 | Shared UI primitives (PanelShell, ModalShell, swipe, stars) | T24 | med |
+| | T26 | Data hooks (`usePublicProfile`, `useIsAdmin`) | T25 | low |
+| | T27 | Split ProfilePanel | T26 | med |
+| | T28 | Split SpotDetailsPanel | T26 | med |
+| | T29 | Panel state machine in `page.tsx` | T27, T28 | med |
+| 6 Optional | T30 | Hide pending spots (split queries, then rules) | T12, T29 | med-high |
+| | T31 | React 19, react-leaflet 5, zustand 5 | T29 | med |
+| | T32 | Nonce-based strict CSP | T15, T31 | med |
+
+**Parallelism.** T12 is blocked until Paul pastes the rules (D2). While it waits, these can proceed: T14, T15, T16–T20, T21, T22 and the refactor phase. T16 and later only need T14 and T15. **The first production cutover must not happen before T13's rollout runbook exists**, because moving the domain with open rules gains nothing.
+
+Recommended real-world order when D2 is late: Phase 0 → Phase 1 → T08–T11b → T14, T15 → T16–T18 → T21–T22 → T12 and T13 (as soon as the rules arrive) → T19, T20 → Phase 5 → Phase 6.
+
+---
+
+## 3. Execution protocol (subagents)
+
+For every task `Txx`:
+
+1. **Implementer agent.** Its prompt contains only: "Read `CLAUDE.md` and `docs/tasks/Txx-*.md`. Implement exactly that spec. Stop and report if anything is ambiguous or if an acceptance check fails for reasons outside the spec." It works on branch `claude/sharp-lovelace-b3n3vt` and does **not** commit.
+2. **Reviewer agent.** A fresh agent that saw none of the implementation. Its prompt: "You are an independent senior reviewer. Read `CLAUDE.md`, `docs/tasks/Txx-*.md`, and `git diff`. Verify:
+   - every step is done;
+   - every **Must NOT change** item still holds;
+   - all acceptance commands pass (re-run them);
+   - no secrets, no scope creep, no leftover debug code.
+
+   Report PASS, or a list of concrete defects with `file:line`."
+3. If the reviewer reports defects, the implementer (or orchestrator) fixes them and the reviewer runs again. There is no fixed round limit, but if the same defect repeats, escalate to Paul.
+4. The orchestrator commits (`Txx: …`) and pushes, then marks the task done in §6.
+5. **Stop conditions:** the spec contradicts the code, a decision is missing, the change would touch production, or the tests need a behaviour change the spec does not allow. In any of these cases, ask Paul.
+
+Additional review gates:
+- `/code-review` and `/security-review` over the accumulated diff after Phase 2, before T16.
+- Both again at the end, followed by a final independent full-diff review.
+
+---
+
+## 4. Production rollout order (Paul executes; details in `docs/security-rollout.md` and `docs/deploy.md`)
+
+0. **Emergency rules patch** (`docs/audit/current-rules.md` → "Emergency patch"): lock `admins` and `categories` writes to Paul's verified email, and restrict Storage `spot-images` to image creates under 5 MB. It is compatible with the current client. **Must be live before step 1:** while `admins/*` is writable by any signed-in user, the T08 functions would trust a self-written `role: 'super'` (LR-01).
+1. Deploy the Cloud Functions (T07–T10), with `APP_URL=https://spoton.isolapaul.hu`.
+2. Run `scripts/bootstrap-super-admin.ts` (T08). Paul becomes `admins/{uid}` with `role: 'super'`.
+3. Run `scripts/backfill-profiles.ts`: dry run first, then apply, then resolve any duplicate usernames it reports (T09). `admins invalid` may list only the legacy auto-id admin docs from the step 0 inventory; any other entry means stop and ask (`docs/security-rollout.md` §4).
+   - **Step 3.5**, only if T12 produced `docs/audit/transitional-firestore.rules`: deploy those transitional Firestore rules (the live rules plus the reads the new client needs), before step 4.
+   - **Step 3.6**: deploy the Firestore indexes (`firebase deploy --only firestore:indexes`) and wait until they are Enabled. The step 4 client already contains the T30 own-spots query.
+4. Deploy the client container (T16–T18, including the T30 client) to `spoton.isolapaul.hu`, and keep Vercel serving the same build.
+5. About 1 h after step 4 is live everywhere (open old windows then need a reload: the old client's unfiltered spots query is denied by T30): save the current production rules to a file, then run `firebase deploy --only firestore:rules,storage` (T12 + T30 + approved-only review appends). Watch for denied requests.
+6. Run `scripts/strip-review-pii.ts`: dry run, then apply (T13).
+7. Vercel Stage A: set `NEXT_PUBLIC_MOVED_TO` on Vercel and redeploy (T19). About 30 days later, Stage B: 308 redirect. About 90 days later, delete the Vercel project.
+
+Functions, indexes, rules and both client builds come from **one commit** (the merged tip of `main`). Every commit from `7609c90` on contains T30, so it ships with steps 3.6–5; there is no separate T30 deploy.
+
+**Rollback:**
+- Rules: redeploy the saved rules file.
+- Client (only while the transitional rules are live; roll back the rules first): the container's first release has no previous digest, so stop it (`docker compose down` in `/srv/docker/spoton`); later releases roll back with `docs/deploy.md` §11. Vercel: Instant Rollback to the last production deployment before the deploy commit (`docs/security-rollout.md` §9).
+- Functions: redeploy the previous git tag.
+
+---
+
+## 5. Traps (read before starting any task)
+
+1. **Rules do not filter queries.** If a rule hides pending spots or other users' documents, any unfiltered query fails for everyone. Change the client queries first (T11a, T11b, T30), and only then tighten the rules.
+2. **Deploy order is one-way.** If the rules go live before the super-admin bootstrap, Paul loses admin rights. If they go live before the new client, old clients break. Old PWA windows open during the switch will show permission errors, which is acceptable.
+3. **The domain move resets per-origin state.** localStorage, FCM tokens and PWA installs are tied to the origin, so users sign in again and reinstall the PWA. This is what the T19 notice is for.
+4. **Google sign-in on the new domain** needs three things: the domain added to Firebase Auth → Authorized domains; the OAuth redirect URI `https://spoton.isolapaul.hu/__/auth/handler`; and the `/__/auth` proxy (T15). COOP must be `same-origin-allow-popups`.
+5. **`NEXT_PUBLIC_*` values are compiled into the image.** Changing any of them requires a rebuild.
+6. **Renaming or dropping an exported function deletes it on deploy.** Keep `highlightSpot`, `onSpotApproved`, `onReviewAdded`, `onSpotFavorited` and `onNewPendingSpot`.
+7. **`spotsCount` must count pending spots**, or current users drop a level (D8).
+8. **Trivy HIGH/CRITICAL findings with no available fix** would block every release without `ignore-unfixed`. Distroless avoids the npm and shell CVE noise that Alpine brings.
+9. **Storage objects are never deleted** today, so orphaned files accumulate. This is out of scope and noted for the future.
+10. **Existing duplicate usernames may exist.** The backfill reports them and never overwrites.
+11. **Rules tests need Java 21**, and `firebase-tools` has to be pinned.
+12. **This sandbox has no running Docker daemon.** Container tasks try to start `dockerd`. If that fails, they are verified in GitHub Actions instead.
+
+---
+
+## 6. Open questions for Paul (defaults apply unless Paul overrides)
+
+| # | Question | Default |
+|---|---|---|
+| Q1 | T14: feedback now needs at least 1 character of text. Image-only feedback is no longer possible. | accept |
+| Q2 | T19: on the **old** Vercel domain only, the install prompt and the notification prompt are suppressed while the move banner exists. | accept |
+| Q3 | T17: GHCR pulls use a **classic** PAT with only `read:packages`, because GitHub Packages officially supports only classic tokens. | accept |
+| Q4 | T17: Dependabot can bump the private GHCR image in compose only with a `DEPENDABOT_GHCR_TOKEN` secret and a real first digest in the compose file. T17 does not add the entry; `docs/deploy.md` §3 describes it as a later manual step. | add it later, once the token and the first release exist |
+| Q5 | T09/T22: legacy or non-allowlisted custom name colours fall back to the level colour. | accept |
+| Q6 | T22: aria-labels and alt texts stay in English for now, because E2E selectors depend on them. | accept, translate later |
+| Q7 | T30: a pending spot that someone else favourited disappears from their favourites. | accept |
+| Q8 | Server CPU architecture is assumed to be amd64 (i5-8500T). | accept |
+| Q9 | T15: the auth proxy upstream is `<projectId>.firebaseapp.com`. Paul confirms his current `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` has that form. | confirm at deploy |
+| Q10 | T19: move banner dismissal is permanent per device (not re-shown); Stage B's 308 redirect catches remaining users. | accept |
+| Q11 | T14: feedback body-read deadline is 60 s (15 s would reject photo uploads on slow mobile uplinks); while two slow uploads are in flight, other feedback gets 503 `busy`. | accept |
+| Q12 | T18: the release build uploads the OCI image + SBOM as a workflow artifact; on this **public** repo any signed-in GitHub user can download it for 1 day (retention-days: 1). It contains only public code and public `NEXT_PUBLIC_*` values. Alternative: delete it at the end of publish (needs `actions: write`). | accept, retention 1 day |
+| Q13 | T12: Storage `spots/**` (legacy path, unused by any code) becomes fully denied. Existing images there that are shown via tokenized download URLs keep working, because download URLs bypass rules. | accept |
+| Q14 | T12 review: `publicProfiles` and `usernames` allow public `get` only, not `list` (spec said `read`). The client only uses `getDoc`; a public list would enumerate every username and, via the `isAdmin` mirror, every admin. | accept (tightening) |
+
+## 7. Progress
+
+| Task | Status | Commit |
+|---|---|---|
+| Docs (CLAUDE.md, audits, roadmap, specs) | done; independently reviewed (T01–T13, T21–T32); T14–T20 review and T29 re-review pending | |
+| T01 Tooling baseline | done, review PASS | 9635939 |
+| T02 CI + Dependabot | done, review PASS | 5f34814 |
+| T03 Remove dead client code | done, review PASS | 456bd39 |
+| T04 Emulator harness + e2e | done, review PASS | b50b1dd |
+| T05 Next 16.3.6 + nodemailer 10 | done, review PASS | 52b1a87 |
+| T06 Firebase JS SDK 12 | done, review PASS | 797b7ae |
+| T08 Functions admin + notifications | done, review PASS; e2e green in CI | c01fc77 |
+| T09 Profiles, usernames, spotsCount | done, review PASS; e2e green in CI | a16f7a4 |
+| T10 Spot mutation callables | done, review PASS (after D1/D2 fixes); e2e green in CI | 1c36fcf |
+| T11a Client profiles/usernames/admin | done, review + re-review PASS; e2e green in CI | bbe47d9 |
+| T11b Client spot interactions | done, review PASS; e2e 16/16 local harness, full via CI | 4069228 |
+| T14 Harden /api/feedback | done, adversarial review + re-verify PASS | 478c6a1 |
+| T15 Web hardening (CSP, headers, auth proxy) | done, review PASS | 0e30571 |
+| T16 Standalone image + Dockerfile | done, review PASS (D1/D2 fixed) | d5ac8cb |
+| T17 Compose + server runbook | done, review PASS + fixes | ebf6639 |
+| T18 Release pipeline (Trivy, SBOM, cosign, GHCR) | done, supply-chain review + re-review PASS | c3ccb6d |
+| T19 Domain-move notice (Vercel only) + Stage B redirect | done, review PASS + fixes | 1436c75 |
+| T12 Firestore + Storage rules, emulator tests, transitional rules | done, adversarial review PASS-WITH-NITS + fixes (get-only public mirrors, shrinkable over-cap lists) | ada58e4 |
+| T13 PII strip script + security rollout runbook | done, review FAIL → fixed (Vercel pause before merge, planted uid-keyed admin docs, busy-spot fallback) | f668b73 |
+| T20 README, CHANGELOG, env matrix | done, review PASS-WITH-NITS + fixes | 8ead175 |
+| T21 Data and logic bug fixes | done, review PASS-WITH-NITS + fixes (approve timer guard, BUG-27) | 8ab6a06 |
+| T22 i18n and styling bug fixes | done, review PASS-WITH-NITS + fixes (translated photo-add error, userAlreadyAdmin) | aeb53fc |
+| T23 Pure lib modules (geo, rating, spotImages, categories, markers, compression, constants) | done, review PASS-WITH-NITS; 1072 unit tests, lib coverage 97.7% | 99c212b |
+| T24 Single translation hook (useT) | done, review PASS-WITH-NITS; 76-state before/after text snapshot identical | b62b324 |
+| T25 Shared UI primitives (PanelShell, ModalShell, swipe hooks, StarRating, z scale) | done, review PASS-WITH-NITS; DOM, gestures and CSS identical to HEAD | ac3a38a |
+| T26 Data hooks (usePublicProfile(s) cache, useIsAdmin, useUserSpots, useFavoriteToggle) | done, review PASS-WITH-NITS; publicProfiles reads 9 -> 6 for two opens | 384da69 |
+| T27 Split ProfilePanel into src/components/profile/** | done, review PASS-WITH-NITS; 15 panel states DOM-identical to HEAD | 2d7443f |
+| T28 Split SpotDetailsPanel into src/components/spot-details/** (+ BUG-09/17/26) | done, review PASS-WITH-NITS + fixes | 8ea2c57 |
+| T29 Panel state machine (activePanel in useUiStore; page.tsx 315 -> 156 lines) | done, review PASS-WITH-NITS + fixes (edit baseline, close-this-spot) | 0f7f528 |
+| T30 Hide pending spots (scoped listeners + index, then rules) | done, review PASS-WITH-NITS; rules attack tests clean | 523f968, 7609c90 |
+| T31 React 19.3.0, react-leaflet 5.0.0, zustand 5.0.15, lucide-react 0.577.0 | done, review PASS-WITH-NITS | b706a3b |
+| T32 Nonce-based strict CSP (proxy.ts, 'strict-dynamic') | done, security review PASS-WITH-NITS + fixes | (this commit) |
+| T07 Functions toolchain | done, review PASS | d38d859 |

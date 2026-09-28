@@ -1,0 +1,91 @@
+// TRANSITIONAL Firestore rules (T12 -> deployed by T13, docs/security-rollout.md step 3.5).
+// = the live production rules as patched on 2026-09-26 (docs/audit/current-rules.md, "Firestore (live)"
+//   with the "Emergency patch" admins/categories blocks), verbatim,
+// + exactly the read grants the T11a/T11b client needs that the live rules lack:
+//   publicProfiles/{uid} and usernames/{name} (public get).
+// Before deploying, replace <YOUR_ADMIN_EMAIL> with the same email used in the deployed patch.
+// Superseded by the repo's firestore.rules at rollout step 5.
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- SEGÉDFÜGGVÉNYEK ---
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // --- 1. FELHASZNÁLÓK (Users) ---
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // --- 2. ADMINOK (Admins) ---
+    match /admins/{docId} {
+      allow read: if true;   // the current client lists admins; T12 restricts this
+      allow write: if request.auth != null
+                   && request.auth.token.email_verified == true
+                   && request.auth.token.email == '<YOUR_ADMIN_EMAIL>';   // your own login email
+    }
+    
+    // --- 3. HELYEK (Spots) ---
+    match /spots/{spotId} {
+      allow read: if true;
+      
+      // Létrehozás: Bárki, aki be van lépve
+      allow create: if isAuthenticated();
+      
+      // Frissítés: Engedjük a bejelentkezett usereknek (kliens oldalon szűrünk)
+      allow update: if isAuthenticated();
+      
+      // Törlés: Tulajdonos vagy Admin
+      allow delete: if isAuthenticated() && 
+                    (resource.data.createdBy == request.auth.uid || 
+                     exists(/databases/$(database)/documents/admins/$(request.auth.token.email)));
+    }
+    
+    // --- 4. KATEGÓRIÁK (Categories) - EZ HIÁNYZOTT! ---
+    // Ezért szállt el a "Felfedezés" és az "Add Spot"
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.auth.token.email_verified == true
+                   && request.auth.token.email == '<YOUR_ADMIN_EMAIL>';
+    }
+
+    // --- 5. KEDVENCEK (Favorites) - EZ IS HIÁNYZOTT! ---
+    // Ezért szállt el a "Kedvencek" fül
+    match /favorites/{favoriteId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // --- 6. ÉRTÉKELÉSEK (Reviews) - EZ IS HIÁNYZOTT! ---
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+    
+    // --- 7. ÉRTESÍTÉSEK (Notifications) ---
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+    
+    // --- T12 transitional: the only additions. Public single-doc gets (no list) the T11a/T11b client needs
+    // (server-maintained collections, written only by Cloud Functions via the Admin SDK). ---
+    match /publicProfiles/{uid} {
+      allow get: if true;
+    }
+    match /usernames/{name} {
+      allow get: if true;
+    }
+    
+    // --- 8. MINDEN MÁS TILTÁSA ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

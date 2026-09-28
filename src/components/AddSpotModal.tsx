@@ -3,10 +3,13 @@
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { X, MapPin, Upload, Loader2 } from 'lucide-react';
 import { useState, useRef, ChangeEvent } from 'react';
 import type { SpotCategory } from '@/store/useSpotStore';
+import { MAX_SPOT_IMAGES, MAX_UPLOAD_BYTES } from '@/lib/constants';
+import { CATEGORIES } from '@/lib/categories';
+import ModalShell, { SAFE_AREA_MARGINS } from './ui/ModalShell';
 
 interface AddSpotModalProps {
   isOpen: boolean;
@@ -16,9 +19,10 @@ interface AddSpotModalProps {
 
 export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Readonly<AddSpotModalProps>) {
   const { user } = useUserStore();
+  const isAdmin = useUserStore((s) => s.isAdmin);
   const { addSpot } = useSpotStore();
   const { showToast } = useToastStore();
-  const { t } = useLanguageStore();
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -40,8 +44,8 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Check if adding these files would exceed the 20 image limit
-    if (imageFiles.length + files.length > 20) {
+    // Check if adding these files would exceed the image limit
+    if (imageFiles.length + files.length > MAX_SPOT_IMAGES) {
       setError(t('maxSpotImages'));
       return;
     }
@@ -51,7 +55,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     const previews: string[] = [];
 
     for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > MAX_UPLOAD_BYTES) {
         setError(t('imageTooLarge'));
         continue;
       }
@@ -123,7 +127,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
         imageFiles, // Array of files
         primaryImageIndex, // Primary image index
         user.uid,
-        user.email // Pass email for admin check
+        isAdmin // Admins' spots are approved immediately
       );
       
       // Reset form and close
@@ -134,8 +138,10 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
       onClose();
       
       showToast(t('spotUploaded'), 'success');
-    } catch (err: any) {
-      const errorMessage = err.message || t('spotUploadFailed');
+    } catch (err) {
+      // addSpot throws no store error codes; any failure shows the generic translated message.
+      console.error('Failed to add spot:', err);
+      const errorMessage = t('spotUploadFailed');
       setError(errorMessage);
       showToast(errorMessage, 'error');
     } finally {
@@ -157,25 +163,14 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
   // Swipe-to-dismiss intentionally disabled to prevent accidental dismissal on iOS
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
-      {/* Backdrop */}
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
-        onClick={handleClose}
-        onKeyDown={(e) => e.key === 'Escape' && handleClose()}
-        aria-label="Close add spot modal"
-        tabIndex={-1}
-      />
-      
-      {/* Modal */}
-      <div 
-        className="relative glass-card max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6 animate-slide-up"
-        style={{ 
-          marginTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
-          marginBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
-        }}
-      >
+    <ModalShell
+      variant="glass"
+      z="panel"
+      onBackdropClick={handleClose}
+      backdropLabel="Close add spot modal"
+      panelClassName="max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6"
+      panelStyle={SAFE_AREA_MARGINS}
+    >
         
         {/* Close Button */}
         <button
@@ -204,7 +199,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {selectedLocation && (
             <div className="glass p-3 rounded-xl">
               <p className="text-white/80 text-sm">
-                📍 Location: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                📍 {t('location')}: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
               </p>
             </div>
           )}
@@ -220,6 +215,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              maxLength={100}
               placeholder={t('spotNamePlaceholder')}
               className="w-full px-4 py-3 rounded-xl glass text-white placeholder-white/40
                 border border-white/10 focus:border-white/30 focus:outline-none
@@ -245,15 +241,9 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               disabled={loading}
               required
             >
-              <option value="scenic" className="bg-gray-800">🌅 {t('categoryScenic')}</option>
-              <option value="smoke-spot" className="bg-gray-800">💨 {t('categorySmoke')}</option>
-              <option value="viewpoint" className="bg-gray-800">🏔️ {t('categoryViewpoint')}</option>
-              <option value="hiking" className="bg-gray-800">🥾 {t('categoryHiking')}</option>
-              <option value="random" className="bg-gray-800">🎲 {t('categoryRandom')}</option>
-              <option value="date-spot" className="bg-gray-800">❤️ {t('categoryDateSpot')}</option>
-              <option value="park" className="bg-gray-800">🌳 {t('categoryPark')}</option>
-              <option value="part" className="bg-gray-800">🏖️ {t('categoryPart')}</option>
-              <option value="other" className="bg-gray-800">📍 {t('categoryOther')}</option>
+              {CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id} className="bg-gray-800">{`${c.emoji} ${t(c.labelKey)}`}</option>
+              ))}
             </select>
           </div>
 
@@ -267,6 +257,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               name="spotDescription"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              maxLength={2000}
               placeholder={t('descriptionPlaceholder')}
               rows={3}
               className="w-full px-4 py-3 rounded-xl glass text-white placeholder-white/40
@@ -279,7 +270,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {/* Image Upload */}
           <div>
             <label htmlFor="spot-image" className="block text-white font-medium mb-2">
-              {t('photoOptional')} <span className="text-white/60 text-sm">({imageFiles.length}/15)</span>
+              {t('photoOptional')} <span className="text-white/60 text-sm">({imageFiles.length}/{MAX_SPOT_IMAGES})</span>
             </label>
             <input
               id="spot-image"
@@ -296,7 +287,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={loading || imageFiles.length >= 15}
+              disabled={loading || imageFiles.length >= MAX_SPOT_IMAGES}
               className="w-full py-8 rounded-xl glass border-2 border-dashed border-white/20
                 hover:border-white/40 hover:bg-white/5
                 transition-all duration-200 flex flex-col items-center gap-2
@@ -304,7 +295,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             >
               <Upload className="w-8 h-8 text-white/60" />
               <span className="text-white/80 font-medium">{t('clickToUpload')}</span>
-              <span className="text-white/40 text-xs">{t('maxSize')} • Max 15 kép</span>
+              <span className="text-white/40 text-xs">{t('maxSize')} • {t('maxImagesShort', { max: MAX_SPOT_IMAGES })}</span>
             </button>
             
             {/* Image Previews Grid */}
@@ -325,7 +316,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
                     {/* Primary badge */}
                     {index === primaryImageIndex && (
                       <div className="absolute top-1 left-1 bg-primary-500 text-white text-xs px-2 py-1 rounded">
-                        Fő
+                        {t('primaryBadge')}
                       </div>
                     )}
                     {/* Remove button */}
@@ -345,7 +336,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
                         className="absolute bottom-1 left-1 right-1 bg-black/60 hover:bg-black/80 text-white text-xs py-1 rounded transition-colors"
                         disabled={loading}
                       >
-                        Legyen fő
+                        {t('makePrimary')}
                       </button>
                     )}
                   </div>
@@ -390,7 +381,6 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             {t('reviewMessage')}
           </p>
         </form>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

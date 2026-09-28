@@ -2,7 +2,7 @@
 
 import { MapPin, User, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
 import Image from 'next/image';
 
@@ -20,7 +20,7 @@ export default function BottomNavigation({
   onExploreClick,
 }: Readonly<BottomNavigationProps>) {
   const [activeTab, setActiveTab] = useState<NavItem>('explore');
-  const { t } = useLanguageStore();
+  const t = useT();
   const { user } = useUserStore();
 
   const navItems = [

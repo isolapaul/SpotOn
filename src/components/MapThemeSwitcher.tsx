@@ -3,16 +3,17 @@
 import { useState } from 'react';
 import { Palette, Check } from 'lucide-react';
 import { useMapThemeStore, type MapTheme } from '@/store/useMapThemeStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
+import { useT } from '@/hooks/useT';
+import { Z } from '@/lib/constants';
 
 export default function MapThemeSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const { theme, setTheme } = useMapThemeStore();
-  const { t } = useLanguageStore();
+  const t = useT();
 
   const themes: { id: MapTheme; name: string; preview: string }[] = [
     { id: 'standard', name: t('themeStandard'), preview: 'bg-gradient-to-br from-blue-100 to-green-100' },
-    { id: 'satellite', name: t('themeSatellite') || 'Műhold', preview: 'bg-gradient-to-br from-gray-700 to-black' },
+    { id: 'satellite', name: t('themeSatellite'), preview: 'bg-gradient-to-br from-gray-700 to-black' },
     { id: 'light', name: t('themeLight'), preview: 'bg-gradient-to-br from-gray-50 to-blue-50' },
     { id: 'dark', name: t('themeDark'), preview: 'bg-gradient-to-br from-gray-800 to-gray-900' },
     { id: 'silver', name: t('themeSilver'), preview: 'bg-gradient-to-br from-gray-200 to-gray-400' },
@@ -27,11 +28,11 @@ export default function MapThemeSwitcher() {
     <>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed z-[1500] w-12 h-12 rounded-full
+        className={`fixed ${Z.floatingButton} w-12 h-12 rounded-full
           bg-black/40 backdrop-blur-md border border-white/10
           active:scale-95 transition-all duration-200 shadow-glass-lg
           hover:bg-black/50
-          touch-manipulation select-none flex items-center justify-center"
+          touch-manipulation select-none flex items-center justify-center`}
         style={{
           top: 'calc(1rem + env(safe-area-inset-top))',
           right: 'max(1rem, env(safe-area-inset-right))'

@@ -3,51 +3,45 @@ import {
   collection,
   addDoc,
   serverTimestamp,
-  onSnapshot,
-  query,
-  orderBy,
   doc,
   updateDoc,
   deleteDoc,
   arrayUnion,
+  runTransaction,
   Timestamp,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
-import imageCompression from 'browser-image-compression';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions, storage } from '@/lib/firebase';
+import { MAX_SPOT_IMAGES, PLACEHOLDER_URL, extForMime, realImageCount, removeImage, type RemovableImageFields } from '@/lib/spotImages';
+import { compressImage } from '@/lib/imageCompression';
+import { invalidatePublicProfile } from '@/store/publicProfiles';
+import { startApprovedScope, stopAllScopes, syncScopes, type SpotScope } from '@/store/spotListeners';
 
-let cachedAdminEmails: string[] = [];
-
-export const setCachedAdminEmails = (emails: string[]) => {
-  cachedAdminEmails = emails;
-};
-
-export const isSuperAdmin = (email: string | undefined): boolean => {
-  if (!email) return false;
-  const superAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-  if (!superAdminEmail) return false;
-  return email.toLowerCase() === superAdminEmail.toLowerCase();
-};
-
-export const isAdmin = (email: string | undefined): boolean => {
-  if (!email) return false;
-  if (isSuperAdmin(email)) return true;
-  return cachedAdminEmails.some(adminEmail => adminEmail.toLowerCase() === email.toLowerCase());
-};
+export type { SpotScope } from '@/store/spotListeners';
 
 export interface Review {
   id: string;
   userId: string;
   userName: string;
-  userEmail: string;
   userPhoto?: string;
   rating: number;
   comment: string;
   createdAt: Timestamp;
-  userSpotsCount?: number;
-  customNameColor?: string;
-  customNameFont?: string;
+  userEmail?: string; // legacy, read-only; never written
+  userSpotsCount?: number; // legacy, read-only; never written
+  customNameColor?: string; // legacy, read-only; never written
+  customNameFont?: string; // legacy, read-only; never written
 }
+
+/** The review fields the client sends; addReview adds `id` and `createdAt`. */
+export type NewReview = {
+  userId: string;
+  userName: string;
+  userPhoto?: string;
+  rating: number;
+  comment: string;
+};
 
 export interface SpotImage {
   id: string;
@@ -90,13 +84,16 @@ interface SpotStore {
   spots: Spot[];
   isLoading: boolean;
   error: string | null;
-  unsubscribeSpots: (() => void) | null;
-  fetchSpots: () => Promise<void>;
-  addSpot: (spotData: Omit<Spot, 'id' | 'imageUrls' | 'createdAt' | 'status' | 'primaryImageIndex'>, imageFiles: File[], primaryIndex: number, userId: string, userEmail?: string) => Promise<void>;
-  addReview: (spotId: string, review: Omit<Review, 'id' | 'createdAt'>) => Promise<void>;
+  /** Starts the approved-spots listener (T30); resolves on its first snapshot (the loading gate). */
+  startSpots: () => Promise<void>;
+  /** Starts/stops the own-spots and all-spots listeners for the signed-in user (idempotent). */
+  syncSpotScopes: (scope: SpotScope) => void;
+  /** Stops every spots listener and clears the spots (unmount, T21). */
+  stopSpots: () => void;
+  addSpot: (spotData: Omit<Spot, 'id' | 'imageUrls' | 'createdAt' | 'status' | 'primaryImageIndex'>, imageFiles: File[], primaryIndex: number, userId: string, isAdmin: boolean) => Promise<void>;
+  addReview: (spotId: string, review: NewReview) => Promise<void>;
   addSpotImages: (spotId: string, imageFiles: File[], userId: string) => Promise<void>;
-  migrateSpotImages: (spotId: string) => Promise<void>;
-  toggleSpotImageLike: (spotId: string, imageId: string, userId: string) => Promise<void>;
+  toggleSpotImageLike: (spotId: string, imageId: string) => Promise<void>;
   approveSpot: (spotId: string) => Promise<void>;
   deleteSpot: (spotId: string) => Promise<void>;
   updateSpotDescription: (spotId: string, description: string) => Promise<void>;
@@ -105,22 +102,29 @@ interface SpotStore {
   setPrimaryImage: (spotId: string, imageIndex: number) => Promise<void>;
 }
 
-const IMAGE_COMPRESSION_OPTIONS = {
-  maxSizeMB: 0.3,
-  maxWidthOrHeight: 1280,
-  useWebWorker: false,
-};
+// Callables (T10, region europe-west3 via `functions`)
+const addSpotImagesCallable = httpsCallable<{ spotId: string; urls: string[] }, unknown>(functions, 'addSpotImages');
+const toggleImageLikeCallable = httpsCallable<{ spotId: string; imageId: string }, unknown>(functions, 'toggleImageLike');
 
-const PLACEHOLDER_URL = '/placeholder-spot.jpg';
+function errorCode(error: unknown): unknown {
+  return typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
+}
 
+/**
+ * Compresses and uploads one spot image to `spot-images/{uid}/{uuid}.{ext}` with an explicit
+ * contentType. Output types the Storage rules do not accept (e.g. GIF) are re-encoded as JPEG.
+ */
 async function compressAndUpload(imageFile: File, userId: string): Promise<{ url: string; spotImage: SpotImage }> {
-  const compressedFile = await imageCompression(imageFile, IMAGE_COMPRESSION_OPTIONS);
+  let blob = await compressImage(imageFile, 'spot');
+  if (!extForMime(blob.type)) {
+    blob = await compressImage(imageFile, 'spot', 'image/jpeg');
+  }
+  const ext = extForMime(blob.type) ?? 'jpg';
+  const imageRef = ref(storage, `spot-images/${userId}/${crypto.randomUUID()}.${ext}`);
+  await uploadBytes(imageRef, blob, { contentType: blob.type });
+  const url = await getDownloadURL(imageRef);
   const timestamp = Date.now();
   const random = Math.floor(Math.random() * 10000);
-  const fileName = `${timestamp}_${random}_${imageFile.name}`;
-  const imageRef = ref(storage, `spot-images/${fileName}`);
-  await uploadBytes(imageRef, compressedFile);
-  const url = await getDownloadURL(imageRef);
   return {
     url,
     spotImage: {
@@ -148,44 +152,14 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
   spots: [],
   isLoading: false,
   error: null,
-  unsubscribeSpots: null,
 
-  fetchSpots: () => {
-    return new Promise<void>((resolve, reject) => {
-      try {
-        const existingUnsubscribe = get().unsubscribeSpots;
-        if (existingUnsubscribe) {
-          existingUnsubscribe();
-          set({ unsubscribeSpots: null });
-        }
+  startSpots: () => startApprovedScope(set),
 
-        set({ isLoading: true });
-        const q = query(collection(db, 'spots'), orderBy('createdAt', 'desc'));
-        let isFirstSnapshot = true;
+  syncSpotScopes: (scope) => syncScopes(scope, set),
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const spotsList: Spot[] = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Spot));
-          set({ spots: spotsList, isLoading: false, error: null });
-          if (isFirstSnapshot) {
-            isFirstSnapshot = false;
-            resolve();
-          }
-        }, (error) => {
-          console.error('Error fetching spots:', error);
-          set({ error: error.message, isLoading: false });
-          reject(error);
-        });
+  stopSpots: () => stopAllScopes(set),
 
-        set({ unsubscribeSpots: unsubscribe });
-      } catch (error: any) {
-        console.error('Error setting up spots listener:', error);
-        set({ error: error.message, isLoading: false });
-        reject(error);
-      }
-    });
-  },
-
-  addSpot: async (spotData, imageFiles, primaryIndex, userId, userEmail) => {
+  addSpot: async (spotData, imageFiles, primaryIndex, userId, isAdmin) => {
     try {
       set({ isLoading: true, error: null });
 
@@ -208,15 +182,23 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         }];
       }
 
+      // Exactly the keys the T12 create rule allows.
       await addDoc(collection(db, 'spots'), {
-        ...spotData,
+        name: spotData.name,
+        category: spotData.category,
+        description: spotData.description,
+        location: { lat: spotData.location.lat, lng: spotData.location.lng },
+        createdBy: userId,
+        createdByName: spotData.createdByName,
+        createdByPhoto: spotData.createdByPhoto,
         imageUrls,
         spotImages,
         primaryImageIndex: imageUrls.length > 0 ? primaryIndex : 0,
-        createdBy: userId,
-        status: isAdmin(userEmail) ? 'approved' : 'pending',
+        status: isAdmin ? 'approved' : 'pending',
         createdAt: serverTimestamp(),
       });
+      // The server bumps spotsCount; drop the cached profile so the next read sees it (T26).
+      invalidatePublicProfile(userId);
 
       set({ isLoading: false });
     } catch (error: any) {
@@ -227,7 +209,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
 
   addReview: async (spotId, review) => {
     try {
-      const reviewWithTimestamp = {
+      const reviewWithTimestamp: Review = {
         ...review,
         id: `${review.userId}_${Date.now()}`,
         createdAt: Timestamp.now(),
@@ -237,16 +219,8 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
         Object.entries(reviewWithTimestamp).filter(([, v]) => v !== undefined)
       );
 
+      // No local append: the spots listener already delivers the new review (BUG-25).
       await updateDoc(doc(db, 'spots', spotId), { reviews: arrayUnion(cleanReview) });
-
-      updateSpotInState(set, spotId, (spot) => {
-        const updatedReviews = [...(spot.reviews || []), reviewWithTimestamp];
-        return {
-          ...spot,
-          reviews: updatedReviews,
-          averageRating: updatedReviews.reduce((acc, r) => acc + r.rating, 0) / updatedReviews.length,
-        };
-      });
     } catch (error: any) {
       console.error('Error adding review:', error);
       throw error;
@@ -258,70 +232,26 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
 
     try {
       const spot = get().spots.find((item) => item.id === spotId);
-      const existingUrls = spot?.imageUrls || [];
-      const baseUrls = existingUrls.length === 1 && existingUrls[0] === PLACEHOLDER_URL ? [] : existingUrls;
-      const baseSpotImages = (spot?.spotImages || []).filter((img) => img.url !== PLACEHOLDER_URL);
-
-      if (baseUrls.length + imageFiles.length > 20) throw new Error('MAX_SPOT_IMAGES');
+      if ((spot ? realImageCount(spot) : 0) + imageFiles.length > MAX_SPOT_IMAGES) throw new Error('MAX_SPOT_IMAGES');
 
       const uploaded = await Promise.all(imageFiles.map((f) => compressAndUpload(f, userId)));
-      const newUrls = uploaded.map((u) => u.url);
-      const newSpotImages = uploaded.map((u) => u.spotImage);
+      const urls = uploaded.map((u) => u.url);
 
-      const updatedImageUrls = [...baseUrls, ...newUrls];
-      const updatedSpotImages = [...baseSpotImages, ...newSpotImages];
-      const updatePayload: Record<string, unknown> = { imageUrls: updatedImageUrls, spotImages: updatedSpotImages };
-      if (!baseUrls.length) updatePayload.primaryImageIndex = 0;
-
-      await updateDoc(doc(db, 'spots', spotId), updatePayload);
-
-      updateSpotInState(set, spotId, (spot) => ({
-        ...spot,
-        imageUrls: updatedImageUrls,
-        spotImages: updatedSpotImages,
-        primaryImageIndex: (updatePayload.primaryImageIndex as number | undefined) ?? spot.primaryImageIndex,
-      }));
+      // The server appends transactionally; the spots listener delivers the change.
+      try {
+        await addSpotImagesCallable({ spotId, urls });
+      } catch (error) {
+        if (errorCode(error) === 'functions/resource-exhausted') throw new Error('MAX_SPOT_IMAGES');
+        throw error;
+      }
     } catch (error: any) {
       console.error('Error adding spot images:', error);
       throw error;
     }
   },
 
-  migrateSpotImages: async (spotId) => {
-    const spot = get().spots.find((item) => item.id === spotId);
-    if (!spot || spot.spotImages?.length) return;
-
-    const urls = spot.imageUrls || [];
-    if (urls.length === 0) return;
-
-    const spotImages: SpotImage[] = urls.map((url, index) => ({
-      id: `${spotId}_${index}`,
-      url,
-      addedAt: Timestamp.now(),
-      likes: 0,
-      likedBy: [],
-    }));
-
-    await updateDoc(doc(db, 'spots', spotId), { spotImages });
-    updateSpotInState(set, spotId, (spot) => ({ ...spot, spotImages }));
-  },
-
-  toggleSpotImageLike: async (spotId, imageId, userId) => {
-    const spot = get().spots.find((item) => item.id === spotId);
-    if (!spot?.spotImages?.length) return;
-
-    const updatedImages = spot.spotImages.map((image) => {
-      if (image.id !== imageId) return image;
-      const alreadyLiked = image.likedBy.includes(userId);
-      return {
-        ...image,
-        likes: Math.max(0, image.likes + (alreadyLiked ? -1 : 1)),
-        likedBy: alreadyLiked ? image.likedBy.filter((id) => id !== userId) : [...image.likedBy, userId],
-      };
-    });
-
-    await updateDoc(doc(db, 'spots', spotId), { spotImages: updatedImages });
-    updateSpotInState(set, spotId, (spot) => ({ ...spot, spotImages: updatedImages }));
+  toggleSpotImageLike: async (spotId, imageId) => {
+    await toggleImageLikeCallable({ spotId, imageId });
   },
 
   approveSpot: async (spotId) => {
@@ -336,7 +266,9 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
 
   deleteSpot: async (spotId) => {
     try {
+      const createdBy = get().spots.find((spot) => spot.id === spotId)?.createdBy;
       await deleteDoc(doc(db, 'spots', spotId));
+      if (createdBy) invalidatePublicProfile(createdBy);
       set((state) => ({ spots: state.spots.filter((spot) => spot.id !== spotId) }));
     } catch (error: any) {
       console.error('Error deleting spot:', error);
@@ -366,30 +298,22 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
 
   deleteSpotImage: async (spotId, imageUrl) => {
     try {
-      const spot = get().spots.find((item) => item.id === spotId);
-      if (!spot) throw new Error('Spot not found');
-
-      let updatedImageUrls = (spot.imageUrls || []).filter((url) => url !== imageUrl);
-      const updatedSpotImages = (spot.spotImages || []).filter((img) => img.url !== imageUrl);
-
-      let newPrimaryIndex = Math.min(spot.primaryImageIndex || 0, Math.max(0, updatedImageUrls.length - 1));
-      if (updatedImageUrls.length === 0) {
-        updatedImageUrls = [PLACEHOLDER_URL];
-        newPrimaryIndex = 0;
-      }
-
-      await updateDoc(doc(db, 'spots', spotId), {
-        imageUrls: updatedImageUrls,
-        spotImages: updatedSpotImages,
-        primaryImageIndex: newPrimaryIndex,
+      // Computed from the fresh doc inside a transaction, so an image or like another user added
+      // meanwhile is kept (the listener copy may be stale); writes only the three image fields.
+      const updated = await runTransaction(db, async (tx) => {
+        const spotRef = doc(db, 'spots', spotId);
+        const snap = await tx.get(spotRef);
+        if (!snap.exists()) throw new Error('Spot not found');
+        const next = removeImage(snap.data() as RemovableImageFields, imageUrl);
+        tx.update(spotRef, {
+          imageUrls: next.imageUrls,
+          spotImages: next.spotImages,
+          primaryImageIndex: next.primaryImageIndex,
+        });
+        return next;
       });
 
-      updateSpotInState(set, spotId, (spot) => ({
-        ...spot,
-        imageUrls: updatedImageUrls,
-        spotImages: updatedSpotImages,
-        primaryImageIndex: newPrimaryIndex,
-      }));
+      updateSpotInState(set, spotId, (spot) => ({ ...spot, ...updated }));
     } catch (error: any) {
       console.error('Error deleting spot image:', error);
       throw error;

@@ -1,6 +1,36 @@
+import { buildCsp } from './src/lib/csp.mjs';
+
+const isDev = process.env.NODE_ENV !== 'production';
+const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === '1';
+
+// Content-Security-Policy (T15; nonce-based page policy T32). headers()/rewrites() are evaluated at build
+// time, so every env var read here is a build-time input. Pages get a per-request nonce policy from
+// src/proxy.ts; only /api/* keeps the static policy here (see src/lib/csp.mjs).
+
+const HSTS = { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' };
+const NOSNIFF = { key: 'X-Content-Type-Options', value: 'nosniff' };
+const REFERRER = { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' };
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
+  // `next dev` would otherwise append its managed "nextjs-agent-rules" block to CLAUDE.md whenever it
+  // detects an AI coding agent; CLAUDE.md is maintained by hand (official opt-out, Next 16).
+  agentRules: false,
+  // Self-contained server bundle for the Docker image (T16).
+  output: 'standalone',
+  // Images are unoptimized; keep libvips out of the image (SEC-07).
+  outputFileTracingExcludes: { '*': ['node_modules/sharp/**', 'node_modules/@img/**'] },
+  // Keep them as real node_modules packages in the standalone output, so Trivy and the SBOM see them (T18).
+  serverExternalPackages: ['nodemailer', 'jose'],
+  // Separate output dir for emulator/E2E builds so they never overwrite a real .next build.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
+  // Always inline a definite value so production bundles constant-fold the emulator branch away.
+  env: {
+    NEXT_PUBLIC_USE_EMULATORS: useEmulators ? '1' : '0',
+    NEXT_PUBLIC_MOVED_TO: process.env.NEXT_PUBLIC_MOVED_TO ?? '',
+  },
   images: {
     unoptimized: process.env.NODE_ENV === 'production',
     remotePatterns: [
@@ -17,43 +47,52 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        // Everything except the proxied Firebase auth paths: the SDK embeds /__/auth/iframe and the
+        // handler page runs Firebase's own scripts, so our CSP / X-Frame-Options must never apply there.
+        // (Next 16.3.6 sends no headers() entries on external-rewrite responses anyway; this exclusion
+        // is defence in depth for future versions.) No CSP here since T32: pages get a per-request nonce
+        // policy from src/proxy.ts, and /api/* gets the static one below.
+        source: '/:path((?!__/auth(?:/|$)|__/firebase/init\\.json$).*)',
         headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.firebaseio.com https://www.gstatic.com https://apis.google.com https://accounts.google.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "img-src 'self' data: blob: https: http:",
-              "font-src 'self' data: https://fonts.gstatic.com",
-              "connect-src 'self' https://*.googleapis.com https://*.google.com https://*.firebaseio.com https://*.cloudfunctions.net wss://*.firebaseio.com https://fcm.googleapis.com https://apis.google.com https://accounts.google.com https://*.openstreetmap.org https://*.basemaps.cartocdn.com https://tile.openstreetmap.fr https://server.arcgisonline.com",
-              "frame-src 'self' https://*.google.com https://*.firebaseapp.com https://accounts.google.com",
-              "worker-src 'self' blob:",
-            ].join('; '),
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload',
-          },
+          NOSNIFF,
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-XSS-Protection', value: '0' },
+          REFERRER,
+          HSTS,
+          { key: 'Permissions-Policy', value: 'geolocation=(self), camera=(), microphone=(), payment=(), usb=()' },
+          // Not 'same-origin': that breaks the Google sign-in popup.
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
         ],
       },
+      {
+        // Static T15 policy for the API routes: the FCM service worker (/api/firebase-messaging-sw) takes
+        // its CSP from its own response and needs importScripts from gstatic (no nonce possible).
+        source: '/api/:path*',
+        headers: [{ key: 'Content-Security-Policy', value: buildCsp({ nonce: null, isDev, useEmulators }) }],
+      },
+      {
+        // Upstream Firebase headers pass through on the proxied paths; only transport-level headers here
+        // (applies to local /__/ responses and to future Next versions that header rewritten paths).
+        source: '/__/:path*',
+        headers: [HSTS, NOSNIFF, REFERRER],
+      },
+    ];
+  },
+  // Firebase auth proxy ("redirect best practices", option 3): /__/auth/* and /__/firebase/init.json are
+  // proxied transparently (not redirected) to <project>.firebaseapp.com, so authDomain can be the app's
+  // own host and signInWithRedirect works in browsers that block third-party storage (D6).
+  // - In production, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN must equal the serving host (spoton.isolapaul.hu;
+  //   see D6 and docs/deploy.md). The OAuth redirect URI is then https://<host>/__/auth/handler.
+  // - On Vercel it stays <project>.firebaseapp.com until Stage B (the proxy is then simply unused).
+  // - src/lib/firebase.ts needs no change: it already reads authDomain from the env.
+  // Disabled in emulator builds (the Auth emulator serves its own handler).
+  async rewrites() {
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    if (!projectId || useEmulators) return [];
+    const upstream = `https://${projectId}.firebaseapp.com`;
+    return [
+      { source: '/__/auth/:path*', destination: `${upstream}/__/auth/:path*` },
+      { source: '/__/firebase/init.json', destination: `${upstream}/__/firebase/init.json` },
     ];
   },
   // Service worker is now served from API route at /api/firebase-messaging-sw

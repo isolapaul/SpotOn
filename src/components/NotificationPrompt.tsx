@@ -3,21 +3,26 @@
 import { useEffect, useState } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserStore } from '@/store/useUserStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
-import { useUiStore } from '@/store/useUiStore';
+import { useT } from '@/hooks/useT';
+import { getMovedTo } from '@/lib/movedTo';
+import { DELAYS } from '@/lib/constants';
 
 export default function NotificationPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const { user } = useUserStore();
-  const { t } = useLanguageStore();
+  const t = useT();
   const { isPermissionGranted, isLoading, initializePush } = usePushNotifications();
-  const { setNotificationPromptVisible } = useUiStore();
+
+  // Keyed on the uid, not the user object: store updates that replace the object must not restart the timer.
+  const uid = user?.uid;
 
   useEffect(() => {
-    // Check if we should show the prompt
-    const checkPrompt = async () => {
-      if (!user) return;
+    // Check if we should show the prompt; returns the pending timer, if any
+    const checkPrompt = (): ReturnType<typeof setTimeout> | undefined => {
+      // Old (Vercel) domain: push tokens are per origin, so never ask there (T19)
+      if (getMovedTo()) return;
+      if (!uid) return;
       
       // Don't show if already granted
       if (isPermissionGranted) return;
@@ -33,27 +38,21 @@ export default function NotificationPrompt() {
         // Only show if permission is 'default' (not asked yet)
         if (permission === 'default') {
           // Wait a bit before showing (better UX)
-          setTimeout(() => {
+          return setTimeout(() => {
             setShowPrompt(true);
-          }, 3000);
+          }, DELAYS.notificationPrompt);
         }
       }
     };
 
-    checkPrompt();
-  }, [user, isPermissionGranted]);
-
-  // Sync visibility with global UI store so other components can react
-  useEffect(() => {
-    setNotificationPromptVisible(!!showPrompt && !isDismissed);
-    return () => setNotificationPromptVisible(false);
-  }, [showPrompt, isDismissed, setNotificationPromptVisible]);
+    const id = checkPrompt();
+    return () => clearTimeout(id);
+  }, [uid, isPermissionGranted]);
 
   const handleEnable = async () => {
     const success = await initializePush();
     if (success) {
       setShowPrompt(false);
-      setNotificationPromptVisible(false);
     }
   };
 
@@ -61,7 +60,6 @@ export default function NotificationPrompt() {
     setShowPrompt(false);
     setIsDismissed(true);
     sessionStorage.setItem('notification-prompt-dismissed', 'true');
-    setNotificationPromptVisible(false);
   };
 
   if (!showPrompt || !user || isDismissed) {

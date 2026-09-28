@@ -1,12 +1,19 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { X, Star, MapPin, Filter } from 'lucide-react';
+import { X, MapPin, Filter } from 'lucide-react';
 import Image from 'next/image';
 import { useSpotStore } from '@/store/useSpotStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
-import { categoryEmojis } from '@/lib/spotUtils';
+import { useT } from '@/hooks/useT';
+import { useSwipeToClose } from '@/hooks/useSwipeToClose';
+import { CATEGORIES, getMarkerEmoji } from '@/lib/categories';
+import { haversineKm } from '@/lib/geo';
+import { averageRating } from '@/lib/rating';
+import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
+import { DISCOVERY_BATCH_SIZE, SWIPE_THRESHOLDS } from '@/lib/constants';
 import type { Spot, SpotCategory } from '@/store/useSpotStore';
+import PanelShell from './ui/PanelShell';
+import StarRating from './ui/StarRating';
 
 interface DiscoveryPanelProps {
   isOpen: boolean;
@@ -17,55 +24,28 @@ interface DiscoveryPanelProps {
 
 type SortOption = 'nearest' | 'best-rated';
 
-const BATCH_SIZE = 20;
-
-// Haversine distance calculation
-function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
 export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSelect }: Readonly<DiscoveryPanelProps>) {
   const { spots } = useSpotStore();
-  const { t } = useLanguageStore();
+  const t = useT();
   const [sortBy, setSortBy] = useState<SortOption>('best-rated');
   const [filterCategory, setFilterCategory] = useState<SpotCategory | null>(null);
-  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const [visibleCount, setVisibleCount] = useState(DISCOVERY_BATCH_SIZE);
   const [showFilters, setShowFilters] = useState(false);
 
-  const categories: { value: SpotCategory; label: string; emoji: string }[] = [
-    { value: 'scenic', label: t('categoryScenic'), emoji: '🌅' },
-    { value: 'smoke-spot', label: t('categorySmoke'), emoji: '💨' },
-    { value: 'viewpoint', label: t('categoryViewpoint'), emoji: '🏔️' },
-    { value: 'hiking', label: t('categoryHiking'), emoji: '🥾' },
-    { value: 'random', label: t('categoryRandom'), emoji: '🎲' },
-    { value: 'date-spot', label: t('categoryDateSpot'), emoji: '❤️' },
-    { value: 'park', label: t('categoryPark'), emoji: '🌳' },
-    { value: 'part', label: t('categoryPart'), emoji: '🏖️' },
-    { value: 'other', label: t('categoryOther'), emoji: '📍' },
-  ];
+  const categories: { value: SpotCategory; label: string; emoji: string }[] = CATEGORIES.map((c) => ({
+    value: c.id,
+    label: t(c.labelKey),
+    emoji: c.emoji,
+  }));
 
   // Get distance for a spot (returns null if no user location)
   const getDistance = useCallback((spot: Spot): number | null => {
     if (!userLocation) return null;
-    return calculateDistance(
+    return haversineKm(
       userLocation.lat, userLocation.lng,
       spot.location.lat, spot.location.lng
     );
   }, [userLocation]);
-
-  // Compute average rating for a spot
-  const getAverageRating = useCallback((spot: Spot): number => {
-    if (!spot.reviews || spot.reviews.length === 0) return 0;
-    return spot.reviews.reduce((acc, r) => acc + r.rating, 0) / spot.reviews.length;
-  }, []);
 
   // Filter and sort spots
   const sortedSpots = useMemo(() => {
@@ -87,14 +67,14 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
     } else {
       // Best rated (default)
       filtered.sort((a, b) => {
-        const ratingA = getAverageRating(a);
-        const ratingB = getAverageRating(b);
+        const ratingA = averageRating(a.reviews);
+        const ratingB = averageRating(b.reviews);
         return ratingB - ratingA;
       });
     }
 
     return filtered;
-  }, [spots, filterCategory, sortBy, userLocation, getDistance, getAverageRating]);
+  }, [spots, filterCategory, sortBy, userLocation, getDistance]);
 
   // Paginated spots
   const displayedSpots = useMemo(() => {
@@ -104,82 +84,24 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   const hasMore = visibleCount < sortedSpots.length;
 
   const handleLoadMore = () => {
-    setVisibleCount(prev => prev + BATCH_SIZE);
+    setVisibleCount(prev => prev + DISCOVERY_BATCH_SIZE);
   };
   
-  // iOS Swipe-to-Close Gesture
-  const [dragStartX, setDragStartX] = useState(0);
-  const [dragCurrentX, setDragCurrentX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  
-  // Touch handlers for swipe gesture
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setDragStartX(e.touches[0].clientX);
-    setDragCurrentX(e.touches[0].clientX);
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const currentX = e.touches[0].clientX;
-    const diff = currentX - dragStartX;
-    
-    // Only allow rightward drag (iOS back gesture)
-    if (diff > 0) {
-      setDragCurrentX(currentX);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDragging) return;
-    const dragDistance = dragCurrentX - dragStartX;
-    
-    // Close if dragged more than 150px to the right
-    if (dragDistance > 150) {
-      onClose();
-    }
-    
-    // Reset
-    setIsDragging(false);
-    setDragStartX(0);
-    setDragCurrentX(0);
-  };
-
-  const translateX = isDragging ? Math.max(0, dragCurrentX - dragStartX) : 0;
+  // iOS swipe-to-close gesture: rightward only
+  const swipe = useSwipeToClose({ onClose, threshold: SWIPE_THRESHOLDS.panel, direction: 'right' });
 
   const handleSortChange = (option: SortOption) => {
     if (option === 'nearest' && !userLocation) {
       return;
     }
     setSortBy(option);
-    setVisibleCount(BATCH_SIZE);
+    setVisibleCount(DISCOVERY_BATCH_SIZE);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] animate-slide-up" style={{ backgroundColor: '#0f172a' }}>
-      {/* Backdrop */}
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default"
-        onClick={onClose}
-        onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        aria-label="Close discovery panel"
-        tabIndex={-1}
-      />
-
-      {/* Panel with Swipe Support */}
-      <div 
-        className="absolute inset-0 flex flex-col bg-gray-900/95 backdrop-blur-2xl"
-        style={{
-          transform: `translateX(${translateX}px)`,
-          transition: isDragging ? 'none' : 'transform 0.3s ease-out'
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
+    <PanelShell onClose={onClose} backdropLabel="Close discovery panel" variant="gray" swipe={swipe}>
         {/* Header */}
         <div className="flex-shrink-0 px-6 border-b border-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)', paddingBottom: '1rem' }}>
           <div className="flex items-center justify-between mb-4">
@@ -237,7 +159,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
           {showFilters && (
             <div className="flex flex-wrap gap-2 pb-3">
               <button
-                onClick={() => { setFilterCategory(null); setVisibleCount(BATCH_SIZE); }}
+                onClick={() => { setFilterCategory(null); setVisibleCount(DISCOVERY_BATCH_SIZE); }}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                   filterCategory === null
                     ? 'bg-primary-500/30 border border-primary-500/60 text-white'
@@ -249,7 +171,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
               {categories.map((cat) => (
                 <button
                   key={cat.value}
-                  onClick={() => { setFilterCategory(cat.value); setVisibleCount(BATCH_SIZE); }}
+                  onClick={() => { setFilterCategory(cat.value); setVisibleCount(DISCOVERY_BATCH_SIZE); }}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${
                     filterCategory === cat.value
                       ? 'bg-primary-500/30 border border-primary-500/60 text-white'
@@ -275,7 +197,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
             <div className="space-y-3">
               {displayedSpots.map((spot) => {
                 const distance = getDistance(spot);
-                const rating = getAverageRating(spot);
+                const rating = averageRating(spot.reviews);
                 const reviewCount = spot.reviews?.length || 0;
 
                 return (
@@ -287,16 +209,16 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                     {/* Thumbnail */}
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
                       <Image
-                        src={(spot.imageUrls?.[spot.primaryImageIndex || 0] || spot.imageUrls?.[0] || (spot as any).imageUrl) || '/placeholder-spot.jpg'}
+                        src={getThumbnailUrl(spot)}
                         alt={spot.name}
                         fill
                         className="object-cover"
                         sizes="80px"
-                        unoptimized={!spot.imageUrls && !(spot as any).imageUrl}
+                        unoptimized={isImageUnoptimized(spot)}
                       />
                       {/* Category Badge */}
                       <div className="absolute bottom-1 left-1 bg-black/60 rounded-full px-1.5 py-0.5">
-                        <span className="text-xs">{categoryEmojis[spot.category] || '📍'}</span>
+                        <span className="text-xs">{getMarkerEmoji(spot.category)}</span>
                       </div>
                     </div>
 
@@ -308,18 +230,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                       <div className="flex items-center gap-1 mb-1">
                         {rating > 0 ? (
                           <>
-                            <div className="flex gap-0.5">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                  key={star}
-                                  className={`w-3 h-3 ${
-                                    star <= Math.round(rating)
-                                      ? 'text-yellow-400 fill-yellow-400'
-                                      : 'text-white/20'
-                                  }`}
-                                />
-                              ))}
-                            </div>
+                            <StarRating rating={Math.round(rating)} size="xs" emptyTone="faint" />
                             <span className="text-white/70 text-xs ml-1">
                               {rating.toFixed(1)} ({reviewCount})
                             </span>
@@ -364,7 +275,6 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </PanelShell>
   );
 }

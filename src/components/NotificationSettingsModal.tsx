@@ -2,17 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Bell } from 'lucide-react';
-import { useLanguageStore } from '@/store/useLanguageStore';
-import { translations } from '@/lib/translations';
+import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useNotificationStore } from '@/store/useNotificationStore';
 
 interface NotificationSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  isAdmin: boolean;
   isEnabled: boolean;
   isLoading: boolean;
   onEnableNotifications: () => Promise<boolean> | boolean;
@@ -78,16 +75,15 @@ const ToggleCard = ({
 export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ 
   isOpen, 
   onClose,
-  isAdmin,
   isEnabled,
   isLoading,
   onEnableNotifications,
   onDisableNotifications
 }) => {
-  const { language } = useLanguageStore();
-  const { user, setUser } = useUserStore();
+  const t = useT();
+  const isAdmin = useIsAdmin();
+  const { user, updateNotificationSettings } = useUserStore();
   const { addNotification } = useNotificationStore();
-  const t = (key: string) => (translations[language || 'hu'] as any)[key] || key;
 
   // Default settings if none exist
   const defaultSettings: NotificationSettingsState = {
@@ -120,16 +116,8 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
     
     setIsSaving(true);
     try {
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        notificationSettings: settings
-      });
-
-      // Update local user state
-      setUser({
-        ...user,
-        notificationSettings: settings
-      });
+      // Writes users/{uid}.notificationSettings and updates the local user state
+      await updateNotificationSettings(settings);
 
       addNotification({
         title: t('notificationSettingsSaved'),

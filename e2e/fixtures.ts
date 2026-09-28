@@ -1,0 +1,35 @@
+// Shared E2E fixture data: written by scripts/seed-emulator.ts, asserted by e2e/*.spec.ts.
+export const E2E = {
+  password: 'e2e-password-123',
+  user: { uid: 'e2e-user', email: 'user@spoton.test', username: 'e2e_user' },
+  admin: { uid: 'e2e-admin', email: 'admin@spoton.test', username: 'e2e_admin' },
+  superAdmin: { uid: 'e2e-super', email: 'super@spoton.test', username: 'e2e_super' },
+  // T11a: dedicated to profile-admin.spec.ts username changes (no other spec may use it).
+  rename: { uid: 'e2e-rename', email: 'rename@spoton.test', username: 'e2e_rename' },
+  legacySpot: {
+    id: 'e2e-legacy-spot', name: 'E2E Legacy Spot', emoji: '🏔️',
+    reviewComment: 'E2E legacy review comment',
+  },
+  modernSpot: { id: 'e2e-modern-spot', name: 'E2E Modern Spot', emoji: '🌳' },
+  pendingSpot: { id: 'e2e-pending-spot', name: 'E2E Pending Spot', emoji: '🥾' },
+  // T11b: legacy-shaped (only imageUrls), dedicated to spot-interactions.spec.ts (no other spec may use it).
+  interactionSpot: { id: 'e2e-interaction-spot', name: 'E2E Interaction Spot', emoji: '🏖️' },
+  // T21: legacy-shaped (only imageUrls, placeholder first), owned by `user`, dedicated to
+  // primary-image.spec.ts (no other spec may use it).
+  primaryImageSpot: {
+    id: 'e2e-primary-image-spot', name: 'E2E Primary Image Spot', emoji: '🌅',
+    imageUrls: ['/placeholder-spot.jpg', '/icon-192x192.png', '/icon-512x512.png'],
+  },
+  // T28: two images (gallery), owned by `admin`, saved in `user`'s savedSpots; dedicated to
+  // spot-details.spec.ts (no other spec may use it).
+  detailsSpot: { id: 'e2e-details-spot', name: 'E2E Details Spot', emoji: '💨' },
+  // T09: 20 spots (level 5); only approvedSpot is approved, the other 19 are pending.
+  level5: {
+    uid: 'e2e-level5',
+    email: 'level5@spoton.test',
+    username: 'e2e_level5',
+    approvedSpot: { id: 'e2e-level5-spot-01', name: 'E2E Level5 Spot', emoji: '🎲' },
+  },
+} as const;
+
+export const EXPECTED_APPROVED_MARKERS = 6; // legacySpot + modernSpot + level5.approvedSpot + interactionSpot + primaryImageSpot + detailsSpot; update whenever an approved fixture is added

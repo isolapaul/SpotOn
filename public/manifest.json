@@ -22,13 +22,5 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["travel", "navigation", "lifestyle"],
-  "screenshots": [
-    {
-      "src": "/screenshot-mobile.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ]
+  "categories": ["travel", "navigation", "lifestyle"]
 }
