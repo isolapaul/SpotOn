@@ -1,5 +1,6 @@
 'use client';
 
+import CategoryIcon from '@/components/ui/CategoryIcon';
 import { useUserStore } from '@/store/useUserStore';
 import { useUploadStore } from '@/store/useUploadStore';
 import { useT } from '@/hooks/useT';
@@ -199,25 +200,32 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
             />
           </div>
 
-          {/* Category Select */}
+          {/* Category: a grid of glyph tiles (design phase 3) */}
           <div>
-            <label htmlFor="spot-category" className="block text-white font-medium mb-2">
+            <p id="spot-category-label" className="block text-white font-medium mb-2">
               {t('category')} *
-            </label>
-            <select
-              id="spot-category"
-              name="spotCategory"
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value as SpotCategory })}
-              className="w-full px-4 py-3 rounded-xl glass text-white
-                border border-white/10 focus:border-white/30 focus:outline-none
-                transition-all duration-200 bg-transparent"
-              required
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id} className="bg-gray-800">{t(c.labelKey)}</option>
-              ))}
-            </select>
+            </p>
+            <div role="radiogroup" aria-labelledby="spot-category-label" className="grid grid-cols-3 gap-2">
+              {CATEGORIES.map((c) => {
+                const selected = formData.category === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setFormData({ ...formData, category: c.id })}
+                    className={`no-min-size h-[72px] rounded-[14px] flex flex-col items-center justify-center gap-1.5 px-1 text-[12px] font-semibold
+                      touch-manipulation transition-colors duration-200 active:scale-95 ${
+                        selected ? 'bg-brand-600 text-white' : 'bg-white/[.06] text-label-secondary'
+                      }`}
+                  >
+                    <CategoryIcon category={c.id} className={`w-6 h-6 ${selected ? 'motion-safe:animate-badge-pop' : ''}`} />
+                    <span className="leading-tight text-center line-clamp-2">{t(c.labelKey)}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Description */}

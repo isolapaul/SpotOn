@@ -11,6 +11,7 @@
 - A spot whose main photo does not load shows its other photos, or its category icon, instead of a broken image.
 - Spot details, Apple Maps style: the page scrolls as one (a title bar fades in once the photo has scrolled away), the category sits as a chip above the title, an action row under it (Directions, Save, Highlight for your own spot, Share), and location, date and uploader in one grouped card. The duplicate Directions button at the bottom is gone.
 - Sign-in, add-spot and username sheets are calm dark cards with the app colours; the "or" divider no longer sits in a stray box. The loading screen shows the app's heart-pin mark, springing in and breathing gently instead of bouncing dots.
+- Adding a spot: the category is picked from a grid of icon tiles instead of a plain drop-down.
 
 ### Changed (Explore)
 - Explore is redesigned: a large title with the spot count, an iOS-style segmented sort (nearest / best rated), always-visible category chips with icons, the top spot as a big photo card, and a clean grouped list with category, distance and rating; rows glide in.
