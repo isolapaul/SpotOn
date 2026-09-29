@@ -1,5 +1,6 @@
 'use client';
 
+import { CloseButton } from '@/components/ui/Button';
 import CategoryIcon from '@/components/ui/CategoryIcon';
 import { useUserStore } from '@/store/useUserStore';
 import { useUploadStore } from '@/store/useUploadStore';
@@ -149,18 +150,12 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     >
         
         {/* Close Button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-4 right-4 glass-button p-3 rounded-full disabled:opacity-50 touch-manipulation min-w-[48px] min-h-[48px]"
-          aria-label="Close"
-        >
-          <X className="w-5 h-5 text-white" />
-        </button>
+        <CloseButton label="Close" onClick={handleClose} className="absolute top-3 right-3" />
 
         {/* Title */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="glass-button p-3 rounded-full">
-            <MapPin className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 rounded-[16px] grid place-items-center bg-brand-500/15">
+            <MapPin className="w-6 h-6 text-brand-400" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white">{t('addNewSpot')}</h2>
@@ -333,12 +328,10 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           <button
             type="submit"
             disabled={!selectedLocation || !formData.name.trim()}
-            className="w-full py-4 rounded-2xl font-semibold text-lg
-              bg-gradient-to-r from-primary-500 to-primary-600 text-white
-              shadow-lg shadow-primary-500/30 
-              hover:shadow-xl hover:shadow-primary-500/40 
-              active:scale-98 transition-all duration-200
-              disabled:opacity-50 disabled:cursor-not-allowed
+            className="w-full h-[50px] rounded-full font-semibold text-[17px]
+              bg-brand-600 text-white active:bg-brand-700
+              active:scale-[.98] transition-all duration-150
+              disabled:opacity-40 disabled:cursor-not-allowed
               flex items-center justify-center gap-2"
           >
             <MapPin className="w-5 h-5" />

@@ -21,14 +21,14 @@ const VARIANTS = {
     outerStyle: undefined,
     backdrop: 'absolute inset-0 bg-black/50 backdrop-blur-sm touch-manipulation',
     backdropButton: 'absolute inset-0 bg-black/50 backdrop-blur-sm touch-manipulation',
-    panelStart: 'relative bg-slate-900',
-    panelEnd: 'rounded-3xl shadow-2xl border-2 border-white/20 overflow-hidden animate-scale-in flex flex-col',
+    panelStart: 'relative bg-surface-2',
+    panelEnd: 'rounded-[28px] shadow-sheet ring-1 ring-white/10 overflow-hidden animate-scale-in flex flex-col',
   },
   sheet: {
     outerStyle: undefined,
     backdrop: 'absolute inset-0 bg-black/40 backdrop-blur-sm touch-manipulation',
     backdropButton: 'absolute inset-0 bg-black/40 backdrop-blur-sm touch-manipulation',
-    panelStart: 'relative bg-slate-900',
+    panelStart: 'relative bg-surface-2',
     panelEnd: 'rounded-[28px] shadow-2xl ring-1 ring-white/10 overflow-hidden flex flex-col',
   },
 } as const;

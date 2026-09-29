@@ -167,7 +167,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         {/* Header */}
         <div className="relative p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <Bell className="w-6 h-6 text-blue-400" />
+            <Bell className="w-6 h-6 text-brand-400" />
             <h2 className="text-xl font-bold text-white">
               {t('notificationSettings')}
             </h2>
@@ -243,9 +243,9 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
           )}
 
           {/* Info Banner */}
-          <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <Bell className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-            <p className="text-blue-200/80 text-xs">
+          <div className="flex items-start gap-3 p-4 bg-brand-500/10 border border-brand-500/20 rounded-lg">
+            <Bell className="w-5 h-5 text-brand-400 flex-shrink-0 mt-0.5" />
+            <p className="text-label-secondary text-xs">
               {t('notificationSettingsInfo')}
             </p>
           </div>
@@ -263,8 +263,8 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 py-2.5 px-4 rounded-lg bg-blue-500 text-white 
-              font-medium text-sm hover:bg-blue-600 transition-all disabled:opacity-50"
+            className="flex-1 py-2.5 px-4 rounded-lg bg-brand-600 text-white 
+              font-medium text-sm active:bg-brand-700 transition-all disabled:opacity-50"
           >
             {isSaving ? t('saving') : t('saveSettings')}
           </button>

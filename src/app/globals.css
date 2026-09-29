@@ -149,33 +149,32 @@ a:not(.no-min-size),
 /* Safe-area insets are applied per component (bars, sheets), never on body: a body padding shrank
    the full-screen app and left a strip at the bottom. */
 
-/* Glassmorphism utility classes for Apple Liquid Glass effect */
+/* Legacy surface classes, restated in the design phase 3 language (flat dark surfaces, no heavy
+   glass), so every screen shares one look. New code uses the surface/label tokens directly. */
 @layer components {
   .glass {
-    @apply bg-white/10 backdrop-blur-xl border border-white/20 shadow-glass;
+    @apply bg-surface-3 border border-transparent;
   }
-  
+
   .glass-dark {
-    @apply bg-black/20 backdrop-blur-xl border border-white/10 shadow-glass;
+    @apply bg-black/20 border border-white/10;
   }
-  
+
   .glass-card {
-    @apply bg-white/15 backdrop-blur-2xl border border-white/25 shadow-glass-lg rounded-3xl;
+    @apply bg-surface-1 rounded-[18px];
   }
-  
+
   .glass-button {
-    @apply bg-white/20 backdrop-blur-xl border border-white/30 shadow-glass 
-           hover:bg-white/30 active:scale-95 transition-all duration-200;
-    /* Enhanced touch response */
+    @apply bg-white/10 active:bg-white/15 active:scale-95 transition-all duration-200;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     position: relative;
   }
-  
+
   .glass-nav {
-    @apply bg-slate-900/85 backdrop-blur-xl border border-white/20 shadow-glass-lg;
+    @apply bg-surface-2/90 backdrop-blur-xl border border-white/10;
   }
-  
+
   /* Touch responsiveness utilities */
   .touch-manipulation {
     touch-action: manipulation !important;

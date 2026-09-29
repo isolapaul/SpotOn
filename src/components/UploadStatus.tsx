@@ -10,7 +10,7 @@ function pick(jobs: UploadJob[]): UploadJob | undefined {
   return jobs.find((j) => j.status === 'failed') ?? jobs.find((j) => j.status === 'running') ?? jobs.find((j) => j.status === 'done');
 }
 
-/** Background upload status (G4): a small pill under the top buttons, with Retry on failure. */
+/** Background upload status (G4): a capsule at the top, clear of the control stack, with Retry on failure. */
 export default function UploadStatus() {
   const jobs = useUploadStore((s) => s.jobs);
   const retry = useUploadStore((s) => s.retry);
@@ -20,7 +20,7 @@ export default function UploadStatus() {
   if (!job) return null;
 
   const running = jobs.filter((j) => j.status === 'running').length;
-  let icon = <Loader2 className="w-4 h-4 text-sky-400 animate-spin" strokeWidth={2.5} />;
+  let icon = <Loader2 className="w-4 h-4 text-brand-400 animate-spin" strokeWidth={2.5} />;
   let label = running > 1 ? t('uploadRunningMany', { count: running }) : t('uploadRunning', { name: job.label });
   if (job.status === 'failed') {
     icon = <CircleAlert className="w-4 h-4 text-red-400" strokeWidth={2.5} />;
@@ -32,14 +32,18 @@ export default function UploadStatus() {
 
   return (
     <div
-      className={`fixed ${Z.floatingButton} left-1/2 -translate-x-1/2 w-max max-w-[calc(100%-2rem)]`}
-      style={{ top: 'calc(4.5rem + env(safe-area-inset-top))' }}
+      className={`fixed ${Z.floatingButton} flex justify-center pointer-events-none`}
+      style={{
+        top: 'calc(env(safe-area-inset-top) + 8px)',
+        left: 'max(12px, calc(env(safe-area-inset-left) + 8px))',
+        right: 'calc(max(12px, calc(env(safe-area-inset-right) + 8px)) + 52px)',
+      }}
       role="status"
       aria-live="polite"
     >
       <div
         key={`${job.id}-${job.status}`}
-        className="flex items-center gap-2.5 pl-3.5 pr-2 py-2 rounded-full bg-slate-900 ring-1 ring-white/10 shadow-2xl motion-safe:animate-prompt-in"
+        className="pointer-events-auto max-w-full flex items-center gap-2.5 pl-3.5 pr-2 min-h-[44px] py-1.5 rounded-full material-sheet shadow-float motion-safe:animate-toast-in"
       >
         <span className="flex-shrink-0">{icon}</span>
         <span className={`text-sm text-white/90 ${job.status === 'failed' ? 'line-clamp-2' : 'truncate'}`}>{label}</span>
@@ -47,7 +51,7 @@ export default function UploadStatus() {
           <>
             <button
               onClick={() => retry(job.id)}
-              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full bg-sky-500 text-white text-sm font-semibold active:scale-95 transition touch-manipulation"
+              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full bg-brand-600 text-white text-sm font-semibold active:scale-95 transition touch-manipulation"
             >
               <RotateCw className="w-3.5 h-3.5" strokeWidth={2.5} />
               {t('uploadRetry')}

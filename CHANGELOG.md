@@ -12,6 +12,7 @@
 - Spot details, Apple Maps style: the page scrolls as one (a title bar fades in once the photo has scrolled away), the category sits as a chip above the title, an action row under it (Directions, Save, Highlight for your own spot, Share), and location, date and uploader in one grouped card. The duplicate Directions button at the bottom is gone.
 - Sign-in, add-spot and username sheets are calm dark cards with the app colours; the "or" divider no longer sits in a stray box. The loading screen shows the app's heart-pin mark, springing in and breathing gently instead of bouncing dots.
 - Adding a spot: the category is picked from a grid of icon tiles instead of a plain drop-down.
+- One look everywhere: the remaining blue and purple accents, gradients and glass boxes follow the app green and the calm dark surfaces (add-spot form, username setup, feedback, notification settings and prompt, install screen, admin tools, reviews). The upload status is a small capsule at the top, clear of the map controls.
 - The map controls and the main menu are frosted and see-through instead of solid white, so they blend with the map.
 - Pulling a panel down, the dimmed map behind it now brightens in step with the pull (no more separate grey layer).
 - More small animations: pins land one after another with a little spring, the place card's lines glide in, the locate button spins when tapped.

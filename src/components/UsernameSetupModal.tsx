@@ -99,8 +99,8 @@ export default function UsernameSetupModal({ isOpen, onClose }: Readonly<Usernam
     <ModalShell variant="glass" z="usernameSetup" panelClassName="max-w-md w-full p-8">
         {/* Icon */}
         <div className="flex justify-center mb-6">
-          <div className="glass-button p-4 rounded-full">
-            <User className="w-12 h-12 text-white" strokeWidth={1.5} />
+          <div className="w-[72px] h-[72px] rounded-[22px] grid place-items-center bg-brand-500/15">
+            <User className="w-9 h-9 text-brand-400" strokeWidth={1.75} />
           </div>
         </div>
 
@@ -129,8 +129,8 @@ export default function UsernameSetupModal({ isOpen, onClose }: Readonly<Usernam
                 onBlur={handleCheck}
                 placeholder={t('usernamePlaceholder')}
                 maxLength={20}
-                className="w-full pl-10 pr-12 py-3 rounded-xl bg-white/10 border border-white/20 
-                  text-white placeholder-white/50 focus:outline-none focus:ring-2 
+                className="w-full pl-10 pr-12 py-3 rounded-xl bg-surface-3 border border-transparent
+                  text-white placeholder-white/40 focus:outline-none focus:ring-2 
                   focus:ring-primary-500 focus:border-transparent transition-all"
               />
               {/* Status indicator */}
@@ -155,8 +155,7 @@ export default function UsernameSetupModal({ isOpen, onClose }: Readonly<Usernam
             onClick={handleSave}
             disabled={isSaving || !username.trim() || isAvailable === false}
             className="w-full py-4 px-6 rounded-2xl font-semibold text-lg
-              bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg
-              hover:shadow-xl active:scale-98
+              bg-brand-600 text-white active:bg-brand-700 active:scale-[.98]
               transition-all duration-200
               flex items-center justify-center gap-3
               disabled:opacity-50 disabled:cursor-not-allowed"

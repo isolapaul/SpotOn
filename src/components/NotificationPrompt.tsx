@@ -41,13 +41,13 @@ export default function NotificationPrompt() {
       aria-labelledby="push-prompt-title"
     >
       <div
-        className="rounded-[22px] bg-slate-900 ring-1 ring-white/10 shadow-2xl p-4 motion-safe:animate-prompt-in"
+        className="rounded-[22px] material-sheet shadow-sheet p-4 motion-safe:animate-prompt-in"
         style={{ animationDelay: '350ms' }}
       >
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-11 h-11 rounded-full bg-sky-500/15 flex items-center justify-center">
+          <div className="flex-shrink-0 w-11 h-11 rounded-full bg-brand-500/15 flex items-center justify-center">
             <BellRing
-              className="w-5 h-5 text-sky-400 motion-safe:animate-bell-ring"
+              className="w-5 h-5 text-brand-400 motion-safe:animate-bell-ring"
               style={{ animationDelay: '800ms' }}
               strokeWidth={2.2}
             />
@@ -64,7 +64,7 @@ export default function NotificationPrompt() {
         <div className="flex gap-2 mt-4">
           <button
             onClick={answer}
-            className="flex-1 py-2.5 rounded-xl bg-white/10 text-white/80 text-sm font-medium
+            className="flex-1 h-11 rounded-full bg-white/10 text-white/80 text-sm font-medium
               hover:bg-white/15 active:scale-[0.97] transition touch-manipulation"
           >
             {t('notNow')}
@@ -72,8 +72,8 @@ export default function NotificationPrompt() {
           <button
             onClick={handleEnable}
             disabled={isLoading}
-            className="flex-1 py-2.5 rounded-xl bg-sky-500 text-white text-sm font-semibold
-              hover:bg-sky-400 active:scale-[0.97] transition disabled:opacity-60 touch-manipulation"
+            className="flex-1 h-11 rounded-full bg-brand-600 text-white text-sm font-semibold
+              hover:bg-brand-400 active:scale-[0.97] transition disabled:opacity-60 touch-manipulation"
           >
             {isLoading ? t('enabling') : t('enable')}
           </button>

@@ -11,18 +11,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
-        },
+        // Owner decision (design): the accent is the icon's green. `primary` is kept as an alias of
+        // `brand` so the remaining legacy classes follow it.
+        primary: { 50: '#ECFBF3', 100: '#D1F5E2', 200: '#A3EAC6', 300: '#69D9A5', 400: '#3CCB8C', 500: '#16A064', 600: '#12814F', 700: '#0D6A40', 800: '#0A5534', 900: '#083F27' },
         brand: { 50: '#ECFBF3', 100: '#D1F5E2', 200: '#A3EAC6', 300: '#69D9A5', 400: '#3CCB8C', 500: '#16A064', 600: '#12814F', 700: '#0D6A40', 800: '#0A5534', 900: '#083F27' },
         surface: { 0: '#0E1013', 1: '#16181C', 2: '#1E2126', 3: '#2A2D33', 4: '#363A41' },
         label: { DEFAULT: '#F4F5F7', secondary: 'rgb(235 238 245 / 0.68)', tertiary: 'rgb(235 238 245 / 0.45)' },
@@ -72,6 +63,8 @@ const config: Config = {
         'level-pop': 'levelPop 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both',
         'rise-in': 'riseIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
         'rays-spin': 'raysSpin 14s linear infinite',
+        // Upload status capsule: drops in from the top with a small spring
+        'toast-in': 'toastIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both',
         'locate-spin': 'locateSpin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both',
         // Splash: the heart pin breathes while the app loads
         'splash-breathe': 'splashBreathe 1.6s cubic-bezier(0.45, 0, 0.55, 1) 0.6s infinite',
@@ -113,6 +106,10 @@ const config: Config = {
         splashBreathe: {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.06)' },
+        },
+        toastIn: {
+          '0%': { opacity: '0', transform: 'translateY(-120%)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         locateSpin: {
           '0%': { transform: 'rotate(0deg) scale(1)' },

@@ -51,7 +51,7 @@ export default function NameCustomizer({ user }: Readonly<NameCustomizerProps>) 
   return (
     <div className="glass-card p-5 space-y-5 animate-fade-in">
       <div>
-        <h3 className="text-cyan-300 font-bold mb-2 flex items-center gap-2">
+        <h3 className="text-fuchsia-300 font-bold mb-2 flex items-center gap-2">
           <PerkIcon icon="style" className="w-5 h-5" />
           {t('diamondCustomization')}
         </h3>
@@ -105,7 +105,7 @@ export default function NameCustomizer({ user }: Readonly<NameCustomizerProps>) 
                 disabled={isCustomizing}
                 className={`p-3 rounded-xl transition-all text-left ${
                   isSelected
-                    ? 'bg-cyan-500/20 border-2 border-cyan-500'
+                    ? 'bg-fuchsia-500/20 border-2 border-fuchsia-500'
                     : 'bg-white/5 border border-white/10 hover:bg-white/10'
                 }`}
               >
@@ -128,7 +128,7 @@ export default function NameCustomizer({ user }: Readonly<NameCustomizerProps>) 
       <div className="pt-3 border-t border-white/10">
         <h4 className="text-white font-semibold text-sm mb-2">{t('previewLabel')}</h4>
         <div className="glass-card p-4 flex items-center gap-3">
-          <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-cyan-500/30">
+          <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-fuchsia-500/30">
             {(user.profilePictureURL || user.photoURL) && (
               <Image
                 src={user.profilePictureURL || user.photoURL || ''}

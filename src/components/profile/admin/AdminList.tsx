@@ -49,7 +49,7 @@ export default function AdminList() {
                   />
                 </div>
               ) : (
-                <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500/30 flex-shrink-0 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500/30 flex-shrink-0 bg-brand-600 flex items-center justify-center">
                   <span className="text-white text-lg font-bold">{(admin.name?.charAt(0) || 'U').toUpperCase()}</span>
                 </div>
               )}

@@ -134,7 +134,7 @@ export default function LevelInfoModal({ levelInfo, spotsCount, onClose }: Reado
         </div>
 
         {/* Motivational Message */}
-        <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-primary-500/20 to-purple-500/20 border border-primary-500/30">
+        <div className="mt-6 p-4 rounded-xl bg-brand-500/10 border border-brand-500/20">
           <p className="text-white/90 text-sm text-center">
             {t('keepExploringMessage')}
           </p>

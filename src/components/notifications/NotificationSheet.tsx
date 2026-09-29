@@ -83,7 +83,7 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
           {unreadCount > 0 ? (
             <button
               onClick={markAllAsRead}
-              className="py-1.5 font-medium text-sky-400 hover:text-sky-300 active:opacity-60 transition touch-manipulation"
+              className="py-1.5 font-medium text-brand-400 active:text-brand-300 active:opacity-60 transition touch-manipulation"
             >
               {t('markAllRead')}
             </button>

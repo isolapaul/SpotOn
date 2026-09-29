@@ -64,7 +64,7 @@ export default function MovedBanner() {
       role="status"
       aria-live="polite"
       className={`fixed ${Z.floatingButton} max-w-md flex items-center gap-2 pl-4 pr-1 py-1
-        rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 shadow-glass-lg text-white animate-fade-in`}
+        rounded-2xl material-sheet shadow-float text-white motion-safe:animate-toast-in`}
       style={{
         // The free top-left slot, clear of the control stack on the right (design 1C).
         top: 'calc(env(safe-area-inset-top) + 8px)',
