@@ -5,6 +5,9 @@
 ### Fixed (design 1A)
 - The installed iPhone app now fills the whole screen: the map runs under the status bar and down to the bottom edge, with no band below it (a workaround for an iOS 26 bug). The page background follows the map style instead of black.
 
+### Changed (copy)
+- No more emoji in the interface text; icons (category glyphs, lucide) take their place where they carried meaning.
+
 ### Changed (levels)
 - Levels have a new look and new names: Rookie, Explorer, Trailblazer, Local Legend, Cartographer (hu: Újonc, Felfedező, Ösvényjáró, Helyi legenda, Térképész). Each level has its own colour and a hand-drawn badge instead of an emoji; thresholds and perks are unchanged.
 - Your avatar in the main menu wears a ring in your level's colour that fills toward the next level and pings when you add a spot.

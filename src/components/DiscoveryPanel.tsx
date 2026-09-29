@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { X, MapPin, Filter } from 'lucide-react';
+import { X, MapPin, Filter, Navigation, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
 import { useSwipeToClose } from '@/hooks/useSwipeToClose';
-import { CATEGORIES, getMarkerEmoji } from '@/lib/categories';
+import { CATEGORIES } from '@/lib/categories';
+import CategoryIcon from '@/components/ui/CategoryIcon';
 import { haversineKm } from '@/lib/geo';
 import { averageRating } from '@/lib/rating';
 import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
@@ -32,10 +33,9 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   const [visibleCount, setVisibleCount] = useState(DISCOVERY_BATCH_SIZE);
   const [showFilters, setShowFilters] = useState(false);
 
-  const categories: { value: SpotCategory; label: string; emoji: string }[] = CATEGORIES.map((c) => ({
+  const categories: { value: SpotCategory; label: string }[] = CATEGORIES.map((c) => ({
     value: c.id,
     label: t(c.labelKey),
-    emoji: c.emoji,
   }));
 
   // Get distance for a spot (returns null if no user location)
@@ -131,7 +131,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                   : 'bg-white/5 border border-white/10 text-white/60'
               } ${userLocation ? '' : 'opacity-50'}`}
             >
-              📍 {t('nearestToMe')}
+              <span className="inline-flex items-center justify-center gap-1.5"><Navigation className="w-3.5 h-3.5" aria-hidden="true" />{t('nearestToMe')}</span>
             </button>
             <button
               onClick={() => handleSortChange('best-rated')}
@@ -141,7 +141,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                   : 'bg-white/5 border border-white/10 text-white/60'
               }`}
             >
-              ⭐ {t('bestRated')}
+              <span className="inline-flex items-center justify-center gap-1.5"><Star className="w-3.5 h-3.5" aria-hidden="true" />{t('bestRated')}</span>
             </button>
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -178,7 +178,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                       : 'bg-white/5 border border-white/10 text-white/60'
                   }`}
                 >
-                  <span>{cat.emoji}</span>
+                  <CategoryIcon category={cat.value} className="w-3.5 h-3.5" />
                   <span>{cat.label}</span>
                 </button>
               ))}
@@ -217,8 +217,8 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
                         unoptimized={isImageUnoptimized(spot)}
                       />
                       {/* Category Badge */}
-                      <div className="absolute bottom-1 left-1 bg-black/60 rounded-full px-1.5 py-0.5">
-                        <span className="text-xs">{getMarkerEmoji(spot.category)}</span>
+                      <div className="absolute bottom-1 left-1 bg-black/60 rounded-full p-1 text-white">
+                        <CategoryIcon category={spot.category} className="w-3.5 h-3.5" />
                       </div>
                     </div>
 

@@ -172,8 +172,9 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
           {/* Location Display */}
           {selectedLocation && (
             <div className="glass p-3 rounded-xl">
-              <p className="text-white/80 text-sm">
-                📍 {t('location')}: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+              <p className="text-white/80 text-sm flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 flex-shrink-0 text-brand-400" aria-hidden="true" />
+                {t('location')}: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
               </p>
             </div>
           )}
@@ -214,7 +215,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
               required
             >
               {CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id} className="bg-gray-800">{`${c.emoji} ${t(c.labelKey)}`}</option>
+                <option key={c.id} value={c.id} className="bg-gray-800">{t(c.labelKey)}</option>
               ))}
             </select>
           </div>

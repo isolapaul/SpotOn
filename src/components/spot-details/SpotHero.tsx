@@ -2,12 +2,13 @@
 
 import { useEffect, useState, type MouseEvent } from 'react';
 import Image from 'next/image';
-import { X, Heart, Share2, Sparkles } from 'lucide-react';
+import { X, Heart, Share2, Sparkles, Images } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useT } from '@/hooks/useT';
 import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
-import { categoryEmojis, categoryTranslationKeys } from '@/lib/spotUtils';
+import { categoryTranslationKeys } from '@/lib/spotUtils';
+import CategoryIcon from '@/components/ui/CategoryIcon';
 import { isImageUnoptimized } from '@/lib/spotImages';
 import { DELAYS } from '@/lib/constants';
 import type { SpotHighlight } from './useSpotHighlight';
@@ -73,8 +74,13 @@ export default function SpotHero({ spot, heroImageUrl, imageCount, onOpenGallery
     >
       <Image src={heroImageUrl} alt={spot.name} fill sizes="100vw" className="object-cover" priority unoptimized={isImageUnoptimized(spot)} />
       {imageCount > 1 && (
-        <div className="absolute bottom-4 right-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full flex items-center gap-1">
-          📸 {imageCount}
+        <div
+          role="img"
+          aria-label={t('photoCount', { count: imageCount })}
+          className="absolute bottom-4 right-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full flex items-center gap-1"
+        >
+          <Images className="w-4 h-4" aria-hidden="true" />
+          {imageCount}
         </div>
       )}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/80" />
@@ -110,7 +116,7 @@ export default function SpotHero({ spot, heroImageUrl, imageCount, onOpenGallery
       {/* Category badge */}
       <div className="absolute bottom-4 left-4">
         <div className="glass-card px-4 py-2 flex items-center gap-2">
-          <span className="text-2xl">{categoryEmojis[spot.category]}</span>
+          <CategoryIcon category={spot.category} className="w-6 h-6 text-brand-300" />
           <span className="text-white font-medium">{t(categoryTranslationKeys[spot.category])}</span>
         </div>
       </div>

@@ -52,8 +52,9 @@ export default function PendingTab({ spots }: Readonly<PendingTabProps>) {
                 <h3 className="text-white font-semibold line-clamp-1">{spot.name}</h3>
                 <p className="text-white/60 text-sm line-clamp-2">{spot.description}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400">
-                    ⏳ {t('pendingApproval')}
+                  <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 inline-flex items-center gap-1">
+                    <Clock className="w-3 h-3" aria-hidden="true" />
+                    {t('pendingApproval')}
                   </span>
                   <span className="text-white/50 text-xs">
                     {spot.createdByName}

@@ -1,5 +1,6 @@
 'use client';
 
+import PerkIcon from '@/components/ui/PerkIcon';
 import { useState } from 'react';
 import type { Spot } from '@/store/useSpotStore';
 import type { User } from '@/store/useUserStore';
@@ -30,14 +31,20 @@ export default function MySpotsTab({ user, spots, levelInfo }: Readonly<MySpotsT
           {/* Highlight Management Button */}
           {levelInfo.maxHighlights > 0 && (
             <button onClick={() => setShowHighlightPanel(!showHighlightPanel)} className={perkButtonClass}>
-              {showHighlightPanel ? `✨ ${t('closeHighlightPanel')}` : `✨ ${t('highlightSpots')}`}
+              <span className="inline-flex items-center justify-center gap-2">
+                <PerkIcon icon="highlight" className="w-4 h-4" />
+                {showHighlightPanel ? t('closeHighlightPanel') : t('highlightSpots')}
+              </span>
             </button>
           )}
 
           {/* Customization Button (Level 5) */}
           {levelInfo.canCustomizeName && (
             <button onClick={() => setShowCustomizationPanel(!showCustomizationPanel)} className={perkButtonClass}>
-              {showCustomizationPanel ? `💎 ${t('closeCustomization')}` : `💎 ${t('customizeName')}`}
+              <span className="inline-flex items-center justify-center gap-2">
+                <PerkIcon icon="style" className="w-4 h-4" />
+                {showCustomizationPanel ? t('closeCustomization') : t('customizeName')}
+              </span>
             </button>
           )}
         </div>

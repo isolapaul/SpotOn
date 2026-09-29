@@ -1,6 +1,6 @@
 'use client';
 
-import { Pencil } from 'lucide-react';
+import { Pencil, Star } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
 import StarRating from '../ui/StarRating';
@@ -31,7 +31,9 @@ export default function SpotTitle({ spot, avgRating, canEdit, edit, isHighlighte
         ) : (
           <h1 className="text-3xl font-bold text-white flex items-center gap-2">
             {spot.name}
-            {isHighlightedByUser && <span className="text-yellow-400 animate-pulse" title={t('spotHasHighlight')}>⭐</span>}
+            {isHighlightedByUser && (
+              <Star className="w-6 h-6 text-gold fill-gold motion-safe:animate-badge-pop" aria-label={t('spotHasHighlight')} role="img" />
+            )}
           </h1>
         )}
         {canEdit && !edit.isEditing && (

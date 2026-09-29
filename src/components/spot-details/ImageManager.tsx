@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Star, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Star, Trash2, Image as ImageIcon, Images } from 'lucide-react';
 import { useSpotStore, type Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useT } from '@/hooks/useT';
@@ -67,7 +67,7 @@ export default function ImageManager({ spot, imageCount }: Readonly<ImageManager
           <ImageIcon className="w-5 h-5 text-primary-400" />
           <span className="text-white font-medium">{t('manageImages')}</span>
         </div>
-        <span className="text-white/40 text-sm">{imageCount} 📸</span>
+        <span className="text-white/40 text-sm inline-flex items-center gap-1">{imageCount} <Images className="w-4 h-4" aria-hidden="true" /></span>
       </button>
       {showManageImages && (
         <div className="mt-3 grid grid-cols-3 gap-2">

@@ -4,7 +4,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useT } from '@/hooks/useT';
 import { useToastStore } from '@/store/useToastStore';
-import { X, Camera, Image as ImageIcon, LogOut, Globe, Bell, BellOff, MapPin } from 'lucide-react';
+import { X, Camera, Image as ImageIcon, LogOut, Globe, Bell, BellOff, MapPin, Settings } from 'lucide-react';
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { compressImage } from '@/lib/imageCompression';
@@ -130,7 +130,8 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
         <div className="sticky top-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-xl border-b border-white/10 p-4 z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              ⚙️ {t('settings')}
+              <Settings className="w-6 h-6" aria-hidden="true" />
+              {t('settings')}
             </h2>
             <button
               onClick={onClose}

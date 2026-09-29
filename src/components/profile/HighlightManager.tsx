@@ -1,5 +1,6 @@
 'use client';
 
+import PerkIcon from '@/components/ui/PerkIcon';
 import { useState } from 'react';
 import { Star } from 'lucide-react';
 import Image from 'next/image';
@@ -50,8 +51,9 @@ export default function HighlightManager({ spots, uid, levelInfo }: Readonly<Hig
     <div className="glass-card p-5 space-y-4 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className={`font-bold ${levelInfo.textColor}`}>
-            ✨ {t('highlightSpots')}
+          <h3 className={`font-bold ${levelInfo.textColor} flex items-center gap-2`}>
+            <PerkIcon icon="highlight" className="w-5 h-5" />
+            {t('highlightSpots')}
           </h3>
           <p className="text-white/60 text-xs mt-1">
             {t('highlightedCount', { count: activeHighlightCount, max: levelInfo.maxHighlights })}

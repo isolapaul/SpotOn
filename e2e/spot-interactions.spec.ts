@@ -183,7 +183,7 @@ test('adding a photo to a legacy spot materialises its images server-side', asyn
 
   await closeDetails(page);
   await openDetails(page, E2E.interactionSpot.category);
-  await expect(page.getByText('📸 2')).toBeVisible();
+  await expect(page.getByRole('img', { name: '2 photos' })).toBeVisible();
 });
 
 test('a review and a photo go up together with one submit', async ({ page }) => {

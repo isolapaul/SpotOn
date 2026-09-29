@@ -1,5 +1,6 @@
 'use client';
 
+import PerkIcon from '@/components/ui/PerkIcon';
 import { useState } from 'react';
 import Image from 'next/image';
 import { useUserStore, userErrorKey, type User } from '@/store/useUserStore';
@@ -51,7 +52,8 @@ export default function NameCustomizer({ user }: Readonly<NameCustomizerProps>) 
     <div className="glass-card p-5 space-y-5 animate-fade-in">
       <div>
         <h3 className="text-cyan-300 font-bold mb-2 flex items-center gap-2">
-          💎 {t('diamondCustomization')}
+          <PerkIcon icon="style" className="w-5 h-5" />
+          {t('diamondCustomization')}
         </h3>
         <p className="text-white/60 text-xs">
           {t('diamondCustomizationDesc')}

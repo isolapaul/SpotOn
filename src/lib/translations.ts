@@ -80,7 +80,7 @@ export const translations = {
     maxImagesShort: 'Max {max} kép',
     
     // Empty States
-    noSpotsFound: '🗺️ Még nincsenek helyek. Légy az első, aki hozzáad egyet!',
+    noSpotsFound: 'Még nincsenek helyek. Légy az első, aki hozzáad egyet!',
     
     // Errors
     mustBeLoggedIn: 'Be kell jelentkezned a hely hozzáadásához',
@@ -174,7 +174,7 @@ export const translations = {
     // Admin Panel
     pendingApproval: 'Jóváhagyásra vár',
     noPendingSpots: 'Nincs jóváhagyásra váró hely',
-    allSpotsApproved: 'Minden hely jóvá van hagyva! 🎉',
+    allSpotsApproved: 'Minden hely jóvá van hagyva!',
     approve: 'Jóváhagyás',
     addAdmin: 'Admin hozzáadása',
     adminEmailPlaceholder: 'Felhasználó email címe...',
@@ -264,7 +264,7 @@ export const translations = {
     useCustomIcons: 'Különleges ikonok használata',
     customizeNameStyle: 'Saját név szín és betűstílus választás',
     noSpecialBenefits: 'Még nincsenek különleges előnyök',
-    keepExploringMessage: '💪 Folytasd a felfedezést és érj el magasabb szinteket!',
+    keepExploringMessage: 'Folytasd a felfedezést és érj el magasabb szinteket!',
     levelBeginner: 'Újonc',
     levelExplorer: 'Felfedező',
     levelMaster: 'Ösvényjáró',
@@ -273,7 +273,7 @@ export const translations = {
 
     // Spot Highlight
     highlightSpot: 'Spot kiemelése',
-    spotHasHighlight: '⭐ Ez a spot ki van emelve',
+    spotHasHighlight: 'Ez a spot ki van emelve',
     youHighlightedThis: 'Ezt te emelted ki',
     highlightSuccess: 'Spot kiemelt! 7 napig lesz látható',
     highlightError: 'Hiba a kiemelés során',
@@ -316,7 +316,7 @@ export const translations = {
     perkHighlights: '{count}x kiemelés',
     perkIcons: 'ikonok',
     perkCustomization: 'testreszabás',
-    maxLevelReached: 'Maximum szint elérve! 🎉',
+    maxLevelReached: 'Maximum szint elérve!',
     spotsToNextLevel: '{count} hely a következő szintig',
     highlightSpots: 'Helyek kiemelése',
     closeHighlightPanel: 'Kiemelés bezárása',
@@ -325,7 +325,7 @@ export const translations = {
     highlightedCount: '{count} / {max} kiemelve',
     noApprovedSpotsToHighlight: 'Nincs jóváhagyott helyed a kiemeléshez.',
     highlightRemoved: 'Kiemelés megszüntetve',
-    spotHighlighted: 'Hely kiemelve! ✨',
+    spotHighlighted: 'Hely kiemelve!',
     highlightAction: 'Kiemel',
     genericError: 'Hiba történt',
     diamondCustomization: 'Gyémánt Testreszabás',
@@ -401,19 +401,19 @@ export const translations = {
     authErrSignUpFailed: 'Regisztráció sikertelen.',
 
     // InstallGate (T24): **…** marks <strong> text
-    installTitle: 'SpotOn Élmény 📲',
+    installTitle: 'SpotOn Élmény',
     installBody: 'A legjobb élmény érdekében add hozzá az appot a főképernyőhöz!',
     installIosTitle: 'iOS Telepítés',
     installIosStep1: 'Kattints a **Megosztás ikonra** (négyzet nyíllal felfelé) az alsó menüsorban.',
     installIosStep2: 'Görgess le és válaszd a **"Főképernyőhöz adás"** opciót.',
-    installIosHint: '💡 Safari böngészőben működik',
+    installIosHint: 'Safari böngészőben működik',
     installAndroidTitle: 'Android Telepítés',
     installAndroidStep1: 'Kattints a **három pontra** (⋮) a böngésző jobb felső sarkában.',
     installAndroidStep2: 'Válaszd az **"App telepítése"** vagy **"Kezdőképernyőre adás"** gombot.',
-    installAndroidHint: '💡 Chrome vagy Edge böngészőben működik legjobban',
+    installAndroidHint: 'Chrome vagy Edge böngészőben működik legjobban',
     installContinueWeb: 'Folytatás weben',
     installDontShowAgain: 'Ne mutassa többet',
-    installFooter: 'Az app telepítése után automatikusan elindul a főképernyőről 🚀',
+    installFooter: 'Az app telepítése után automatikusan elindul a főképernyőről',
 
     mainNavigation: 'Fő navigáció',
     tapMapToPlace: 'Koppints a térképre',
@@ -428,6 +428,7 @@ export const translations = {
     levelUpTitle: 'Szintet léptél!',
     levelUpUnlocked: 'Mostantól',
     levelUpContinue: 'Szuper!',
+    photoCount: '{count} fotó',
   },
   en: {
     // Navigation
@@ -510,7 +511,7 @@ export const translations = {
     maxImagesShort: 'Max {max} photos',
     
     // Empty States
-    noSpotsFound: '🗺️ No spots found yet. Be the first to add one!',
+    noSpotsFound: 'No spots found yet. Be the first to add one!',
     
     // Errors
     mustBeLoggedIn: 'You must be logged in to add a spot',
@@ -604,7 +605,7 @@ export const translations = {
     // Admin Panel
     pendingApproval: 'Pending Approval',
     noPendingSpots: 'No spots pending approval',
-    allSpotsApproved: 'All spots are approved! 🎉',
+    allSpotsApproved: 'All spots are approved!',
     approve: 'Approve',
     addAdmin: 'Add Admin',
     adminEmailPlaceholder: 'User email address...',
@@ -694,7 +695,7 @@ export const translations = {
     useCustomIcons: 'Use special icons',
     customizeNameStyle: 'Custom name color and font style',
     noSpecialBenefits: 'No special benefits yet',
-    keepExploringMessage: '💪 Keep exploring and reach higher levels!',
+    keepExploringMessage: 'Keep exploring and reach higher levels!',
     levelBeginner: 'Rookie',
     levelExplorer: 'Explorer',
     levelMaster: 'Trailblazer',
@@ -703,7 +704,7 @@ export const translations = {
 
     // Spot Highlight
     highlightSpot: 'Highlight this spot',
-    spotHasHighlight: '⭐ This spot is highlighted',
+    spotHasHighlight: 'This spot is highlighted',
     youHighlightedThis: 'You highlighted this',
     highlightSuccess: 'Spot highlighted! Visible for 7 days',
     highlightError: 'Error highlighting spot',
@@ -746,7 +747,7 @@ export const translations = {
     perkHighlights: '{count}x highlight',
     perkIcons: 'icons',
     perkCustomization: 'customization',
-    maxLevelReached: 'Maximum level reached! 🎉',
+    maxLevelReached: 'Maximum level reached!',
     spotsToNextLevel: '{count} spots to the next level',
     highlightSpots: 'Highlight spots',
     closeHighlightPanel: 'Close highlights',
@@ -755,7 +756,7 @@ export const translations = {
     highlightedCount: '{count} / {max} highlighted',
     noApprovedSpotsToHighlight: 'You have no approved spots to highlight.',
     highlightRemoved: 'Highlight removed',
-    spotHighlighted: 'Spot highlighted! ✨',
+    spotHighlighted: 'Spot highlighted!',
     highlightAction: 'Highlight',
     genericError: 'Something went wrong',
     diamondCustomization: 'Diamond Customization',
@@ -831,19 +832,19 @@ export const translations = {
     authErrSignUpFailed: 'Sign up failed.',
 
     // InstallGate (T24): **…** marks <strong> text
-    installTitle: 'SpotOn Experience 📲',
+    installTitle: 'SpotOn Experience',
     installBody: 'For the best experience, add the app to your home screen!',
     installIosTitle: 'iOS Installation',
     installIosStep1: 'Tap the **Share icon** (square with arrow up) in the bottom menu bar.',
     installIosStep2: 'Scroll down and select **"Add to Home Screen"**.',
-    installIosHint: '💡 Works in Safari browser',
+    installIosHint: 'Works in Safari browser',
     installAndroidTitle: 'Android Installation',
     installAndroidStep1: 'Tap the **three dots** (⋮) in the top right corner of the browser.',
     installAndroidStep2: 'Select **"Install app"** or **"Add to Home Screen"**.',
-    installAndroidHint: '💡 Works best in Chrome or Edge',
+    installAndroidHint: 'Works best in Chrome or Edge',
     installContinueWeb: 'Continue on web',
     installDontShowAgain: "Don't show again",
-    installFooter: 'After installation, the app will launch automatically from your home screen 🚀',
+    installFooter: 'After installation, the app will launch automatically from your home screen',
 
     mainNavigation: 'Main navigation',
     tapMapToPlace: 'Tap the map to place',
@@ -858,6 +859,7 @@ export const translations = {
     levelUpTitle: 'Level up!',
     levelUpUnlocked: 'Now unlocked',
     levelUpContinue: 'Awesome!',
+    photoCount: '{count} photos',
   },
   de: {
     // Navigation
@@ -940,7 +942,7 @@ export const translations = {
     maxImagesShort: 'Max. {max} Fotos',
     
     // Empty States
-    noSpotsFound: '🗺️ Noch keine Orte gefunden. Seien Sie der Erste, der einen hinzufügt!',
+    noSpotsFound: 'Noch keine Orte gefunden. Seien Sie der Erste, der einen hinzufügt!',
     
     // Errors
     mustBeLoggedIn: 'Sie müssen angemeldet sein, um einen Ort hinzuzufügen',
@@ -1023,7 +1025,7 @@ export const translations = {
     // Admin Panel
     pendingApproval: 'Genehmigung ausstehend',
     noPendingSpots: 'Keine Orte zur Genehmigung ausstehend',
-    allSpotsApproved: 'Alle Orte sind genehmigt! 🎉',
+    allSpotsApproved: 'Alle Orte sind genehmigt!',
     approve: 'Genehmigen',
     addAdmin: 'Admin hinzufügen',
     adminEmailPlaceholder: 'E-Mail-Adresse des Benutzers...',
@@ -1113,7 +1115,7 @@ export const translations = {
     useCustomIcons: 'Spezielle Symbole verwenden',
     customizeNameStyle: 'Eigene Name Farbe und Schriftart wählen',
     noSpecialBenefits: 'Noch keine besonderen Vorteile',
-    keepExploringMessage: '💪 Entdecke weiter und erreiche höhere Level!',
+    keepExploringMessage: 'Entdecke weiter und erreiche höhere Level!',
     levelBeginner: 'Neuling',
     levelExplorer: 'Entdecker',
     levelMaster: 'Pfadfinder',
@@ -1122,7 +1124,7 @@ export const translations = {
 
     // Spot Highlight
     highlightSpot: 'Ort hervorheben',
-    spotHasHighlight: '⭐ Dieser Ort ist hervorgehoben',
+    spotHasHighlight: 'Dieser Ort ist hervorgehoben',
     youHighlightedThis: 'Du hast dies hervorgehoben',
     highlightSuccess: 'Ort hervorgehoben! Sichtbar für 7 Tage',
     highlightError: 'Fehler beim Hervorheben des Ortes',
@@ -1177,7 +1179,7 @@ export const translations = {
     perkHighlights: '{count}x Hervorhebung',
     perkIcons: 'Symbole',
     perkCustomization: 'Anpassung',
-    maxLevelReached: 'Höchste Stufe erreicht! 🎉',
+    maxLevelReached: 'Höchste Stufe erreicht!',
     spotsToNextLevel: '{count} Orte bis zur nächsten Stufe',
     highlightSpots: 'Orte hervorheben',
     closeHighlightPanel: 'Hervorhebung schließen',
@@ -1186,7 +1188,7 @@ export const translations = {
     highlightedCount: '{count} / {max} hervorgehoben',
     noApprovedSpotsToHighlight: 'Du hast keine freigegebenen Orte zum Hervorheben.',
     highlightRemoved: 'Hervorhebung entfernt',
-    spotHighlighted: 'Ort hervorgehoben! ✨',
+    spotHighlighted: 'Ort hervorgehoben!',
     highlightAction: 'Hervorheben',
     genericError: 'Ein Fehler ist aufgetreten',
     diamondCustomization: 'Diamant-Anpassung',
@@ -1262,19 +1264,19 @@ export const translations = {
     authErrSignUpFailed: 'Registrierung fehlgeschlagen.',
 
     // InstallGate (T24): **…** marks <strong> text
-    installTitle: 'SpotOn Erlebnis 📲',
+    installTitle: 'SpotOn Erlebnis',
     installBody: 'Für das beste Erlebnis füge die App zu deinem Startbildschirm hinzu!',
     installIosTitle: 'iOS Installation',
     installIosStep1: 'Tippe auf das **Teilen-Symbol** (Quadrat mit Pfeil nach oben) in der unteren Menüleiste.',
     installIosStep2: 'Scrolle nach unten und wähle **"Zum Home-Bildschirm"**.',
-    installIosHint: '💡 Funktioniert im Safari-Browser',
+    installIosHint: 'Funktioniert im Safari-Browser',
     installAndroidTitle: 'Android Installation',
     installAndroidStep1: 'Tippe auf die **drei Punkte** (⋮) oben rechts im Browser.',
     installAndroidStep2: 'Wähle **"App installieren"** oder **"Zum Startbildschirm hinzufügen"**.',
-    installAndroidHint: '💡 Funktioniert am besten in Chrome oder Edge',
+    installAndroidHint: 'Funktioniert am besten in Chrome oder Edge',
     installContinueWeb: 'Im Web fortfahren',
     installDontShowAgain: 'Nicht mehr anzeigen',
-    installFooter: 'Nach der Installation startet die App automatisch vom Startbildschirm 🚀',
+    installFooter: 'Nach der Installation startet die App automatisch vom Startbildschirm',
 
     mainNavigation: 'Hauptnavigation',
     tapMapToPlace: 'Auf die Karte tippen',
@@ -1289,6 +1291,7 @@ export const translations = {
     levelUpTitle: 'Neue Stufe!',
     levelUpUnlocked: 'Jetzt freigeschaltet',
     levelUpContinue: 'Super!',
+    photoCount: '{count} Fotos',
   },
 };
 
