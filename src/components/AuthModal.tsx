@@ -5,6 +5,7 @@ import { useT } from '@/hooks/useT';
 import { LogIn, X, Mail, Lock, User } from 'lucide-react';
 import { useState } from 'react';
 import ModalShell, { SAFE_AREA_MARGINS } from './ui/ModalShell';
+import LegalNotice from './legal/LegalNotice';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -338,12 +339,8 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
           </div>
         )}
 
-        {/* Privacy Note */}
-        {!showEmailForm && (
-          <p className="text-white/50 text-xs text-center mt-6">
-            {t('authTerms')}
-          </p>
-        )}
+        {/* Sign-in-wrap (A1): signing in or up accepts the terms; both documents are linked */}
+        <LegalNotice textKey="authTerms" className="text-white/50 text-xs text-center mt-6 leading-relaxed" />
     </ModalShell>
   );
 }

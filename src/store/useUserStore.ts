@@ -21,6 +21,7 @@ import { extForMime } from '@/lib/spotImages';
 import type { TranslationKey } from '@/lib/translations';
 import { compressImage } from '@/lib/imageCompression';
 import { mapAdminDoc, type AdminUser } from '@/lib/mapAdminDoc';
+import { TERMS_VERSION } from '@/lib/terms';
 
 export type { User } from '@/lib/mapUserDoc';
 
@@ -59,6 +60,8 @@ interface UserStore {
    * (the user doc is gone, so no token cleanup write). Throws the callable error.
    */
   deleteAccount: (confirmUsername: string) => Promise<void>;
+  /** Records that an existing user accepted the current terms (A1, TermsPrompt). Throws on failure. */
+  acceptTerms: () => Promise<void>;
   unhighlightSpot: (spotId: string) => Promise<void>;
   updateCustomNameColor: (color: string) => Promise<void>;
   updateCustomNameFont: (font: string) => Promise<void>;
@@ -203,7 +206,10 @@ function startAdminListeners(uid: string, set: SetState) {
   );
 }
 
-/** Creates the new user's own doc (never with a username: that goes through claimUsername). */
+/**
+ * Creates the new user's own doc (never with a username: that goes through claimUsername). Signing
+ * up is the acceptance of the current terms (A1: the sign-in sheet says so), recorded here.
+ */
 async function createUserDoc(firebaseUser: FirebaseUser): Promise<Record<string, unknown>> {
   const data = {
     uid: firebaseUser.uid,
@@ -212,9 +218,11 @@ async function createUserDoc(firebaseUser: FirebaseUser): Promise<Record<string,
     profilePictureURL: firebaseUser.photoURL || '',
     profileBannerURL: '',
     savedSpots: [],
+    termsVersion: TERMS_VERSION,
   };
   await setDoc(doc(db, 'users', firebaseUser.uid), {
     ...data,
+    termsAcceptedAt: serverTimestamp(),
     createdAt: serverTimestamp(),
     lastLoginAt: serverTimestamp(),
   }, { merge: true });
@@ -487,6 +495,16 @@ export const useUserStore = create<UserStore>()(
         stopAdminListeners(set);
         await firebaseSignOut(auth);
         set({ user: null, loading: false });
+      },
+
+      acceptTerms: async () => {
+        const { user } = get();
+        if (!user) return;
+        await updateDoc(doc(db, 'users', user.uid), {
+          termsVersion: TERMS_VERSION,
+          termsAcceptedAt: serverTimestamp(),
+        });
+        set({ user: { ...user, termsVersion: TERMS_VERSION } });
       },
 
       signOut: async () => {

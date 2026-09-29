@@ -15,6 +15,7 @@ import MapControls from '@/components/map/MapControls';
 import PlaceCard from '@/components/map/PlaceCard';
 import LevelUpCelebration from '@/components/LevelUpCelebration';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
+import TermsPrompt from '@/components/legal/TermsPrompt';
 import MovedBanner from '@/components/MovedBanner';
 import { useShallow } from 'zustand/react/shallow';
 import { useUserStore } from '@/store/useUserStore';
@@ -117,6 +118,8 @@ export default function Home() {
       <AuthModal isOpen={activePanel === 'auth'} onClose={closePanel} />
       {/* Username Setup Modal - shown after first login */}
       <UsernameSetupModal isOpen={!!user && needsUsername} onClose={() => setNeedsUsername(false)} />
+      {/* One-time terms acceptance for users who signed up before the terms (A1) */}
+      <TermsPrompt ready={isAppReady} />
       {/* Add Spot Modal */}
       <AddSpotModal isOpen={activePanel === 'addSpot'} onClose={closeAddSpot} selectedLocation={pendingLocation} />
       {/* Spot Details Panel */}

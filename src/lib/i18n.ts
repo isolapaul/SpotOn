@@ -33,6 +33,17 @@ export function splitBold(s: string): Array<{ text: string; bold: boolean }> {
     .filter((part) => part.text !== '');
 }
 
+/**
+ * Splits `{name}` placeholders out of a translation, so a component can put a link (or any node)
+ * in their place without innerHTML: 'a {terms} b' → [{text:'a '}, {slot:'terms'}, {text:' b'}].
+ */
+export function splitSlots(s: string): Array<{ text: string } | { slot: string }> {
+  return s
+    .split(/\{(\w+)\}/)
+    .map((part, i) => (i % 2 === 1 ? { slot: part } : { text: part }))
+    .filter((part) => !('text' in part) || part.text !== '');
+}
+
 const LANGUAGES: readonly Language[] = ['hu', 'en', 'de'];
 
 /**

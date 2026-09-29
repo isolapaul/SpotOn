@@ -1,16 +1,40 @@
 import { expect } from '@playwright/test';
 import { getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { TERMS_VERSION } from '../src/lib/terms';
 import { E2E } from './fixtures';
 import { test, blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstRunOverlays } from './helpers';
 
 // A1: legal pages. A2: account deletion through the deleteAccount callable (needs the functions
-// emulator, so CI only). The deleted user and its two spots are created here and never shared.
+// emulator, so CI only). The deleted user and its two spots are created here and never shared, as
+// is the user who accepts the terms (A1).
 
 const GONE = { uid: 'e2e-delete-me', email: 'delete-me@spoton.test', username: 'e2e_delete_me' };
 const OWN_SPOT = 'e2e-delete-own-spot';
 const OTHER_SPOT = 'e2e-delete-other-spot';
+const LEGACY = { uid: 'e2e-terms', email: 'terms@spoton.test', username: 'e2e_terms' };
+
+/**
+ * The Auth emulator's REST API with its admin token ("Bearer owner"). Not firebase-admin/auth: its
+ * jwks-rsa → jose (ESM-only) chain cannot be required under Playwright's TS loader, which fails the
+ * whole run at load time.
+ */
+const emulatorAuth = {
+  async call(action: string, body: Record<string, unknown>) {
+    const url = `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/projects/demo-spoton/accounts${action}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer owner' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`auth emulator ${action || 'create'}: ${res.status} ${await res.text()}`);
+    return res.json() as Promise<{ users?: unknown[] }>;
+  },
+  createUser: (u: { uid: string; email: string; password: string }) =>
+    emulatorAuth.call('', { localId: u.uid, email: u.email, password: u.password }),
+  deleteUser: (uid: string) => emulatorAuth.call(':delete', { localId: uid }),
+  exists: async (uid: string) => ((await emulatorAuth.call(':lookup', { localId: [uid] })).users?.length ?? 0) > 0,
+};
 
 function admin() {
   // Same guard convention as scripts/seed-emulator.ts: never talk to a real project.
@@ -21,7 +45,7 @@ function admin() {
     throw new Error('refusing to run: unexpected GCLOUD_PROJECT');
   }
   if (!getApps().length) initializeApp({ projectId: 'demo-spoton' });
-  return { db: getFirestore(), auth: getAuth() };
+  return { db: getFirestore(), auth: emulatorAuth };
 }
 
 async function cleanup() {
@@ -50,6 +74,54 @@ test('legal pages are readable without the install prompt', async ({ page }) => 
   await expect(page.getByRole('link', { name: 'SpotOn' })).toBeVisible();
 });
 
+test('the sign-in sheet links the terms and the privacy policy (sign-in-wrap)', async ({ page }) => {
+  await skipFirstRunOverlays(page);
+  await openApp(page);
+  await page.getByRole('button', { name: 'Profile' }).click();
+  await expect(page.getByText(/confirm that you are at least 16/)).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Terms of Use' })).toHaveAttribute('href', '/terms');
+  await expect(page.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy');
+});
+
+test.describe('terms acceptance of an existing user', () => {
+  test.beforeAll(async () => {
+    const { db, auth } = admin();
+    await auth.deleteUser(LEGACY.uid).catch(() => {});
+    await auth.createUser({ uid: LEGACY.uid, email: LEGACY.email, password: E2E.password });
+    const t = Timestamp.now();
+    // A users doc from before the terms: no termsVersion.
+    await db.doc(`users/${LEGACY.uid}`).set({
+      uid: LEGACY.uid, email: LEGACY.email, username: LEGACY.username,
+      photoURL: '', profilePictureURL: '', profileBannerURL: '', savedSpots: [], createdAt: t, lastLoginAt: t,
+    });
+  });
+  test.afterAll(async () => {
+    const { db, auth } = admin();
+    await auth.deleteUser(LEGACY.uid).catch(() => {});
+    await db.doc(`users/${LEGACY.uid}`).delete();
+    await db.doc(`publicProfiles/${LEGACY.uid}`).delete();
+  });
+
+  test('is asked once, and the acceptance is recorded', async ({ page }) => {
+    await skipFirstRunOverlays(page);
+    await openApp(page);
+    await signInWithEmail(page, LEGACY.email, E2E.password);
+    const prompt = page.getByRole('dialog', { name: 'Terms' });
+    await expect(prompt).toBeVisible();
+    await expect(prompt.getByRole('link', { name: 'Terms of Use' })).toHaveAttribute('href', '/terms');
+    await prompt.getByRole('button', { name: 'Accept' }).click();
+    await expect(prompt).toHaveCount(0);
+
+    const doc = (await admin().db.doc(`users/${LEGACY.uid}`).get()).data();
+    expect(doc?.termsVersion).toBe(TERMS_VERSION);
+    expect(doc?.termsAcceptedAt).toBeInstanceOf(Timestamp);
+
+    await openApp(page);
+    await expect(page.getByRole('button', { name: 'Profile' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Terms' })).toHaveCount(0);
+  });
+});
+
 test.describe('account deletion', () => {
   test.beforeAll(async () => {
     await cleanup();
@@ -59,6 +131,7 @@ test.describe('account deletion', () => {
     await db.doc(`users/${GONE.uid}`).set({
       uid: GONE.uid, email: GONE.email, username: GONE.username, displayName: GONE.username,
       photoURL: '', profilePictureURL: '', profileBannerURL: '', savedSpots: [], createdAt: t, lastLoginAt: t,
+      termsVersion: TERMS_VERSION,
     });
     await db.doc(`usernames/${GONE.username}`).set({ uid: GONE.uid });
     const spot = (createdBy: string, createdByName: string) => ({
@@ -101,7 +174,7 @@ test.describe('account deletion', () => {
     await expectNotification(page, 'Your account has been deleted.');
 
     const { db, auth } = admin();
-    await expect(auth.getUser(GONE.uid)).rejects.toMatchObject({ code: 'auth/user-not-found' });
+    expect(await auth.exists(GONE.uid)).toBe(false);
     expect((await db.doc(`users/${GONE.uid}`).get()).exists).toBe(false);
     expect((await db.doc(`usernames/${GONE.username}`).get()).exists).toBe(false);
     await expect.poll(async () => (await db.doc(`publicProfiles/${GONE.uid}`).get()).exists).toBe(false);

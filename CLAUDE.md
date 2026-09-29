@@ -74,6 +74,7 @@ docs/                            Audits, roadmap, task specs, deploy/rollout run
   Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
 - `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmTokens[], language,
   notificationsEnabled, notificationSettings, spotsCount (server-maintained, all statuses),
+  termsVersion + termsAcceptedAt (accepted Terms/Privacy version, A1; lib/terms),
   questProgress/questRewards (legacy Valentine event).
 - `publicProfiles/{uid}`: server-maintained public mirror of a user (username, profilePictureURL,
   customNameColor/Font, isAdmin, spotsCount); public `get`, no client writes.
