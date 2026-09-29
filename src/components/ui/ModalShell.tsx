@@ -13,7 +13,8 @@ const VARIANTS = {
     backdrop: 'absolute inset-0 bg-black/70 backdrop-blur-xl',
     /** A glass backdrop that closes on click is a button; it keeps the arrow cursor. */
     backdropButton: 'absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default',
-    panelStart: 'relative glass-card',
+    // Design phase 3: a floating dark sheet (Auth, AddSpot, UsernameSetup).
+    panelStart: 'relative bg-surface-2 rounded-[28px] ring-1 ring-white/10 shadow-sheet',
     panelEnd: 'animate-slide-up',
   },
   slate: {

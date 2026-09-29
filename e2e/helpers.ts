@@ -43,7 +43,7 @@ export async function blockMapTiles(page: Page) {
 /** Opens the app and waits until LoadingScreen has unmounted. */
 export async function openApp(page: Page) {
   await page.goto('/');
-  await expect(page.locator('div.fixed.inset-0.bg-slate-900')).toHaveCount(0, { timeout: 30_000 });
+  await expect(page.getByTestId('loading-screen')).toHaveCount(0, { timeout: 30_000 });
 }
 
 /** Leaflet marker(s) of the given category (design 1D pins carry data-category). */
