@@ -214,6 +214,24 @@ describe('spots listener scopes (T30)', () => {
     expect(store().error).toBeNull();
   });
 
+  it('ownLoadedFor: set by the own (or admin) first snapshot, cleared when the user changes', async () => {
+    await startSignedOut();
+    expect(store().ownLoadedFor).toBeNull();
+    store().syncSpotScopes({ uid: 'alice', isAdmin: false });
+    expect(store().ownLoadedFor).toBeNull();
+    // A cache-only first answer (only what the SDK already holds) does not count as loaded.
+    find(own('alice'))!.next({ docs: [], metadata: { fromCache: true } });
+    expect(store().ownLoadedFor).toBeNull();
+    emit(find(own('alice'))!, [P_ALICE]);
+    expect(store().ownLoadedFor).toBe('alice');
+    store().syncSpotScopes({ uid: 'bob', isAdmin: false });
+    expect(store().ownLoadedFor).toBeNull();
+    emit(find(own('bob'))!, [P_BOB]);
+    expect(store().ownLoadedFor).toBe('bob');
+    store().syncSpotScopes({ uid: null, isAdmin: false });
+    expect(store().ownLoadedFor).toBeNull();
+  });
+
   it('stopSpots stops every listener and clears the spots', async () => {
     await startSignedOut();
     store().syncSpotScopes({ uid: 'alice', isAdmin: true });

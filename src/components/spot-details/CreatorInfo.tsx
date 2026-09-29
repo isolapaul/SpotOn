@@ -1,5 +1,6 @@
 'use client';
 
+import LevelBadge from '@/components/ui/LevelBadge';
 import { Calendar, User } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
 import { useLanguage, useT } from '@/hooks/useT';
@@ -39,8 +40,9 @@ export default function CreatorInfo({ spot }: Readonly<CreatorInfoProps>) {
         </div>
         <div className="flex items-center gap-2">
           <p className="font-medium" style={{ color: creatorNameColor }}>{creatorDisplayName}</p>
-          <span className={`text-xs px-2 py-0.5 rounded-full border ${creatorLevelInfo.bgColor} ${creatorLevelInfo.borderColor} ${creatorLevelInfo.textColor}`}>
-            {creatorLevelInfo.icon} {creatorLevelInfo.level}
+          <span className={`inline-flex items-center gap-1 text-xs pl-0.5 pr-2 py-0.5 rounded-full border ${creatorLevelInfo.bgColor} ${creatorLevelInfo.borderColor} ${creatorLevelInfo.textColor} font-semibold`}>
+            <LevelBadge level={creatorLevelInfo.level} size={16} />
+            {creatorLevelInfo.level}
           </span>
         </div>
       </div>

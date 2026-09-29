@@ -265,11 +265,11 @@ export const translations = {
     customizeNameStyle: 'Saját név szín és betűstílus választás',
     noSpecialBenefits: 'Még nincsenek különleges előnyök',
     keepExploringMessage: '💪 Folytasd a felfedezést és érj el magasabb szinteket!',
-    levelBeginner: 'Kezdő',
-    levelExplorer: 'Haladó',
-    levelMaster: 'Felfedező',
-    levelLegend: 'Spotmester',
-    levelDiamond: 'Világutazó',
+    levelBeginner: 'Újonc',
+    levelExplorer: 'Felfedező',
+    levelMaster: 'Ösvényjáró',
+    levelLegend: 'Helyi legenda',
+    levelDiamond: 'Térképész',
 
     // Spot Highlight
     highlightSpot: 'Spot kiemelése',
@@ -425,6 +425,9 @@ export const translations = {
     directions: 'Útvonal',
     addToFavorites: 'Hozzáadás a kedvencekhez',
     removeFromFavorites: 'Eltávolítás a kedvencekből',
+    levelUpTitle: 'Szintet léptél!',
+    levelUpUnlocked: 'Mostantól',
+    levelUpContinue: 'Szuper!',
   },
   en: {
     // Navigation
@@ -692,11 +695,11 @@ export const translations = {
     customizeNameStyle: 'Custom name color and font style',
     noSpecialBenefits: 'No special benefits yet',
     keepExploringMessage: '💪 Keep exploring and reach higher levels!',
-    levelBeginner: 'Beginner',
-    levelExplorer: 'Advanced',
-    levelMaster: 'Explorer',
-    levelLegend: 'Spot Master',
-    levelDiamond: 'World Traveler',
+    levelBeginner: 'Rookie',
+    levelExplorer: 'Explorer',
+    levelMaster: 'Trailblazer',
+    levelLegend: 'Local Legend',
+    levelDiamond: 'Cartographer',
 
     // Spot Highlight
     highlightSpot: 'Highlight this spot',
@@ -852,6 +855,9 @@ export const translations = {
     directions: 'Directions',
     addToFavorites: 'Add to favorites',
     removeFromFavorites: 'Remove from favorites',
+    levelUpTitle: 'Level up!',
+    levelUpUnlocked: 'Now unlocked',
+    levelUpContinue: 'Awesome!',
   },
   de: {
     // Navigation
@@ -1108,11 +1114,11 @@ export const translations = {
     customizeNameStyle: 'Eigene Name Farbe und Schriftart wählen',
     noSpecialBenefits: 'Noch keine besonderen Vorteile',
     keepExploringMessage: '💪 Entdecke weiter und erreiche höhere Level!',
-    levelBeginner: 'Anfänger',
-    levelExplorer: 'Fortgeschritten',
-    levelMaster: 'Entdecker',
-    levelLegend: 'Spotmeister',
-    levelDiamond: 'Weltreisender',
+    levelBeginner: 'Neuling',
+    levelExplorer: 'Entdecker',
+    levelMaster: 'Pfadfinder',
+    levelLegend: 'Lokale Legende',
+    levelDiamond: 'Kartograf',
 
     // Spot Highlight
     highlightSpot: 'Ort hervorheben',
@@ -1280,6 +1286,9 @@ export const translations = {
     directions: 'Route',
     addToFavorites: 'Zu Favoriten hinzufügen',
     removeFromFavorites: 'Aus Favoriten entfernen',
+    levelUpTitle: 'Neue Stufe!',
+    levelUpUnlocked: 'Jetzt freigeschaltet',
+    levelUpContinue: 'Super!',
   },
 };
 

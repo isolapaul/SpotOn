@@ -3,6 +3,7 @@
 import { Shield } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import type { LevelInfo } from '@/lib/levelUtils';
+import LevelBadge from '@/components/ui/LevelBadge';
 
 interface ProfileBadgesProps {
   isAdmin: boolean;
@@ -22,9 +23,9 @@ export default function ProfileBadges({ isAdmin, levelInfo, onOpenLevelInfo }: R
       )}
       <button
         onClick={onOpenLevelInfo}
-        className={`flex items-center gap-1 px-3 py-1 rounded-full ${levelInfo.bgColor} border ${levelInfo.borderColor} hover:opacity-80 transition-all active:scale-95`}
+        className={`flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full ${levelInfo.bgColor} border ${levelInfo.borderColor} hover:opacity-80 transition-all active:scale-95`}
       >
-        <span className="text-lg">{levelInfo.icon}</span>
+        <LevelBadge level={levelInfo.level} size={22} />
         <span className={`${levelInfo.textColor} text-xs font-bold`}>
           {t('levelLabel', { level: levelInfo.level })}
         </span>

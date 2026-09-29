@@ -13,6 +13,7 @@ import NotificationPrompt from '@/components/NotificationPrompt';
 import UploadStatus from '@/components/UploadStatus';
 import MapControls from '@/components/map/MapControls';
 import PlaceCard from '@/components/map/PlaceCard';
+import LevelUpCelebration from '@/components/LevelUpCelebration';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
 import MovedBanner from '@/components/MovedBanner';
 import { useShallow } from 'zustand/react/shallow';
@@ -85,6 +86,8 @@ export default function Home() {
       <NotificationPrompt />
       {/* Background uploads (G4): above panels too, so a review sent from a spot panel reports back */}
       <UploadStatus />
+      {/* Level-up moment: over everything, whenever the own spot count crosses a level */}
+      <LevelUpCelebration />
       {/* Top-right control stack (design 1C); hidden while a full-screen panel covers the map */}
       {!panelCoversMap && isAppReady && (
         <>

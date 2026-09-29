@@ -22,7 +22,7 @@ test('level-5 user: level pill, progress, tabs, highlight manager and level info
   // 1. Level pill and progress card (20 own spots, pending ones included → level 5)
   const levelPill = page.getByRole('button', { name: /Level 5/ });
   await expect(levelPill).toBeVisible();
-  await expect(page.getByText('World Traveler', { exact: true })).toBeVisible();
+  await expect(page.getByText('Cartographer', { exact: true })).toBeVisible();
   await expect(page.getByText('100%', { exact: true })).toBeVisible();
 
   // 2. Tabs: a non-admin sees only My Spots and Favorites

@@ -5,6 +5,11 @@
 ### Fixed (design 1A)
 - The installed iPhone app now fills the whole screen: the map runs under the status bar and down to the bottom edge, with no band below it (a workaround for an iOS 26 bug). The page background follows the map style instead of black.
 
+### Changed (levels)
+- Levels have a new look and new names: Rookie, Explorer, Trailblazer, Local Legend, Cartographer (hu: Újonc, Felfedező, Ösvényjáró, Helyi legenda, Térképész). Each level has its own colour and a hand-drawn badge instead of an emoji; thresholds and perks are unchanged.
+- Your avatar in the main menu wears a ring in your level's colour that fills toward the next level and pings when you add a spot.
+- Reaching a new level plays a short celebration: the new badge springs in over confetti and shows what you unlocked.
+
 ### Changed (design 1C, 1E)
 - New main menu: a capsule with Explore (and how many spots there are) and your avatar, plus a separate green + button. While you pick a place for a new spot, the capsule says "Tap the map to place" and the + turns into ×.
 - The top-right corner holds one control stack: notifications, map style, feedback, and a new "my location" button that brings the map back to you. Map styles open as a small menu with mini map previews.

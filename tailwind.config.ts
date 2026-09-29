@@ -66,6 +66,12 @@ const config: Config = {
         'hint-bob': 'hintBob 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite',
         // Place card (design 1E): in on the iOS curve, out faster on the exit curve
         'card-in': 'cardIn 0.5s cubic-bezier(0.32, 0.72, 0, 1) both',
+        // Level identity: a new spot pings the avatar ring
+        'ring-ping': 'ringPing 0.9s cubic-bezier(0.22, 1, 0.36, 1) both',
+        // Level-up celebration
+        'level-pop': 'levelPop 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+        'rise-in': 'riseIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'rays-spin': 'raysSpin 14s linear infinite',
         'card-out': 'cardOut 0.28s cubic-bezier(0.4, 0, 1, 1) both',
         'sheet-out': 'sheetOut 0.18s ease-in both',
         'backdrop-in': 'fadeIn 0.25s ease-out both',
@@ -91,6 +97,23 @@ const config: Config = {
         fadeOut: {
           '0%': { opacity: '1' },
           '100%': { opacity: '0' },
+        },
+        levelPop: {
+          '0%': { opacity: '0', transform: 'scale(0.2) rotate(-25deg)' },
+          '60%': { opacity: '1', transform: 'scale(1.12) rotate(4deg)' },
+          '100%': { opacity: '1', transform: 'scale(1) rotate(0)' },
+        },
+        riseIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        raysSpin: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        ringPing: {
+          '0%': { opacity: '0.9', transform: 'scale(1)' },
+          '100%': { opacity: '0', transform: 'scale(1.45)' },
         },
         cardIn: {
           '0%': { transform: 'translateY(calc(100% + 16px))' },

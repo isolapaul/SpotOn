@@ -5,7 +5,10 @@ import Image from 'next/image';
 import { Compass, MapPin, Plus, UserRound } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
+import { useMyLevel } from '@/hooks/useMyLevel';
 import { Z } from '@/lib/constants';
+import LevelBadge from '@/components/ui/LevelBadge';
+import LevelRing from '@/components/ui/LevelRing';
 
 // Launcher (design 1C): a capsule with Explore (and the spot count) and the avatar, plus a separate
 // green Add button. The map is always home, so nothing here has a selected state. While a spot is
@@ -24,7 +27,7 @@ interface BottomNavigationProps {
   onCancelPicking: () => void;
 }
 
-function Avatar() {
+function AvatarFace() {
   const user = useUserStore((s) => s.user);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const src = user?.profilePictureURL || user?.photoURL || '';
@@ -38,15 +41,32 @@ function Avatar() {
   }
   if (src && failedSrc !== src) {
     return (
-      <span className="relative w-10 h-10 rounded-full overflow-hidden bg-surface-3">
-        <Image src={src} alt="" fill sizes="40px" className="object-cover" onError={() => setFailedSrc(src)} />
+      <span className="relative w-[38px] h-[38px] rounded-full overflow-hidden bg-surface-3">
+        <Image src={src} alt="" fill sizes="38px" className="object-cover" onError={() => setFailedSrc(src)} />
       </span>
     );
   }
   return (
-    <span className="w-10 h-10 rounded-full grid place-items-center bg-brand-600 text-white text-[17px] font-semibold">
+    <span className="w-[38px] h-[38px] rounded-full grid place-items-center bg-brand-600 text-white text-[17px] font-semibold">
       {user.username?.charAt(0).toUpperCase() || 'U'}
     </span>
+  );
+}
+
+/** The avatar; signed in, inside the level ring (owner: colour per level) with the level badge. */
+function Avatar() {
+  const mine = useMyLevel();
+  if (!mine) return <AvatarFace />;
+  return (
+    <LevelRing level={mine.info.level} progress={mine.progress} count={mine.count}>
+      <AvatarFace />
+      <LevelBadge
+        key={mine.info.level}
+        level={mine.info.level}
+        size={20}
+        className="absolute -right-1 -bottom-1 drop-shadow motion-safe:animate-badge-pop"
+      />
+    </LevelRing>
   );
 }
 
@@ -107,7 +127,7 @@ export default function BottomNavigation({
             onClick={onProfile}
             tabIndex={picking ? -1 : 0}
             aria-label={t('profile')}
-            className="w-11 h-11 flex-shrink-0 grid place-items-center rounded-full touch-manipulation
+            className="w-12 h-12 flex-shrink-0 grid place-items-center rounded-full touch-manipulation
               transition-transform duration-150 active:scale-90"
           >
             <Avatar />

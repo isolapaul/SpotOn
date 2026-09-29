@@ -3,39 +3,11 @@
 import { TrendingUp, X } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { getLevelInfo, getLevelProgress, getLevelThreshold, type LevelInfo } from '@/lib/levelUtils';
-import type { TranslationKey } from '@/lib/translations';
+import { LEVEL_PERKS, type LevelNumber } from '@/lib/levelTheme';
+import LevelBadge from '@/components/ui/LevelBadge';
+import PerkIcon from '@/components/ui/PerkIcon';
 
-type PerkLevel = 1 | 2 | 3 | 4 | 5;
-
-interface Perk {
-  emoji: string | null;
-  /** Rendered joined by a space (e.g. `highlightOneSpot goldAppearance`). */
-  keys: TranslationKey[];
-  variant?: 'muted';
-}
-
-/** The benefits listed per level in the "All levels" table. */
-const LEVEL_PERKS: Readonly<Record<PerkLevel, readonly Perk[]>> = {
-  1: [{ emoji: null, keys: ['noSpecialBenefits'], variant: 'muted' }],
-  2: [{ emoji: '🥈', keys: ['silverName'] }],
-  3: [
-    { emoji: '🥇', keys: ['goldName'] },
-    { emoji: '✨', keys: ['highlightOneSpot', 'goldAppearance'] },
-  ],
-  4: [
-    { emoji: '🥇', keys: ['goldName'] },
-    { emoji: '✨', keys: ['highlightTwoSpots', 'goldAppearance'] },
-    { emoji: '🎨', keys: ['useCustomIcons'] },
-  ],
-  5: [
-    { emoji: '💎', keys: ['diamondNameAndBadge'] },
-    { emoji: '✨', keys: ['highlightTwoSpots', 'goldAppearance'] },
-    { emoji: '🎨', keys: ['useCustomIcons'] },
-    { emoji: '🌈', keys: ['customizeNameStyle'] },
-  ],
-};
-
-const LEVELS: readonly PerkLevel[] = [1, 2, 3, 4, 5];
+const LEVELS: readonly LevelNumber[] = [1, 2, 3, 4, 5];
 
 /** Each level's info, computed from the spots it requires (the per-level table). */
 const LEVEL_TABLE = LEVELS.map((level) => ({ level, info: getLevelInfo(getLevelThreshold(level)) }));
@@ -61,7 +33,7 @@ export default function LevelInfoModal({ levelInfo, spotsCount, onClose }: Reado
         aria-label="Close level info"
       />
 
-      <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto glass-card p-6 rounded-2xl animate-scale-in">
+      <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-surface-2 ring-1 ring-white/10 shadow-sheet p-6 rounded-[28px] animate-scale-in">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -79,7 +51,7 @@ export default function LevelInfoModal({ levelInfo, spotsCount, onClose }: Reado
         {/* Current Level */}
         <div className={`p-6 rounded-xl ${levelInfo.bgColor} border-2 ${levelInfo.borderColor} mb-6`}>
           <div className="flex items-center gap-4 mb-4">
-            <div className="text-5xl">{levelInfo.icon}</div>
+            <LevelBadge level={levelInfo.level} size={64} className="flex-shrink-0 drop-shadow-lg" />
             <div className="flex-1">
               <h3 className={`text-2xl font-bold ${levelInfo.textColor}`}>{t(levelInfo.nameKey)}</h3>
               <p className="text-white/80 text-sm">{t('currentLevel')}</p>
@@ -120,7 +92,7 @@ export default function LevelInfoModal({ levelInfo, spotsCount, onClose }: Reado
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  <div className="text-4xl">{info.icon}</div>
+                  <LevelBadge level={level} size={48} className={`flex-shrink-0 ${isUnlocked ? '' : 'grayscale opacity-70'}`} />
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h4 className={`text-xl font-bold ${isUnlocked ? info.textColor : 'text-white/60'}`}>
@@ -143,11 +115,11 @@ export default function LevelInfoModal({ levelInfo, spotsCount, onClose }: Reado
                       <ul className="space-y-1 text-white/70 text-sm">
                         {LEVEL_PERKS[level].map((perk) => {
                           const text = perk.keys.map((key) => t(key)).join(' ');
-                          return perk.variant === 'muted' ? (
+                          return perk.muted ? (
                             <li key={perk.keys.join(' ')} className="text-white/50 italic">{text}</li>
                           ) : (
                             <li key={perk.keys.join(' ')} className="flex items-center gap-2">
-                              {perk.emoji && <span className="text-base">{perk.emoji}</span>}
+                              {perk.icon && <PerkIcon icon={perk.icon} className={`w-4 h-4 flex-shrink-0 ${info.textColor}`} />}
                               {text}
                             </li>
                           );
