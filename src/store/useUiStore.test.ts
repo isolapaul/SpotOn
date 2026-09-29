@@ -26,6 +26,8 @@ beforeEach(() => {
     pendingLocation: null,
     prevMapTheme: null,
     movedBannerVisible: false,
+    previewSpotId: null,
+    locateRequest: 0,
   });
   useMapThemeStore.setState({ theme: 'dark' });
 });
@@ -174,5 +176,37 @@ describe('movedBannerVisible (T19)', () => {
     expect(ui().movedBannerVisible).toBe(true);
     ui().setMovedBannerVisible(false);
     expect(ui().movedBannerVisible).toBe(false);
+  });
+});
+
+describe('place card (design 1E)', () => {
+  it('previewSpot shows and hides a card', () => {
+    ui().previewSpot('a');
+    expect(ui().previewSpotId).toBe('a');
+    ui().previewSpot(null);
+    expect(ui().previewSpotId).toBeNull();
+  });
+
+  it('a map click, opening a panel and starting to add a spot each close the card', () => {
+    ui().previewSpot('a');
+    ui().onMapClick();
+    expect(ui().previewSpotId).toBeNull();
+
+    ui().previewSpot('a');
+    ui().openPanel(spot('a'));
+    expect(ui().previewSpotId).toBeNull();
+    expect(ui().activePanel).toEqual(spot('a'));
+
+    ui().previewSpot('b');
+    ui().startSelectingLocation('dark');
+    expect(ui().previewSpotId).toBeNull();
+  });
+});
+
+describe('requestLocate (design 1C)', () => {
+  it('bumps a counter the map reacts to', () => {
+    ui().requestLocate();
+    ui().requestLocate();
+    expect(ui().locateRequest).toBe(2);
   });
 });

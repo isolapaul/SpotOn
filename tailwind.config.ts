@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 const config: Config = {
   content: [
@@ -62,6 +63,10 @@ const config: Config = {
         'float-3': 'float3 7s ease-in-out infinite',
         // Notification center / prompt (iOS-like springy ease; used behind motion-safe:)
         'sheet-in': 'sheetIn 0.45s cubic-bezier(0.32, 0.72, 0, 1) both',
+        'hint-bob': 'hintBob 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite',
+        // Place card (design 1E): in on the iOS curve, out faster on the exit curve
+        'card-in': 'cardIn 0.5s cubic-bezier(0.32, 0.72, 0, 1) both',
+        'card-out': 'cardOut 0.28s cubic-bezier(0.4, 0, 1, 1) both',
         'sheet-out': 'sheetOut 0.18s ease-in both',
         'backdrop-in': 'fadeIn 0.25s ease-out both',
         'backdrop-out': 'fadeOut 0.18s ease-in both',
@@ -86,6 +91,18 @@ const config: Config = {
         fadeOut: {
           '0%': { opacity: '1' },
           '100%': { opacity: '0' },
+        },
+        cardIn: {
+          '0%': { transform: 'translateY(calc(100% + 16px))' },
+          '100%': { transform: 'translateY(0)' },
+        },
+        cardOut: {
+          '0%': { transform: 'translateY(0)', opacity: '1' },
+          '100%': { transform: 'translateY(calc(100% + 16px))', opacity: '0.6' },
+        },
+        hintBob: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-3px)' },
         },
         sheetIn: {
           '0%': { opacity: '0', transform: 'translateY(-12px) scale(0.94)' },
@@ -133,6 +150,11 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Chrome over the dark and satellite map styles (design 1B): `chrome-dark:text-brand-400`.
+    plugin(({ addVariant }) => {
+      addVariant('chrome-dark', ['html[data-map-theme="dark"] &', 'html[data-map-theme="satellite"] &']);
+    }),
+  ],
 };
 export default config;

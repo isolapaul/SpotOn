@@ -48,10 +48,10 @@ for (const lang of ['hu', 'en'] as const) {
     expect(href?.startsWith(MOVED_TO)).toBe(true);
     await expect(page.getByText(TEXT[lang].installGate)).toHaveCount(0);
 
-    // One row below the top buttons, never overlapping them.
-    const themeBox = await page.getByRole('button', { name: 'Map Theme' }).boundingBox();
+    // In the top-left slot, never overlapping the control stack on the right (design 1C).
+    const stackBox = await page.getByRole('toolbar', { name: 'Map controls' }).boundingBox();
     const bannerBox = await banner(page).boundingBox();
-    expect(themeBox && bannerBox && bannerBox.y >= themeBox.y + themeBox.height).toBeTruthy();
+    expect(stackBox && bannerBox && bannerBox.x + bannerBox.width <= stackBox.x).toBeTruthy();
 
     await page.screenshot({ path: `docs/screenshots/moved-banner-${lang}.png`, fullPage: true });
   });

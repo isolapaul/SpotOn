@@ -8,7 +8,8 @@ import { test, blockMapTiles, openApp, signInWithEmail, skipFirstRunOverlays } f
 
 const satelliteTile = (page: Page) => page.locator('img.leaflet-tile[src*="arcgisonline"]');
 const standardTile = (page: Page) => page.locator('img.leaflet-tile[src*="tile.openstreetmap.org"]');
-const clickMapBanner = (page: Page) => page.getByText('📍 Click on the map to select location', { exact: true });
+// The picking hint lives in the launcher capsule (design 1C); Add turns into Cancel meanwhile.
+const clickMapBanner = (page: Page) => page.getByText('Tap the map to place', { exact: true });
 const addButton = (page: Page) => page.getByRole('button', { name: 'Add', exact: true });
 
 test.beforeEach(async ({ page }) => {

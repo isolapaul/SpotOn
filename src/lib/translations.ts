@@ -38,7 +38,6 @@ export const translations = {
     submitSpot: 'Hely Beküldése',
     compressing: 'Tömörítés és feltöltés...',
     location: 'Helyszín',
-    clickMapToSelect: '📍 Kattints a térképre a helyszín kiválasztásához',
     cancel: 'Mégse',
     spotUploaded: 'Hely feltöltve! Jóváhagyásra vár.',
     spotUploadFailed: 'Hiba a hely hozzáadásakor. Próbáld újra.',
@@ -416,6 +415,16 @@ export const translations = {
     installDontShowAgain: 'Ne mutassa többet',
     installFooter: 'Az app telepítése után automatikusan elindul a főképernyőről 🚀',
 
+    mainNavigation: 'Fő navigáció',
+    tapMapToPlace: 'Koppints a térképre',
+    spotCountOne: '{count} hely',
+    spotCountMany: '{count} hely',
+    mapControls: 'Térképvezérlők',
+    locateMe: 'Saját helyzetem',
+    details: 'Részletek',
+    directions: 'Útvonal',
+    addToFavorites: 'Hozzáadás a kedvencekhez',
+    removeFromFavorites: 'Eltávolítás a kedvencekből',
   },
   en: {
     // Navigation
@@ -456,7 +465,6 @@ export const translations = {
     submitSpot: 'Submit Spot',
     compressing: 'Compressing & Uploading...',
     location: 'Location',
-    clickMapToSelect: '📍 Click on the map to select location',
     cancel: 'Cancel',
     spotUploaded: 'Spot uploaded! Waiting for approval.',
     spotUploadFailed: 'Failed to add spot. Please try again.',
@@ -834,6 +842,16 @@ export const translations = {
     installDontShowAgain: "Don't show again",
     installFooter: 'After installation, the app will launch automatically from your home screen 🚀',
 
+    mainNavigation: 'Main navigation',
+    tapMapToPlace: 'Tap the map to place',
+    spotCountOne: '{count} spot',
+    spotCountMany: '{count} spots',
+    mapControls: 'Map controls',
+    locateMe: 'My location',
+    details: 'Details',
+    directions: 'Directions',
+    addToFavorites: 'Add to favorites',
+    removeFromFavorites: 'Remove from favorites',
   },
   de: {
     // Navigation
@@ -874,7 +892,6 @@ export const translations = {
     submitSpot: 'Ort einreichen',
     compressing: 'Komprimieren und Hochladen...',
     location: 'Standort',
-    clickMapToSelect: '📍 Klicken Sie auf die Karte, um den Standort auszuwählen',
     cancel: 'Abbrechen',
     spotUploaded: 'Ort hochgeladen! Wartet auf Genehmigung.',
     spotUploadFailed: 'Fehler beim Hinzufügen des Ortes. Bitte versuchen Sie es erneut.',
@@ -1253,6 +1270,16 @@ export const translations = {
     installDontShowAgain: 'Nicht mehr anzeigen',
     installFooter: 'Nach der Installation startet die App automatisch vom Startbildschirm 🚀',
 
+    mainNavigation: 'Hauptnavigation',
+    tapMapToPlace: 'Auf die Karte tippen',
+    spotCountOne: '{count} Ort',
+    spotCountMany: '{count} Orte',
+    mapControls: 'Kartensteuerung',
+    locateMe: 'Mein Standort',
+    details: 'Details',
+    directions: 'Route',
+    addToFavorites: 'Zu Favoriten hinzufügen',
+    removeFromFavorites: 'Aus Favoriten entfernen',
   },
 };
 

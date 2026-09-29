@@ -17,3 +17,17 @@ export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: numb
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return EARTH_RADIUS_KM * c;
 }
+
+/**
+ * A distance for people (design 1E): metres under 1 km (to 10 m), one decimal under 10 km, whole
+ * kilometres beyond. The decimal separator follows the language (hu/de: comma).
+ */
+export function formatDistance(km: number, language: 'hu' | 'en' | 'de'): string {
+  if (km < 1) return `${Math.max(10, Math.round((km * 1000) / 10) * 10)} m`;
+  const tenths = Math.round(km * 10) / 10;
+  if (tenths < 10) {
+    const oneDecimal = tenths.toFixed(1);
+    return `${language === 'en' ? oneDecimal : oneDecimal.replace('.', ',')} km`;
+  }
+  return `${Math.round(km)} km`;
+}

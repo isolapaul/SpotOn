@@ -41,6 +41,7 @@ src/proxy.ts                     Per-request nonce CSP for pages (T32); policy b
 src/components/                  All UI (panels, modals, map)
 src/components/profile/**        ProfilePanel split into header, tabs, admin tools (T27); components/ProfilePanel.tsx re-exports it
 src/components/spot-details/**   SpotDetailsPanel split into hero, gallery, reviews, edit/admin parts (T28); components/SpotDetailsPanel.tsx re-exports it
+src/components/map/**            Map chrome (design 1C/1E): MapControls stack, MapStylePopover, PlaceCard
 src/components/ui/               Shared primitives (T25): PanelShell, ModalShell, StarRating
 src/store/useSpotStore.ts        Spot scopes (startSpots / syncSpotScopes / stopSpots) + all spot mutations; admin state lives in useUserStore (isAdmin / isSuperAdmin, from admins/{uid})
 src/store/spotListeners.ts       The approved / own / admin spot listeners behind the scopes (T30), merged by lib/mergeSpots

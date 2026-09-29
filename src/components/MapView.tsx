@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Spot } from '@/store/useSpotStore';
 import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
-import SpotInfoWindow from './SpotInfoWindow';
 import { buildPinHtml, markerVariant, PIN_ANCHOR, PIN_SIZE, zoomBand, type MarkerVariant } from '@/lib/mapMarkers';
 import {
   DEFAULT_MAP_CENTER,
@@ -23,7 +22,12 @@ interface MapViewProps {
   spots?: Spot[];
   /** Blue dot and one-time pan target (page: the shared location, or the default centre once denied). */
   userLocation?: { lat: number; lng: number } | null;
-  onSpotDetailsOpen?: (spot: Spot) => void;
+  /** Bumped by the locate button: re-centre on userLocation (design 1C). */
+  locateRequest?: number;
+  /** The spot whose place card is open: its pin grows (design 1E). */
+  selectedSpotId?: string | null;
+  /** A pin tap: opens the place card. */
+  onSpotPreview?: (spotId: string) => void;
   onMapLoad?: () => void;
   onMapClick?: () => void;
 }
@@ -121,19 +125,43 @@ function MapEventHandler({
   return null;
 }
 
-// Pans map to user location when it becomes available
-function LocationPanner({ userLocation }: { userLocation: { lat: number; lng: number } | null }) {
+// Pans the map to the user's location once when it becomes available, and again (a smooth fly) on
+// every locate request; a request made before the location is known is served when it arrives.
+function LocationPanner({ userLocation, locateRequest }: { userLocation: { lat: number; lng: number } | null; locateRequest: number }) {
   const map = useMap();
   const panned = useRef(false);
+  const servedRequest = useRef(locateRequest);
 
   useEffect(() => {
-    if (userLocation && !panned.current) {
+    if (!userLocation) return;
+    if (!panned.current) {
       panned.current = true;
+      servedRequest.current = locateRequest;
       map.setView([userLocation.lat, userLocation.lng], LOCATE_ZOOM, { animate: true });
+    } else if (locateRequest !== servedRequest.current) {
+      servedRequest.current = locateRequest;
+      map.flyTo([userLocation.lat, userLocation.lng], Math.max(map.getZoom(), LOCATE_ZOOM), { duration: 0.8 });
     }
-  }, [userLocation, map]);
+  }, [userLocation, locateRequest, map]);
 
   return null;
+}
+
+// Marks the selected pin's DOM (data-selected) so CSS grows it; the icons stay cached and shared.
+function useSelectedPin(markers: Map<string, L.Marker>, selectedSpotId: string | null, spots: Spot[]) {
+  useEffect(() => {
+    if (!selectedSpotId) return;
+    const marker = markers.get(selectedSpotId);
+    const pin = marker?.getElement()?.querySelector<HTMLElement>('.spot-pin');
+    if (!marker || !pin) return;
+    pin.dataset.selected = 'true';
+    marker.setZIndexOffset(2000);
+    return () => {
+      delete pin.dataset.selected;
+      marker.setZIndexOffset(0);
+    };
+    // spots: a re-render may swap a marker's icon (new DOM), so re-apply after it.
+  }, [markers, selectedSpotId, spots]);
 }
 
 // Swaps tile layer when theme changes without remounting map
@@ -155,13 +183,15 @@ export default function MapView({
   tempMarker,
   spots = [],
   userLocation = null,
-  onSpotDetailsOpen,
+  locateRequest = 0,
+  selectedSpotId = null,
+  onSpotPreview,
   onMapLoad,
   onMapClick,
 }: Readonly<MapViewProps>) {
-  const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
-
   const { theme } = useMapThemeStore();
+  const [markers] = useState(() => new Map<string, L.Marker>());
+  useSelectedPin(markers, selectedSpotId, spots);
 
   // Highlight-expiry reference time, computed once per render (not per marker)
   const nowIso = new Date().toISOString();
@@ -176,16 +206,13 @@ export default function MapView({
         attributionControl={false}
       >
         <MapReadyNotifier onMapLoad={onMapLoad} />
-        <LocationPanner userLocation={userLocation} />
+        <LocationPanner userLocation={userLocation} locateRequest={locateRequest} />
         <TileLayerSwitcher theme={theme} />
         <ZoomBandTracker />
         <MapEventHandler
           isAddingSpot={isAddingSpot}
           onLocationSelect={onLocationSelect}
-          onMapClick={() => {
-            setSelectedSpot(null);
-            onMapClick?.();
-          }}
+          onMapClick={onMapClick}
         />
 
         {/* User location dot */}
@@ -208,28 +235,17 @@ export default function MapView({
               title={spot.name}
               icon={getPinIcon(spot.category, markerVariant(spot.status), isHighlighted)}
               zIndexOffset={isHighlighted ? 1000 : 0}
+              ref={(m) => {
+                if (m) markers.set(spot.id, m);
+                else markers.delete(spot.id);
+              }}
               eventHandlers={{
-                click: () => setSelectedSpot(spot),
+                click: () => onSpotPreview?.(spot.id),
               }}
             />
           );
         })}
       </MapContainer>
-
-      {/* Info popup rendered outside MapContainer (avoids Leaflet popup styling conflicts) */}
-      {selectedSpot && (
-        <div className={`absolute left-1/2 -translate-x-1/2 ${Z.mapInner} animate-fade-in`}
-          style={{ bottom: '100px' }}>
-          <SpotInfoWindow
-            spot={selectedSpot}
-            onClose={() => setSelectedSpot(null)}
-            onViewDetails={() => {
-              onSpotDetailsOpen?.(selectedSpot);
-              setSelectedSpot(null);
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }

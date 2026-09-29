@@ -70,7 +70,7 @@ describe('Z scale', () => {
 
   it('pins the values in use', () => {
     expect(Z).toEqual({
-      mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-[1000]', dock: 'z-50', prompt: 'z-50',
+      mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-[1000]', dock: 'z-50', prompt: 'z-50', placeCard: 'z-[55]',
       panel: 'z-[60]', panelInnerBackdrop: 'z-40', panelInnerSheet: 'z-50', panelModal: 'z-[70]',
       gallery: 'z-[100]', floatingButton: 'z-[1500]', modal: 'z-[2000]', usernameSetup: 'z-[3500]',
       blocking: 'z-[9999]',

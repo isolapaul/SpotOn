@@ -63,7 +63,7 @@ test('smoke flow has no CSP violations', async ({ page }) => {
   for (const theme of ['Satellite', 'Dark']) {
     await page.getByRole('button', { name: 'Map Theme' }).click();
     await page.getByRole('button', { name: theme, exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Close theme selector' })).toHaveCount(0);
+    await expect(page.getByRole('group', { name: 'Map Theme' })).toHaveCount(0);
   }
 
   // 3. Info window → details → gallery (legacy spot: one image).

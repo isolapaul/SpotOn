@@ -5,6 +5,11 @@
 ### Fixed (design 1A)
 - The installed iPhone app now fills the whole screen: the map runs under the status bar and down to the bottom edge, with no band below it (a workaround for an iOS 26 bug). The page background follows the map style instead of black.
 
+### Changed (design 1C, 1E)
+- New main menu: a capsule with Explore (and how many spots there are) and your avatar, plus a separate green + button. While you pick a place for a new spot, the capsule says "Tap the map to place" and the + turns into ×.
+- The top-right corner holds one control stack: notifications, map style, feedback, and a new "my location" button that brings the map back to you. Map styles open as a small menu with mini map previews.
+- Tapping a pin opens a place card from the bottom (photo, category, distance, rating, Directions / Details / favourite; approve for admins). Drag it down, tap the map or × to close; the pin grows while its card is open.
+
 ### Changed (design 1D)
 - New map pins: one size at every zoom, the tip points at the exact spot, and hand-drawn category icons replace the emoji. Approved spots are green; pending ones are white with a dashed amber ring and a clock; highlighted ones get a gold ring and a star. Zoomed far out, pins become small dots. Your position is a calm iOS-style dot.
 - Animations follow the system's reduced-motion setting everywhere.
