@@ -5,6 +5,9 @@
 ### Fixed (design 1A)
 - The installed iPhone app now fills the whole screen: the map runs under the status bar and down to the bottom edge, with no band below it (a workaround for an iOS 26 bug). The page background follows the map style instead of black.
 
+### Changed (Explore)
+- Explore is redesigned: a large title with the spot count, an iOS-style segmented sort (nearest / best rated), always-visible category chips with icons, the top spot as a big photo card, and a clean grouped list with category, distance and rating; rows glide in.
+
 ### Changed (transitions)
 - Explore, Profile and spot details open as sheets sliding up and close sliding down; from a place card, Details grows the card's photo into the spot's header image. Follows the reduced-motion setting.
 - Panels close by pulling them down from the top of their content (a quarter of the screen, or a quick flick); the sideways swipe that showed a black page behind is gone. Pulling the place card up, or tapping its grabber, opens the spot. The map controls no longer show on top of the sign-in sheet.

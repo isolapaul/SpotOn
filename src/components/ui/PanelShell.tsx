@@ -14,6 +14,11 @@ const VARIANTS = {
     backdrop: 'absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default',
     panel: 'absolute inset-0 flex flex-col bg-gray-900/95 backdrop-blur-2xl',
   },
+  // Design phase 3: the grouped dark surface (Discovery).
+  surface: {
+    backdrop: 'absolute inset-0 bg-black/70 cursor-default',
+    panel: 'absolute inset-0 flex flex-col bg-surface-0',
+  },
   // SpotDetails: the panel lets clicks through (its content opts back in with pointer-events-auto).
   slate: {
     backdrop: 'absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default pointer-events-auto',
