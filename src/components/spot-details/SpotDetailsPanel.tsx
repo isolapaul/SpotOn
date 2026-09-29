@@ -8,7 +8,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useT } from '@/hooks/useT';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { getNavigationUrl } from '@/lib/spotUtils';
-import { getGalleryUrls, getHeroImageUrl, getSpotImages, sortSpotImagesByLikes } from '@/lib/spotImages';
+import { getGalleryUrls, getHeroImageUrl, getSpotImages, imageFallbacks, sortSpotImagesByLikes } from '@/lib/spotImages';
 import { averageRating } from '@/lib/rating';
 import PanelShell from '../ui/PanelShell';
 import SpotHero from './SpotHero';
@@ -124,7 +124,7 @@ export default function SpotDetailsPanel({ spotId, onClose }: Readonly<SpotDetai
         <SpotHero
           spot={spot}
           heroImageUrl={heroImageUrl}
-          fallbackUrls={allGalleryImages}
+          fallbackUrls={imageFallbacks(spot, sortedSpotImages)}
           imageCount={allGalleryImages.length}
           onOpenGallery={openGallery}
           onClose={onClose}

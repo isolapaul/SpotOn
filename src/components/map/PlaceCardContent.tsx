@@ -12,7 +12,7 @@ import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
 import { averageRating } from '@/lib/rating';
 import { formatDistance, haversineKm } from '@/lib/geo';
-import { getPreviewImageUrl, isImageUnoptimized, PLACEHOLDER_URL, sortSpotImagesByLikes } from '@/lib/spotImages';
+import { getPreviewImageUrl, imageFallbacks, isImageUnoptimized, PLACEHOLDER_URL, sortSpotImagesByLikes } from '@/lib/spotImages';
 import CategoryIcon from '@/components/ui/CategoryIcon';
 import StarRating from '@/components/ui/StarRating';
 
@@ -28,10 +28,14 @@ interface PlaceCardContentProps {
 
 function Thumb({ spot, morphSource }: Readonly<{ spot: Spot; morphSource: boolean }>) {
   const vt = morphSource ? { 'data-vt-thumb': '' } : {};
-  // Most-liked image first ('bothRequired' tie-break, as the former info window).
-  const url = getPreviewImageUrl(spot, sortSpotImagesByLikes(spot.spotImages || [], 'bothRequired'));
-  const [failed, setFailed] = useState(false);
-  if (url === PLACEHOLDER_URL || failed) {
+  // Most-liked image first ('bothRequired' tie-break, as the former info window); when it does not
+  // load, the spot's other images and its legacy imageUrl.
+  const sorted = sortSpotImagesByLikes(spot.spotImages || [], 'bothRequired');
+  const [failed, setFailed] = useState<readonly string[]>([]);
+  const url = [getPreviewImageUrl(spot, sorted), ...imageFallbacks(spot, sorted)].find(
+    (u) => u !== PLACEHOLDER_URL && !failed.includes(u),
+  );
+  if (!url) {
     return (
       <span {...vt} className="w-[88px] h-[88px] flex-shrink-0 rounded-[18px] grid place-items-center bg-brand-500/15 text-brand-400">
         <CategoryIcon category={spot.category} className="w-9 h-9" />
@@ -40,7 +44,7 @@ function Thumb({ spot, morphSource }: Readonly<{ spot: Spot; morphSource: boolea
   }
   return (
     <span {...vt} className="relative w-[88px] h-[88px] flex-shrink-0 rounded-[18px] overflow-hidden bg-surface-3">
-      <Image src={url} alt="" fill sizes="88px" className="object-cover" unoptimized={isImageUnoptimized(spot)} onError={() => setFailed(true)} />
+      <Image key={url} src={url} alt="" fill sizes="88px" className="object-cover" unoptimized={isImageUnoptimized(spot)} onError={() => setFailed((f) => [...f, url])} />
     </span>
   );
 }
@@ -87,14 +91,14 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
           <button type="button" onClick={onDetails} tabIndex={-1} className="no-min-size block text-left touch-manipulation">
             <h2 className="text-[17px] font-semibold leading-snug text-label line-clamp-2">{spot.name}</h2>
           </button>
-          <p className="mt-0.5 flex items-center gap-1.5 text-[15px] text-label-secondary min-w-0">
+          <p className="mt-0.5 flex items-center gap-1.5 text-[15px] text-label-secondary min-w-0 motion-safe:animate-rise-in" style={{ animationDelay: '60ms' }}>
             <CategoryIcon category={spot.category} className="w-4 h-4 flex-shrink-0 text-brand-400" />
             <span className="truncate">
               {t(categoryTranslationKeys[spot.category])}
               {distance && <span className="tabular-nums"> · {distance}</span>}
             </span>
           </p>
-          <div className="mt-1 flex items-center gap-1 text-[15px]">
+          <div className="mt-1 flex items-center gap-1 text-[15px] motion-safe:animate-rise-in" style={{ animationDelay: '110ms' }}>
             {reviewCount > 0 ? (
               <>
                 <StarRating rating={Math.round(avg)} size="sm" emptyTone="dim" wrapper={false} />
@@ -136,7 +140,7 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
         </button>
       )}
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 flex gap-2 motion-safe:animate-rise-in" style={{ animationDelay: '160ms' }}>
         <a
           href={getNavigationUrl(spot.location.lat, spot.location.lng)}
           target="_blank"

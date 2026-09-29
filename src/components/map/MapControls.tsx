@@ -23,7 +23,7 @@ function Cell({ label, onClick, children }: Readonly<{ label: string; onClick: (
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="relative w-11 h-11 grid place-items-center text-chrome-ink touch-manipulation
+      className="relative w-11 h-11 grid place-items-center text-chrome-ink-soft touch-manipulation
         active:bg-black/[.08] chrome-dark:active:bg-white/10 transition-colors
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500"
     >
@@ -32,7 +32,7 @@ function Cell({ label, onClick, children }: Readonly<{ label: string; onClick: (
   );
 }
 
-const Hairline = () => <span aria-hidden="true" className="block mx-auto w-7 h-px bg-black/[.08] chrome-dark:bg-white/10" />;
+const Hairline = () => <span aria-hidden="true" className="block mx-auto w-6 h-px bg-black/[.06] chrome-dark:bg-white/10" />;
 
 export default function MapControls() {
   const t = useT();
@@ -42,7 +42,11 @@ export default function MapControls() {
   // A sheet or popover grows out of the stack and takes its place meanwhile.
   const covered = open === 'notifications' || open === 'style';
 
+  // Replays the locate icon's spin on every tap.
+  const [locateSpin, setLocateSpin] = useState(0);
+
   const locate = async () => {
+    setLocateSpin((n) => n + 1);
     const { location, request } = useLocationStore.getState();
     if (location) {
       useUiStore.getState().requestLocate();
@@ -84,7 +88,11 @@ export default function MapControls() {
         </Cell>
         <Hairline />
         <Cell label={t('locateMe')} onClick={locate}>
-          <LocateFixed className="w-5 h-5 text-locate" strokeWidth={2} />
+          <LocateFixed
+            key={locateSpin}
+            className={`w-5 h-5 text-locate ${locateSpin > 0 ? 'motion-safe:animate-locate-spin' : ''}`}
+            strokeWidth={2}
+          />
         </Cell>
       </div>
 

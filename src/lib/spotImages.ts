@@ -175,3 +175,15 @@ export function getGalleryUrls(
     ...(spot.imageUrls || []).filter((url) => !sorted.some((img) => img.url === url)),
   ].filter((url, i, self) => url !== PLACEHOLDER_URL && self.indexOf(url) === i);
 }
+
+/**
+ * Every image URL worth trying for a spot, in order, when the preferred one does not load: the
+ * gallery, then the thumbnail choice (which also reads the legacy singular `imageUrl`). Some spots
+ * have a broken spotImages entry while their legacy imageUrl works (owner report: the list showed
+ * the photo, the details did not). No placeholder, no duplicates.
+ */
+export function imageFallbacks(spot: ImageFields & SpotImageUrlFields, sorted: ReadonlyArray<{ url: string }>): string[] {
+  return [...getGalleryUrls(spot, sorted), getThumbnailUrl(spot)].filter(
+    (url, i, self) => url !== PLACEHOLDER_URL && self.indexOf(url) === i,
+  );
+}

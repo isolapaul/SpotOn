@@ -53,7 +53,7 @@ export default function MapStylePopover({ onClose }: Readonly<{ onClose: () => v
       <div
         role="group"
         aria-label={t('mapTheme')}
-        className={`material-chrome absolute w-[240px] rounded-[20px] p-1.5 origin-top-right ${
+        className={`material-chrome material-chrome-dense absolute w-[240px] rounded-[20px] p-1.5 origin-top-right ${
           closing ? 'motion-safe:animate-sheet-out' : 'motion-safe:animate-sheet-in'
         }`}
         style={{

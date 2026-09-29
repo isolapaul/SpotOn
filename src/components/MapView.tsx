@@ -226,7 +226,7 @@ export default function MapView({
         )}
 
         {/* Spot markers */}
-        {spots.map((spot) => {
+        {spots.map((spot, index) => {
           const isHighlighted = (spot.highlighted || []).some((h) => h.expiresAt > nowIso);
           return (
             <Marker
@@ -236,8 +236,11 @@ export default function MapView({
               icon={getPinIcon(spot.category, markerVariant(spot.status), isHighlighted)}
               zIndexOffset={isHighlighted ? 1000 : 0}
               ref={(m) => {
-                if (m) markers.set(spot.id, m);
-                else markers.delete(spot.id);
+                if (m) {
+                  markers.set(spot.id, m);
+                  // Pins land one after another (a short cascade, capped), not all at once.
+                  m.getElement()?.style.setProperty('--pin-delay', `${Math.min(index, 24) * 22}ms`);
+                } else markers.delete(spot.id);
               }}
               eventHandlers={{
                 click: () => onSpotPreview?.(spot.id),

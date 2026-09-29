@@ -31,11 +31,17 @@ html[data-map-theme="satellite"] {
   --chrome-edge: 255 255 255 / 0.1;
 }
 .material-chrome {
-  background-color: rgb(var(--chrome-rgb) / 0.86);
+  /* Frosted and see-through (owner: the solid white stack stood out too much); the map shows
+     through, softened by blur and saturation. */
+  background-color: rgb(var(--chrome-rgb) / 0.52);
   color: rgb(var(--chrome-ink));
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
-  box-shadow: 0 0 0 0.5px rgb(var(--chrome-edge)), 0 1px 2px rgb(0 0 0 / 0.08), 0 6px 20px rgb(0 0 0 / 0.14);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  backdrop-filter: blur(20px) saturate(190%);
+  box-shadow: 0 0 0 0.5px rgb(var(--chrome-edge)), 0 4px 14px rgb(0 0 0 / 0.1);
+}
+/* Denser chrome for menus with text (map style popover): readable over any map. */
+.material-chrome-dense {
+  background-color: rgb(var(--chrome-rgb) / 0.86);
 }
 /* Sheet material (design 1E): the dark place card and sheets over the map. */
 .material-sheet {
@@ -47,6 +53,7 @@ html[data-map-theme="satellite"] {
 }
 .text-chrome-ink { color: rgb(var(--chrome-ink)); }
 .text-chrome-ink-2 { color: rgb(var(--chrome-ink-2)); }
+.text-chrome-ink-soft { color: rgb(var(--chrome-ink) / 0.8); }
 
 html,
 body {
@@ -363,7 +370,9 @@ a:not(.no-min-size),
 }
 @media (prefers-reduced-motion: no-preference) {
   .spot-pin {
-    animation: pin-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: pin-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: var(--pin-delay, 0ms);
+    transform-origin: 22px 50px;
   }
   .draft-pin {
     animation: pin-drop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -371,7 +380,8 @@ a:not(.no-min-size),
   }
 }
 @keyframes pin-in {
-  from { opacity: 0; transform: scale(0.8); }
+  from { opacity: 0; transform: translateY(-10px) scale(0.5); }
+  60% { opacity: 1; }
   to { opacity: 1; transform: none; }
 }
 @keyframes pin-drop {

@@ -12,7 +12,7 @@ import { Z } from '@/lib/constants';
 
 const VARIANTS = {
   gray: {
-    backdrop: 'absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default',
+    backdrop: 'absolute inset-0 bg-black/70 cursor-default',
     panel: 'absolute inset-0 flex flex-col bg-gray-900/95 backdrop-blur-2xl',
   },
   // Design phase 3: the grouped dark surface (Discovery).
@@ -22,7 +22,7 @@ const VARIANTS = {
   },
   // SpotDetails: the panel lets clicks through (its content opts back in with pointer-events-auto).
   slate: {
-    backdrop: 'absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default pointer-events-auto',
+    backdrop: 'absolute inset-0 bg-black/70 cursor-default pointer-events-auto',
     panel: 'absolute inset-0 flex flex-col bg-surface-0 pointer-events-none',
   },
 } as const;
@@ -47,6 +47,12 @@ export default function PanelShell({ onClose, backdropLabel, variant, children, 
       <button
         type="button"
         className={styles.backdrop}
+        // Fades as the sheet is pulled down, in step with it (owner: a blurred backdrop lagged
+        // behind the sheet on the iPhone, so the backdrops no longer blur).
+        style={{
+          opacity: offset > 0 ? Math.max(0, 1 - offset / 500) : 1,
+          transition: dragging ? 'none' : 'opacity 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+        }}
         onClick={onClose}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
         aria-label={backdropLabel}

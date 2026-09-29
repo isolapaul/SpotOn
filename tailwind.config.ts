@@ -72,6 +72,7 @@ const config: Config = {
         'level-pop': 'levelPop 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both',
         'rise-in': 'riseIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
         'rays-spin': 'raysSpin 14s linear infinite',
+        'locate-spin': 'locateSpin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both',
         // Splash: the heart pin breathes while the app loads
         'splash-breathe': 'splashBreathe 1.6s cubic-bezier(0.45, 0, 0.55, 1) 0.6s infinite',
         'card-out': 'cardOut 0.28s cubic-bezier(0.4, 0, 1, 1) both',
@@ -112,6 +113,11 @@ const config: Config = {
         splashBreathe: {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.06)' },
+        },
+        locateSpin: {
+          '0%': { transform: 'rotate(0deg) scale(1)' },
+          '50%': { transform: 'rotate(90deg) scale(0.8)' },
+          '100%': { transform: 'rotate(180deg) scale(1)' },
         },
         raysSpin: {
           '0%': { transform: 'rotate(0deg)' },

@@ -3,6 +3,7 @@ import type { SpotImage } from '@/store/useSpotStore';
 import {
   MAX_SPOT_IMAGES,
   PLACEHOLDER_URL,
+  imageFallbacks,
   extForMime,
   getGalleryUrls,
   getHeroImageUrl,
@@ -289,5 +290,17 @@ describe('image URL helpers (characterisation)', () => {
     const sorted = sortSpotImagesByLikes(getSpotImages(spot), 'missingAsZero');
     expect(getHeroImageUrl(spot, sorted)).toBe('/b.jpg');
     expect(getPreviewImageUrl(spot, sorted)).toBe('/a.jpg');
+  });
+});
+
+describe('imageFallbacks', () => {
+  it('ends with the legacy imageUrl when spotImages point elsewhere', () => {
+    const spot = { id: 's', spotImages: [{ id: 'a', url: 'broken', likes: 0, likedBy: [] }], imageUrl: 'legacy' } as never;
+    expect(imageFallbacks(spot, [{ url: 'broken' }])).toEqual(['broken', 'legacy']);
+  });
+  it('never lists the placeholder or a duplicate', () => {
+    const spot = { id: 's', imageUrls: ['a', 'b'], primaryImageIndex: 1 } as never;
+    expect(imageFallbacks(spot, [])).toEqual(['a', 'b']);
+    expect(imageFallbacks({ id: 's', imageUrls: [PLACEHOLDER_URL] } as never, [])).toEqual([]);
   });
 });
