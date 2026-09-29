@@ -429,6 +429,8 @@ export const translations = {
     levelUpUnlocked: 'Mostantól',
     levelUpContinue: 'Szuper!',
     photoCount: '{count} fotó',
+    saveSpot: 'Mentés',
+    highlightShort: 'Kiemelés',
   },
   en: {
     // Navigation
@@ -860,6 +862,8 @@ export const translations = {
     levelUpUnlocked: 'Now unlocked',
     levelUpContinue: 'Awesome!',
     photoCount: '{count} photos',
+    saveSpot: 'Save',
+    highlightShort: 'Highlight',
   },
   de: {
     // Navigation
@@ -1292,6 +1296,8 @@ export const translations = {
     levelUpUnlocked: 'Jetzt freigeschaltet',
     levelUpContinue: 'Super!',
     photoCount: '{count} Fotos',
+    saveSpot: 'Merken',
+    highlightShort: 'Hervorheben',
   },
 };
 

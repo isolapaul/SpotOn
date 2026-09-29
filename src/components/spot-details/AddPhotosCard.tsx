@@ -33,7 +33,7 @@ export default function AddPhotosCard({ spot }: Readonly<AddPhotosCardProps>) {
   };
 
   return (
-    <div className="glass-card p-4 mb-4">
+    <div className="rounded-[18px] bg-surface-1 p-4 mb-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-white font-medium">{t('addSpotPhotos')}</p>

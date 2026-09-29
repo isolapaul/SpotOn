@@ -23,7 +23,7 @@ const VARIANTS = {
   // SpotDetails: the panel lets clicks through (its content opts back in with pointer-events-auto).
   slate: {
     backdrop: 'absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default pointer-events-auto',
-    panel: 'absolute inset-0 flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 pointer-events-none',
+    panel: 'absolute inset-0 flex flex-col bg-surface-0 pointer-events-none',
   },
 } as const;
 

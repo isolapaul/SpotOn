@@ -93,7 +93,7 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
   };
 
   return (
-    <div className="glass-card p-4 mb-4">
+    <div className="rounded-[18px] bg-surface-1 p-4 mb-4">
       <div className="flex items-center gap-3 mb-3">
         {(user.profilePictureURL || user.photoURL) && (
           <div className="relative w-10 h-10 rounded-full overflow-hidden">

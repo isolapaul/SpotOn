@@ -21,7 +21,7 @@ export default function ReviewsSection({ spot }: Readonly<ReviewsSectionProps>) 
   const canReview = spot.status === 'approved' || isAdmin;
   return (
     <div>
-      <h2 className="text-xl font-bold text-white mb-4">{t('reviews')}</h2>
+      <h2 className="text-[20px] font-bold text-label mb-3">{t('reviews')}</h2>
 
       {user && canReview && <ReviewForm spot={spot} user={user} />}
 

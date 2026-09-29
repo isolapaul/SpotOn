@@ -9,6 +9,7 @@
 - The profile scrolls as one page (a pull down from the top closes it), with a calmer banner, a larger avatar, figures in tiles, the sections as a segmented control and cleaner spot cards.
 - Settings drop the purple gradients and the flag emoji: grouped cards in the app colours, languages as a list with a check mark.
 - A spot whose main photo does not load shows its other photos, or its category icon, instead of a broken image.
+- Spot details, Apple Maps style: the page scrolls as one (a title bar fades in once the photo has scrolled away), the category sits as a chip above the title, an action row under it (Directions, Save, Highlight for your own spot, Share), and location, date and uploader in one grouped card. The duplicate Directions button at the bottom is gone.
 
 ### Changed (Explore)
 - Explore is redesigned: a large title with the spot count, an iOS-style segmented sort (nearest / best rated), always-visible category chips with icons, the top spot as a big photo card, and a clean grouped list with category, distance and rating; rows glide in.

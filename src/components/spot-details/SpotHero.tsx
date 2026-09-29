@@ -2,16 +2,12 @@
 
 import { useEffect, useState, type MouseEvent } from 'react';
 import Image from 'next/image';
-import { X, Heart, Share2, Sparkles, Images } from 'lucide-react';
+import { X, Images } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
-import { useUserStore } from '@/store/useUserStore';
 import { useT } from '@/hooks/useT';
-import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
-import { categoryTranslationKeys } from '@/lib/spotUtils';
 import CategoryIcon from '@/components/ui/CategoryIcon';
 import { isImageUnoptimized } from '@/lib/spotImages';
 import { DELAYS } from '@/lib/constants';
-import type { SpotHighlight } from './useSpotHighlight';
 
 interface SpotHeroProps {
   spot: Spot;
@@ -22,16 +18,16 @@ interface SpotHeroProps {
   imageCount: number;
   onOpenGallery: () => void;
   onClose: () => void;
-  highlight: SpotHighlight;
+  /** The compact bar's Close is in charge (the hero scrolled away): this one leaves the a11y tree. */
+  closeHidden?: boolean;
 }
 
-/** Hero image (opens the fullscreen gallery) with the top action bar and the category badge. */
-export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount, onOpenGallery, onClose, highlight }: Readonly<SpotHeroProps>) {
-  const user = useUserStore((s) => s.user);
+/**
+ * Hero image (design phase 3): full-bleed, opens the gallery; close on the top left and the photo
+ * count at the bottom right. The actions (directions, save, highlight, share) moved to SpotActions.
+ */
+export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount, onOpenGallery, onClose, closeHidden }: Readonly<SpotHeroProps>) {
   const t = useT();
-  // BUG-09: favourite state comes from the store (user.savedSpots), not a copy of the props.
-  const favorite = useFavoriteToggle(spot.id);
-  const { isHighlightedByUser, isHighlighting } = highlight;
   // A few stored images do not load (owner report): try the spot's other images, then show the
   // category glyph instead of the browser's broken-image icon.
   const [failed, setFailed] = useState<readonly string[]>([]);
@@ -50,29 +46,17 @@ export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount,
 
   const openGallery = () => !ignoreHeroClicks && imageCount > 0 && onOpenGallery();
 
-  // BUG-26: Close and the heart sit inside the clickable hero; stop the click there so it
-  // does not also open the gallery.
+  // BUG-26: Close sits inside the clickable hero; stop the click there so it does not also open
+  // the gallery.
   const handleClose = (e: MouseEvent) => {
     e.stopPropagation();
     onClose();
   };
-  const handleFavorite = (e: MouseEvent) => {
-    e.stopPropagation();
-    void favorite.toggle();
-  };
-
-  const handleShare = async () => {
-    if (!navigator.share) return;
-    try {
-      await navigator.share({ title: spot.name, text: spot.description, url: globalThis.location.href });
-    } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') console.error('Share error:', err);
-    }
-  };
 
   return (
     <div
-      className="relative w-full h-[40vh] flex-shrink-0 pointer-events-auto cursor-pointer"
+      className="relative w-full flex-shrink-0 pointer-events-auto cursor-pointer bg-surface-2"
+      style={{ height: 'min(46vh, 420px)' }}
       onClick={openGallery}
       role="button"
       tabIndex={0}
@@ -96,53 +80,32 @@ export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount,
           <CategoryIcon category={spot.category} className="w-16 h-16" />
         </div>
       )}
+      <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/40 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-surface-0/80 to-transparent" />
+
+      <button
+        onClick={handleClose}
+        className="no-min-size absolute left-3 w-11 h-11 grid place-items-center rounded-full touch-manipulation active:scale-90 transition-transform"
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 6px)' }}
+        aria-label="Close"
+        aria-hidden={closeHidden || undefined}
+        tabIndex={closeHidden ? -1 : undefined}
+      >
+        <span className="w-9 h-9 rounded-full grid place-items-center bg-black/35 backdrop-blur-md">
+          <X className="w-[18px] h-[18px] text-white" strokeWidth={2.5} />
+        </span>
+      </button>
+
       {imageCount > 1 && (
         <div
           role="img"
           aria-label={t('photoCount', { count: imageCount })}
-          className="absolute bottom-4 right-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-full flex items-center gap-1"
+          className="absolute bottom-3 right-3 h-7 px-2.5 rounded-full bg-black/45 backdrop-blur-md text-white text-[13px] font-semibold flex items-center gap-1.5 tabular-nums"
         >
-          <Images className="w-4 h-4" aria-hidden="true" />
+          <Images className="w-3.5 h-3.5" aria-hidden="true" />
           {imageCount}
         </div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/80" />
-
-      {/* Top action bar */}
-      <div className="absolute left-4 right-4 flex justify-between items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}>
-        <button onClick={handleClose} className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]" aria-label="Close">
-          <X className="w-5 h-5 text-white" />
-        </button>
-        <div className="flex gap-2">
-          {favorite.canToggle && (
-            <button onClick={handleFavorite} className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]" aria-label={favorite.isFavorite ? 'Remove from favorites' : 'Add to favorites'}>
-              <Heart className={`w-5 h-5 ${favorite.isFavorite ? 'fill-red-500 text-red-500' : 'text-white'}`} />
-            </button>
-          )}
-          {user && spot.createdBy === user.uid && (
-            <button
-              onClick={(e) => { e.stopPropagation(); void highlight.highlight(); }}
-              disabled={isHighlighting || isHighlightedByUser}
-              className={`glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px] transition-all ${isHighlightedByUser ? 'opacity-50 cursor-not-allowed' : 'hover:bg-yellow-500/20 active:scale-95'}`}
-              aria-label={t('highlightSpot')}
-              title={isHighlightedByUser ? t('youHighlightedThis') : t('highlightSpot')}
-            >
-              <Sparkles className={`w-5 h-5 ${isHighlightedByUser ? 'text-yellow-500 fill-yellow-500' : 'text-white'}`} />
-            </button>
-          )}
-          <button onClick={(e) => { e.stopPropagation(); void handleShare(); }} className="glass-button p-3 rounded-full" aria-label="Share">
-            <Share2 className="w-5 h-5 text-white" />
-          </button>
-        </div>
-      </div>
-
-      {/* Category badge */}
-      <div className="absolute bottom-4 left-4">
-        <div className="glass-card px-4 py-2 flex items-center gap-2">
-          <CategoryIcon category={spot.category} className="w-6 h-6 text-brand-300" />
-          <span className="text-white font-medium">{t(categoryTranslationKeys[spot.category])}</span>
-        </div>
-      </div>
     </div>
   );
 }

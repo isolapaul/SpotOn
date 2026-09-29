@@ -61,7 +61,7 @@ export default function ImageManager({ spot, imageCount }: Readonly<ImageManager
     <div>
       <button
         onClick={() => setShowManageImages(!showManageImages)}
-        className="w-full glass-card p-4 flex items-center justify-between hover:bg-white/10 transition-colors"
+        className="w-full rounded-[18px] bg-surface-1 p-4 flex items-center justify-between hover:bg-white/10 transition-colors"
       >
         <div className="flex items-center gap-2">
           <ImageIcon className="w-5 h-5 text-primary-400" />

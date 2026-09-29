@@ -23,14 +23,14 @@ export default function ReviewList({ reviews }: Readonly<ReviewListProps>) {
   return (
     <div className="space-y-3">
       {!reviews?.length ? (
-        <div className="glass-card p-6 text-center">
+        <div className="rounded-[18px] bg-surface-1 p-6 text-center">
           <Star className="w-12 h-12 text-white/40 mx-auto mb-3" />
           <p className="text-white/60">{t('noReviews')}</p>
           <p className="text-white/40 text-sm mt-1">{t('beFirstToReview')}</p>
         </div>
       ) : (
         reviews.map((review) => (
-          <div key={review.id} className="glass-card p-4">
+          <div key={review.id} className="rounded-[18px] bg-surface-1 p-4">
             <div className="flex items-start gap-3">
               {review.userPhoto && (
                 <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
