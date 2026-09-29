@@ -173,6 +173,8 @@ function TileLayerSwitcher({ theme }: { theme: string }) {
       url={config.url}
       attribution={config.attribution}
       className={config.className}
+      // Only the options a theme sets: an explicit undefined would replace Leaflet's defaults
+      {...(config.detectRetina ? { detectRetina: true, maxZoom: config.maxZoom } : {})}
     />
   );
 }

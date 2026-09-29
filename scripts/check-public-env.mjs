@@ -43,6 +43,9 @@ if (production) {
   if (email && !invalid.includes('NEXT_PUBLIC_CONTACT_EMAIL') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     invalid.push('NEXT_PUBLIC_CONTACT_EMAIL');
   }
+  // Optional: without it the CARTO map styles show an "API KEY REQUIRED" watermark.
+  const carto = env.NEXT_PUBLIC_CARTO_API_KEY;
+  if (carto && (carto.trim() !== carto || /["'`\s]/.test(carto))) invalid.push('NEXT_PUBLIC_CARTO_API_KEY');
   if (env.NEXT_PUBLIC_USE_EMULATORS === '1') forbidden.push('NEXT_PUBLIC_USE_EMULATORS');
   for (const name of ['NEXT_PUBLIC_MOVED_TO', 'NEXT_PUBLIC_ADMIN_EMAIL']) {
     if (env[name] !== undefined) forbidden.push(name);
