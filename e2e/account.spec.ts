@@ -107,7 +107,7 @@ test.describe('account deletion', () => {
     await expect.poll(async () => (await db.doc(`publicProfiles/${GONE.uid}`).get()).exists).toBe(false);
 
     const own = (await db.doc(`spots/${OWN_SPOT}`).get()).data();
-    expect(own).toMatchObject({ createdBy: GONE.uid, status: 'approved' });
+    expect(own).toMatchObject({ createdBy: 'deleted-user', status: 'approved' });
     expect(own && 'createdByName' in own).toBe(false);
 
     const other = (await db.doc(`spots/${OTHER_SPOT}`).get()).data();

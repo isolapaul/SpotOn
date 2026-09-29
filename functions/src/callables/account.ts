@@ -4,8 +4,9 @@
  * Checks: signed in; the typed confirmation equals the username; not an admin (a super admin
  * removes the admin role first). Then, in an order that is safe to retry (the Auth user goes last,
  * so a failure halfway leaves the user signed in to try again):
- * 1. every spot: planSpotCleanup (own spots anonymised, reviews / photos on others' spots / likes /
- *    highlights removed), each in its own transaction;
+ * 1. every spot: planSpotCleanup (own spots handed to DELETED_OWNER with their photos copied to
+ *    spot-images/deleted-user/ first, reviews / photos on others' spots / likes / highlights
+ *    removed), each in its own transaction;
  * 2. Storage: removed photos, uploads no own spot shows, profile pictures and banners;
  * 3. usernames/{name}, users/{uid} (syncPublicProfile then drops publicProfiles), publicProfiles;
  * 4. the Firebase Auth user.
@@ -17,7 +18,13 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {auth, db} from "../lib/app";
 import {parseStorageDownloadUrl} from "../lib/spotImages";
-import {DeletionRefusal, orphanedUploads, planSpotCleanup} from "../lib/accountDeletion";
+import {
+  DeletionRefusal,
+  orphanedUploads,
+  planSpotCleanup,
+  relocatedPath,
+  rewriteDownloadUrl,
+} from "../lib/accountDeletion";
 
 function refuse(
   code: "failed-precondition" | "invalid-argument",
@@ -35,6 +42,43 @@ async function deleteQuietly(paths: Iterable<string>): Promise<number> {
     deleted += 1;
   }
   return deleted;
+}
+
+/**
+ * Copies the user's photos on one of their own spots to spot-images/deleted-user/ (idempotent: an
+ * existing copy is reused) and returns the URL rewrite for them. The copy keeps the object's
+ * metadata, so its download token, and the old files are deleted later with the other uploads.
+ */
+async function relocateOwnPhotos(
+  spotId: string,
+  data: FirebaseFirestore.DocumentData,
+  ownPrefix: string,
+  pathOf: (url: string) => string | null,
+): Promise<(url: string) => string | null> {
+  const bucket = getStorage().bucket();
+  const urls = new Set<string>();
+  for (const u of Array.isArray(data.imageUrls) ? data.imageUrls : []) if (typeof u === "string") urls.add(u);
+  for (const img of Array.isArray(data.spotImages) ? data.spotImages : []) {
+    if (typeof img?.url === "string") urls.add(img.url);
+  }
+  if (typeof data.imageUrl === "string") urls.add(data.imageUrl);
+
+  const rewrites = new Map<string, string>();
+  for (const url of urls) {
+    const path = pathOf(url);
+    if (!path || !path.startsWith(ownPrefix)) continue;
+    const target = relocatedPath(spotId, path);
+    const next = rewriteDownloadUrl(url, path, target);
+    if (!next) continue;
+    const [exists] = await bucket.file(target).exists();
+    if (!exists) {
+      const [sourceExists] = await bucket.file(path).exists();
+      if (!sourceExists) continue; // a dead link stays as it is
+      await bucket.file(path).copy(bucket.file(target));
+    }
+    rewrites.set(url, next);
+  }
+  return (url) => rewrites.get(url) ?? null;
 }
 
 async function listPaths(prefix: string): Promise<string[]> {
@@ -70,18 +114,27 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
   const removedPaths = new Set<string>();
   const keptPaths = new Set<string>();
   let spotsChanged = 0;
+  const ownPrefix = `spot-images/${uid}/`;
   const spots = await db.collection("spots").get();
   for (const doc of spots.docs) {
     const own = doc.get("createdBy") === uid;
     if (!own && !planSpotCleanup(doc.data(), uid, pathOf).update) continue;
+    // Own spot: copy its photos out of the user's folder first, so the transaction can point the
+    // spot at the copies (Storage is not transactional; a retry reuses existing copies).
+    const relocate = own ?
+      await relocateOwnPhotos(doc.id, doc.data(), ownPrefix, pathOf) :
+      undefined;
     // Paths are collected from the committed attempt only (a transaction may retry).
     const result = await db.runTransaction(async (tx) => {
       const snap = await tx.get(doc.ref);
       const data = snap.data();
       if (!data) return {changed: false, deletePaths: [] as string[], kept: [] as string[]};
-      const plan = planSpotCleanup(data, uid, pathOf);
-      const kept = data.createdBy === uid && Array.isArray(data.imageUrls) ?
-        data.imageUrls.map((url: unknown) => (typeof url === "string" ? pathOf(url) : null))
+      const plan = planSpotCleanup(data, uid, pathOf, relocate);
+      // Files the spot still shows after the update (a photo that could not be copied keeps its
+      // old place and must not be deleted).
+      const finalUrls = (plan.update?.imageUrls ?? data.imageUrls) as unknown;
+      const kept = Array.isArray(finalUrls) ?
+        finalUrls.map((url: unknown) => (typeof url === "string" ? pathOf(url) : null))
           .filter((p: string | null): p is string => !!p) :
         [];
       if (!plan.update && !plan.anonymize) return {changed: false, deletePaths: [], kept};
@@ -95,7 +148,7 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
   }
 
   // 2. Storage.
-  const uploads = orphanedUploads(await listPaths(`spot-images/${uid}/`), keptPaths);
+  const uploads = orphanedUploads(await listPaths(ownPrefix), keptPaths);
   const files = await deleteQuietly(new Set([
     ...removedPaths,
     ...uploads,

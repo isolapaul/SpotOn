@@ -1,10 +1,11 @@
 /**
  * Pure planning for account deletion (A2). No Firebase imports.
  *
- * Agreed with Paul (2026-09-28):
- * - the user's own spots stay, anonymised: createdByName / createdByPhoto are removed; createdBy
- *   keeps the (then meaningless) uid, so the spotsCount triggers and rules stay consistent;
- *   photos on their own spots stay;
+ * Agreed with Paul (2026-09-28, 2026-09-29 legal review):
+ * - the user's own spots stay, unlinked from them: createdByName / createdByPhoto are removed,
+ *   createdBy (and addedBy on their photos) becomes DELETED_OWNER, and the photos move out of
+ *   spot-images/{uid}/ (the caller copies them and passes `relocate`), so nothing kept refers to
+ *   the deleted uid any more (GDPR recital 26: "cannot be linked to you" must be true);
  * - their reviews on any spot are deleted;
  * - photos they added to other users' spots are deleted (from the spot and from Storage);
  * - their likes and highlights are removed everywhere.
@@ -12,6 +13,25 @@
 import {PLACEHOLDER_URL} from "./spotImages";
 
 export type DocData = Record<string, unknown>;
+
+/** The owner of spots whose account was deleted. Never a Firebase uid (those are 28 characters). */
+export const DELETED_OWNER = "deleted-user";
+
+/** Where a kept photo of a deleted account moves: spot-images/deleted-user/{spotId}_{file}. */
+export function relocatedPath(spotId: string, path: string): string {
+  const file = path.slice(path.lastIndexOf("/") + 1);
+  return `spot-images/${DELETED_OWNER}/${spotId}_${file}`;
+}
+
+/**
+ * A download URL pointing at `newPath` instead of `oldPath` (the object's encoded name is the only
+ * part that changes; the copied object keeps its download token). Null when the URL does not
+ * name `oldPath`.
+ */
+export function rewriteDownloadUrl(url: string, oldPath: string, newPath: string): string | null {
+  const from = `/o/${encodeURIComponent(oldPath)}`;
+  return url.includes(from) ? url.replace(from, `/o/${encodeURIComponent(newPath)}`) : null;
+}
 
 interface ImageLike {
   url?: unknown;
@@ -46,6 +66,7 @@ export function planSpotCleanup(
   spot: DocData,
   uid: string,
   pathOf: (url: string) => string | null,
+  relocate?: (url: string) => string | null,
 ): SpotCleanupPlan {
   const update: DocData = {};
   const own = spot.createdBy === uid;
@@ -101,6 +122,29 @@ export function planSpotCleanup(
   }
   if (removedUrls.length > 0 || likesChanged) {
     if (Array.isArray(spot.spotImages)) update.spotImages = keptImages;
+  }
+
+  // Own spot: hand it to DELETED_OWNER and point its photos at their new place.
+  if (own) {
+    update.createdBy = DELETED_OWNER;
+    const moved = (url: unknown) =>
+      (typeof url === "string" && relocate ? relocate(url) : null) ?? url;
+    const urls = asArray(spot.imageUrls);
+    const nextUrls = urls.map(moved);
+    if (nextUrls.some((u, i) => u !== urls[i])) update.imageUrls = nextUrls;
+    if (Array.isArray(spot.spotImages)) {
+      const nextImages = keptImages.map((img) => ({
+        ...img,
+        url: moved(img?.url),
+        ...(img?.addedBy === uid ? {addedBy: DELETED_OWNER} : {}),
+      }));
+      if (JSON.stringify(nextImages) !== JSON.stringify(spot.spotImages)) {
+        update.spotImages = nextImages;
+      }
+    }
+    if (typeof spot.imageUrl === "string" && moved(spot.imageUrl) !== spot.imageUrl) {
+      update.imageUrl = moved(spot.imageUrl);
+    }
   }
 
   // Highlights by the user.

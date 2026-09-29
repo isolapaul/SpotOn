@@ -1,5 +1,11 @@
 import {describe, expect, it} from "vitest";
-import {orphanedUploads, planSpotCleanup} from "../src/lib/accountDeletion";
+import {
+  DELETED_OWNER,
+  orphanedUploads,
+  planSpotCleanup,
+  relocatedPath,
+  rewriteDownloadUrl,
+} from "../src/lib/accountDeletion";
 
 const UID = "gone";
 const path = (p: string) => `https://files/${p}`;
@@ -11,15 +17,27 @@ const img = (url: string, addedBy?: string, likedBy: string[] = []) =>
   ({id: url, url, addedBy, likes: likedBy.length, likedBy});
 
 describe("planSpotCleanup", () => {
-  it("anonymises an own spot but keeps its photos, and drops own reviews on it", () => {
+  it("hands an own spot to DELETED_OWNER, relocates its photos and drops own reviews on it", () => {
+    const moved = path(`spot-images/${DELETED_OWNER}/s1_a.jpg`);
     const plan = planSpotCleanup({
       createdBy: UID, createdByName: "me", createdByPhoto: "p",
-      imageUrls: [mine], spotImages: [img(mine, UID)],
+      imageUrls: [mine], spotImages: [img(mine, UID, ["x"])], imageUrl: mine,
       reviews: [{userId: UID, id: "r1"}, {userId: "x", id: "r2"}],
-    }, UID, pathOf);
+    }, UID, pathOf, (url) => (url === mine ? moved : null));
     expect(plan.anonymize).toBe(true);
-    expect(plan.update).toEqual({reviews: [{userId: "x", id: "r2"}]});
+    expect(plan.update).toEqual({
+      reviews: [{userId: "x", id: "r2"}],
+      createdBy: DELETED_OWNER,
+      imageUrls: [moved],
+      spotImages: [{...img(mine, UID, ["x"]), url: moved, addedBy: DELETED_OWNER}],
+      imageUrl: moved,
+    });
     expect(plan.deletePaths).toEqual([]);
+  });
+
+  it("an own spot whose photos could not be moved still changes owner", () => {
+    const plan = planSpotCleanup({createdBy: UID, imageUrls: [mine]}, UID, pathOf, () => null);
+    expect(plan.update).toEqual({createdBy: DELETED_OWNER});
   });
 
   it("removes the user's photos from someone else's spot and fixes the primary index", () => {
@@ -96,5 +114,18 @@ describe("planSpotCleanup (confused deputy)", () => {
 describe("orphanedUploads", () => {
   it("keeps the files the own spots still show", () => {
     expect(orphanedUploads(["a", "b", "c"], new Set(["b"]))).toEqual(["a", "c"]);
+  });
+});
+
+describe("relocation helpers", () => {
+  it("moves a photo under the deleted-user folder, prefixed by the spot id", () => {
+    expect(relocatedPath("s1", `spot-images/${UID}/a.jpg`)).toBe(`spot-images/${DELETED_OWNER}/s1_a.jpg`);
+  });
+
+  it("rewrites only the encoded object name of a download URL", () => {
+    const url = "https://firebasestorage.googleapis.com/v0/b/b/o/spot-images%2Fgone%2Fa.jpg?alt=media&token=t";
+    expect(rewriteDownloadUrl(url, "spot-images/gone/a.jpg", "spot-images/deleted-user/s1_a.jpg"))
+      .toBe("https://firebasestorage.googleapis.com/v0/b/b/o/spot-images%2Fdeleted-user%2Fs1_a.jpg?alt=media&token=t");
+    expect(rewriteDownloadUrl(url, "spot-images/other/a.jpg", "x")).toBeNull();
   });
 });
