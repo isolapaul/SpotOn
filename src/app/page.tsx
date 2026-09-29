@@ -25,6 +25,7 @@ import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 import { useInitialLanguage } from '@/hooks/useInitialLanguage';
 import { useMapThemeAttribute } from '@/hooks/useMapThemeAttribute';
 import { useStandaloneFullHeight } from '@/hooks/useStandaloneFullHeight';
+import { runViewTransition } from '@/hooks/viewTransition';
 import { useVisibleSpots } from '@/hooks/useVisibleSpots';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { DEFAULT_MAP_CENTER } from '@/lib/constants';
@@ -70,6 +71,10 @@ export default function Home() {
   const previewedSpot = previewSpotId ? (visibleSpots.find((s) => s.id === previewSpotId) ?? null) : null;
   const approvedCount = visibleSpots.filter((s) => s.status === 'approved').length;
 
+  // Full-screen panels open and close as sheets; the place card's Details morphs its photo into the hero.
+  const openSheet = (p: Parameters<typeof openPanel>[0]) => runViewTransition(() => openPanel(p));
+  const closeSheet = () => runViewTransition(closePanel);
+
   const handleAddSpotClick = () => {
     // Pick the location on the satellite map for accuracy (signed in only)
     if (user) startSelectingLocation(useMapThemeStore.getState().theme);
@@ -105,9 +110,9 @@ export default function Home() {
       {/* Discovery Panel */}
       <DiscoveryPanel
         isOpen={activePanel === 'discovery'}
-        onClose={closePanel}
+        onClose={closeSheet}
         userLocation={userLocation}
-        onSpotSelect={(spot) => openPanel({ type: 'spot', spotId: spot.id })}
+        onSpotSelect={(spot) => openSheet({ type: 'spot', spotId: spot.id })}
       />
       {/* Authentication Modal */}
       <AuthModal isOpen={activePanel === 'auth'} onClose={closePanel} />
@@ -116,9 +121,9 @@ export default function Home() {
       {/* Add Spot Modal */}
       <AddSpotModal isOpen={activePanel === 'addSpot'} onClose={closeAddSpot} selectedLocation={pendingLocation} />
       {/* Spot Details Panel */}
-      <SpotDetailsPanel spotId={spotId} onClose={closePanel} />
+      <SpotDetailsPanel spotId={spotId} onClose={closeSheet} />
       {/* Profile Panel */}
-      <ProfilePanel isOpen={activePanel === 'profile'} onClose={closePanel} />
+      <ProfilePanel isOpen={activePanel === 'profile'} onClose={closeSheet} />
       {/* Full-screen map background */}
       <MapView
         isAddingSpot={selectingLocation}
@@ -150,16 +155,16 @@ export default function Home() {
         spot={previewedSpot}
         userLocation={userLocation}
         onClose={() => previewSpot(null)}
-        onDetails={(spot) => openPanel({ type: 'spot', spotId: spot.id })}
+        onDetails={(spot) => runViewTransition(() => openPanel({ type: 'spot', spotId: spot.id }), 'morph')}
       />
       {/* Launcher (design 1C) */}
       <BottomNavigation
         picking={selectingLocation}
         hidden={previewedSpot !== null}
         spotCount={approvedCount}
-        onExplore={() => openPanel('discovery')}
+        onExplore={() => openSheet('discovery')}
         onAdd={handleAddSpotClick}
-        onProfile={() => openPanel(user ? 'profile' : 'auth')}
+        onProfile={() => (user ? openSheet('profile') : openPanel('auth'))}
         onCancelPicking={cancelSelectingLocation}
       />
       </main>

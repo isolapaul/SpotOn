@@ -22,28 +22,31 @@ interface PlaceCardContentProps {
   userLocation: { lat: number; lng: number } | null;
   onClose: () => void;
   onDetails: () => void;
+  /** The photo is the source of the details morph (off while the card leaves: names must be unique). */
+  morphSource: boolean;
 }
 
-function Thumb({ spot }: Readonly<{ spot: Spot }>) {
+function Thumb({ spot, morphSource }: Readonly<{ spot: Spot; morphSource: boolean }>) {
+  const vt = morphSource ? { 'data-vt-thumb': '' } : {};
   // Most-liked image first ('bothRequired' tie-break, as the former info window).
   const url = getPreviewImageUrl(spot, sortSpotImagesByLikes(spot.spotImages || [], 'bothRequired'));
   const [failed, setFailed] = useState(false);
   if (url === PLACEHOLDER_URL || failed) {
     return (
-      <span className="w-[88px] h-[88px] flex-shrink-0 rounded-[18px] grid place-items-center bg-brand-500/15 text-brand-400">
+      <span {...vt} className="w-[88px] h-[88px] flex-shrink-0 rounded-[18px] grid place-items-center bg-brand-500/15 text-brand-400">
         <CategoryIcon category={spot.category} className="w-9 h-9" />
       </span>
     );
   }
   return (
-    <span className="relative w-[88px] h-[88px] flex-shrink-0 rounded-[18px] overflow-hidden bg-surface-3">
+    <span {...vt} className="relative w-[88px] h-[88px] flex-shrink-0 rounded-[18px] overflow-hidden bg-surface-3">
       <Image src={url} alt="" fill sizes="88px" className="object-cover" unoptimized={isImageUnoptimized(spot)} onError={() => setFailed(true)} />
     </span>
   );
 }
 
 /** The place card's body (design 1E): keyed by spot, so switching pins resets its state. */
-export default function PlaceCardContent({ spot, userLocation, onClose, onDetails }: Readonly<PlaceCardContentProps>) {
+export default function PlaceCardContent({ spot, userLocation, onClose, onDetails, morphSource }: Readonly<PlaceCardContentProps>) {
   const t = useT();
   const language = useLanguage();
   const isAdmin = useIsAdmin();
@@ -78,7 +81,7 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
     <div className="animate-fade-in">
       <div className="flex gap-3.5">
         <button type="button" onClick={onDetails} tabIndex={-1} aria-hidden="true" className="no-min-size block flex-shrink-0 touch-manipulation active:opacity-80">
-          <Thumb spot={spot} />
+          <Thumb spot={spot} morphSource={morphSource} />
         </button>
         <div className="min-w-0 flex-1 pt-0.5">
           <button type="button" onClick={onDetails} tabIndex={-1} className="no-min-size block text-left touch-manipulation">

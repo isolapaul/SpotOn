@@ -73,6 +73,7 @@ export default function PlaceCard({ spot, userLocation, onClose, onDetails }: Re
         <PlaceCardContent
           key={shown.id}
           spot={shown}
+          morphSource={!leaving}
           userLocation={userLocation}
           onClose={onClose}
           onDetails={() => onDetails(shown)}

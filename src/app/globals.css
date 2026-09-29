@@ -449,3 +449,45 @@ a:not(.no-min-size),
   70% { opacity: 1; }
   100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 60px)) scale(1) rotate(var(--rot)); }
 }
+
+/* Screen-to-screen transitions (hooks/viewTransition). Panels: an iOS sheet up on open, down on
+   close. Morph: the place card photo grows into the spot details hero while the panel fades in. */
+html[data-vt] .panel-shell {
+  animation: none;
+}
+html[data-vt="morph"] [data-vt-thumb],
+html[data-vt="morph"] [data-vt-hero] {
+  view-transition-name: spot-hero;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.35s;
+}
+::view-transition-new(panel):only-child {
+  animation: vt-sheet-in 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+::view-transition-old(panel):only-child {
+  animation: vt-sheet-out 0.32s cubic-bezier(0.4, 0, 1, 1) both;
+}
+html[data-vt="morph"]::view-transition-new(panel):only-child {
+  animation: vt-fade-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+::view-transition-group(spot-hero) {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+::view-transition-old(spot-hero),
+::view-transition-new(spot-hero) {
+  height: 100%;
+  object-fit: cover;
+  overflow: clip;
+}
+@keyframes vt-sheet-in {
+  from { transform: translateY(100%); }
+}
+@keyframes vt-sheet-out {
+  to { transform: translateY(100%); }
+}
+@keyframes vt-fade-rise {
+  from { opacity: 0; transform: translateY(24px); }
+}

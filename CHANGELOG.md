@@ -5,6 +5,9 @@
 ### Fixed (design 1A)
 - The installed iPhone app now fills the whole screen: the map runs under the status bar and down to the bottom edge, with no band below it (a workaround for an iOS 26 bug). The page background follows the map style instead of black.
 
+### Changed (transitions)
+- Explore, Profile and spot details open as sheets sliding up and close sliding down; from a place card, Details grows the card's photo into the spot's header image. Follows the reduced-motion setting.
+
 ### Changed (copy)
 - No more emoji in the interface text; icons (category glyphs, lucide) take their place where they carried meaning.
 

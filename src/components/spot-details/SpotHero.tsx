@@ -70,6 +70,7 @@ export default function SpotHero({ spot, heroImageUrl, imageCount, onOpenGallery
       onClick={openGallery}
       role="button"
       tabIndex={0}
+      data-vt-hero=""
       onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && openGallery()}
     >
       <Image src={heroImageUrl} alt={spot.name} fill sizes="100vw" className="object-cover" priority unoptimized={isImageUnoptimized(spot)} />

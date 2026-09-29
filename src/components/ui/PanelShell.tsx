@@ -32,7 +32,9 @@ interface PanelShellProps {
 export default function PanelShell({ onClose, backdropLabel, variant, swipe, children, overlays }: Readonly<PanelShellProps>) {
   const styles = VARIANTS[variant];
   return (
-    <div className={`fixed inset-0 ${Z.panel} animate-slide-up`} style={{ backgroundColor: '#0f172a' }}>
+    // panel-shell / view-transition-name: the open and close sheet transition (hooks/viewTransition);
+    // the CSS slide-up is the fallback without the View Transitions API.
+    <div className={`panel-shell fixed inset-0 ${Z.panel} animate-slide-up`} style={{ backgroundColor: '#0f172a', viewTransitionName: 'panel' }}>
       <button
         type="button"
         className={styles.backdrop}
