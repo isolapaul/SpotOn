@@ -6,12 +6,10 @@ import { useSpotStore } from '@/store/useSpotStore';
 import { useUiStore } from '@/store/useUiStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useT } from '@/hooks/useT';
-import { useSwipeToClose } from '@/hooks/useSwipeToClose';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { getNavigationUrl } from '@/lib/spotUtils';
 import { getGalleryUrls, getHeroImageUrl, getSpotImages, sortSpotImagesByLikes } from '@/lib/spotImages';
 import { averageRating } from '@/lib/rating';
-import { SWIPE_THRESHOLDS } from '@/lib/constants';
 import PanelShell from '../ui/PanelShell';
 import SpotHero from './SpotHero';
 import Gallery from './Gallery';
@@ -61,7 +59,6 @@ export default function SpotDetailsPanel({ spotId, onClose }: Readonly<SpotDetai
   const closeThisSpot = useCallback(() => { if (spotId) closeSpotPanel(spotId); }, [spotId, closeSpotPanel]);
 
   // Swipe to dismiss the panel (either direction)
-  const panelSwipe = useSwipeToClose({ onClose, threshold: SWIPE_THRESHOLDS.spotDetails, direction: 'both' });
 
   const highlight = useSpotHighlight(spot);
 
@@ -82,7 +79,6 @@ export default function SpotDetailsPanel({ spotId, onClose }: Readonly<SpotDetai
       onClose={onClose}
       backdropLabel="Close spot details"
       variant="slate"
-      swipe={panelSwipe}
       overlays={
         <Gallery urls={allGalleryImages} open={galleryOpen} startIndex={0} onClose={closeGallery} alt={spot.name} />
       }

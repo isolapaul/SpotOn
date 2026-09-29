@@ -65,8 +65,6 @@ export default function Home() {
   const mapLocation = userLocation
     ?? (locationStatus === 'denied' ? { lat: DEFAULT_MAP_CENTER[0], lng: DEFAULT_MAP_CENTER[1] } : null);
   const spotId = isSpotPanel(activePanel) ? activePanel.spotId : null;
-  // Top buttons are hidden while a full-screen panel covers the map.
-  const panelCoversMap = activePanel === 'profile' || activePanel === 'discovery' || spotId !== null;
   // The place card follows the live spot (a deleted or hidden spot closes it).
   const previewedSpot = previewSpotId ? (visibleSpots.find((s) => s.id === previewSpotId) ?? null) : null;
   const approvedCount = visibleSpots.filter((s) => s.status === 'approved').length;
@@ -93,8 +91,9 @@ export default function Home() {
       <UploadStatus />
       {/* Level-up moment: over everything, whenever the own spot count crosses a level */}
       <LevelUpCelebration />
-      {/* Top-right control stack (design 1C); hidden while a full-screen panel covers the map */}
-      {!panelCoversMap && isAppReady && (
+      {/* Top-right control stack (design 1C); only over the bare map: it lives outside <main>, so it
+          would sit above any panel or modal (the sign-in sheet showed it on top) */}
+      {activePanel === 'none' && isAppReady && (
         <>
           <MapControls />
           {/* Domain-move notice (Vercel build only, T19): the free top-left slot */}

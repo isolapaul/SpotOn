@@ -3,11 +3,9 @@
 import { useMemo, useState } from 'react';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
-import { useSwipeToClose } from '@/hooks/useSwipeToClose';
 import { useIsAdmin, useIsSuperAdmin } from '@/hooks/useIsAdmin';
 import { useCategories } from '@/hooks/useCategories';
 import { getLevelInfo } from '@/lib/levelUtils';
-import { SWIPE_THRESHOLDS } from '@/lib/constants';
 import SettingsPanel from '../SettingsPanel';
 import PanelShell from '../ui/PanelShell';
 import ProfileBanner from './ProfileBanner';
@@ -34,7 +32,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
 
   // iOS swipe-to-close gesture: rightward only
-  const swipe = useSwipeToClose({ onClose, threshold: SWIPE_THRESHOLDS.panel, direction: 'right' });
 
   const userIsAdmin = useIsAdmin();
   const userIsSuperAdmin = useIsSuperAdmin();
@@ -59,7 +56,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       onClose={onClose}
       backdropLabel="Close profile panel"
       variant="gray"
-      swipe={swipe}
       overlays={
         <>
           {/* Settings Panel (nested: stacks inside this root's Z.panel context, see Z.panelInner*) */}

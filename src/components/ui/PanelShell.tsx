@@ -1,11 +1,13 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import type { HorizontalSwipe } from '@/hooks/useHorizontalSwipe';
+import { useSheetDrag } from '@/hooks/useSheetDrag';
 import { Z } from '@/lib/constants';
 
 // T25 (DUP-03): the full-screen panel shell shared by ProfilePanel, DiscoveryPanel and
-// SpotDetailsPanel. Callers keep their own `if (!isOpen) return null`.
+// SpotDetailsPanel. Callers keep their own `if (!isOpen) return null`. Design: it behaves like an
+// iOS sheet: a grabber on top, pulled down (from the top of its content) it closes; no sideways
+// swipe (owner decision, it showed the black page behind).
 
 const VARIANTS = {
   gray: {
@@ -23,18 +25,18 @@ interface PanelShellProps {
   onClose: () => void;
   backdropLabel: string;
   variant: keyof typeof VARIANTS;
-  swipe: HorizontalSwipe;
   children: ReactNode;
   /** Rendered after the panel inside the root (nested overlays that share the root's stacking context). */
   overlays?: ReactNode;
 }
 
-export default function PanelShell({ onClose, backdropLabel, variant, swipe, children, overlays }: Readonly<PanelShellProps>) {
+export default function PanelShell({ onClose, backdropLabel, variant, children, overlays }: Readonly<PanelShellProps>) {
   const styles = VARIANTS[variant];
+  const { ref: sheetRef, offset, dragging } = useSheetDrag(onClose);
   return (
     // panel-shell / view-transition-name: the open and close sheet transition (hooks/viewTransition);
     // the CSS slide-up is the fallback without the View Transitions API.
-    <div className={`panel-shell fixed inset-0 ${Z.panel} animate-slide-up`} style={{ backgroundColor: '#0f172a', viewTransitionName: 'panel' }}>
+    <div className={`panel-shell fixed inset-0 ${Z.panel} animate-slide-up`} style={{ viewTransitionName: 'panel' }}>
       <button
         type="button"
         className={styles.backdrop}
@@ -44,13 +46,19 @@ export default function PanelShell({ onClose, backdropLabel, variant, swipe, chi
         tabIndex={-1}
       />
       <div
-        className={styles.panel}
+        ref={sheetRef}
+        className={`${styles.panel} overflow-hidden`}
         style={{
-          transform: `translateX(${swipe.offset}px)`,
-          transition: swipe.dragging ? 'none' : 'transform 0.3s ease-out',
+          transform: offset ? `translateY(${offset}px)` : undefined,
+          borderRadius: offset > 0 ? '28px 28px 0 0' : undefined,
+          transition: dragging ? 'none' : 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), border-radius 0.35s',
         }}
-        {...swipe.handlers}
       >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 z-20 w-9 h-[5px] rounded-full bg-white/30"
+          style={{ top: 'calc(env(safe-area-inset-top) + 6px)' }}
+        />
         {children}
       </div>
       {overlays}

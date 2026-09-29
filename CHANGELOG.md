@@ -7,6 +7,7 @@
 
 ### Changed (transitions)
 - Explore, Profile and spot details open as sheets sliding up and close sliding down; from a place card, Details grows the card's photo into the spot's header image. Follows the reduced-motion setting.
+- Panels close by pulling them down from the top of their content (a quarter of the screen, or a quick flick); the sideways swipe that showed a black page behind is gone. Pulling the place card up, or tapping its grabber, opens the spot. The map controls no longer show on top of the sign-in sheet.
 
 ### Changed (copy)
 - No more emoji in the interface text; icons (category glyphs, lucide) take their place where they carried meaning.

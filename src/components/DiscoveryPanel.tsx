@@ -5,13 +5,12 @@ import { X, MapPin, Filter, Navigation, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
-import { useSwipeToClose } from '@/hooks/useSwipeToClose';
 import { CATEGORIES } from '@/lib/categories';
 import CategoryIcon from '@/components/ui/CategoryIcon';
 import { haversineKm } from '@/lib/geo';
 import { averageRating } from '@/lib/rating';
 import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
-import { DISCOVERY_BATCH_SIZE, SWIPE_THRESHOLDS } from '@/lib/constants';
+import { DISCOVERY_BATCH_SIZE } from '@/lib/constants';
 import type { Spot, SpotCategory } from '@/store/useSpotStore';
 import PanelShell from './ui/PanelShell';
 import StarRating from './ui/StarRating';
@@ -88,7 +87,6 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   };
   
   // iOS swipe-to-close gesture: rightward only
-  const swipe = useSwipeToClose({ onClose, threshold: SWIPE_THRESHOLDS.panel, direction: 'right' });
 
   const handleSortChange = (option: SortOption) => {
     if (option === 'nearest' && !userLocation) {
@@ -101,7 +99,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   if (!isOpen) return null;
 
   return (
-    <PanelShell onClose={onClose} backdropLabel="Close discovery panel" variant="gray" swipe={swipe}>
+    <PanelShell onClose={onClose} backdropLabel="Close discovery panel" variant="gray">
         {/* Header */}
         <div className="flex-shrink-0 px-6 border-b border-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)', paddingBottom: '1rem' }}>
           <div className="flex items-center justify-between mb-4">

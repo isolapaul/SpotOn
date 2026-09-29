@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import type { Spot } from '@/store/useSpotStore';
-import { useDragToDismiss } from '@/hooks/useDragToDismiss';
+import { useCardDrag } from '@/hooks/useCardDrag';
+import { useT } from '@/hooks/useT';
 import { Z } from '@/lib/constants';
 import PlaceCardContent from './PlaceCardContent';
 
@@ -20,13 +21,18 @@ interface PlaceCardProps {
 /**
  * The place card (design 1E): slides up from the bottom when a pin is tapped (the launcher leaves
  * at the same time), swaps its content when another pin is tapped, and slides away on close, on a
- * map tap or when dragged down. It keeps the last spot while it animates out.
+ * map tap or when dragged down. Pulled up, or its grabber tapped, it opens the spot's details
+ * (owner request). It keeps the last spot while it animates out.
  */
 export default function PlaceCard({ spot, userLocation, onClose, onDetails }: Readonly<PlaceCardProps>) {
   const [shown, setShown] = useState<Spot | null>(spot);
   const [prev, setPrev] = useState<Spot | null>(spot);
   const [leaving, setLeaving] = useState(false);
-  const drag = useDragToDismiss(onClose);
+  const t = useT();
+  const expand = () => {
+    if (shown && !leaving) onDetails(shown);
+  };
+  const drag = useCardDrag(onClose, expand);
 
   // Follow the prop during render (React's "adjust state when a prop changes" pattern).
   if (spot !== prev) {
@@ -69,7 +75,14 @@ export default function PlaceCard({ spot, userLocation, onClose, onDetails }: Re
           paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) - 8px))',
         }}
       >
-        <span aria-hidden="true" className="block mx-auto mb-2.5 w-9 h-[5px] rounded-full bg-white/25" />
+        <button
+          type="button"
+          onClick={expand}
+          aria-label={t('details')}
+          className="no-min-size block w-full -mt-3 pt-3 pb-2.5 touch-manipulation group"
+        >
+          <span aria-hidden="true" className="block mx-auto w-9 h-[5px] rounded-full bg-white/25 transition-colors group-active:bg-white/50" />
+        </button>
         <PlaceCardContent
           key={shown.id}
           spot={shown}
