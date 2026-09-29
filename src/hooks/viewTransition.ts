@@ -11,6 +11,11 @@ type ViewTransitionDocument = Document & {
   startViewTransition?: (update: () => void) => { finished: Promise<void> };
 };
 
+/** Whether this browser animates panels with view transitions (then PanelShell skips its CSS slide). */
+export function supportsViewTransitions(): boolean {
+  return typeof document !== 'undefined' && typeof (document as ViewTransitionDocument).startViewTransition === 'function';
+}
+
 export function runViewTransition(update: () => void, kind: TransitionKind = 'sheet'): void {
   const doc = document as ViewTransitionDocument;
   if (!doc.startViewTransition || globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {

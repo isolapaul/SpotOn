@@ -452,16 +452,20 @@ a:not(.no-min-size),
 
 /* Screen-to-screen transitions (hooks/viewTransition). Panels: an iOS sheet up on open, down on
    close. Morph: the place card photo grows into the spot details hero while the panel fades in. */
-html[data-vt] .panel-shell {
-  animation: none;
-}
 html[data-vt="morph"] [data-vt-thumb],
 html[data-vt="morph"] [data-vt-hero] {
   view-transition-name: spot-hero;
 }
-::view-transition-old(root),
+/* The page behind: the old frame stays opaque and the new one fades in over it. The default
+   cross-fade dims both halfway, which read as a flash. */
+::view-transition-old(root) {
+  animation: none;
+}
 ::view-transition-new(root) {
-  animation-duration: 0.35s;
+  animation: vt-fade-in 0.25s ease-out both;
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; }
 }
 ::view-transition-new(panel):only-child {
   animation: vt-sheet-in 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;

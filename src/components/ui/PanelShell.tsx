@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useSheetDrag } from '@/hooks/useSheetDrag';
+import { supportsViewTransitions } from '@/hooks/viewTransition';
 import { Z } from '@/lib/constants';
 
 // T25 (DUP-03): the full-screen panel shell shared by ProfilePanel, DiscoveryPanel and
@@ -39,9 +40,10 @@ export default function PanelShell({ onClose, backdropLabel, variant, children, 
   const styles = VARIANTS[variant];
   const { ref: sheetRef, offset, dragging } = useSheetDrag(onClose);
   return (
-    // panel-shell / view-transition-name: the open and close sheet transition (hooks/viewTransition);
-    // the CSS slide-up is the fallback without the View Transitions API.
-    <div className={`panel-shell fixed inset-0 ${Z.panel} animate-slide-up`} style={{ viewTransitionName: 'panel' }}>
+    // view-transition-name: the open and close sheet transition (hooks/viewTransition). The CSS
+    // slide-up is only the fallback without the API: with both, the slide replayed after the
+    // transition had finished (a visible flash on open).
+    <div className={`fixed inset-0 ${Z.panel} ${supportsViewTransitions() ? '' : 'animate-slide-up'}`} style={{ viewTransitionName: 'panel' }}>
       <button
         type="button"
         className={styles.backdrop}
