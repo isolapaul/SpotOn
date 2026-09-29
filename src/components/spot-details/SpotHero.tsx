@@ -16,6 +16,8 @@ import type { SpotHighlight } from './useSpotHighlight';
 interface SpotHeroProps {
   spot: Spot;
   heroImageUrl: string;
+  /** Other images of the spot, tried in order when the hero image fails to load. */
+  fallbackUrls: readonly string[];
   /** Number of gallery images: the hero opens the gallery only when there is one. */
   imageCount: number;
   onOpenGallery: () => void;
@@ -24,12 +26,16 @@ interface SpotHeroProps {
 }
 
 /** Hero image (opens the fullscreen gallery) with the top action bar and the category badge. */
-export default function SpotHero({ spot, heroImageUrl, imageCount, onOpenGallery, onClose, highlight }: Readonly<SpotHeroProps>) {
+export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount, onOpenGallery, onClose, highlight }: Readonly<SpotHeroProps>) {
   const user = useUserStore((s) => s.user);
   const t = useT();
   // BUG-09: favourite state comes from the store (user.savedSpots), not a copy of the props.
   const favorite = useFavoriteToggle(spot.id);
   const { isHighlightedByUser, isHighlighting } = highlight;
+  // A few stored images do not load (owner report): try the spot's other images, then show the
+  // category glyph instead of the browser's broken-image icon.
+  const [failed, setFailed] = useState<readonly string[]>([]);
+  const imageUrl = [heroImageUrl, ...fallbackUrls].find((url) => !failed.includes(url)) ?? null;
 
   // Ignore hero clicks briefly after a spot is shown (prevents an accidental gallery open).
   // `readyFor` is the spot whose guard has elapsed; it is dropped during render when the spot
@@ -73,7 +79,23 @@ export default function SpotHero({ spot, heroImageUrl, imageCount, onOpenGallery
       data-vt-hero=""
       onKeyDown={(e) => e.key === 'Enter' && e.target === e.currentTarget && openGallery()}
     >
-      <Image src={heroImageUrl} alt={spot.name} fill sizes="100vw" className="object-cover" priority unoptimized={isImageUnoptimized(spot)} />
+      {imageUrl ? (
+        <Image
+          key={imageUrl}
+          src={imageUrl}
+          alt={spot.name}
+          fill
+          sizes="100vw"
+          className="object-cover"
+          priority
+          unoptimized={isImageUnoptimized(spot)}
+          onError={() => setFailed((f) => [...f, imageUrl])}
+        />
+      ) : (
+        <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-brand-700/40 to-surface-2 text-brand-300">
+          <CategoryIcon category={spot.category} className="w-16 h-16" />
+        </div>
+      )}
       {imageCount > 1 && (
         <div
           role="img"

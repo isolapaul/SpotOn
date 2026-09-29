@@ -86,6 +86,7 @@ export default function SpotDetailsPanel({ spotId, onClose }: Readonly<SpotDetai
         <SpotHero
           spot={spot}
           heroImageUrl={heroImageUrl}
+          fallbackUrls={allGalleryImages}
           imageCount={allGalleryImages.length}
           onOpenGallery={openGallery}
           onClose={onClose}
