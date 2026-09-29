@@ -2,6 +2,46 @@
 
 ## Unreleased
 
+### Fixed (design 1A)
+- The installed iPhone app now fills the whole screen: the map runs under the status bar and down to the bottom edge, with no band below it (a workaround for an iOS 26 bug). The page background follows the map style instead of black.
+
+### Changed (profile, settings, spot details)
+- The profile scrolls as one page (a pull down from the top closes it), with a calmer banner, a larger avatar, figures in tiles, the sections as a segmented control and cleaner spot cards.
+- Settings drop the purple gradients and the flag emoji: grouped cards in the app colours, languages as a list with a check mark.
+- A spot whose main photo does not load shows its other photos, or its category icon, instead of a broken image.
+- Spot details, Apple Maps style: the page scrolls as one (a title bar fades in once the photo has scrolled away), the category sits as a chip above the title, an action row under it (Directions, Save, Highlight for your own spot, Share), and location, date and uploader in one grouped card. The duplicate Directions button at the bottom is gone.
+- Sign-in, add-spot and username sheets are calm dark cards with the app colours; the "or" divider no longer sits in a stray box. The loading screen shows the app's heart-pin mark, springing in and breathing gently instead of bouncing dots.
+- Adding a spot: the category is picked from a grid of icon tiles instead of a plain drop-down.
+- One look everywhere: the remaining blue and purple accents, gradients and glass boxes follow the app green and the calm dark surfaces (add-spot form, username setup, feedback, notification settings and prompt, install screen, admin tools, reviews). The upload status is a small capsule at the top, clear of the map controls.
+- The map controls and the main menu are frosted and see-through instead of solid white, so they blend with the map.
+- Pulling a panel down, the dimmed map behind it now brightens in step with the pull (no more separate grey layer).
+- More small animations: pins land one after another with a little spring, the place card's lines glide in, the locate button spins when tapped.
+- Spots whose photo lives only in the old single-image field now show it in the details and on the place card too.
+
+### Changed (Explore)
+- Explore is redesigned: a large title with the spot count, an iOS-style segmented sort (nearest / best rated), always-visible category chips with icons, the top spot as a big photo card, and a clean grouped list with category, distance and rating; rows glide in.
+
+### Changed (transitions)
+- Explore, Profile and spot details open as sheets sliding up and close sliding down; from a place card, Details grows the card's photo into the spot's header image. Follows the reduced-motion setting.
+- Panels close by pulling them down from the top of their content (a quarter of the screen, or a quick flick); the sideways swipe that showed a black page behind is gone. Pulling the place card up, or tapping its grabber, opens the spot. The map controls no longer show on top of the sign-in sheet.
+
+### Changed (copy)
+- No more emoji in the interface text; icons (category glyphs, lucide) take their place where they carried meaning.
+
+### Changed (levels)
+- Levels have a new look and new names: Rookie, Explorer, Trailblazer, Local Legend, Cartographer (hu: Újonc, Felfedező, Ösvényjáró, Helyi legenda, Térképész). Each level has its own colour and a hand-drawn badge instead of an emoji; thresholds and perks are unchanged.
+- Your avatar in the main menu wears a ring in your level's colour that fills toward the next level and pings when you add a spot.
+- Reaching a new level plays a short celebration: the new badge springs in over confetti and shows what you unlocked.
+
+### Changed (design 1C, 1E)
+- New main menu: a capsule with Explore (and how many spots there are) and your avatar, plus a separate green + button. While you pick a place for a new spot, the capsule says "Tap the map to place" and the + turns into ×.
+- The top-right corner holds one control stack: notifications, map style, feedback, and a new "my location" button that brings the map back to you. Map styles open as a small menu with mini map previews.
+- Tapping a pin opens a place card from the bottom (photo, category, distance, rating, Directions / Details / favourite; approve for admins). Drag it down, tap the map or × to close; the pin grows while its card is open.
+
+### Changed (design 1D)
+- New map pins: one size at every zoom, the tip points at the exact spot, and hand-drawn category icons replace the emoji. Approved spots are green; pending ones are white with a dashed amber ring and a clock; highlighted ones get a gold ring and a star. Zoomed far out, pins become small dots. Your position is a calm iOS-style dot.
+- Animations follow the system's reduced-motion setting everywhere.
+
 ### Fixed
 - Every push notification arrived twice; now it arrives once.
 - Your own pending spots now show on your map as yellow markers (only yours; other users' pending spots stay hidden).

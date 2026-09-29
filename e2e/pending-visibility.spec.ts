@@ -7,12 +7,12 @@ import { test, blockMapTiles, expectNotification, openApp, signInWithEmail, skip
 // T30: pending spots reach only their owner (profile list + yellow marker on their own map) and
 // admins (map + pending tab).
 // P = E2E.pendingSpot (owned by `user`); Q = E2E.level5.approvedSpot (owned by `level5`, whose other
-// 19 spots are pending and share Q's emoji). Read-only for the seeded fixtures; the spot added here
+// 19 spots are pending and share Q's category). Read-only for the seeded fixtures; the spot added here
 // is deleted before and after the run.
 
 const NEW_SPOT_PREFIX = 'E2E PendingVis ';
 const newSpotName = `${NEW_SPOT_PREFIX}${Date.now().toString(36)}`;
-const PENDING_MARKERS = '.leaflet-marker-icon circle[fill="#eab308"]';
+const PENDING_MARKERS = '.leaflet-marker-icon .spot-pin[data-variant="pending"]';
 
 function adminDb() {
   // Same guard convention as scripts/seed-emulator.ts: never talk to a real Firestore.
@@ -50,20 +50,20 @@ async function openProfile(page: Page, username: string) {
 
 test('signed out: approved markers only', async ({ page }) => {
   await openApp(page);
-  await expect(spotMarker(page, E2E.level5.approvedSpot.emoji)).toHaveCount(1);
-  await expect(spotMarker(page, E2E.pendingSpot.emoji)).toHaveCount(0);
+  await expect(spotMarker(page, E2E.level5.approvedSpot.category)).toHaveCount(1);
+  await expect(spotMarker(page, E2E.pendingSpot.category)).toHaveCount(0);
   await expect(page.locator(PENDING_MARKERS)).toHaveCount(0);
 });
 
 test('owner: own pending spot in yellow on the map and in my spots, never other users\' pending', async ({ page }) => {
   await openApp(page);
   await signInWithEmail(page, E2E.user.email, E2E.password);
-  // The own-spots listener follows sign-in; level5's 19 pending spots (same emoji as Q) stay hidden.
-  await expect(spotMarker(page, E2E.pendingSpot.emoji).locator('circle[fill="#eab308"]')).toHaveCount(1);
-  await expect(spotMarker(page, E2E.level5.approvedSpot.emoji)).toHaveCount(1);
+  // The own-spots listener follows sign-in; level5's 19 pending spots (same category as Q) stay hidden.
+  await expect(spotMarker(page, E2E.pendingSpot.category).locator('.spot-pin[data-variant="pending"]')).toHaveCount(1);
+  await expect(spotMarker(page, E2E.level5.approvedSpot.category)).toHaveCount(1);
 
   await openProfile(page, E2E.user.username);
-  const card = page.locator('.glass-card').filter({ has: page.getByRole('heading', { name: E2E.pendingSpot.name }) });
+  const card = page.getByRole('article', { name: E2E.pendingSpot.name });
   await expect(card).toBeVisible();
   await expect(card.getByText('Pending', { exact: true })).toBeVisible();
 });
@@ -72,8 +72,8 @@ test('admin: pending spots on the map and in the pending tab', async ({ page }) 
   await openApp(page);
   await signInWithEmail(page, E2E.admin.email, E2E.password);
   // Admin state resolves after sign-in; the pending markers follow once the admin listener delivers.
-  await expect(spotMarker(page, E2E.pendingSpot.emoji).locator('circle[fill="#eab308"]')).toHaveCount(1);
-  await expect(spotMarker(page, E2E.level5.approvedSpot.emoji)).toHaveCount(20);
+  await expect(spotMarker(page, E2E.pendingSpot.category).locator('.spot-pin[data-variant="pending"]')).toHaveCount(1);
+  await expect(spotMarker(page, E2E.level5.approvedSpot.category)).toHaveCount(20);
 
   await openProfile(page, E2E.admin.username);
   const pendingTab = page.getByRole('button', { name: /Pending Approval/ });
@@ -95,7 +95,7 @@ test('owner: a new spot appears in the profile at once, as pending', async ({ pa
   await expect.poll(() => page.locator(PENDING_MARKERS).count()).toBeGreaterThanOrEqual(2);
 
   await openProfile(page, E2E.user.username);
-  const card = page.locator('.glass-card').filter({ has: page.getByRole('heading', { name: newSpotName }) });
+  const card = page.getByRole('article', { name: newSpotName });
   await expect(card).toBeVisible();
   await expect(card.getByText('Pending', { exact: true })).toBeVisible();
 });

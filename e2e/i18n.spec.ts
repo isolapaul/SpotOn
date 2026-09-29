@@ -22,7 +22,7 @@ for (const lang of ['hu', 'en'] as const) {
     await expect(page.getByRole('button', { name: T.explore, exact: true })).toBeVisible();
 
     // Seeded spot (T04): the info window's details button
-    await spotMarker(page, E2E.legacySpot.emoji).click();
+    await spotMarker(page, E2E.legacySpot.category).click();
     await expect(page.getByRole('button', { name: T.viewDetails })).toBeVisible();
 
     // AuthModal (signed out)
@@ -59,12 +59,12 @@ test('InstallGate keeps its rich-text DOM (hu, Android)', async ({ page }) => {
     );
   });
   await page.goto('/');
-  // innerHTML captured from the pre-T24 JSX (<strong> + &quot;) build
+  // innerHTML captured from the pre-T24 JSX (<strong> + &quot;) build; step numbers in the brand colour since the design sweep
   await expect(page.locator('ol')).toHaveJSProperty(
     'innerHTML',
-    '<li class="flex items-start gap-2"><span class="font-bold text-green-400 flex-shrink-0">1.</span>'
+    '<li class="flex items-start gap-2"><span class="font-bold text-brand-400 flex-shrink-0">1.</span>'
       + '<span>Kattints a <strong>három pontra</strong> (⋮) a böngésző jobb felső sarkában.</span></li>'
-      + '<li class="flex items-start gap-2"><span class="font-bold text-green-400 flex-shrink-0">2.</span>'
+      + '<li class="flex items-start gap-2"><span class="font-bold text-brand-400 flex-shrink-0">2.</span>'
       + '<span>Válaszd az <strong>"App telepítése"</strong> vagy <strong>"Kezdőképernyőre adás"</strong> gombot.</span></li>',
   );
 });

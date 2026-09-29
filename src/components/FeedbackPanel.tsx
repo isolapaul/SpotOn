@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
-import { X, Camera, Send } from 'lucide-react';
+import { X, Camera, Send, MessageSquareText } from 'lucide-react';
+import Button, { CloseButton } from './ui/Button';
 import { compressImage } from '@/lib/imageCompression';
 import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
@@ -106,10 +107,12 @@ export default function FeedbackPanel({ open, onClose }: Props) {
       backdropClassName="absolute inset-0 bg-black/50 backdrop-blur-sm"
       panelClassName="w-[92%] max-w-2xl max-h-[90vh]"
     >
-        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-800/50 backdrop-blur-xl">
+        <div className="flex items-center justify-between pl-5 pr-2 pt-3 pb-2">
           <div className="flex items-center gap-3">
-            <Camera className="w-5 h-5 text-white" />
-            <h3 className="text-white font-semibold text-lg">{t('feedback')}</h3>
+            <span className="w-9 h-9 rounded-[12px] grid place-items-center bg-brand-500/15">
+              <MessageSquareText className="w-5 h-5 text-brand-400" />
+            </span>
+            <h3 className="text-label font-bold text-[20px]">{t('feedback')}</h3>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -118,28 +121,23 @@ export default function FeedbackPanel({ open, onClose }: Props) {
                 el?.click();
               }}
               disabled={files.length >= FEEDBACK_LIMITS.maxAttachments}
-              className="px-3 py-2 text-sm text-white/80 bg-white/5 rounded-lg hover:bg-white/10 disabled:opacity-50"
+              className="no-min-size h-8 px-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-300 bg-brand-500/15 rounded-full active:bg-brand-500/25 disabled:opacity-40"
             >
+              <Camera className="w-4 h-4" aria-hidden="true" />
               {t('attachImages')}
             </button>
 
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-xl transition-colors touch-manipulation min-w-[44px] min-h-[44px]"
-              aria-label="Close"
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
+            <CloseButton label="Close" onClick={onClose} />
           </div>
         </div>
 
-        <div className="p-4 overflow-y-auto flex-1">
+        <div className="px-4 pb-4 overflow-y-auto flex-1">
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             maxLength={FEEDBACK_LIMITS.maxMessageChars}
             placeholder={t('feedbackPlaceholder')}
-            className="w-full min-h-[180px] bg-transparent border border-white/10 rounded-xl p-3 text-white resize-none focus:outline-none"
+            className="w-full min-h-[180px] bg-surface-3 rounded-[14px] p-3.5 text-label placeholder-white/40 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/60"
           />
 
           <div className="mt-4">
@@ -155,7 +153,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
             {files.length > 0 && (
               <div className="grid grid-cols-3 gap-3">
                 {files.map((f, i) => (
-                  <div key={i} className="relative bg-white/5 rounded-xl overflow-hidden">
+                  <div key={i} className="relative bg-surface-3 rounded-[14px] overflow-hidden motion-safe:animate-item-in">
                     <img
                       src={URL.createObjectURL(f)}
                       alt={f.name}
@@ -163,7 +161,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
                     />
                     <button
                       onClick={() => removeFile(i)}
-                      className="absolute top-1 right-1 bg-black/40 p-1 rounded-full"
+                      className="no-min-size absolute top-1.5 right-1.5 w-7 h-7 grid place-items-center bg-black/45 backdrop-blur-md rounded-full"
                     >
                       <X className="w-4 h-4 text-white" />
                     </button>
@@ -175,7 +173,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
             <p className="text-white/50 text-xs mt-2">{t('feedbackImageLimit')}</p>
           </div>
 
-          <div className="mt-6 bg-slate-800/30 p-3 rounded-xl">
+          <div className="mt-6 bg-surface-1 p-4 rounded-[18px]">
             <h4 className="text-white font-semibold mb-2">{t('patchNotes')}</h4>
             <div className="text-white/70 text-sm whitespace-pre-wrap max-h-40 overflow-y-auto">
               {/* Fetch and render patch-notes from public/patch-notes.md */}
@@ -185,15 +183,11 @@ export default function FeedbackPanel({ open, onClose }: Props) {
           </div>
         </div>
 
-        <div className="p-4 border-t border-white/10 flex items-center justify-end gap-3 bg-slate-800/40">
-          <button
-            onClick={handleSubmit}
-            disabled={sending || message.trim().length === 0}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-2xl hover:opacity-95 disabled:opacity-50"
-          >
+        <div className="p-4 pt-3 border-t border-white/[.06]">
+          <Button block onClick={handleSubmit} disabled={sending || message.trim().length === 0}>
             <Send className="w-4 h-4" />
             {sending ? t('sending') : t('sendFeedback')}
-          </button>
+          </Button>
         </div>
     </ModalShell>
   );

@@ -1,42 +1,68 @@
-// Map marker SVG and size (T23). Pure string building: MapView keeps L.divIcon and the icon cache.
-import { MARKER_COLORS, getMarkerEmoji } from './categories';
+// Map pins (design 1D). Pure string building: MapView wraps the markup in an L.divIcon and caches
+// the icons. Every value interpolated below is a constant or a normalised category id; nothing
+// read from Firestore reaches the markup (Leaflet inserts divIcon html with innerHTML).
+import { CATEGORY_GLYPHS, glyphToSvgMarkup, normalizeCategory } from './categoryGlyphs';
 
-export type MarkerStatus = 'approved' | 'pending' | 'rejected';
+/** approved: public green pin; pending: any non-approved spot (the owner's or, for admins, anyone's). */
+export type MarkerVariant = 'approved' | 'pending';
 
-/**
- * Marker SVG markup for a spot. Byte-identical to MapView's former getCategoryIcon html
- * (whitespace included): the characterisation test compares it with the oracle.
- */
-export function buildMarkerSvg(category: string, status: MarkerStatus, isHighlighted: boolean, size: number): string {
-  const emoji = getMarkerEmoji(category);
-  let bgColor: string = status === 'approved' ? MARKER_COLORS.approved : MARKER_COLORS.other;
-  if (isHighlighted) bgColor = MARKER_COLORS.highlighted;
+/** Pin box and tip (the spot's coordinate) in CSS px; one size at every zoom (senior UI review M3). */
+export const PIN_SIZE: readonly [number, number] = [44, 54];
+export const PIN_ANCHOR: readonly [number, number] = [22, 50];
 
-  const svg = isHighlighted
-    ? `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 56 56">
-        <defs>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-        <circle cx="28" cy="28" r="24" fill="${bgColor}" stroke="#FFA500" stroke-width="3" filter="url(#glow)"/>
-        <text x="28" y="35" font-size="22" text-anchor="middle">${emoji}</text>
-        <text x="46" y="14" font-size="18">⭐</text>
-      </svg>`
-    : `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 48 48">
-        <circle cx="24" cy="24" r="20" fill="${bgColor}" opacity="0.9"/>
-        <text x="24" y="30" font-size="20" text-anchor="middle" fill="white">${emoji}</text>
-      </svg>`;
+export const PIN_COLORS = {
+  approved: '#12814F', // white glyph 4.9:1
+  pendingRing: '#B98300', // dashed ring on white
+  pendingInk: '#111418',
+  highlight: '#F7C948', // gold: highlighted only, never a status
+} as const;
 
-  return svg;
+// Head: 36px circle (r18) centred at (22,20); the tail tapers to the tip at (22,50).
+const PIN_PATH = 'M22 50C20.6 45.5 18 41.8 14.9 36.5A18 18 0 1 1 29.1 36.5C26 41.8 23.4 45.5 22 50Z';
+const CLOCK_BADGE =
+  '<circle cx="36" cy="7" r="7" fill="#111418" stroke="#fff" stroke-width="1.5"/>' +
+  '<path d="M36 3.8V7l2.1 1.3" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>';
+const STAR_BADGE =
+  '<circle cx="36" cy="7" r="7" fill="#F7C948" stroke="#fff" stroke-width="1.5"/>' +
+  '<path d="M36.00 3.60 L36.88 5.79 L39.23 5.95 L37.43 7.46 L38.00 9.75 L36.00 8.50 L34.00 9.75 L34.57 7.46 L32.77 5.95 L35.12 5.79Z" fill="#3B2A00"/>';
+
+/** A spot's pin variant: approved, else pending (rejected and unknown statuses included). */
+export function markerVariant(status: string | undefined): MarkerVariant {
+  return status === 'approved' ? 'approved' : 'pending';
 }
 
-/** Marker size in px for a map zoom level (highlighted markers are scaled by MapView). */
-export function getMarkerSize(zoom: number): number {
-  if (zoom <= 5) return 24;
-  if (zoom <= 10) return 32;
-  if (zoom <= 14) return 48;
-  if (zoom <= 18) return 64;
-  return 80;
+/**
+ * The pin's HTML: an SVG pin (shown from the city zoom in) and a small status dot (shown when the
+ * map is zoomed far out, via the `data-zoom-band="far"` rule in globals.css). Status is never
+ * colour-only: pending has a dashed ring and a clock, highlighted a gold ring and a star.
+ */
+export function buildPinHtml(o: { category: string | undefined; variant: MarkerVariant; highlighted: boolean }): string {
+  const category = normalizeCategory(o.category);
+  const approved = o.variant === 'approved';
+  const fill = approved ? PIN_COLORS.approved : '#FFFFFF';
+  const ink = approved ? '#FFFFFF' : PIN_COLORS.pendingInk;
+  let ring = approved ? '#FFFFFF' : PIN_COLORS.pendingRing;
+  if (o.highlighted) ring = PIN_COLORS.highlight;
+  const dash = approved || o.highlighted ? '' : ' stroke-dasharray="4 3"';
+  let badge = approved ? '' : CLOCK_BADGE;
+  if (o.highlighted) badge = STAR_BADGE;
+  const glyph = glyphToSvgMarkup(CATEGORY_GLYPHS[category], ink);
+
+  return (
+    `<div class="spot-pin" data-variant="${o.variant}" data-category="${category}" data-highlighted="${o.highlighted}">` +
+    `<svg class="spot-pin__svg" width="44" height="54" viewBox="0 0 44 54" aria-hidden="true" focusable="false">` +
+    `<ellipse cx="22" cy="50.6" rx="6" ry="2" fill="#000" opacity=".22"/>` +
+    `<path d="${PIN_PATH}" fill="none" stroke="#000" stroke-opacity=".2" stroke-width="5.5"/>` +
+    `<path d="${PIN_PATH}" fill="${fill}" stroke="${ring}" stroke-width="${o.highlighted ? 3.5 : 3}"${dash}/>` +
+    `<g transform="translate(12 10) scale(.8333)" fill="none" stroke="${ink}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>` +
+    badge +
+    `</svg>` +
+    `<span class="spot-pin__dot"></span>` +
+    `</div>`
+  );
+}
+
+/** Zoom band for the pin CSS: 'far' (country/region view: pins collapse to dots) or 'near'. */
+export function zoomBand(zoom: number): 'far' | 'near' {
+  return zoom <= 10 ? 'far' : 'near';
 }

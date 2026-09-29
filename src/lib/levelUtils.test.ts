@@ -6,11 +6,11 @@ import { interpolate } from './i18n';
 
 // Values of getLevelInfo before T22 (only `name` became `nameKey`; progressBarClass is new).
 const LEVELS = {
-  1: { textColor: 'text-white/90', bgColor: 'bg-gray-500/20', borderColor: 'border-gray-500/30', progressColor: '#6b7280', progressBarClass: 'bg-gray-500/80', nameKey: 'levelBeginner', icon: '🌱', spotsRequired: 0, spotsForNext: 3, maxHighlights: 0, canCustomizeIcon: false, canCustomizeName: false },
-  2: { textColor: 'text-gray-300', bgColor: 'bg-gray-400/20', borderColor: 'border-gray-400/30', progressColor: '#9ca3af', progressBarClass: 'bg-gray-400/80', nameKey: 'levelExplorer', icon: '🥈', spotsRequired: 3, spotsForNext: 10, maxHighlights: 0, canCustomizeIcon: false, canCustomizeName: false },
-  3: { textColor: 'text-yellow-400', bgColor: 'bg-yellow-500/20', borderColor: 'border-yellow-500/30', progressColor: '#eab308', progressBarClass: 'bg-yellow-500/80', nameKey: 'levelMaster', icon: '🥇', spotsRequired: 10, spotsForNext: 15, maxHighlights: 1, canCustomizeIcon: false, canCustomizeName: false },
-  4: { textColor: 'text-yellow-400', bgColor: 'bg-yellow-500/20', borderColor: 'border-yellow-500/30', progressColor: '#eab308', progressBarClass: 'bg-yellow-500/80', nameKey: 'levelLegend', icon: '⭐', spotsRequired: 15, spotsForNext: 20, maxHighlights: 2, canCustomizeIcon: true, canCustomizeName: false },
-  5: { textColor: 'text-cyan-300', bgColor: 'bg-cyan-500/20', borderColor: 'border-cyan-500/30', progressColor: '#06b6d4', progressBarClass: 'bg-cyan-500/80', nameKey: 'levelDiamond', icon: '💎', spotsRequired: 20, spotsForNext: null, maxHighlights: 2, canCustomizeIcon: true, canCustomizeName: true },
+  1: { textColor: 'text-emerald-300', bgColor: 'bg-emerald-500/15', borderColor: 'border-emerald-400/30', progressColor: '#34C759', progressBarClass: 'bg-gradient-to-r from-[#5EE08A] to-[#0E8A4F]', nameKey: 'levelBeginner', spotsRequired: 0, spotsForNext: 3, maxHighlights: 0, canCustomizeIcon: false, canCustomizeName: false },
+  2: { textColor: 'text-sky-300', bgColor: 'bg-sky-500/15', borderColor: 'border-sky-400/30', progressColor: '#0A84FF', progressBarClass: 'bg-gradient-to-r from-[#6FD3FF] to-[#0A64D6]', nameKey: 'levelExplorer', spotsRequired: 3, spotsForNext: 10, maxHighlights: 0, canCustomizeIcon: false, canCustomizeName: false },
+  3: { textColor: 'text-violet-300', bgColor: 'bg-violet-500/15', borderColor: 'border-violet-400/30', progressColor: '#AF52DE', progressBarClass: 'bg-gradient-to-r from-[#D59BFF] to-[#6E2FD6]', nameKey: 'levelMaster', spotsRequired: 10, spotsForNext: 15, maxHighlights: 1, canCustomizeIcon: false, canCustomizeName: false },
+  4: { textColor: 'text-orange-300', bgColor: 'bg-orange-500/15', borderColor: 'border-orange-400/30', progressColor: '#FF9F0A', progressBarClass: 'bg-gradient-to-r from-[#FFD66B] to-[#FF7A00]', nameKey: 'levelLegend', spotsRequired: 15, spotsForNext: 20, maxHighlights: 2, canCustomizeIcon: true, canCustomizeName: false },
+  5: { textColor: 'text-fuchsia-300', bgColor: 'bg-fuchsia-500/15', borderColor: 'border-fuchsia-400/30', progressColor: '#C084FC', progressBarClass: 'bg-gradient-to-r from-[#5EEAD4] via-[#A78BFA] to-[#F472B6]', nameKey: 'levelDiamond', spotsRequired: 20, spotsForNext: null, maxHighlights: 2, canCustomizeIcon: true, canCustomizeName: true },
 } as const;
 
 const CASES: Array<[number, keyof typeof LEVELS]> = [
@@ -18,26 +18,26 @@ const CASES: Array<[number, keyof typeof LEVELS]> = [
 ];
 
 describe('getLevelInfo', () => {
-  it.each(CASES)('%i spots → level %i with unchanged styles', (count, level) => {
+  it.each(CASES)('%i spots → level %i with its level styles', (count, level) => {
     const expected = LEVELS[level];
     expect(getLevelInfo(count)).toEqual({ level, color: expected.textColor, ...expected });
   });
 
-  it('has a static progressBarClass for every level', () => {
+  it('has a static gradient progressBarClass for every level', () => {
     for (const count of [0, 3, 10, 15, 20]) {
-      expect(getLevelInfo(count).progressBarClass).toMatch(/^bg-[a-z]+-\d{3}\/80$/);
+      expect(getLevelInfo(count).progressBarClass).toMatch(/^bg-gradient-to-r from-\[#[0-9A-F]{6}\]( via-\[#[0-9A-F]{6}\])? to-\[#[0-9A-F]{6}\]$/);
     }
   });
 });
 
 describe('LEVEL_THRESHOLDS', () => {
-  it('keeps thresholds and icons, with a translation key per level', () => {
+  it('keeps thresholds, with a translation key per level', () => {
     expect(LEVEL_THRESHOLDS).toEqual([
-      { level: 1, spotsRequired: 0, nameKey: 'levelBeginner', icon: '🌱' },
-      { level: 2, spotsRequired: 3, nameKey: 'levelExplorer', icon: '🥈' },
-      { level: 3, spotsRequired: 10, nameKey: 'levelMaster', icon: '🥇' },
-      { level: 4, spotsRequired: 15, nameKey: 'levelLegend', icon: '⭐' },
-      { level: 5, spotsRequired: 20, nameKey: 'levelDiamond', icon: '💎' },
+      { level: 1, spotsRequired: 0, nameKey: 'levelBeginner' },
+      { level: 2, spotsRequired: 3, nameKey: 'levelExplorer' },
+      { level: 3, spotsRequired: 10, nameKey: 'levelMaster' },
+      { level: 4, spotsRequired: 15, nameKey: 'levelLegend' },
+      { level: 5, spotsRequired: 20, nameKey: 'levelDiamond' },
     ]);
   });
 });

@@ -50,6 +50,10 @@ These are **variables, not secrets**: they are public client config that gets co
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
 - `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
+- `NEXT_PUBLIC_CONTROLLER_NAME` = the data controller's full name, shown on `/privacy` and `/terms` (A1)
+- `NEXT_PUBLIC_CONTACT_EMAIL` = the contact e-mail shown there (public; use an address you are happy to publish)
+
+The container build refuses to run without the last two (`scripts/check-public-env.mjs --production`).
 
 Any change to these requires a new tag and release (ROADMAP trap 5). Setting them in the server's `.env` does nothing.
 

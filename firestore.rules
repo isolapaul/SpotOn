@@ -101,7 +101,8 @@ service cloud.firestore {
     // ---------- users ----------
     function userClientKeys() {
       return ['uid', 'email', 'photoURL', 'profilePictureURL', 'profileBannerURL', 'savedSpots', 'fcmTokens',
-              'language', 'notificationsEnabled', 'notificationSettings', 'lastTokenUpdate', 'lastLoginAt', 'createdAt'];
+              'language', 'notificationsEnabled', 'notificationSettings', 'lastTokenUpdate', 'lastLoginAt', 'createdAt',
+              'termsVersion', 'termsAcceptedAt'];
     }
     function validNotifSettings(s) {
       return s is map && s.keys().hasOnly(['spotApproved', 'spotReviewed', 'newPendingSpot'])
@@ -127,7 +128,10 @@ service cloud.firestore {
         && (!ak.hasAny(['notificationSettings']) || validNotifSettings(d.notificationSettings))
         && (!ak.hasAny(['lastTokenUpdate']) || isStr(d.lastTokenUpdate, 0, 64))
         && (!ak.hasAny(['lastLoginAt']) || d.lastLoginAt == request.time)
-        && (!ak.hasAny(['createdAt']) || d.createdAt == request.time);
+        && (!ak.hasAny(['createdAt']) || d.createdAt == request.time)
+        // Terms acceptance (A1): the version string and the server time of the acceptance.
+        && (!ak.hasAny(['termsVersion']) || isStr(d.termsVersion, 1, 32))
+        && (!ak.hasAny(['termsAcceptedAt']) || d.termsAcceptedAt == request.time);
     }
     match /users/{userId} {
       allow get: if isSelf(userId);

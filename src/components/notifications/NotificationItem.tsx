@@ -86,7 +86,7 @@ export default function NotificationItem({ notification, index, now, onClick }: 
             {headline}
           </h4>
           <span className="flex-shrink-0 flex items-center gap-1.5 text-xs text-white/40 whitespace-nowrap">
-            {!notification.read && <span className="w-2 h-2 rounded-full bg-sky-400" aria-hidden="true" />}
+            {!notification.read && <span className="w-2 h-2 rounded-full bg-brand-400" aria-hidden="true" />}
             {formatTimestamp(notification.timestamp)}
           </span>
         </div>

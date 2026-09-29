@@ -54,7 +54,7 @@ export function AdminStatusCard({ spot, onClose }: Readonly<AdminActionProps>) {
   };
 
   return (
-    <div className="glass-card p-4 space-y-3">
+    <div className="rounded-[18px] bg-surface-1 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className={`text-xs px-3 py-1 rounded-full font-medium ${spot.status === 'approved' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
           {spot.status === 'approved' ? t('approved') : t('pending')}

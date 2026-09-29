@@ -1,142 +1,170 @@
 'use client';
 
-import { MapPin, User, Plus } from 'lucide-react';
 import { useState } from 'react';
+import Image from 'next/image';
+import { Compass, MapPin, Plus, UserRound } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
-import Image from 'next/image';
+import { useMyLevel } from '@/hooks/useMyLevel';
+import { Z } from '@/lib/constants';
+import LevelBadge from '@/components/ui/LevelBadge';
+import LevelRing from '@/components/ui/LevelRing';
 
-type NavItem = 'explore' | 'add' | 'profile';
+// Launcher (design 1C): a capsule with Explore (and the spot count) and the avatar, plus a separate
+// green Add button. The map is always home, so nothing here has a selected state. While a spot is
+// picked for adding, the capsule shows the hint and Add turns into a cancel ×.
 
 interface BottomNavigationProps {
-  onAddSpotClick: () => void;
-  onProfileClick: () => void;
-  onExploreClick: () => void;
+  /** Add-spot location picking is running. */
+  picking: boolean;
+  /** Slid away (a place card is showing). */
+  hidden: boolean;
+  /** Approved spots on the map; 0 hides the count line. */
+  spotCount: number;
+  onExplore: () => void;
+  onAdd: () => void;
+  onProfile: () => void;
+  onCancelPicking: () => void;
 }
 
-export default function BottomNavigation({ 
-  onAddSpotClick, 
-  onProfileClick,
-  onExploreClick,
+function AvatarFace() {
+  const user = useUserStore((s) => s.user);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const src = user?.profilePictureURL || user?.photoURL || '';
+
+  if (!user) {
+    return (
+      <span className="w-10 h-10 rounded-full grid place-items-center bg-black/[.06] chrome-dark:bg-white/10">
+        <UserRound className="w-[22px] h-[22px] text-chrome-ink-2" strokeWidth={2} />
+      </span>
+    );
+  }
+  if (src && failedSrc !== src) {
+    return (
+      <span className="relative w-[38px] h-[38px] rounded-full overflow-hidden bg-surface-3">
+        <Image src={src} alt="" fill sizes="38px" className="object-cover" onError={() => setFailedSrc(src)} />
+      </span>
+    );
+  }
+  return (
+    <span className="w-[38px] h-[38px] rounded-full grid place-items-center bg-brand-600 text-white text-[17px] font-semibold">
+      {user.username?.charAt(0).toUpperCase() || 'U'}
+    </span>
+  );
+}
+
+/** The avatar; signed in, inside the level ring (owner: colour per level) with the level badge. */
+function Avatar() {
+  const mine = useMyLevel();
+  if (!mine) return <AvatarFace />;
+  return (
+    <LevelRing level={mine.info.level} progress={mine.progress} count={mine.count}>
+      <AvatarFace />
+      <LevelBadge
+        key={mine.info.level}
+        level={mine.info.level}
+        size={20}
+        className="absolute -right-1 -bottom-1 drop-shadow motion-safe:animate-badge-pop"
+      />
+    </LevelRing>
+  );
+}
+
+export default function BottomNavigation({
+  picking,
+  hidden,
+  spotCount,
+  onExplore,
+  onAdd,
+  onProfile,
+  onCancelPicking,
 }: Readonly<BottomNavigationProps>) {
-  const [activeTab, setActiveTab] = useState<NavItem>('explore');
   const t = useT();
-  const { user } = useUserStore();
-
-  const navItems = [
-    { id: 'explore' as NavItem, icon: MapPin, label: t('explore') },
-    { id: 'add' as NavItem, icon: Plus, label: t('add'), special: true },
-    { id: 'profile' as NavItem, icon: User, label: t('profile'), isProfile: true },
-  ];
-
-  const handleNavClick = (itemId: NavItem) => {
-    setActiveTab(itemId);
-    
-    if (itemId === 'add') {
-      onAddSpotClick();
-    } else if (itemId === 'profile') {
-      onProfileClick();
-    } else if (itemId === 'explore') {
-      onExploreClick();
-    }
-  };
+  const countLabel = t(spotCount === 1 ? 'spotCountOne' : 'spotCountMany', { count: spotCount });
 
   return (
-    <div 
-      className="
-        fixed left-1/2 -translate-x-1/2 z-50
-        w-auto min-w-[320px]
-        rounded-full
-        bg-[#0f172a]/90 backdrop-blur-2xl
-        border border-white/10
-        shadow-2xl
-        px-6 py-3
-        select-none
-      "
-      style={{
-        bottom: 'max(2rem, calc(env(safe-area-inset-bottom) + 1rem))'
-      }}
+    <nav
+      aria-label={t('mainNavigation')}
+      aria-hidden={hidden || undefined}
+      inert={hidden}
+      className={`absolute inset-x-3 ${Z.dock} mx-auto max-w-[520px] flex items-center gap-2 select-none
+        transition-[transform,opacity] ${
+          hidden
+            ? 'translate-y-[calc(100%+var(--bar-bottom)+8px)] opacity-0 duration-250 ease-exit'
+            : 'translate-y-0 opacity-100 duration-450 ease-ios delay-75'
+        }`}
+      style={{ bottom: 'var(--bar-bottom)' }}
     >
-      <div className="flex items-center justify-between gap-4">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          
-          if (item.special) {
-            // Special "+" Add Button - prominent and centered
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className="relative group flex items-center justify-center touch-manipulation min-w-[48px] min-h-[48px]"
-                aria-label={item.label}
-              >
-                <div className={`
-                  flex items-center justify-center 
-                  w-14 h-14
-                  rounded-full transition-all duration-300
-                  ${isActive 
-                    ? 'bg-gradient-to-br from-primary-400 to-primary-600 shadow-xl shadow-primary-500/50' 
-                    : 'bg-gradient-to-br from-primary-500 to-primary-700 shadow-xl shadow-primary-600/40'
-                  }
-                  active:scale-95 group-hover:shadow-2xl
-                `}>
-                  <Icon 
-                    className="w-7 h-7 text-white" 
-                    strokeWidth={2.5}
-                  />
-                </div>
-              </button>
-            );
-          }
-          
-          // Profile button - show avatar if logged in
-          if (item.isProfile && user?.photoURL) {
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className="flex items-center justify-center transition-all duration-200 touch-manipulation min-w-[48px] min-h-[48px]"
-                aria-label={item.label}
-              >
-                <div className={`relative w-9 h-9 rounded-full overflow-hidden border-2 transition-all duration-200 ${
-                  isActive ? 'border-white scale-110' : 'border-white/40'
-                }`}>
-                  <Image 
-                    src={user.photoURL || ''} 
-                    alt={user?.username || 'Profile'}
-                    fill
-                    className="object-cover"
-                    sizes="36px"
-                  />
-                </div>
-              </button>
-            );
-          }
-          
-          // Regular icon buttons  
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`
-                flex items-center justify-center
-                transition-all duration-200 touch-manipulation min-w-[48px] min-h-[48px]
-                ${isActive 
-                  ? 'text-white scale-110' 
-                  : 'text-gray-400 hover:text-white active:scale-95'
-                }
-              `}
-              aria-label={item.label}
-            >
-              <Icon 
-                className="w-7 h-7 transition-all duration-200"
-                strokeWidth={isActive ? 2.5 : 2}
-              />
-            </button>
-          );
-        })}
+      {/* Capsule */}
+      <div className="material-chrome relative h-14 flex-1 min-w-0 rounded-full flex items-center pl-1.5 pr-2 overflow-hidden">
+        {/* Idle: Explore + avatar */}
+        <div
+          className={`absolute inset-0 flex items-center pl-1.5 pr-2 transition-[opacity,transform] ${
+            picking ? 'opacity-0 -translate-y-1.5 duration-200 pointer-events-none' : 'opacity-100 translate-y-0 duration-250 delay-100'
+          }`}
+          aria-hidden={picking || undefined}
+        >
+          <button
+            type="button"
+            onClick={onExplore}
+            tabIndex={picking ? -1 : 0}
+            aria-label={t('explore')}
+            className="no-min-size group h-14 flex-1 min-w-0 flex items-center gap-3 pl-3 pr-2 rounded-full text-left
+              touch-manipulation active:bg-black/[.05]"
+          >
+            <Compass className="w-6 h-6 flex-shrink-0 text-brand-600 chrome-dark:text-brand-400" strokeWidth={2} />
+            <span className="min-w-0 flex flex-col transition-transform duration-150 group-active:scale-[.97]">
+              <span className="text-[17px] font-semibold leading-tight text-chrome-ink truncate">{t('explore')}</span>
+              {spotCount > 0 && (
+                <span className="text-[13px] leading-tight text-chrome-ink-2 tabular-nums truncate animate-fade-in">
+                  {countLabel}
+                </span>
+              )}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={onProfile}
+            tabIndex={picking ? -1 : 0}
+            aria-label={t('profile')}
+            className="w-12 h-12 flex-shrink-0 grid place-items-center rounded-full touch-manipulation
+              transition-transform duration-150 active:scale-90"
+          >
+            <Avatar />
+          </button>
+        </div>
+
+        {/* Picking: the hint */}
+        <div
+          role="status"
+          className={`absolute inset-0 flex items-center gap-3 pl-5 pr-4 transition-[opacity,transform] ${
+            picking ? 'opacity-100 translate-y-0 duration-250 delay-150' : 'opacity-0 translate-y-1.5 duration-200 pointer-events-none'
+          }`}
+        >
+          {picking && (
+            <>
+              <MapPin className="w-5 h-5 flex-shrink-0 text-brand-600 chrome-dark:text-brand-400 motion-safe:animate-hint-bob" strokeWidth={2.2} />
+              <span className="text-[15px] font-medium text-chrome-ink truncate">{t('tapMapToPlace')}</span>
+            </>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Add / cancel */}
+      <button
+        type="button"
+        onClick={picking ? onCancelPicking : onAdd}
+        aria-label={picking ? t('cancel') : t('add')}
+        className={`relative h-14 w-14 flex-shrink-0 grid place-items-center rounded-full shadow-float touch-manipulation
+          transition-[background-color,color,transform] duration-250 active:scale-90 ${
+            picking ? 'material-chrome text-chrome-ink' : 'bg-brand-600 text-white'
+          }`}
+      >
+        <Plus
+          className={`w-[26px] h-[26px] transition-transform duration-450 ease-ios-bounce ${picking ? 'rotate-45' : 'rotate-0'}`}
+          strokeWidth={2.5}
+        />
+      </button>
+    </nav>
   );
 }

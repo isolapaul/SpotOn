@@ -4,7 +4,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useT } from '@/hooks/useT';
 import { useToastStore } from '@/store/useToastStore';
-import { X, Camera, Image as ImageIcon, LogOut, Globe, Bell, BellOff, MapPin } from 'lucide-react';
+import { X, Camera, Image as ImageIcon, LogOut, Globe, Bell, BellOff, MapPin, Check } from 'lucide-react';
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { compressImage } from '@/lib/imageCompression';
@@ -13,11 +13,15 @@ import { translate, type Language } from '@/lib/i18n';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
+import AccountSection from './settings/AccountSection';
 
 interface SettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+// Each language in its own name (no flag emoji, owner decision).
+const LANGUAGE_NAMES = { hu: 'Magyar', en: 'English', de: 'Deutsch' } as const;
 
 export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPanelProps>) {
   const { user, signOut, updateProfilePicture, updateProfileBanner } = useUserStore();
@@ -125,33 +129,35 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
       />
       
       {/* Settings Panel */}
-      <div className={`fixed inset-y-0 right-0 w-full sm:w-96 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl ${Z.panelInnerSheet} overflow-y-auto border-l border-white/10`}>
+      <div className={`fixed inset-y-0 right-0 w-full sm:w-96 bg-surface-0 ${Z.panelInnerSheet} overflow-y-auto border-l border-white/[.06]`}>
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-xl border-b border-white/10 p-4 z-10" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div className="sticky top-0 bg-surface-0/85 backdrop-blur-xl px-5 pb-3 z-10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              ⚙️ {t('settings')}
+            <h2 className="text-[28px] font-bold text-label">
+              {t('settings')}
             </h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              className="no-min-size w-11 h-11 -mr-1.5 grid place-items-center rounded-full"
             >
-              <X className="w-6 h-6 text-white" />
+              <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
+                <X className="w-4 h-4 text-label-secondary" strokeWidth={2.5} />
+              </span>
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="px-4 pt-2 pb-10 space-y-4">
           {/* Profile Picture Section */}
-          <div className="glass-card p-5">
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+          <div className="rounded-[18px] bg-surface-1 p-5">
+            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-label-tertiary mb-3 flex items-center gap-2">
               <Camera className="w-5 h-5" />
               {t('changeProfilePicture')}
             </h3>
             
             <div className="flex items-center gap-4">
-              <div className="relative w-20 h-20 rounded-full overflow-hidden border-4 border-purple-500/30">
+              <div className="relative w-20 h-20 rounded-full overflow-hidden ring-4 ring-brand-500/30">
                 {user.profilePictureURL || user.photoURL ? (
                   <Image
                     src={user.profilePictureURL || user.photoURL || ''}
@@ -161,7 +167,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
                     className="object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <div className="w-full h-full bg-brand-600 flex items-center justify-center">
                     <span className="text-white text-2xl font-bold">
                       {user.username?.charAt(0).toUpperCase() || 'U'}
                     </span>
@@ -172,8 +178,8 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
               <button
                 onClick={() => pictureInputRef.current?.click()}
                 disabled={isUploadingPicture}
-                className="flex-1 py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold
-                  hover:from-purple-700 hover:to-pink-700 transition-all duration-200 active:scale-95 disabled:opacity-50"
+                className="flex-1 py-2.5 px-4 bg-brand-600 text-white rounded-xl font-semibold
+                  active:bg-brand-700 transition-all duration-200 active:scale-95 disabled:opacity-50"
               >
                 {isUploadingPicture ? t('uploadingImage') : t('uploadPicture')}
               </button>
@@ -189,14 +195,14 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
           </div>
 
           {/* Profile Banner Section */}
-          <div className="glass-card p-5">
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+          <div className="rounded-[18px] bg-surface-1 p-5">
+            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-label-tertiary mb-3 flex items-center gap-2">
               <ImageIcon className="w-5 h-5" />
               {t('changeProfileBanner')}
             </h3>
             
             <div className="space-y-3">
-              <div className="relative w-full h-24 rounded-xl overflow-hidden border-2 border-purple-500/30">
+              <div className="relative w-full h-24 rounded-xl overflow-hidden ring-1 ring-white/10">
                 {user.profileBannerURL ? (
                   <Image
                     src={user.profileBannerURL}
@@ -206,7 +212,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
                     className="object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-r from-purple-600/30 to-pink-600/30 flex items-center justify-center">
+                  <div className="w-full h-full bg-surface-2 flex items-center justify-center">
                     <ImageIcon className="w-8 h-8 text-white/40" />
                   </div>
                 )}
@@ -215,8 +221,8 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
               <button
                 onClick={() => bannerInputRef.current?.click()}
                 disabled={isUploadingBanner}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold
-                  hover:from-purple-700 hover:to-pink-700 transition-all duration-200 active:scale-95 disabled:opacity-50"
+                className="w-full py-2.5 px-4 bg-brand-600 text-white rounded-xl font-semibold
+                  active:bg-brand-700 transition-all duration-200 active:scale-95 disabled:opacity-50"
               >
                 {isUploadingBanner ? t('uploadingImage') : t('uploadBanner')}
               </button>
@@ -232,8 +238,8 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
           </div>
 
           {/* Language Selection */}
-          <div className="glass-card p-5">
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+          <div className="rounded-[18px] bg-surface-1 p-5">
+            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-label-tertiary mb-3 flex items-center gap-2">
               <Globe className="w-5 h-5" />
               {t('languageSelection')}
             </h3>
@@ -243,23 +249,24 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
                 <button
                   key={lang}
                   onClick={() => handleLanguageChange(lang)}
-                  className={`py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
+                  className={`no-min-size w-full text-left py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
                     language === lang
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                      : 'bg-white/5 text-white/70 hover:bg-white/10'
+                      ? 'bg-white/[.08] text-label'
+                      : 'bg-transparent text-label-secondary active:bg-white/[.06]'
                   }`}
                 >
-                  {lang === 'hu' && '🇭🇺 Magyar'}
-                  {lang === 'en' && '🇬🇧 English'}
-                  {lang === 'de' && '🇩🇪 Deutsch'}
+                  <span className="flex items-center justify-between">
+                    <span>{LANGUAGE_NAMES[lang as 'hu' | 'en' | 'de']}</span>
+                    {language === lang && <Check className="w-5 h-5 text-brand-400" strokeWidth={2.5} aria-hidden="true" />}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Notifications */}
-          <div className="glass-card p-5">
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+          <div className="rounded-[18px] bg-surface-1 p-5">
+            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-label-tertiary mb-3 flex items-center gap-2">
               {isPermissionGranted ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
               {t('notificationsHeader')}
             </h3>
@@ -269,7 +276,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
               className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                 isPermissionGranted
                   ? 'bg-green-600/20 text-green-400 border border-green-500/30'
-                  : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700'
+                  : 'bg-brand-600 text-white active:bg-brand-700'
               }`}
             >
               {isPermissionGranted ? (
@@ -288,17 +295,16 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
             <button
               onClick={() => setShowNotificationSettings(true)}
               disabled={isNotificationLoading}
-              className="mt-3 w-full py-2.5 px-4 rounded-xl bg-blue-500/20 text-blue-400 
-                border border-blue-500/30 font-medium text-sm hover:bg-blue-500/30 
-                transition-all disabled:opacity-50"
+              className="mt-3 w-full py-2.5 px-4 rounded-xl bg-white/[.08] text-label font-medium text-sm
+                active:bg-white/[.12] transition-colors disabled:opacity-50"
             >
               {t('notificationSettingsButton')}
             </button>
           </div>
 
           {/* Location Permission */}
-          <div className="glass-card p-5">
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+          <div className="rounded-[18px] bg-surface-1 p-5">
+            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-label-tertiary mb-3 flex items-center gap-2">
               <MapPin className="w-5 h-5" />
               {t('locationHeader')}
             </h3>
@@ -320,12 +326,15 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
               }}
               disabled={isRequestingLocation}
               className="w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2
-                bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
+                bg-brand-600 text-white active:bg-brand-700 disabled:opacity-50"
             >
               <MapPin className="w-5 h-5" />
               {isRequestingLocation ? t('locationRequesting') : t('requestLocationPermission')}
             </button>
           </div>
+
+          {/* Account: legal documents and deletion (A1, A2) */}
+          <AccountSection confirmWord={user.username || user.email || 'delete'} />
 
           {/* Sign Out */}
           <button

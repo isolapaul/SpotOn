@@ -36,7 +36,7 @@ async function savedSpots(): Promise<string[]> {
 
 /** Map marker → info window → details panel. */
 async function openDetails(page: Page) {
-  await spotMarker(page, spot.emoji).click();
+  await spotMarker(page, spot.category).click();
   await page.getByRole('button', { name: 'View Details' }).click();
   await expect(page.getByRole('heading', { name: spot.name })).toBeVisible();
 }
@@ -51,7 +51,7 @@ const removeFavorite = (page: Page) => page.getByRole('button', { name: 'Remove 
 /** A gallery dot: present only while the fullscreen gallery is open (two images). */
 const galleryDot = (page: Page) => page.getByRole('button', { name: 'Go to image 1', exact: true });
 /** The hero's image-count badge; a click on it bubbles to the hero and opens the gallery. */
-const heroBadge = (page: Page) => page.getByText('📸 2', { exact: true });
+const heroBadge = (page: Page) => page.getByRole('img', { name: '2 photos', exact: true });
 
 /** Clicks the hero until the gallery opens (the hero ignores clicks for 300 ms after opening). */
 async function openGallery(page: Page) {

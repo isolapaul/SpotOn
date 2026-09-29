@@ -15,7 +15,7 @@ interface NotificationSheetProps {
   onClose: () => void;
 }
 
-/** The notification list, dropping down under the bell (iOS-like sheet, grouped by day). */
+/** The notification list, growing out of the control stack's bell (iOS-like sheet, grouped by day). */
 export default function NotificationSheet({ onClose }: Readonly<NotificationSheetProps>) {
   const { notifications, markAsRead, markAllAsRead, clearAll } = useNotificationStore();
   const t = useT();
@@ -42,14 +42,18 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
       variant="sheet"
       z="modal"
       align="start"
+      justify="end"
       onBackdropClick={close}
       backdropLabel="Close notifications"
-      outerClassName="px-3"
-      outerStyle={{ paddingTop: 'calc(4.5rem + env(safe-area-inset-top))' }}
+      outerClassName="pl-3"
+      outerStyle={{
+        paddingTop: 'calc(env(safe-area-inset-top) + 8px)',
+        paddingRight: 'max(12px, calc(env(safe-area-inset-right) + 8px))',
+      }}
       backdropClassName={`absolute inset-0 bg-black/40 backdrop-blur-sm touch-manipulation ${
         closing ? 'motion-safe:animate-backdrop-out' : 'motion-safe:animate-backdrop-in'
       }`}
-      panelClassName={`w-full max-w-md max-h-[75vh] origin-top ${
+      panelClassName={`w-full max-w-[400px] max-h-[75vh] origin-top-right ${
         closing ? 'motion-safe:animate-sheet-out' : 'motion-safe:animate-sheet-in'
       }`}
     >
@@ -79,7 +83,7 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
           {unreadCount > 0 ? (
             <button
               onClick={markAllAsRead}
-              className="py-1.5 font-medium text-sky-400 hover:text-sky-300 active:opacity-60 transition touch-manipulation"
+              className="py-1.5 font-medium text-brand-400 active:text-brand-300 active:opacity-60 transition touch-manipulation"
             >
               {t('markAllRead')}
             </button>

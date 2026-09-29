@@ -7,18 +7,19 @@ interface ProfileStatsProps {
   favoritesCount: number;
 }
 
+/** Two figures side by side (design phase 3). */
 export default function ProfileStats({ spotsCount, favoritesCount }: Readonly<ProfileStatsProps>) {
   const t = useT();
+  const stat = (value: number, label: string) => (
+    <div className="flex-1 flex flex-col items-center py-3">
+      <span className="text-[22px] font-bold leading-tight text-label tabular-nums">{value}</span>
+      <span className="text-[13px] text-label-secondary">{label}</span>
+    </div>
+  );
   return (
-    <div className="flex gap-4 mt-0">
-      <div>
-        <span className="text-white font-bold">{spotsCount}</span>
-        <span className="text-white/60 text-xs ml-1">{t('spots')}</span>
-      </div>
-      <div>
-        <span className="text-white font-bold">{favoritesCount}</span>
-        <span className="text-white/60 text-xs ml-1">{t('favorites')}</span>
-      </div>
+    <div className="w-full max-w-md flex rounded-[18px] bg-surface-1 divide-x divide-white/[.06]">
+      {stat(spotsCount, t('spots'))}
+      {stat(favoritesCount, t('favorites'))}
     </div>
   );
 }

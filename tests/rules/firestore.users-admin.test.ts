@@ -23,6 +23,7 @@ function newUserDoc(uid: string, over: Record<string, unknown> = {}) {
   return {
     uid, email: `${uid}@example.test`, photoURL: 'https://lh3.example.test/a.jpg',
     profilePictureURL: 'https://lh3.example.test/a.jpg', profileBannerURL: '', savedSpots: [],
+    termsVersion: '2026-09-29', termsAcceptedAt: serverTimestamp(),
     createdAt: serverTimestamp(), lastLoginAt: serverTimestamp(), ...over,
   };
 }
@@ -54,6 +55,8 @@ describe('users: own document (T11a paths)', () => {
     await assertSucceeds(upd(db, ALICE, { notificationsEnabled: false }));
     await assertSucceeds(upd(db, ALICE, { notificationSettings: { ...SETTINGS, newPendingSpot: false } }));
     await assertSucceeds(upd(db, ALICE, { fcmTokens: arrayRemove('tok1') }));
+    // A1: an existing user accepts the current terms (TermsPrompt)
+    await assertSucceeds(upd(db, ALICE, { termsVersion: '2026-09-29', termsAcceptedAt: serverTimestamp() }));
   });
   it('SEC-04: denies reading or listing other users and anonymous reads', async () => {
     await assertFails(getDoc(userRef(dbAs(env, BOB), ALICE)));
@@ -93,6 +96,12 @@ describe('users: own document (T11a paths)', () => {
     await assertFails(upd(db, ALICE, { fcmTokens: Array.from({ length: 101 }, (_, i) => `t${i}`) }));
     await assertFails(upd(db, ALICE, { savedSpots: Array.from({ length: 1001 }, (_, i) => `s${i}`) }));
     await assertFails(upd(db, ALICE, { photoURL: 'x'.repeat(2049) }));
+    // A1: the acceptance time is the server's, the version a short string
+    await assertFails(setDoc(userRef(dbAs(env, CAROL), CAROL), newUserDoc(CAROL, { termsAcceptedAt: Timestamp.now() })));
+    await assertFails(upd(db, ALICE, { termsVersion: '2026-09-29', termsAcceptedAt: Timestamp.now() }));
+    await assertFails(upd(db, ALICE, { termsVersion: '' }));
+    await assertFails(upd(db, ALICE, { termsVersion: 'x'.repeat(33) }));
+    await assertFails(upd(db, ALICE, { termsVersion: 1 }));
   });
   it('lets an over-cap legacy list shrink but not grow', async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {

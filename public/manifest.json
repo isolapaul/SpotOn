@@ -4,7 +4,7 @@
   "description": "Discover scenic locations, smoke spots, and viewpoints near you",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
+  "background_color": "#0E1013",
   "theme_color": "#0f172a",
   "orientation": "portrait",
   "scope": "/",

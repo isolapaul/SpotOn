@@ -13,21 +13,22 @@ const VARIANTS = {
     backdrop: 'absolute inset-0 bg-black/70 backdrop-blur-xl',
     /** A glass backdrop that closes on click is a button; it keeps the arrow cursor. */
     backdropButton: 'absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default',
-    panelStart: 'relative glass-card',
+    // Design phase 3: a floating dark sheet (Auth, AddSpot, UsernameSetup).
+    panelStart: 'relative bg-surface-2 rounded-[28px] ring-1 ring-white/10 shadow-sheet',
     panelEnd: 'animate-slide-up',
   },
   slate: {
     outerStyle: undefined,
     backdrop: 'absolute inset-0 bg-black/50 backdrop-blur-sm touch-manipulation',
     backdropButton: 'absolute inset-0 bg-black/50 backdrop-blur-sm touch-manipulation',
-    panelStart: 'relative bg-slate-900',
-    panelEnd: 'rounded-3xl shadow-2xl border-2 border-white/20 overflow-hidden animate-scale-in flex flex-col',
+    panelStart: 'relative bg-surface-2',
+    panelEnd: 'rounded-[28px] shadow-sheet ring-1 ring-white/10 overflow-hidden animate-scale-in flex flex-col',
   },
   sheet: {
     outerStyle: undefined,
     backdrop: 'absolute inset-0 bg-black/40 backdrop-blur-sm touch-manipulation',
     backdropButton: 'absolute inset-0 bg-black/40 backdrop-blur-sm touch-manipulation',
-    panelStart: 'relative bg-slate-900',
+    panelStart: 'relative bg-surface-2',
     panelEnd: 'rounded-[28px] shadow-2xl ring-1 ring-white/10 overflow-hidden flex flex-col',
   },
 } as const;
@@ -39,6 +40,7 @@ export const SAFE_AREA_MARGINS: CSSProperties = {
 };
 
 const ALIGN = { center: 'items-center', start: 'items-start' } as const;
+const JUSTIFY = { center: 'justify-center', end: 'justify-end' } as const;
 
 interface ModalShellProps {
   variant: keyof typeof VARIANTS;
@@ -47,6 +49,8 @@ interface ModalShellProps {
   onBackdropClick?: () => void;
   backdropLabel?: string;
   align?: keyof typeof ALIGN;
+  /** Horizontal placement; 'end' anchors a sheet to the top-right control stack (design 1C). */
+  justify?: keyof typeof JUSTIFY;
   /** Replaces the variant's default outer style (glass: the translucent slate background). */
   outerStyle?: CSSProperties;
   /** Replaces the outer padding class (`p-4`); pass '' for none. */
@@ -67,6 +71,7 @@ export default function ModalShell({
   onBackdropClick,
   backdropLabel,
   align = 'center',
+  justify = 'center',
   outerStyle,
   outerClassName = 'p-4',
   backdropClassName,
@@ -75,7 +80,7 @@ export default function ModalShell({
   children,
 }: Readonly<ModalShellProps>) {
   const styles = VARIANTS[variant];
-  const outer = join('fixed inset-0', Z[z], 'flex', ALIGN[align], 'justify-center', outerClassName, 'animate-fade-in');
+  const outer = join('fixed inset-0', Z[z], 'flex', ALIGN[align], JUSTIFY[justify], outerClassName, 'animate-fade-in');
 
   let backdrop: ReactNode;
   if (!onBackdropClick) {

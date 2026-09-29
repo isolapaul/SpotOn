@@ -5,6 +5,7 @@ import { useT } from '@/hooks/useT';
 import { LogIn, X, Mail, Lock, User } from 'lucide-react';
 import { useState } from 'react';
 import ModalShell, { SAFE_AREA_MARGINS } from './ui/ModalShell';
+import LegalNotice from './legal/LegalNotice';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -121,16 +122,18 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
             onClose();
             resetForm();
           }}
-          className="absolute top-4 right-4 glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]"
+          className="no-min-size absolute top-3 right-3 w-11 h-11 grid place-items-center rounded-full touch-manipulation"
           aria-label="Close"
         >
-          <X className="w-5 h-5 text-white" />
+          <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
+            <X className="w-4 h-4 text-label-secondary" strokeWidth={2.5} />
+          </span>
         </button>
 
         {/* Icon */}
         <div className="flex justify-center mb-6">
-          <div className="glass-button p-4 rounded-full">
-            <LogIn className="w-12 h-12 text-white" strokeWidth={1.5} />
+          <div className="w-[72px] h-[72px] rounded-[22px] grid place-items-center bg-brand-500/15">
+            <LogIn className="w-9 h-9 text-brand-400" strokeWidth={1.75} />
           </div>
         </div>
 
@@ -167,9 +170,9 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                     value={username}
                     onChange={(e) => setUsername(e.target.value.toLowerCase().replaceAll(/[^a-z0-9_]/g, ''))}
                     placeholder={t('authUsernamePlaceholder')}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 
-                      text-white placeholder-white/50 focus:outline-none focus:ring-2 
-                      focus:ring-primary-500 focus:border-transparent transition-all"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-3 border border-transparent
+                      text-white placeholder-white/40 focus:outline-none focus:ring-2 
+                      focus:ring-brand-500 focus:border-transparent transition-all"
                     required={mode === 'signup'}
                     minLength={3}
                     maxLength={20}
@@ -193,9 +196,9 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t('authEmailPlaceholder')}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 
-                    text-white placeholder-white/50 focus:outline-none focus:ring-2 
-                    focus:ring-primary-500 focus:border-transparent transition-all"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-3 border border-transparent
+                    text-white placeholder-white/40 focus:outline-none focus:ring-2 
+                    focus:ring-brand-500 focus:border-transparent transition-all"
                   required
                 />
               </div>
@@ -215,9 +218,9 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t('authPasswordPlaceholder')}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 
-                    text-white placeholder-white/50 focus:outline-none focus:ring-2 
-                    focus:ring-primary-500 focus:border-transparent transition-all"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-3 border border-transparent
+                    text-white placeholder-white/40 focus:outline-none focus:ring-2 
+                    focus:ring-brand-500 focus:border-transparent transition-all"
                   required
                   minLength={6}
                 />
@@ -232,8 +235,8 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
               type="submit"
               disabled={loading}
               className="w-full py-4 px-6 rounded-2xl font-semibold text-lg
-                bg-primary-500 text-white shadow-lg
-                hover:bg-primary-600 hover:shadow-xl active:scale-98
+                bg-brand-600 text-white
+                active:bg-brand-700 active:scale-98
                 transition-all duration-200
                 flex items-center justify-center gap-3
                 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -316,21 +319,17 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
             </button>
 
             {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/20"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-slate-900/50 text-white/60">{t('authOr')}</span>
-              </div>
+            <div className="flex items-center gap-3 my-5" aria-hidden="true">
+              <span className="flex-1 h-px bg-white/10" />
+              <span className="text-[13px] text-label-tertiary">{t('authOr')}</span>
+              <span className="flex-1 h-px bg-white/10" />
             </div>
 
             {/* Email Sign In Button */}
             <button
               onClick={() => setShowEmailForm(true)}
               className="w-full py-4 px-6 rounded-2xl font-semibold text-lg
-                glass-button text-white shadow-lg
-                hover:shadow-xl active:scale-98
+                bg-white/10 text-label active:bg-white/15 active:scale-98
                 transition-all duration-200
                 flex items-center justify-center gap-3"
             >
@@ -340,12 +339,8 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
           </div>
         )}
 
-        {/* Privacy Note */}
-        {!showEmailForm && (
-          <p className="text-white/50 text-xs text-center mt-6">
-            {t('authTerms')}
-          </p>
-        )}
+        {/* Sign-in-wrap (A1): signing in or up accepts the terms; both documents are linked */}
+        <LegalNotice textKey="authTerms" className="text-white/50 text-xs text-center mt-6 leading-relaxed" />
     </ModalShell>
   );
 }

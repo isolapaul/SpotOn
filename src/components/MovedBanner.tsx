@@ -63,12 +63,13 @@ export default function MovedBanner() {
     <div
       role="status"
       aria-live="polite"
-      className={`fixed ${Z.floatingButton} mx-auto max-w-md flex items-center gap-2 pl-4 pr-1 py-1
-        rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 shadow-glass-lg text-white animate-fade-in`}
+      className={`fixed ${Z.floatingButton} max-w-md flex items-center gap-2 pl-4 pr-1 py-1
+        rounded-2xl material-sheet shadow-float text-white motion-safe:animate-toast-in`}
       style={{
-        top: 'calc(1rem + env(safe-area-inset-top) + 56px)',
-        left: 'max(1rem, env(safe-area-inset-left))',
-        right: 'max(1rem, env(safe-area-inset-right))',
+        // The free top-left slot, clear of the control stack on the right (design 1C).
+        top: 'calc(env(safe-area-inset-top) + 8px)',
+        left: 'max(12px, calc(env(safe-area-inset-left) + 8px))',
+        right: 'calc(max(12px, calc(env(safe-area-inset-right) + 8px)) + 52px)',
       }}
     >
       <p className="flex-1 min-w-0 py-1 text-sm leading-snug">

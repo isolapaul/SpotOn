@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TranslationKey } from './translations';
-import { CATEGORIES, CATEGORY_EMOJI, CATEGORY_LABEL_KEY, MARKER_COLORS, getMarkerEmoji } from './categories';
+import { CATEGORIES, CATEGORY_EMOJI, CATEGORY_LABEL_KEY, getMarkerEmoji } from './categories';
 import { categoryEmojis, categoryTranslationKeys } from './spotUtils';
 import * as oracle from './__oracles__/legacy';
 
@@ -46,9 +46,5 @@ describe('categories (characterisation)', () => {
     expect(getMarkerEmoji('toString')).toBe('📍');
     expect(getMarkerEmoji('__proto__')).toBe('📍');
     expect(getMarkerEmoji('other')).toBe('📍');
-  });
-
-  it('MARKER_COLORS are the MapView colours', () => {
-    expect(MARKER_COLORS).toEqual({ approved: '#10b981', other: '#eab308', highlighted: '#FFD700' });
   });
 });

@@ -3,11 +3,9 @@
 import { useMemo, useState } from 'react';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
-import { useSwipeToClose } from '@/hooks/useSwipeToClose';
 import { useIsAdmin, useIsSuperAdmin } from '@/hooks/useIsAdmin';
 import { useCategories } from '@/hooks/useCategories';
 import { getLevelInfo } from '@/lib/levelUtils';
-import { SWIPE_THRESHOLDS } from '@/lib/constants';
 import SettingsPanel from '../SettingsPanel';
 import PanelShell from '../ui/PanelShell';
 import ProfileBanner from './ProfileBanner';
@@ -34,7 +32,6 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
   const [failedAvatarSrc, setFailedAvatarSrc] = useState<string | null>(null);
 
   // iOS swipe-to-close gesture: rightward only
-  const swipe = useSwipeToClose({ onClose, threshold: SWIPE_THRESHOLDS.panel, direction: 'right' });
 
   const userIsAdmin = useIsAdmin();
   const userIsSuperAdmin = useIsSuperAdmin();
@@ -58,8 +55,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
     <PanelShell
       onClose={onClose}
       backdropLabel="Close profile panel"
-      variant="gray"
-      swipe={swipe}
+      variant="surface"
       overlays={
         <>
           {/* Settings Panel (nested: stacks inside this root's Z.panel context, see Z.panelInner*) */}
@@ -70,6 +66,9 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         </>
       }
     >
+      {/* One scroll for the whole profile (design phase 3): the header scrolls away, and a pull
+          down from the top closes the sheet. */}
+      <div className="flex-1 overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
       <ProfileBanner
         bannerUrl={user.profileBannerURL}
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -95,8 +94,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         pendingCount={pendingSpots.length}
       />
 
-      {/* Content with Safe Area Bottom Padding */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
+      <div className="px-4">
         {activeTab === 'my-spots' && <MySpotsTab user={user} spots={myAllSpots} levelInfo={levelInfo} />}
 
         {activeTab === 'favorites' && <FavoritesTab spots={favoriteSpots} />}
@@ -108,6 +106,7 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
         {activeTab === 'admin' && userIsSuperAdmin && (
           <AdminTab categories={categories} addCategory={addCategory} isAdding={isAdding} />
         )}
+      </div>
       </div>
     </PanelShell>
   );

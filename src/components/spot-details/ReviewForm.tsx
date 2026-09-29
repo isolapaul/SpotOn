@@ -93,7 +93,7 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
   };
 
   return (
-    <div className="glass-card p-4 mb-4">
+    <div className="rounded-[18px] bg-surface-1 p-4 mb-4">
       <div className="flex items-center gap-3 mb-3">
         {(user.profilePictureURL || user.photoURL) && (
           <div className="relative w-10 h-10 rounded-full overflow-hidden">
@@ -147,7 +147,7 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
           {files.length > 0 && (
             <span
               key={files.length}
-              className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-sky-500 text-white text-xs font-bold flex items-center justify-center motion-safe:animate-badge-pop"
+              className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-brand-600 text-white text-xs font-bold flex items-center justify-center motion-safe:animate-badge-pop"
             >
               {files.length}
             </span>
@@ -156,7 +156,7 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
         <button
           onClick={handleSubmit}
           disabled={isUploading || (rating === 0 && files.length === 0)}
-          className="flex-1 py-3 rounded-xl font-medium bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+          className="flex-1 h-11 rounded-full font-semibold bg-brand-600 text-white active:bg-brand-700 active:scale-[.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center gap-2"
         >
           <Send className="w-4 h-4" />
           {isUploading ? t('submittingReview') : t('submitReview')}

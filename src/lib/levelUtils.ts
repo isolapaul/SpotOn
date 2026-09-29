@@ -24,7 +24,6 @@ export interface LevelInfo {
   borderColor: string; // For borders
   progressColor: string; // Hex color for progress bar fill
   progressBarClass: string; // Tailwind class for the level-info progress bar fill
-  icon: string; // Emoji icon
   spotsRequired: number;
   spotsForNext: number | null; // null if max level
   maxHighlights: number;
@@ -32,13 +31,23 @@ export interface LevelInfo {
   canCustomizeName: boolean; // color and font
 }
 
-export const LEVEL_THRESHOLDS: readonly { level: number; spotsRequired: number; nameKey: TranslationKey; icon: string }[] = [
-  { level: 1, spotsRequired: 0, nameKey: 'levelBeginner', icon: '🌱' },
-  { level: 2, spotsRequired: 3, nameKey: 'levelExplorer', icon: '🥈' },
-  { level: 3, spotsRequired: 10, nameKey: 'levelMaster', icon: '🥇' },
-  { level: 4, spotsRequired: 15, nameKey: 'levelLegend', icon: '⭐' },
-  { level: 5, spotsRequired: 20, nameKey: 'levelDiamond', icon: '💎' },
+// Badges and colours per level: lib/levelTheme (no emoji).
+export const LEVEL_THRESHOLDS: readonly { level: number; spotsRequired: number; nameKey: TranslationKey }[] = [
+  { level: 1, spotsRequired: 0, nameKey: 'levelBeginner' },
+  { level: 2, spotsRequired: 3, nameKey: 'levelExplorer' },
+  { level: 3, spotsRequired: 10, nameKey: 'levelMaster' },
+  { level: 4, spotsRequired: 15, nameKey: 'levelLegend' },
+  { level: 5, spotsRequired: 20, nameKey: 'levelDiamond' },
 ];
+
+/** UI tints per level, matching the badge colours in lib/levelTheme (static Tailwind strings). */
+const LEVEL_TINTS: Record<number, { textColor: string; bgColor: string; borderColor: string; progressColor: string; progressBarClass: string }> = {
+  1: { textColor: 'text-emerald-300', bgColor: 'bg-emerald-500/15', borderColor: 'border-emerald-400/30', progressColor: '#34C759', progressBarClass: 'bg-gradient-to-r from-[#5EE08A] to-[#0E8A4F]' },
+  2: { textColor: 'text-sky-300', bgColor: 'bg-sky-500/15', borderColor: 'border-sky-400/30', progressColor: '#0A84FF', progressBarClass: 'bg-gradient-to-r from-[#6FD3FF] to-[#0A64D6]' },
+  3: { textColor: 'text-violet-300', bgColor: 'bg-violet-500/15', borderColor: 'border-violet-400/30', progressColor: '#AF52DE', progressBarClass: 'bg-gradient-to-r from-[#D59BFF] to-[#6E2FD6]' },
+  4: { textColor: 'text-orange-300', bgColor: 'bg-orange-500/15', borderColor: 'border-orange-400/30', progressColor: '#FF9F0A', progressBarClass: 'bg-gradient-to-r from-[#FFD66B] to-[#FF7A00]' },
+  5: { textColor: 'text-fuchsia-300', bgColor: 'bg-fuchsia-500/15', borderColor: 'border-fuchsia-400/30', progressColor: '#C084FC', progressBarClass: 'bg-gradient-to-r from-[#5EEAD4] via-[#A78BFA] to-[#F472B6]' },
+};
 
 /**
  * Spots required to reach `level` (1-5), from LEVEL_THRESHOLDS; 0 for any other level.
@@ -66,37 +75,7 @@ export function getLevelInfo(spotsCount: number): LevelInfo {
   const currentThreshold = LEVEL_THRESHOLDS[level - 1];
   const nextThreshold = LEVEL_THRESHOLDS[level];
 
-  let textColor = 'text-white/90'; // Level 1
-  let bgColor = 'bg-gray-500/20';
-  let borderColor = 'border-gray-500/30';
-  let progressColor = '#6b7280'; // gray-500
-  let progressBarClass = 'bg-gray-500/80';
-  
-  if (level === 2) {
-    textColor = 'text-gray-300'; // Silver
-    bgColor = 'bg-gray-400/20';
-    borderColor = 'border-gray-400/30';
-    progressColor = '#9ca3af'; // gray-400
-    progressBarClass = 'bg-gray-400/80';
-  } else if (level === 3) {
-    textColor = 'text-yellow-400'; // Gold
-    bgColor = 'bg-yellow-500/20';
-    borderColor = 'border-yellow-500/30';
-    progressColor = '#eab308'; // yellow-500
-    progressBarClass = 'bg-yellow-500/80';
-  } else if (level === 4) {
-    textColor = 'text-yellow-400'; // Gold (same as level 3)
-    bgColor = 'bg-yellow-500/20';
-    borderColor = 'border-yellow-500/30';
-    progressColor = '#eab308'; // yellow-500
-    progressBarClass = 'bg-yellow-500/80';
-  } else if (level === 5) {
-    textColor = 'text-cyan-300'; // Diamond
-    bgColor = 'bg-cyan-500/20';
-    borderColor = 'border-cyan-500/30';
-    progressColor = '#06b6d4'; // cyan-500
-    progressBarClass = 'bg-cyan-500/80';
-  }
+  const { textColor, bgColor, borderColor, progressColor, progressBarClass } = LEVEL_TINTS[level];
 
   const maxHighlights = (() => {
     if (level >= 4) return 2;
@@ -113,7 +92,6 @@ export function getLevelInfo(spotsCount: number): LevelInfo {
     borderColor,
     progressColor,
     progressBarClass,
-    icon: currentThreshold.icon,
     spotsRequired: currentThreshold.spotsRequired,
     spotsForNext: nextThreshold ? nextThreshold.spotsRequired : null,
     maxHighlights,

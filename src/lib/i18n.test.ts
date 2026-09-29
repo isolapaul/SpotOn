@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectLanguage, interpolate, splitBold, translate, type Language } from './i18n';
+import { detectLanguage, interpolate, splitBold, splitSlots, translate, type Language } from './i18n';
 import { translations, type TranslationKey } from './translations';
 
 const dict = translations; // test oracle; aliased so the T24 acceptance grep only flags app code
@@ -101,6 +101,19 @@ describe('splitBold', () => {
 
   it('empty string: no parts', () => {
     expect(splitBold('')).toEqual([]);
+  });
+});
+
+describe('splitSlots', () => {
+  it('text and slots in order', () => {
+    expect(splitSlots('a {terms} b {privacy}.')).toEqual([
+      { text: 'a ' }, { slot: 'terms' }, { text: ' b ' }, { slot: 'privacy' }, { text: '.' },
+    ]);
+  });
+
+  it('no placeholders: one text part; empty string: none', () => {
+    expect(splitSlots('plain')).toEqual([{ text: 'plain' }]);
+    expect(splitSlots('')).toEqual([]);
   });
 });
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Star, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Star, Trash2, Image as ImageIcon, Images } from 'lucide-react';
 import { useSpotStore, type Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useT } from '@/hooks/useT';
@@ -61,13 +61,13 @@ export default function ImageManager({ spot, imageCount }: Readonly<ImageManager
     <div>
       <button
         onClick={() => setShowManageImages(!showManageImages)}
-        className="w-full glass-card p-4 flex items-center justify-between hover:bg-white/10 transition-colors"
+        className="w-full rounded-[18px] bg-surface-1 p-4 flex items-center justify-between hover:bg-white/10 transition-colors"
       >
         <div className="flex items-center gap-2">
           <ImageIcon className="w-5 h-5 text-primary-400" />
           <span className="text-white font-medium">{t('manageImages')}</span>
         </div>
-        <span className="text-white/40 text-sm">{imageCount} 📸</span>
+        <span className="text-white/40 text-sm inline-flex items-center gap-1">{imageCount} <Images className="w-4 h-4" aria-hidden="true" /></span>
       </button>
       {showManageImages && (
         <div className="mt-3 grid grid-cols-3 gap-2">

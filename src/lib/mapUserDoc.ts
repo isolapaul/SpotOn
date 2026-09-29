@@ -19,6 +19,7 @@ export interface User {
   customNameFont?: string; // Custom font for level 5
   notificationSettings?: NotificationSettings;
   spotsCount?: number; // Server-maintained (T09), all statuses (D8)
+  termsVersion?: string; // The accepted Terms / Privacy Policy version (A1, lib/terms)
 }
 
 export interface AuthInfo {
@@ -63,6 +64,8 @@ export function mapUserDoc(uid: string, authInfo: AuthInfo, data: Record<string,
 
   const notificationSettings = mapNotificationSettings(data.notificationSettings);
   if (notificationSettings) user.notificationSettings = notificationSettings;
+
+  if (typeof data.termsVersion === 'string') user.termsVersion = data.termsVersion;
 
   const spotsCount = data.spotsCount;
   if (typeof spotsCount === 'number' && Number.isInteger(spotsCount) && spotsCount >= 0) {

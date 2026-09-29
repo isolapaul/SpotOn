@@ -33,6 +33,16 @@ if (authDomain && !invalid.includes('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN') && !/^[a
 }
 
 if (production) {
+  // Shown on the legal pages (A1); a release without them would publish "[nincs megadva]".
+  for (const name of ['NEXT_PUBLIC_CONTROLLER_NAME', 'NEXT_PUBLIC_CONTACT_EMAIL']) {
+    const value = env[name];
+    if (value === undefined || value === '') missing.push(name);
+    else if (value.trim() !== value || /["'`<>]/.test(value)) invalid.push(name);
+  }
+  const email = env.NEXT_PUBLIC_CONTACT_EMAIL;
+  if (email && !invalid.includes('NEXT_PUBLIC_CONTACT_EMAIL') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    invalid.push('NEXT_PUBLIC_CONTACT_EMAIL');
+  }
   if (env.NEXT_PUBLIC_USE_EMULATORS === '1') forbidden.push('NEXT_PUBLIC_USE_EMULATORS');
   for (const name of ['NEXT_PUBLIC_MOVED_TO', 'NEXT_PUBLIC_ADMIN_EMAIL']) {
     if (env[name] !== undefined) forbidden.push(name);

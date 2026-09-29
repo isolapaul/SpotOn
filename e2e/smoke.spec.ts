@@ -16,15 +16,15 @@ test('app loads past overlays', async ({ page }) => {
 
 test('approved markers only', async ({ page }) => {
   await openApp(page);
-  await expect(page.locator('.leaflet-marker-icon circle[fill="#10b981"]')).toHaveCount(EXPECTED_APPROVED_MARKERS);
-  await expect(spotMarker(page, E2E.legacySpot.emoji)).toHaveCount(1);
-  await expect(spotMarker(page, E2E.modernSpot.emoji)).toHaveCount(1);
-  await expect(spotMarker(page, E2E.pendingSpot.emoji)).toHaveCount(0);
+  await expect(page.locator('.leaflet-marker-icon .spot-pin[data-variant="approved"]')).toHaveCount(EXPECTED_APPROVED_MARKERS);
+  await expect(spotMarker(page, E2E.legacySpot.category)).toHaveCount(1);
+  await expect(spotMarker(page, E2E.modernSpot.category)).toHaveCount(1);
+  await expect(spotMarker(page, E2E.pendingSpot.category)).toHaveCount(0);
 });
 
 test('legacy spot details', async ({ page }) => {
   await openApp(page);
-  await spotMarker(page, E2E.legacySpot.emoji).click();
+  await spotMarker(page, E2E.legacySpot.category).click();
   await page.getByRole('button', { name: 'View Details' }).click();
 
   const img = page.getByRole('img', { name: E2E.legacySpot.name }).first();

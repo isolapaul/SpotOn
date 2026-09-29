@@ -56,7 +56,7 @@ export default function AdminSearch() {
   return (
     <div className="glass-card p-6">
       <div className="flex items-center gap-2 mb-4">
-        <Shield className="w-5 h-5 text-purple-400" />
+        <Shield className="w-5 h-5 text-amber-400" />
         <h3 className="text-white font-bold text-lg">{t('addAdmin')}</h3>
       </div>
 
@@ -70,15 +70,15 @@ export default function AdminSearch() {
           onChange={(e) => setAdminEmailInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearchUser()}
           className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl
-            text-white placeholder:text-white/40 focus:outline-none focus:border-purple-500/50"
+            text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50"
         />
 
         <button
           onClick={handleSearchUser}
           disabled={isSearching || !adminEmailInput.trim()}
           className="w-full py-3 px-4 rounded-xl font-semibold
-            bg-purple-500/20 text-purple-400 border border-purple-500/30
-            hover:bg-purple-500/30 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed
+            bg-amber-500/20 text-amber-400 border border-amber-500/30
+            hover:bg-amber-500/30 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed
             transition-all duration-200"
         >
           {isSearching ? t('searching') : t('searchUser')}
@@ -86,10 +86,10 @@ export default function AdminSearch() {
 
         {/* Searched User Preview */}
         {searchedUser && (
-          <div className="bg-white/5 border border-purple-500/30 rounded-xl p-4">
+          <div className="bg-white/5 border border-amber-500/30 rounded-xl p-4">
             <div className="flex items-center gap-4 mb-4">
               {searchedUser.photoURL ? (
-                <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-purple-500/30">
+                <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-amber-500/30">
                   <Image
                     src={searchedUser.photoURL}
                     alt={searchedUser.username}
@@ -99,7 +99,7 @@ export default function AdminSearch() {
                   />
                 </div>
               ) : (
-                <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-purple-500/30 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-amber-500/30 bg-brand-600 flex items-center justify-center">
                   <span className="text-white text-xl font-bold">{(searchedUser.username?.charAt(0) || 'U').toUpperCase()}</span>
                 </div>
               )}

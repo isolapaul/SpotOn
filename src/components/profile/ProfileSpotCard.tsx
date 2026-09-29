@@ -1,9 +1,10 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
-import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
+import { getThumbnailUrl, isImageUnoptimized, PLACEHOLDER_URL } from '@/lib/spotImages';
+import CategoryIcon from '@/components/ui/CategoryIcon';
 
 interface ProfileSpotCardProps {
   spot: Spot;
@@ -11,25 +12,24 @@ interface ProfileSpotCardProps {
   children: ReactNode;
 }
 
-/** Spot card of the My Spots and Favorites tabs: thumbnail, name, description and a footer slot. */
+/** Spot card of the My Spots and Favorites tabs (design phase 3): thumbnail, name, description, footer slot. */
 export default function ProfileSpotCard({ spot, children }: Readonly<ProfileSpotCardProps>) {
+  const url = getThumbnailUrl(spot);
+  const [failed, setFailed] = useState(false);
   return (
-    <div className="glass-card p-4 flex gap-4">
-      <div className="relative w-28 h-28 rounded-xl overflow-hidden flex-shrink-0">
-        <Image
-          src={getThumbnailUrl(spot)}
-          alt={spot.name}
-          fill
-          sizes="112px"
-          className="object-cover"
-          unoptimized={isImageUnoptimized(spot)}
-        />
-      </div>
+    <article aria-label={spot.name} className="rounded-[18px] bg-surface-1 p-3 flex gap-3.5">
+      <span className="relative w-[72px] h-[72px] flex-shrink-0 rounded-[14px] overflow-hidden bg-brand-500/15 text-brand-400 grid place-items-center">
+        {url === PLACEHOLDER_URL || failed ? (
+          <CategoryIcon category={spot.category} className="w-8 h-8" />
+        ) : (
+          <Image src={url} alt="" fill sizes="72px" className="object-cover" unoptimized={isImageUnoptimized(spot)} onError={() => setFailed(true)} />
+        )}
+      </span>
       <div className="flex-1 min-w-0">
-        <h3 className="text-white font-semibold text-base line-clamp-1">{spot.name}</h3>
-        <p className="text-white/60 text-sm line-clamp-3 mt-1">{spot.description}</p>
+        <h3 className="text-[17px] font-semibold leading-snug text-label line-clamp-1">{spot.name}</h3>
+        <p className="text-[14px] text-label-secondary line-clamp-2 mt-0.5">{spot.description}</p>
         {children}
       </div>
-    </div>
+    </article>
   );
 }

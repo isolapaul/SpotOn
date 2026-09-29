@@ -1,19 +1,18 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { X, MapPin, Filter } from 'lucide-react';
-import Image from 'next/image';
+import { X, Navigation, Star } from 'lucide-react';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
-import { useSwipeToClose } from '@/hooks/useSwipeToClose';
-import { CATEGORIES, getMarkerEmoji } from '@/lib/categories';
+import { CATEGORIES } from '@/lib/categories';
 import { haversineKm } from '@/lib/geo';
 import { averageRating } from '@/lib/rating';
-import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
-import { DISCOVERY_BATCH_SIZE, SWIPE_THRESHOLDS } from '@/lib/constants';
+import { DISCOVERY_BATCH_SIZE } from '@/lib/constants';
 import type { Spot, SpotCategory } from '@/store/useSpotStore';
+import CategoryIcon from '@/components/ui/CategoryIcon';
 import PanelShell from './ui/PanelShell';
-import StarRating from './ui/StarRating';
+import FeaturedSpot from './discovery/FeaturedSpot';
+import SpotRow from './discovery/SpotRow';
 
 interface DiscoveryPanelProps {
   isOpen: boolean;
@@ -24,257 +23,158 @@ interface DiscoveryPanelProps {
 
 type SortOption = 'nearest' | 'best-rated';
 
+const chipClass = (active: boolean) =>
+  `no-min-size flex-shrink-0 h-9 px-3.5 rounded-full text-[14px] font-semibold flex items-center gap-1.5 touch-manipulation
+   transition-colors duration-200 active:scale-95 ${active ? 'bg-brand-600 text-white' : 'bg-white/[.08] text-label-secondary'}`;
+
+/** Explore (design phase 3): large title, segmented sort, category chips, a featured spot and a grouped list. */
 export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSelect }: Readonly<DiscoveryPanelProps>) {
   const { spots } = useSpotStore();
   const t = useT();
   const [sortBy, setSortBy] = useState<SortOption>('best-rated');
   const [filterCategory, setFilterCategory] = useState<SpotCategory | null>(null);
   const [visibleCount, setVisibleCount] = useState(DISCOVERY_BATCH_SIZE);
-  const [showFilters, setShowFilters] = useState(false);
 
-  const categories: { value: SpotCategory; label: string; emoji: string }[] = CATEGORIES.map((c) => ({
-    value: c.id,
-    label: t(c.labelKey),
-    emoji: c.emoji,
-  }));
+  const getDistance = useCallback(
+    (spot: Spot): number | null =>
+      userLocation ? haversineKm(userLocation.lat, userLocation.lng, spot.location.lat, spot.location.lng) : null,
+    [userLocation],
+  );
 
-  // Get distance for a spot (returns null if no user location)
-  const getDistance = useCallback((spot: Spot): number | null => {
-    if (!userLocation) return null;
-    return haversineKm(
-      userLocation.lat, userLocation.lng,
-      spot.location.lat, spot.location.lng
-    );
-  }, [userLocation]);
+  const approvedCount = useMemo(() => spots.filter((s) => s.status === 'approved').length, [spots]);
 
-  // Filter and sort spots
+  // Approved only, the category filter, then the chosen order.
   const sortedSpots = useMemo(() => {
-    // Only show approved spots
-    let filtered = spots.filter(spot => spot.status === 'approved');
-
-    // Apply category filter
-    if (filterCategory) {
-      filtered = filtered.filter(spot => spot.category === filterCategory);
-    }
-
-    // Sort
+    const filtered = spots.filter((spot) => spot.status === 'approved' && (!filterCategory || spot.category === filterCategory));
     if (sortBy === 'nearest' && userLocation) {
-      filtered.sort((a, b) => {
-        const distA = getDistance(a) ?? Infinity;
-        const distB = getDistance(b) ?? Infinity;
-        return distA - distB;
-      });
+      filtered.sort((a, b) => (getDistance(a) ?? Infinity) - (getDistance(b) ?? Infinity));
     } else {
-      // Best rated (default)
-      filtered.sort((a, b) => {
-        const ratingA = averageRating(a.reviews);
-        const ratingB = averageRating(b.reviews);
-        return ratingB - ratingA;
-      });
+      filtered.sort((a, b) => averageRating(b.reviews) - averageRating(a.reviews));
     }
-
     return filtered;
   }, [spots, filterCategory, sortBy, userLocation, getDistance]);
 
-  // Paginated spots
-  const displayedSpots = useMemo(() => {
-    return sortedSpots.slice(0, visibleCount);
-  }, [sortedSpots, visibleCount]);
-
+  const displayedSpots = useMemo(() => sortedSpots.slice(0, visibleCount), [sortedSpots, visibleCount]);
   const hasMore = visibleCount < sortedSpots.length;
 
-  const handleLoadMore = () => {
-    setVisibleCount(prev => prev + DISCOVERY_BATCH_SIZE);
-  };
-  
-  // iOS swipe-to-close gesture: rightward only
-  const swipe = useSwipeToClose({ onClose, threshold: SWIPE_THRESHOLDS.panel, direction: 'right' });
-
   const handleSortChange = (option: SortOption) => {
-    if (option === 'nearest' && !userLocation) {
-      return;
-    }
+    if (option === 'nearest' && !userLocation) return;
     setSortBy(option);
+    setVisibleCount(DISCOVERY_BATCH_SIZE);
+  };
+  const pickCategory = (category: SpotCategory | null) => {
+    setFilterCategory(category);
     setVisibleCount(DISCOVERY_BATCH_SIZE);
   };
 
   if (!isOpen) return null;
 
+  const [featured, ...rest] = displayedSpots;
+  const props = (spot: Spot) => ({
+    spot,
+    rating: averageRating(spot.reviews),
+    reviewCount: spot.reviews?.length || 0,
+    distanceKm: getDistance(spot),
+    onSelect: () => onSpotSelect(spot),
+  });
+
   return (
-    <PanelShell onClose={onClose} backdropLabel="Close discovery panel" variant="gray" swipe={swipe}>
-        {/* Header */}
-        <div className="flex-shrink-0 px-6 border-b border-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)', paddingBottom: '1rem' }}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="glass-button p-2 rounded-full">
-                <MapPin className="w-5 h-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-white">{t('discovery')}</h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]"
-              aria-label={t('close')}
-            >
-              <X className="w-5 h-5 text-white" />
-            </button>
+    <PanelShell onClose={onClose} backdropLabel="Close discovery panel" variant="surface">
+      <div className="flex-1 overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
+        {/* Large title */}
+        <header className="px-5 flex items-end justify-between gap-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.75rem)' }}>
+          <div className="min-w-0">
+            <h2 className="text-[34px] leading-tight font-bold text-label">{t('discovery')}</h2>
+            <p className="text-[15px] text-label-secondary tabular-nums">
+              {t(approvedCount === 1 ? 'spotCountOne' : 'spotCountMany', { count: approvedCount })}
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('close')}
+            className="no-min-size mb-1.5 w-11 h-11 -mr-1.5 grid place-items-center rounded-full touch-manipulation"
+          >
+            <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
+              <X className="w-4 h-4 text-label-secondary" strokeWidth={2.5} />
+            </span>
+          </button>
+        </header>
 
-          {/* Sort & Filter Bar */}
-          <div className="flex gap-2 mb-3">
-            {/* Sort Buttons */}
-            <button
-              onClick={() => handleSortChange('nearest')}
-              className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                sortBy === 'nearest'
-                  ? 'bg-primary-500/30 border border-primary-500/60 text-white'
-                  : 'bg-white/5 border border-white/10 text-white/60'
-              } ${userLocation ? '' : 'opacity-50'}`}
-            >
-              📍 {t('nearestToMe')}
-            </button>
-            <button
-              onClick={() => handleSortChange('best-rated')}
-              className={`flex-1 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                sortBy === 'best-rated'
-                  ? 'bg-primary-500/30 border border-primary-500/60 text-white'
-                  : 'bg-white/5 border border-white/10 text-white/60'
-              }`}
-            >
-              ⭐ {t('bestRated')}
-            </button>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                filterCategory
-                  ? 'bg-amber-500/30 border border-amber-500/60 text-white'
-                  : 'bg-white/5 border border-white/10 text-white/60'
-              }`}
-            >
-              <Filter className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Category Filter Chips */}
-          {showFilters && (
-            <div className="flex flex-wrap gap-2 pb-3">
+        {/* Segmented sort */}
+        <div className="px-5 mt-4">
+          <div role="radiogroup" className="relative grid grid-cols-2 p-0.5 rounded-[10px] bg-white/[.08]">
+            <span
+              aria-hidden="true"
+              className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-[8px] bg-white/[.16] shadow-sm transition-transform duration-350 ease-ios"
+              style={{ transform: sortBy === 'nearest' ? 'translateX(0)' : 'translateX(100%)' }}
+            />
+            {(
+              [
+                { id: 'nearest', label: t('nearestToMe'), Icon: Navigation, disabled: !userLocation },
+                { id: 'best-rated', label: t('bestRated'), Icon: Star, disabled: false },
+              ] as const
+            ).map(({ id, label, Icon, disabled }) => (
               <button
-                onClick={() => { setFilterCategory(null); setVisibleCount(DISCOVERY_BATCH_SIZE); }}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  filterCategory === null
-                    ? 'bg-primary-500/30 border border-primary-500/60 text-white'
-                    : 'bg-white/5 border border-white/10 text-white/60'
-                }`}
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={sortBy === id}
+                disabled={disabled}
+                onClick={() => handleSortChange(id)}
+                className="no-min-size relative h-8 flex items-center justify-center gap-1.5 text-[13px] font-semibold text-label touch-manipulation disabled:opacity-40"
               >
-                {t('allCategories')}
+                <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+                <span className="truncate">{label}</span>
               </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat.value}
-                  onClick={() => { setFilterCategory(cat.value); setVisibleCount(DISCOVERY_BATCH_SIZE); }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${
-                    filterCategory === cat.value
-                      ? 'bg-primary-500/30 border border-primary-500/60 text-white'
-                      : 'bg-white/5 border border-white/10 text-white/60'
-                  }`}
-                >
-                  <span>{cat.emoji}</span>
-                  <span>{cat.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
+            ))}
+          </div>
         </div>
 
-        {/* Spot List */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pt-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
-          {displayedSpots.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <MapPin className="w-16 h-16 text-white/20 mb-4" />
-              <p className="text-white/60 text-center">{t('noSpotsFound')}</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {displayedSpots.map((spot) => {
-                const distance = getDistance(spot);
-                const rating = averageRating(spot.reviews);
-                const reviewCount = spot.reviews?.length || 0;
-
-                return (
-                  <button
-                    key={spot.id}
-                    onClick={() => onSpotSelect(spot)}
-                    className="w-full glass-card p-3 flex gap-3 text-left hover:bg-white/10 transition-all active:scale-[0.98]"
-                  >
-                    {/* Thumbnail */}
-                    <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
-                      <Image
-                        src={getThumbnailUrl(spot)}
-                        alt={spot.name}
-                        fill
-                        className="object-cover"
-                        sizes="80px"
-                        unoptimized={isImageUnoptimized(spot)}
-                      />
-                      {/* Category Badge */}
-                      <div className="absolute bottom-1 left-1 bg-black/60 rounded-full px-1.5 py-0.5">
-                        <span className="text-xs">{getMarkerEmoji(spot.category)}</span>
-                      </div>
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0 py-0.5">
-                      <h3 className="text-white font-semibold text-sm line-clamp-1 mb-1">{spot.name}</h3>
-
-                      {/* Rating */}
-                      <div className="flex items-center gap-1 mb-1">
-                        {rating > 0 ? (
-                          <>
-                            <StarRating rating={Math.round(rating)} size="xs" emptyTone="faint" />
-                            <span className="text-white/70 text-xs ml-1">
-                              {rating.toFixed(1)} ({reviewCount})
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-white/40 text-xs">{t('noRating')}</span>
-                        )}
-                      </div>
-
-                      {/* Distance */}
-                      {distance !== null && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-primary-400" />
-                          <span className="text-white/60 text-xs">
-                            {distance < 1
-                              ? `${Math.round(distance * 1000)} m`
-                              : `${distance.toFixed(1)} km`}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-
-              {/* Load More */}
-              {hasMore ? (
-                <button
-                  onClick={handleLoadMore}
-                  className="w-full py-3 rounded-xl glass-button text-white/80 font-medium text-sm
-                    hover:bg-white/10 transition-all"
-                >
-                  {t('loadMore')} ({sortedSpots.length - visibleCount} {t('spots')})
-                </button>
-              ) : (
-                displayedSpots.length > 0 && (
-                  <p className="text-center text-white/40 text-sm py-4">
-                    {t('noMoreSpots')}
-                  </p>
-                )
-              )}
-            </div>
-          )}
+        {/* Category chips */}
+        <div className="mt-3 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button type="button" aria-pressed={filterCategory === null} onClick={() => pickCategory(null)} className={chipClass(filterCategory === null)}>
+            {t('allCategories')}
+          </button>
+          {CATEGORIES.map((c) => (
+            <button key={c.id} type="button" aria-pressed={filterCategory === c.id} onClick={() => pickCategory(c.id)} className={chipClass(filterCategory === c.id)}>
+              <CategoryIcon category={c.id} className="w-4 h-4" />
+              {t(c.labelKey)}
+            </button>
+          ))}
         </div>
+
+        {displayedSpots.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
+            <span className="w-16 h-16 rounded-2xl grid place-items-center bg-brand-500/15 text-brand-400 mb-4">
+              <CategoryIcon category={filterCategory ?? 'other'} className="w-8 h-8" />
+            </span>
+            <p className="text-label-secondary">{t('noSpotsFound')}</p>
+          </div>
+        ) : (
+          <div key={`${sortBy}-${filterCategory ?? 'all'}`} className="px-4 mt-4 space-y-4">
+            <FeaturedSpot {...props(featured)} />
+            {rest.length > 0 && (
+              <div className="rounded-[18px] bg-surface-1 overflow-hidden divide-y divide-white/[.06]">
+                {rest.map((spot, i) => (
+                  <SpotRow key={spot.id} {...props(spot)} index={i} />
+                ))}
+              </div>
+            )}
+            {hasMore ? (
+              <button
+                type="button"
+                onClick={() => setVisibleCount((c) => c + DISCOVERY_BATCH_SIZE)}
+                className="w-full h-12 rounded-[14px] bg-white/[.08] text-brand-400 font-semibold text-[15px] touch-manipulation active:bg-white/[.12]"
+              >
+                {t('loadMore')} ({sortedSpots.length - visibleCount} {t('spots')})
+              </button>
+            ) : (
+              <p className="text-center text-label-tertiary text-[13px] py-3">{t('noMoreSpots')}</p>
+            )}
+          </div>
+        )}
+      </div>
     </PanelShell>
   );
 }

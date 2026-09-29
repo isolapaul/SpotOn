@@ -6,7 +6,6 @@ import {
   DISCOVERY_BATCH_SIZE,
   FEEDBACK_MAX_FILES,
   GEOLOCATION_TIMEOUT_MS,
-  INITIAL_MARKER_ZOOM,
   LOCATE_ZOOM,
   LOCATION_CACHE_MAX_AGE_MS,
   MAX_SPOT_IMAGES,
@@ -43,10 +42,6 @@ describe('constants', () => {
     });
   });
 
-  it('keeps the initial marker zoom at 13, independent of the map zoom', () => {
-    expect(INITIAL_MARKER_ZOOM).toBe(13);
-    expect(INITIAL_MARKER_ZOOM).not.toBe(DEFAULT_MAP_ZOOM);
-  });
 });
 
 describe('Z scale', () => {
@@ -75,7 +70,7 @@ describe('Z scale', () => {
 
   it('pins the values in use', () => {
     expect(Z).toEqual({
-      mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-[1000]', dock: 'z-50', prompt: 'z-50',
+      mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-[1000]', dock: 'z-50', prompt: 'z-50', placeCard: 'z-[55]',
       panel: 'z-[60]', panelInnerBackdrop: 'z-40', panelInnerSheet: 'z-50', panelModal: 'z-[70]',
       gallery: 'z-[100]', floatingButton: 'z-[1500]', modal: 'z-[2000]', usernameSetup: 'z-[3500]',
       blocking: 'z-[9999]',

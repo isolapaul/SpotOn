@@ -4,6 +4,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { E2E } from '../e2e/fixtures';
+import { TERMS_VERSION } from '../src/lib/terms';
 
 const PROJECT_ID = 'demo-spoton';
 
@@ -37,6 +38,7 @@ async function seed(): Promise<void> {
     savedSpots: [],
     createdAt: t,
     lastLoginAt: t,
+    termsVersion: TERMS_VERSION, // A1: accepted, so the one-time terms prompt never shows
   });
 
   for (const account of [E2E.user, E2E.admin, E2E.superAdmin, E2E.level5, E2E.rename]) {

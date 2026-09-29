@@ -126,6 +126,7 @@ Cloud Functions (`npm --prefix functions run <script>`): `build`, `build:watch`,
 | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` (note) | build | no | container: `spoton.isolapaul.hu` (D6); Vercel: `<project>.firebaseapp.com`; dev: `localhost` or firebaseapp | Auth |
 | `NEXT_PUBLIC_USE_EMULATORS` | build | no | tests/dev only; rejected by the container build | `lib/firebase.ts`, CSP |
 | `NEXT_PUBLIC_MOVED_TO` | build | no | Vercel only (T19); rejected by the container build | `MovedBanner` |
+| `NEXT_PUBLIC_CONTROLLER_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` | build | no (published on the legal pages) | GitHub repo **variables** → Docker build args (required there) / Vercel env; unset in dev shows `[nincs megadva]` | `/privacy`, `/terms` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | runtime | `SMTP_PASS` yes | `.env.local` / `/srv/docker/spoton/.env` (chmod 600) / Vercel env | `/api/feedback` |
 | `FEEDBACK_RECIPIENT` | runtime | no (personal) | same as SMTP; required, else 503 | `/api/feedback` |
 | `APP_URL` (functions param) | functions deploy | no | Firebase functions params | notification links |

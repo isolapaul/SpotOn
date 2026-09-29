@@ -11,9 +11,11 @@ import DiscoveryPanel from '@/components/DiscoveryPanel';
 import LoadingScreen from '@/components/LoadingScreen';
 import NotificationPrompt from '@/components/NotificationPrompt';
 import UploadStatus from '@/components/UploadStatus';
-import NotificationCenter from '@/components/NotificationCenter';
-import MapThemeSwitcher from '@/components/MapThemeSwitcher';
+import MapControls from '@/components/map/MapControls';
+import PlaceCard from '@/components/map/PlaceCard';
+import LevelUpCelebration from '@/components/LevelUpCelebration';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
+import TermsPrompt from '@/components/legal/TermsPrompt';
 import MovedBanner from '@/components/MovedBanner';
 import { useShallow } from 'zustand/react/shallow';
 import { useUserStore } from '@/store/useUserStore';
@@ -22,6 +24,9 @@ import { isSpotPanel, useUiStore } from '@/store/useUiStore';
 import { useT } from '@/hooks/useT';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 import { useInitialLanguage } from '@/hooks/useInitialLanguage';
+import { useMapThemeAttribute } from '@/hooks/useMapThemeAttribute';
+import { useStandaloneFullHeight } from '@/hooks/useStandaloneFullHeight';
+import { runViewTransition } from '@/hooks/viewTransition';
 import { useVisibleSpots } from '@/hooks/useVisibleSpots';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { DEFAULT_MAP_CENTER } from '@/lib/constants';
@@ -36,6 +41,8 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const { isAppReady, onMapLoad } = useAppBootstrap();
   useInitialLanguage();
+  useMapThemeAttribute();
+  useStandaloneFullHeight();
   const visibleSpots = useVisibleSpots();
   const { location: userLocation, status: locationStatus } = useUserLocation();
   const { user, needsUsername, setNeedsUsername } = useUserStore();
@@ -45,9 +52,11 @@ export default function Home() {
   const selectingLocation = useUiStore((s) => s.selectingLocation);
   const pendingLocation = useUiStore((s) => s.pendingLocation);
   const movedBannerVisible = useUiStore((s) => s.movedBannerVisible);
-  const { openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick } =
-    useUiStore(useShallow(({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick }) =>
-      ({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick })));
+  const previewSpotId = useUiStore((s) => s.previewSpotId);
+  const locateRequest = useUiStore((s) => s.locateRequest);
+  const { openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot } =
+    useUiStore(useShallow(({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot }) =>
+      ({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot })));
 
   useEffect(() => {
     setIsClient(true);
@@ -57,8 +66,13 @@ export default function Home() {
   const mapLocation = userLocation
     ?? (locationStatus === 'denied' ? { lat: DEFAULT_MAP_CENTER[0], lng: DEFAULT_MAP_CENTER[1] } : null);
   const spotId = isSpotPanel(activePanel) ? activePanel.spotId : null;
-  // Top buttons are hidden while a full-screen panel covers the map.
-  const panelCoversMap = activePanel === 'profile' || activePanel === 'discovery' || spotId !== null;
+  // The place card follows the live spot (a deleted or hidden spot closes it).
+  const previewedSpot = previewSpotId ? (visibleSpots.find((s) => s.id === previewSpotId) ?? null) : null;
+  const approvedCount = visibleSpots.filter((s) => s.status === 'approved').length;
+
+  // Full-screen panels open and close as sheets; the place card's Details morphs its photo into the hero.
+  const openSheet = (p: Parameters<typeof openPanel>[0]) => runViewTransition(() => openPanel(p));
+  const closeSheet = () => runViewTransition(closePanel);
 
   const handleAddSpotClick = () => {
     // Pick the location on the satellite map for accuracy (signed in only)
@@ -76,40 +90,42 @@ export default function Home() {
       <NotificationPrompt />
       {/* Background uploads (G4): above panels too, so a review sent from a spot panel reports back */}
       <UploadStatus />
-      {/* Top Buttons - Hidden when modals are open */}
-      {!panelCoversMap && (
+      {/* Level-up moment: over everything, whenever the own spot count crosses a level */}
+      <LevelUpCelebration />
+      {/* Top-right control stack (design 1C); only over the bare map: it lives outside <main>, so it
+          would sit above any panel or modal (the sign-in sheet showed it on top) */}
+      {activePanel === 'none' && isAppReady && (
         <>
-          {/* Notification Center - Top Left Button */}
-          <NotificationCenter />
-          {/* Map Theme Switcher - Top Right Button - PHASE 3 */}
-          <MapThemeSwitcher />
-          {/* Domain-move notice (Vercel build only, T19) - one row below the top buttons */}
-          {isAppReady && !selectingLocation && <MovedBanner />}
+          <MapControls />
+          {/* Domain-move notice (Vercel build only, T19): the free top-left slot */}
+          {!selectingLocation && <MovedBanner />}
         </>
       )}
       {/* Main App - hidden until ready, then fades in */}
       <main
-        className={`relative w-full h-[100dvh] overflow-hidden transition-opacity duration-700 ${
+        className={`fixed inset-0 w-full overflow-hidden transition-opacity duration-700 ${
           isAppReady ? 'opacity-100' : 'opacity-0'
         }`}
       >
       {/* Discovery Panel */}
       <DiscoveryPanel
         isOpen={activePanel === 'discovery'}
-        onClose={closePanel}
+        onClose={closeSheet}
         userLocation={userLocation}
-        onSpotSelect={(spot) => openPanel({ type: 'spot', spotId: spot.id })}
+        onSpotSelect={(spot) => openSheet({ type: 'spot', spotId: spot.id })}
       />
       {/* Authentication Modal */}
       <AuthModal isOpen={activePanel === 'auth'} onClose={closePanel} />
       {/* Username Setup Modal - shown after first login */}
       <UsernameSetupModal isOpen={!!user && needsUsername} onClose={() => setNeedsUsername(false)} />
+      {/* One-time terms acceptance for users who signed up before the terms (A1) */}
+      <TermsPrompt ready={isAppReady} />
       {/* Add Spot Modal */}
       <AddSpotModal isOpen={activePanel === 'addSpot'} onClose={closeAddSpot} selectedLocation={pendingLocation} />
       {/* Spot Details Panel */}
-      <SpotDetailsPanel spotId={spotId} onClose={closePanel} />
+      <SpotDetailsPanel spotId={spotId} onClose={closeSheet} />
       {/* Profile Panel */}
-      <ProfilePanel isOpen={activePanel === 'profile'} onClose={closePanel} />
+      <ProfilePanel isOpen={activePanel === 'profile'} onClose={closeSheet} />
       {/* Full-screen map background */}
       <MapView
         isAddingSpot={selectingLocation}
@@ -117,40 +133,41 @@ export default function Home() {
         tempMarker={pendingLocation}
         spots={visibleSpots}
         userLocation={mapLocation}
-        onSpotDetailsOpen={(spot) => openPanel({ type: 'spot', spotId: spot.id })}
+        locateRequest={locateRequest}
+        selectedSpotId={previewedSpot?.id ?? null}
+        onSpotPreview={previewSpot}
         onMapLoad={onMapLoad}
         onMapClick={onMapClick}
       />
-      {/* Empty state message (shares its slot with the move banner) */}
+      {/* Empty state (shares the top-left slot with the move banner) */}
       {visibleSpots.length === 0 && !selectingLocation && !movedBannerVisible && (
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10
-          glass-card px-6 py-3 animate-fade-in pointer-events-none">
-          <p className="text-white/80 text-sm text-center">
-            {t('noSpotsFound')}
-          </p>
+        <div
+          className="material-chrome absolute z-10 rounded-2xl px-4 py-3 animate-fade-in pointer-events-none"
+          style={{
+            top: 'calc(env(safe-area-inset-top) + 8px)',
+            left: 'max(12px, calc(env(safe-area-inset-left) + 8px))',
+            right: 'calc(max(12px, calc(env(safe-area-inset-right) + 8px)) + 52px)',
+          }}
+        >
+          <p className="text-chrome-ink text-[15px] leading-snug">{t('noSpotsFound')}</p>
         </div>
       )}
-      {/* Location Selection Instructions (the only "click the map" banner, DUP-15) */}
-      {selectingLocation && (
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-10
-          glass-card px-6 py-4 animate-fade-in max-w-sm">
-          <p className="text-white font-semibold text-center mb-3">
-            {t('clickMapToSelect')}
-          </p>
-          <button
-            onClick={cancelSelectingLocation}
-            className="w-full py-3 px-4 rounded-xl glass-button text-white font-medium
-              hover:bg-white/10 active:scale-95 transition-all touch-manipulation min-h-[48px]"
-          >
-            {t('cancel')}
-          </button>
-        </div>
-      )}
-      {/* Bottom Navigation - Floating Dock - PHASE 1: Simplified to 3 items */}
+      {/* Place card (design 1E) */}
+      <PlaceCard
+        spot={previewedSpot}
+        userLocation={userLocation}
+        onClose={() => previewSpot(null)}
+        onDetails={(spot) => runViewTransition(() => openPanel({ type: 'spot', spotId: spot.id }), 'morph')}
+      />
+      {/* Launcher (design 1C) */}
       <BottomNavigation
-        onAddSpotClick={handleAddSpotClick}
-        onProfileClick={() => openPanel(user ? 'profile' : 'auth')}
-        onExploreClick={() => openPanel('discovery')}
+        picking={selectingLocation}
+        hidden={previewedSpot !== null}
+        spotCount={approvedCount}
+        onExplore={() => openSheet('discovery')}
+        onAdd={handleAddSpotClick}
+        onProfile={() => (user ? openSheet('profile') : openPanel('auth'))}
+        onCancelPicking={cancelSelectingLocation}
       />
       </main>
     </>

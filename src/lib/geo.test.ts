@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { haversineKm } from './geo';
+import { formatDistance, haversineKm } from './geo';
 import { discoveryCalculateDistance } from './__oracles__/legacy';
 
 // [lat1, lng1, lat2, lng2]
@@ -28,5 +28,23 @@ describe('haversineKm (characterisation vs DiscoveryPanel.calculateDistance)', (
   it('sanity: equal points are 0 km, Budapest–Vienna ≈ 214 km', () => {
     expect(haversineKm(47.4979, 19.0402, 47.4979, 19.0402)).toBe(0);
     expect(haversineKm(47.4979, 19.0402, 48.2082, 16.3738)).toBeCloseTo(214.5, 0);
+  });
+});
+
+describe('formatDistance', () => {
+  it('metres under a kilometre, rounded to 10 m (never 0 m)', () => {
+    expect(formatDistance(0.346, 'hu')).toBe('350 m');
+    expect(formatDistance(0.001, 'en')).toBe('10 m');
+  });
+
+  it('one decimal under 10 km, with the language decimal separator', () => {
+    expect(formatDistance(1.24, 'hu')).toBe('1,2 km');
+    expect(formatDistance(1.24, 'de')).toBe('1,2 km');
+    expect(formatDistance(1.24, 'en')).toBe('1.2 km');
+    expect(formatDistance(9.96, 'en')).toBe('10 km');
+  });
+
+  it('whole kilometres from 10 km', () => {
+    expect(formatDistance(12.4, 'hu')).toBe('12 km');
   });
 });

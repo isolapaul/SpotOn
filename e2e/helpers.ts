@@ -43,12 +43,17 @@ export async function blockMapTiles(page: Page) {
 /** Opens the app and waits until LoadingScreen has unmounted. */
 export async function openApp(page: Page) {
   await page.goto('/');
-  await expect(page.locator('div.fixed.inset-0.bg-slate-900')).toHaveCount(0, { timeout: 30_000 });
+  await expect(page.getByTestId('loading-screen')).toHaveCount(0, { timeout: 30_000 });
 }
 
-/** Leaflet marker whose SVG shows the given category emoji. */
-export function spotMarker(page: Page, emoji: string) {
-  return page.locator('.leaflet-marker-icon').filter({ hasText: emoji });
+/** Leaflet marker(s) of the given category (design 1D pins carry data-category). */
+export function spotMarker(page: Page, category: string) {
+  return page.locator(`.leaflet-marker-icon:has(.spot-pin[data-category="${category}"])`);
+}
+
+/** Pins by variant: 'approved' (green) or 'pending' (any non-approved status). */
+export function pinsOf(page: Page, variant: 'approved' | 'pending') {
+  return page.locator(`.leaflet-marker-icon .spot-pin[data-variant="${variant}"]`);
 }
 
 /** Signs in through the AuthModal email form (English UI). App must be open and signed out. */

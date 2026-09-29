@@ -41,6 +41,7 @@ src/proxy.ts                     Per-request nonce CSP for pages (T32); policy b
 src/components/                  All UI (panels, modals, map)
 src/components/profile/**        ProfilePanel split into header, tabs, admin tools (T27); components/ProfilePanel.tsx re-exports it
 src/components/spot-details/**   SpotDetailsPanel split into hero, gallery, reviews, edit/admin parts (T28); components/SpotDetailsPanel.tsx re-exports it
+src/components/map/**            Map chrome (design 1C/1E): MapControls stack, MapStylePopover, PlaceCard
 src/components/ui/               Shared primitives (T25): PanelShell, ModalShell, StarRating
 src/store/useSpotStore.ts        Spot scopes (startSpots / syncSpotScopes / stopSpots) + all spot mutations; admin state lives in useUserStore (isAdmin / isSuperAdmin, from admins/{uid})
 src/store/spotListeners.ts       The approved / own / admin spot listeners behind the scopes (T30), merged by lib/mergeSpots
@@ -73,6 +74,7 @@ docs/                            Audits, roadmap, task specs, deploy/rollout run
   Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
 - `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmTokens[], language,
   notificationsEnabled, notificationSettings, spotsCount (server-maintained, all statuses),
+  termsVersion + termsAcceptedAt (accepted Terms/Privacy version, A1; lib/terms),
   questProgress/questRewards (legacy Valentine event).
 - `publicProfiles/{uid}`: server-maintained public mirror of a user (username, profilePictureURL,
   customNameColor/Font, isAdmin, spotsCount); public `get`, no client writes.
@@ -110,6 +112,7 @@ In the Claude Code sandbox, the functions emulator cannot register Firestore tri
 | `NEXT_PUBLIC_FIREBASE_*` (API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, MESSAGING_SENDER_ID, APP_ID, VAPID_KEY) | **build time** (inlined in bundle) | `lib/firebase.ts`, SW route, push hook |
 | `NEXT_PUBLIC_USE_EMULATORS` | build time, tests only (T04) | `lib/firebase.ts` |
 | `NEXT_PUBLIC_MOVED_TO` | build time, Vercel only (T19) | domain-move banner |
+| `NEXT_PUBLIC_CONTROLLER_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` | build time (required by the container build) | legal pages `/privacy`, `/terms` (A1) |
 | `SMTP_HOST/PORT/USER/PASS`, `FEEDBACK_RECIPIENT` | runtime (container `.env`) | `/api/feedback` |
 
 Never commit `.env*` files — sole exception: `functions/.env.demo-spoton` (emulator-only, non-secret params such as `APP_URL`, whitelisted in `.gitignore`). Never hardcode personal emails, keys or tokens.

@@ -2,6 +2,8 @@
 
 import { useT } from '@/hooks/useT';
 import { getLevelProgress, getSpotsRemainingText, type LevelInfo } from '@/lib/levelUtils';
+import LevelBadge from '@/components/ui/LevelBadge';
+import PerkIcon from '@/components/ui/PerkIcon';
 
 interface LevelProgressCardProps {
   levelInfo: LevelInfo;
@@ -18,7 +20,7 @@ export default function LevelProgressCard({ levelInfo, spotsCount }: Readonly<Le
     <div className={`w-full max-w-md px-4 py-3 rounded-xl ${levelInfo.bgColor} border ${levelInfo.borderColor} transition-all mb-3`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-xl">{levelInfo.icon}</span>
+          <LevelBadge level={levelInfo.level} size={30} />
           <div>
             <p className={`${levelInfo.textColor} font-bold text-sm`}>
               {t(levelInfo.nameKey)}
@@ -36,17 +38,23 @@ export default function LevelProgressCard({ levelInfo, spotsCount }: Readonly<Le
       {/* Progress Bar */}
       <div className="relative w-full h-2 bg-white/20 rounded-full overflow-hidden">
         <div
-          className="absolute top-0 left-0 h-full transition-all duration-500"
-          style={{ width: `${progress}%`, backgroundColor: levelInfo.progressColor }}
+          className={`absolute top-0 left-0 h-full rounded-full ${levelInfo.progressBarClass} transition-[width] duration-700 ease-out-quint`}
+          style={{ width: `${progress}%` }}
         />
       </div>
 
       {/* Perks Preview */}
       {levelInfo.level >= 3 && (
         <div className="mt-2 flex flex-wrap gap-1 text-xs text-white/70">
-          {levelInfo.maxHighlights > 0 && <span>✨ {t('perkHighlights', { count: levelInfo.maxHighlights })}</span>}
-          {levelInfo.canCustomizeIcon && <span>🎨 {t('perkIcons')}</span>}
-          {levelInfo.canCustomizeName && <span>💎 {t('perkCustomization')}</span>}
+          {levelInfo.maxHighlights > 0 && (
+            <span className="inline-flex items-center gap-1"><PerkIcon icon="highlight" className="w-3.5 h-3.5" />{t('perkHighlights', { count: levelInfo.maxHighlights })}</span>
+          )}
+          {levelInfo.canCustomizeIcon && (
+            <span className="inline-flex items-center gap-1"><PerkIcon icon="icons" className="w-3.5 h-3.5" />{t('perkIcons')}</span>
+          )}
+          {levelInfo.canCustomizeName && (
+            <span className="inline-flex items-center gap-1"><PerkIcon icon="style" className="w-3.5 h-3.5" />{t('perkCustomization')}</span>
+          )}
         </div>
       )}
     </div>

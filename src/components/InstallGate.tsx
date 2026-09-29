@@ -1,7 +1,8 @@
 'use client';
 
 import { Fragment, useEffect, useState } from 'react';
-import { Share, MoreVertical, Smartphone, X, Monitor } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Share, MoreVertical, X, Monitor } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { splitBold } from '@/lib/i18n';
 import { getMovedTo } from '@/lib/movedTo';
@@ -22,6 +23,8 @@ export default function InstallGate() {
   const [isIOS, setIsIOS] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const t = useT();
+  // The legal pages must stay readable without installing (A1).
+  const isLegalPage = ['/privacy', '/terms'].includes(usePathname() ?? '');
 
   useEffect(() => {
     // Old (Vercel) domain: installing it would install the wrong origin (T19)
@@ -57,26 +60,31 @@ export default function InstallGate() {
     setShowPrompt(false);
   };
 
-  if (!showPrompt) {
+  if (!showPrompt || isLegalPage) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-gray-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center text-white">
+    <div className="fixed inset-0 z-[9999] bg-surface-0 flex flex-col items-center justify-center p-6 text-center text-white">
       {/* Close button */}
       <button
         onClick={handleDismiss}
-        className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors"
+        className="no-min-size absolute right-3 w-11 h-11 grid place-items-center rounded-full"
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}
         aria-label="Close"
       >
-        <X className="w-6 h-6 text-white/70" />
+        <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
+          <X className="w-4 h-4 text-white/70" strokeWidth={2.5} />
+        </span>
       </button>
 
       {/* App Icon */}
       <div className="mb-8">
-        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-2xl shadow-primary-500/50">
-          <Smartphone className="w-12 h-12 text-white" strokeWidth={2} />
-        </div>
+        <svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true" className="motion-safe:animate-level-pop drop-shadow-2xl">
+          <rect width="96" height="96" rx="22" fill="#16A064" />
+          <path d="M48 78S26 60 26 41a22 22 0 0 1 44 0c0 19-22 37-22 37z" fill="none" stroke="#fff" strokeWidth="6" strokeLinejoin="round" />
+          <path d="M48 49.5s-9-5.2-9-10.9c0-3 2.2-5.1 4.9-5.1 1.8 0 3.3 1 4.1 2.4.8-1.4 2.3-2.4 4.1-2.4 2.7 0 4.9 2.1 4.9 5.1 0 5.7-9 10.9-9 10.9z" fill="#fff" />
+        </svg>
       </div>
 
       {/* Header */}
@@ -93,18 +101,18 @@ export default function InstallGate() {
       <div className="w-full max-w-sm space-y-4">
         {isIOS ? (
           <>
-            <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm border border-white/20">
+            <div className="bg-surface-1 rounded-[18px] p-6">
               <div className="flex items-center justify-center gap-3 mb-4">
-                <Share className="w-6 h-6 text-blue-400" />
+                <Share className="w-6 h-6 text-brand-400" />
                 <h2 className="text-xl font-semibold">{t('installIosTitle')}</h2>
               </div>
               <ol className="text-left space-y-3 text-white/80">
                 <li className="flex items-start gap-2">
-                  <span className="font-bold text-blue-400 flex-shrink-0">1.</span>
+                  <span className="font-bold text-brand-400 flex-shrink-0">1.</span>
                   <span><RichText text={t('installIosStep1')} /></span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="font-bold text-blue-400 flex-shrink-0">2.</span>
+                  <span className="font-bold text-brand-400 flex-shrink-0">2.</span>
                   <span><RichText text={t('installIosStep2')} /></span>
                 </li>
               </ol>
@@ -113,18 +121,18 @@ export default function InstallGate() {
           </>
         ) : (
           <>
-            <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm border border-white/20">
+            <div className="bg-surface-1 rounded-[18px] p-6">
               <div className="flex items-center justify-center gap-3 mb-4">
-                <MoreVertical className="w-6 h-6 text-green-400" />
+                <MoreVertical className="w-6 h-6 text-brand-400" />
                 <h2 className="text-xl font-semibold">{t('installAndroidTitle')}</h2>
               </div>
               <ol className="text-left space-y-3 text-white/80">
                 <li className="flex items-start gap-2">
-                  <span className="font-bold text-green-400 flex-shrink-0">1.</span>
+                  <span className="font-bold text-brand-400 flex-shrink-0">1.</span>
                   <span><RichText text={t('installAndroidStep1')} /></span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="font-bold text-green-400 flex-shrink-0">2.</span>
+                  <span className="font-bold text-brand-400 flex-shrink-0">2.</span>
                   <span><RichText text={t('installAndroidStep2')} /></span>
                 </li>
               </ol>
@@ -138,8 +146,8 @@ export default function InstallGate() {
       <div className="mt-8 w-full max-w-sm space-y-4">
         <button
           onClick={handleDismiss}
-          className="w-full py-3 px-6 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-semibold 
-            transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 border border-white/20"
+          className="w-full h-[50px] px-6 bg-white/10 active:bg-white/15 text-white rounded-full font-semibold
+            transition-all duration-150 active:scale-[.97] flex items-center justify-center gap-2"
         >
           <Monitor className="w-5 h-5" />
           {t('installContinueWeb')}
@@ -150,7 +158,7 @@ export default function InstallGate() {
             type="checkbox"
             checked={dontShowAgain}
             onChange={(e) => setDontShowAgain(e.target.checked)}
-            className="w-4 h-4 rounded border-white/30 bg-white/10 text-purple-500 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+            className="w-4 h-4 rounded border-white/30 bg-white/10 text-brand-600 focus:ring-brand-500 focus:ring-offset-0 cursor-pointer"
           />
           <span className="text-sm text-white/60">{t('installDontShowAgain')}</span>
         </label>
