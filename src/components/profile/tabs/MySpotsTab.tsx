@@ -21,13 +21,13 @@ export default function MySpotsTab({ user, spots, levelInfo }: Readonly<MySpotsT
   const t = useT();
   const [showHighlightPanel, setShowHighlightPanel] = useState(false);
   const [showCustomizationPanel, setShowCustomizationPanel] = useState(false);
-  const perkButtonClass = `w-full py-2 px-4 rounded-lg font-medium text-sm transition-all ${levelInfo.bgColor} ${levelInfo.textColor} border ${levelInfo.borderColor} hover:opacity-80`;
+  const perkButtonClass = `w-full h-11 px-4 rounded-full font-semibold text-[15px] transition-transform active:scale-[.98] ${levelInfo.bgColor} ${levelInfo.textColor}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Level Management Buttons */}
       {levelInfo.level >= 3 ? (
-        <div className="w-full max-w-md space-y-2 mt-3">
+        <div className="w-full space-y-2">
           {/* Highlight Management Button */}
           {levelInfo.maxHighlights > 0 && (
             <button onClick={() => setShowHighlightPanel(!showHighlightPanel)} className={perkButtonClass}>

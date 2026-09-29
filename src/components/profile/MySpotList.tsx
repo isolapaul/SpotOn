@@ -14,12 +14,14 @@ interface MySpotListProps {
 export default function MySpotList({ spots }: Readonly<MySpotListProps>) {
   const t = useT();
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {spots.length === 0 ? (
-        <div className="glass-card p-8 text-center">
-          <MapPin className="w-12 h-12 text-white/40 mx-auto mb-3" />
-          <p className="text-white/60">{t('noSpotsYet')}</p>
-          <p className="text-white/40 text-sm mt-1">{t('startExploring')}</p>
+        <div className="rounded-[18px] bg-surface-1 px-6 py-10 text-center">
+          <span className="mx-auto mb-3 w-14 h-14 rounded-2xl grid place-items-center bg-brand-500/15 text-brand-400">
+            <MapPin className="w-7 h-7" />
+          </span>
+          <p className="text-[17px] font-semibold text-label">{t('noSpotsYet')}</p>
+          <p className="text-[14px] text-label-secondary mt-1">{t('startExploring')}</p>
         </div>
       ) : (
         spots.map((spot) => (

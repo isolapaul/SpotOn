@@ -14,20 +14,20 @@ export default function ProfileAvatar({ user, failedSrc, onFailed }: Readonly<Pr
   return (
     <div className="relative">
       {(user.profilePictureURL || user.photoURL) && failedSrc !== (user.profilePictureURL || user.photoURL) ? (
-        <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 shadow-2xl bg-gray-800">
+        <div className="relative w-[104px] h-[104px] rounded-full overflow-hidden ring-4 ring-surface-0 shadow-card bg-surface-3">
           <Image
             src={user.profilePictureURL || user.photoURL || ''}
             alt={user.username}
             fill
-            sizes="128px"
+            sizes="104px"
             className="object-cover"
             priority
             onError={() => onFailed(user.profilePictureURL || user.photoURL || null)}
           />
         </div>
       ) : (
-        <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gray-900 shadow-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-          <span className="text-white text-5xl font-bold">{user.username?.charAt(0).toUpperCase() || 'U'}</span>
+        <div className="relative w-[104px] h-[104px] rounded-full overflow-hidden ring-4 ring-surface-0 shadow-card bg-brand-600 flex items-center justify-center">
+          <span className="text-white text-[44px] font-semibold">{user.username?.charAt(0).toUpperCase() || 'U'}</span>
         </div>
       )}
     </div>

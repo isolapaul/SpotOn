@@ -2,6 +2,7 @@
 
 import { Settings, X } from 'lucide-react';
 import Image from 'next/image';
+import { useT } from '@/hooks/useT';
 
 interface ProfileBannerProps {
   bannerUrl?: string;
@@ -9,37 +10,30 @@ interface ProfileBannerProps {
   onClose: () => void;
 }
 
+const MEDIA_BUTTON =
+  'no-min-size w-11 h-11 grid place-items-center rounded-full touch-manipulation active:scale-90 transition-transform';
+
+/** Banner (design phase 3): full-bleed under the status bar, neutral when there is no image. */
 export default function ProfileBanner({ bannerUrl, onOpenSettings, onClose }: Readonly<ProfileBannerProps>) {
+  const t = useT();
   return (
-    <div className="relative w-full h-[18vh] flex-shrink-0 bg-gradient-to-r from-primary-700 to-primary-900">
-      {bannerUrl ? (
-        <Image
-          src={bannerUrl}
-          alt="Profile banner"
-          fill
-          sizes="100vw"
-          className="object-cover"
-          priority
-        />
-      ) : null}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+    <div
+      className="relative w-full flex-shrink-0 bg-gradient-to-br from-brand-700/50 via-surface-2 to-surface-1"
+      style={{ height: 'calc(env(safe-area-inset-top, 0px) + 136px)' }}
+    >
+      {bannerUrl ? <Image src={bannerUrl} alt="" fill sizes="100vw" className="object-cover" priority /> : null}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-surface-0/70" />
 
-      {/* Top action buttons */}
-      <div className="absolute left-4 right-4 flex justify-between items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}>
-        <button
-          onClick={onOpenSettings}
-          className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]"
-          aria-label="Settings"
-        >
-          <Settings className="w-5 h-5 text-white" />
+      <div className="absolute left-3 right-3 flex justify-between items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 6px)' }}>
+        <button onClick={onOpenSettings} className={MEDIA_BUTTON} aria-label={t('settings')}>
+          <span className="w-9 h-9 rounded-full grid place-items-center bg-black/35 backdrop-blur-md">
+            <Settings className="w-[18px] h-[18px] text-white" />
+          </span>
         </button>
-
-        <button
-          onClick={onClose}
-          className="glass-button p-3 rounded-full touch-manipulation min-w-[48px] min-h-[48px]"
-          aria-label="Close"
-        >
-          <X className="w-5 h-5 text-white" />
+        <button onClick={onClose} className={MEDIA_BUTTON} aria-label={t('close')}>
+          <span className="w-9 h-9 rounded-full grid place-items-center bg-black/35 backdrop-blur-md">
+            <X className="w-[18px] h-[18px] text-white" strokeWidth={2.5} />
+          </span>
         </button>
       </div>
     </div>

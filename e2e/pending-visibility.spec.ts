@@ -63,7 +63,7 @@ test('owner: own pending spot in yellow on the map and in my spots, never other 
   await expect(spotMarker(page, E2E.level5.approvedSpot.category)).toHaveCount(1);
 
   await openProfile(page, E2E.user.username);
-  const card = page.locator('.glass-card').filter({ has: page.getByRole('heading', { name: E2E.pendingSpot.name }) });
+  const card = page.getByRole('article', { name: E2E.pendingSpot.name });
   await expect(card).toBeVisible();
   await expect(card.getByText('Pending', { exact: true })).toBeVisible();
 });
@@ -95,7 +95,7 @@ test('owner: a new spot appears in the profile at once, as pending', async ({ pa
   await expect.poll(() => page.locator(PENDING_MARKERS).count()).toBeGreaterThanOrEqual(2);
 
   await openProfile(page, E2E.user.username);
-  const card = page.locator('.glass-card').filter({ has: page.getByRole('heading', { name: newSpotName }) });
+  const card = page.getByRole('article', { name: newSpotName });
   await expect(card).toBeVisible();
   await expect(card.getByText('Pending', { exact: true })).toBeVisible();
 });

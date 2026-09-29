@@ -5,6 +5,11 @@
 ### Fixed (design 1A)
 - The installed iPhone app now fills the whole screen: the map runs under the status bar and down to the bottom edge, with no band below it (a workaround for an iOS 26 bug). The page background follows the map style instead of black.
 
+### Changed (profile, settings, spot details)
+- The profile scrolls as one page (a pull down from the top closes it), with a calmer banner, a larger avatar, figures in tiles, the sections as a segmented control and cleaner spot cards.
+- Settings drop the purple gradients and the flag emoji: grouped cards in the app colours, languages as a list with a check mark.
+- A spot whose main photo does not load shows its other photos, or its category icon, instead of a broken image.
+
 ### Changed (Explore)
 - Explore is redesigned: a large title with the spot count, an iOS-style segmented sort (nearest / best rated), always-visible category chips with icons, the top spot as a big photo card, and a clean grouped list with category, distance and rating; rows glide in.
 
