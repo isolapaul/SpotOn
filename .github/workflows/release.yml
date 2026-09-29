@@ -57,6 +57,7 @@ jobs:
             NEXT_PUBLIC_FIREBASE_VAPID_KEY=${{ vars.NEXT_PUBLIC_FIREBASE_VAPID_KEY }}
             NEXT_PUBLIC_CONTROLLER_NAME=${{ vars.NEXT_PUBLIC_CONTROLLER_NAME }}
             NEXT_PUBLIC_CONTACT_EMAIL=${{ vars.NEXT_PUBLIC_CONTACT_EMAIL }}
+            NEXT_PUBLIC_CARTO_API_KEY=${{ vars.NEXT_PUBLIC_CARTO_API_KEY }}
             VERSION=${{ github.ref_name }}
             VCS_REF=${{ github.sha }}
       - name: Read manifest digest
