@@ -89,6 +89,7 @@ docs/play-store.md               Play listing texts, Data safety and content rat
   primaryImageIndex, **reviews[] embedded array**, highlighted[], isHighlighted.
   Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
   Spots of deleted accounts have `createdBy: "deleted-user"` and no createdByName/createdByPhoto.
+  Status changes and deletes go only through the moderation callables (`approveSpot`, `rejectSpot`, `removeSpot`); admins may still edit fields and photos directly.
 - `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmTokens[], language,
   notificationsEnabled, notificationSettings, spotsCount (server-maintained, all statuses),
   termsVersion + termsAcceptedAt (accepted Terms/Privacy version, A1; lib/terms),

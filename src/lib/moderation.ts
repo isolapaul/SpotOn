@@ -30,6 +30,8 @@ export interface SpotEdit {
   status: 'pending' | 'rejected';
   proposed: EditProposal;
   reason?: string;
+  /** createdAt in ms (0 while unknown); the admin's review names it, so a changed edit is never applied unseen. */
+  createdAtMs: number;
 }
 
 /** A photo waiting for approval (photoSubmissions/{id}). */
@@ -45,6 +47,10 @@ function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null && !Array.isArray(x);
 }
 
+function timestampMs(x: unknown): number {
+  return isRecord(x) && typeof x.toMillis === 'function' ? Number((x.toMillis as () => number)()) || 0 : 0;
+}
+
 /** A spotEdits document, or null when it is not a usable proposal. */
 export function parseSpotEdit(id: string, data: unknown): SpotEdit | null {
   if (!isRecord(data) || (data.status !== 'pending' && data.status !== 'rejected') || !isRecord(data.proposed)) return null;
@@ -56,6 +62,7 @@ export function parseSpotEdit(id: string, data: unknown): SpotEdit | null {
     status: data.status,
     proposed: data.proposed as EditProposal,
     ...(rejection ? { reason: rejection } : {}),
+    createdAtMs: timestampMs(data.createdAt),
   };
 }
 

@@ -158,6 +158,7 @@ export const translations = {
     spotPhotosAdded: 'Képek hozzáadva!',
     spotPhotoAddError: 'Hiba a képek hozzáadásakor',
     maxSpotImages: 'Legfeljebb 20 képet tölthetsz fel egy helyhez.',
+    maxPendingPhotos: 'Egyszerre legfeljebb 5 képed várhat jóváhagyásra egy helynél.',
     maxImagesShort: 'Max {max} kép',
     
     // Empty States
@@ -678,6 +679,7 @@ export const translations = {
     spotPhotosAdded: 'Photos added!',
     spotPhotoAddError: 'Error adding photos',
     maxSpotImages: 'You can upload up to 20 photos per spot.',
+    maxPendingPhotos: 'You can have up to 5 photos waiting for approval on a spot.',
     maxImagesShort: 'Max {max} photos',
     
     // Empty States
@@ -1198,6 +1200,7 @@ export const translations = {
     spotPhotosAdded: 'Fotos hinzugefügt!',
     spotPhotoAddError: 'Fehler beim Hinzufügen der Fotos',
     maxSpotImages: 'Maximal 20 Fotos pro Ort erlaubt.',
+    maxPendingPhotos: 'Pro Ort können höchstens 5 deiner Fotos auf Freigabe warten.',
     maxImagesShort: 'Max. {max} Fotos',
     
     // Empty States

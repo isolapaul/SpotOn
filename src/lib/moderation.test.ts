@@ -65,7 +65,9 @@ describe('proposalDiff', () => {
 describe('parsers', () => {
   it('reads a waiting and a rejected proposal, and refuses others', () => {
     expect(parseSpotEdit('s1', { status: 'pending', proposed: { name: 'x' }, ownerId: 'o', spotName: 'S' }))
-      .toEqual({ spotId: 's1', spotName: 'S', ownerId: 'o', status: 'pending', proposed: { name: 'x' } });
+      .toEqual({ spotId: 's1', spotName: 'S', ownerId: 'o', status: 'pending', proposed: { name: 'x' }, createdAtMs: 0 });
+    expect(parseSpotEdit('s1', { status: 'pending', proposed: {}, createdAt: { toMillis: () => 1234 } })?.createdAtMs)
+      .toBe(1234);
     expect(parseSpotEdit('s1', { status: 'rejected', proposed: {}, rejection: { reason: 'no' } })?.reason).toBe('no');
     expect(parseSpotEdit('s1', { status: 'approved', proposed: {} })).toBeNull();
     expect(parseSpotEdit('s1', null)).toBeNull();

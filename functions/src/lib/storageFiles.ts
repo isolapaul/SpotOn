@@ -1,10 +1,16 @@
 /**
  * Deleting spot photo files that nothing refers to any more (a removed spot, a rejected photo, a
- * photo an approved edit removed). Only objects under spot-images/ of this bucket are touched;
- * legacy flat paths and anything else stay. Failures are logged, never thrown.
+ * photo an approved edit removed). A file is deleted only when
+ * - it is under spot-images/{owner}/ of one of the given owners (the spot's creator, the photo's
+ *   uploader, or the deleted-user folder), so a spot that lists someone else's URL can never get
+ *   that person's file deleted; and
+ * - no spot and no waiting photo submission refers to it any more.
+ * Legacy flat paths and anything else stay. Failures are logged, never thrown.
  */
 import {getStorage} from "firebase-admin/storage";
 import * as logger from "firebase-functions/logger";
+import {db} from "./app";
+import {DELETED_OWNER} from "./accountDeletion";
 import {parseStorageDownloadUrl, PLACEHOLDER_URL} from "./spotImages";
 
 function storageContext(): {bucket: string; emulatorHost?: string} {
@@ -14,22 +20,50 @@ function storageContext(): {bucket: string; emulatorHost?: string} {
   return {bucket, emulatorHost};
 }
 
-/** The spot-images/ object paths among `urls` (placeholder, foreign and malformed URLs dropped). */
-export function spotImagePaths(urls: readonly string[], ctx = storageContext()): string[] {
-  const paths = urls
-    .filter((url) => url !== PLACEHOLDER_URL)
-    .map((url) => parseStorageDownloadUrl(url, ctx)?.path)
-    .filter((path): path is string => !!path && path.startsWith("spot-images/"));
-  return [...new Set(paths)];
+/** A photo URL and who may own its file (its uploader and/or the spot's creator). */
+export interface PhotoFile {
+  url: string;
+  owners: readonly string[];
 }
 
-export async function deleteSpotImageFiles(urls: readonly string[]): Promise<void> {
-  const paths = spotImagePaths(urls);
-  if (!paths.length) return;
+/**
+ * The spot-images/{owner}/ object path of each file, when it lies in one of its owners' folders
+ * (or the deleted-user folder); placeholder, foreign, malformed and other folders are dropped.
+ */
+export function ownedSpotImagePaths(
+  files: readonly PhotoFile[],
+  ctx = storageContext(),
+): {url: string; path: string}[] {
+  const out = new Map<string, {url: string; path: string}>();
+  for (const {url, owners} of files) {
+    if (url === PLACEHOLDER_URL) continue;
+    const path = parseStorageDownloadUrl(url, ctx)?.path;
+    if (!path) continue;
+    const allowed = [...owners, DELETED_OWNER].filter((o) => o.length > 0 && !o.includes("/"));
+    if (allowed.some((owner) => path.startsWith(`spot-images/${owner}/`))) out.set(path, {url, path});
+  }
+  return [...out.values()];
+}
+
+/** True when a spot or a waiting photo submission still refers to the URL. */
+async function stillReferenced(url: string): Promise<boolean> {
+  const [spots, submissions] = await Promise.all([
+    db.collection("spots").where("imageUrls", "array-contains", url).limit(1).select().get(),
+    db.collection("photoSubmissions").where("url", "==", url).limit(1).select().get(),
+  ]);
+  return !spots.empty || !submissions.empty;
+}
+
+export async function deleteSpotImageFiles(files: readonly PhotoFile[]): Promise<void> {
+  const candidates = ownedSpotImagePaths(files);
+  if (!candidates.length) return;
   const bucket = getStorage().bucket();
-  const results = await Promise.allSettled(
-    paths.map((path) => bucket.file(path).delete({ignoreNotFound: true})),
-  );
+  const results = await Promise.allSettled(candidates.map(async ({url, path}) => {
+    if (await stillReferenced(url)) return false;
+    await bucket.file(path).delete({ignoreNotFound: true});
+    return true;
+  }));
+  const deleted = results.filter((r) => r.status === "fulfilled" && r.value).length;
   const failed = results.filter((r) => r.status === "rejected").length;
-  logger.info("deleteSpotImageFiles", {deleted: paths.length - failed, failed});
+  logger.info("deleteSpotImageFiles", {deleted, kept: candidates.length - deleted - failed, failed});
 }

@@ -26,10 +26,11 @@ Together with the Firestore/Storage rules (`firestore.rules`, `storage.rules` in
 | `highlightSpot` | Callable | Highlights one of the caller's approved spots for 7 days, within the caller's level allowance | Signed-in users (own, approved spots) |
 | `unhighlightSpot` | Callable | Removes the caller's highlight from a spot | Signed-in users |
 | `toggleImageLike` | Callable | Likes or unlikes one image of a spot, in a transaction | Signed-in users |
-| `addSpotImages` | Callable | Adds already uploaded images (the caller's own `spot-images/{uid}/…` objects) to a spot, up to 20 images. Admins and the owner of a spot under review add them directly; everyone else's become `photoSubmissions` for an admin (item 4) | Signed-in users |
+| `addSpotImages` | Callable | Adds already uploaded images (the caller's own `spot-images/{uid}/…` objects) to a spot, up to 20 images. Admins and the owner of a spot under review add them directly; everyone else's become `photoSubmissions` for an admin (item 4), at most 5 waiting per user and spot | Signed-in users |
+| `approveSpot` | Callable | Approves a pending spot (`onSpotApproved` then tells the owner) | Admins |
 | `rejectSpot` | Callable | Rejects a pending spot with a reason (1–500 characters, stored on the spot for its owner) and tells the owner | Admins |
 | `removeSpot` | Callable | Deletes a spot with a reason: its photo files, pending edit and photo submissions go too; tells the owner | Admins |
-| `reviewSpotEdit` | Callable | Applies an owner's proposed edit of an approved spot (removed photo files are deleted), or rejects it with a reason; tells the owner | Admins |
+| `reviewSpotEdit` | Callable | Applies an owner's proposed edit of an approved spot (removed photo files are deleted), or rejects it with a reason; tells the owner. The admin names the reviewed version, so a changed proposal is never applied unseen | Admins |
 | `reviewPhotoSubmission` | Callable | Adds a waiting photo to its spot, or rejects it with a reason (the file is deleted); tells the uploader | Admins |
 | `claimUsername` | Callable | Claims a unique username through `usernames/{name}` in a transaction and frees the old one | Signed-in users (for themselves) |
 | `updateNameStyle` | Callable | Sets the custom name colour/font from an allowlist | Signed-in users at level 5 |

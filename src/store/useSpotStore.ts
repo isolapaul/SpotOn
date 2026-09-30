@@ -101,6 +101,7 @@ interface SpotStore {
 
 // Callables (T10, region europe-west3 via `functions`)
 const toggleImageLikeCallable = httpsCallable<{ spotId: string; imageId: string }, unknown>(functions, 'toggleImageLike');
+const approveSpotCallable = httpsCallable<{ spotId: string }, unknown>(functions, 'approveSpot');
 
 function updateSpotInState(
   set: (fn: (state: { spots: Spot[] }) => { spots: Spot[] }) => void,
@@ -130,7 +131,7 @@ export const useSpotStore = create<SpotStore>((set) => ({
 
   approveSpot: async (spotId) => {
     try {
-      await updateDoc(doc(db, 'spots', spotId), { status: 'approved' });
+      await approveSpotCallable({ spotId });
       updateSpotInState(set, spotId, (spot) => ({ ...spot, status: 'approved' as const }));
     } catch (error) {
       console.error('Error approving spot:', error);

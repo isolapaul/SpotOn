@@ -57,6 +57,7 @@ describe('owner edits of spots under review or rejected', () => {
     await assertFails(upd(db, SPOT_PENDING, { name: '' }));
     await assertFails(upd(db, SPOT_PENDING, { imageUrls: [IMG1, IMG2, 'https://evil.test/x.jpg'] }));
     await assertFails(upd(db, SPOT_PENDING, { createdBy: BOB }));
+    await assertFails(upd(db, SPOT_PENDING, { primaryImageIndex: 2 }));
     await assertFails(upd(db, SPOT_REJECTED, { rejection: { reason: 'mine', at: T0 } }));
   });
   it('denies other users; the rejected spot is readable only by its owner and admins', async () => {

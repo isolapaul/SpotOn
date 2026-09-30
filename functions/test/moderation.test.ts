@@ -7,7 +7,7 @@ import {
   validReason,
 } from "../src/lib/moderation";
 import {PLACEHOLDER_URL, photosAddDirectly, uniqueIdFactory} from "../src/lib/spotImages";
-import {spotImagePaths} from "../src/lib/storageFiles";
+import {ownedSpotImagePaths} from "../src/lib/storageFiles";
 
 const known = (id: string) => BUILT_IN_CATEGORIES.includes(id);
 
@@ -101,18 +101,32 @@ describe("uniqueIdFactory", () => {
   });
 });
 
-describe("spotImagePaths", () => {
+describe("ownedSpotImagePaths", () => {
   const ctx = {bucket: "b"};
   const url = (path: string) =>
     `https://firebasestorage.googleapis.com/v0/b/b/o/${encodeURIComponent(path)}?alt=media&token=t`;
-  it("keeps spot-images/ paths of this bucket, once each", () => {
-    expect(spotImagePaths([url("spot-images/u/1.jpg"), url("spot-images/u/1.jpg")], ctx))
-      .toEqual(["spot-images/u/1.jpg"]);
+  const file = (path: string, ...owners: string[]) => ({url: url(path), owners});
+  it("keeps files in an owner's folder, once each", () => {
+    expect(ownedSpotImagePaths([file("spot-images/u/1.jpg", "u"), file("spot-images/u/1.jpg", "u")], ctx))
+      .toEqual([{url: url("spot-images/u/1.jpg"), path: "spot-images/u/1.jpg"}]);
+  });
+  it("keeps files in the deleted-user folder", () => {
+    expect(ownedSpotImagePaths([file("spot-images/deleted-user/s_1.jpg", "u")], ctx).map((f) => f.path))
+      .toEqual(["spot-images/deleted-user/s_1.jpg"]);
+  });
+  it("never deletes someone else's file listed on a spot", () => {
+    expect(ownedSpotImagePaths([
+      file("spot-images/victim/1.jpg", "attacker"),
+      file("spot-images/victimx/1.jpg", "victim"),
+      file("spot-images/victim/1.jpg", "", ""),
+      file("spot-images/1.jpg", "u"),
+    ], ctx)).toEqual([]);
   });
   it("drops the placeholder, other folders, other buckets and non-URLs", () => {
-    expect(spotImagePaths([
+    const owners = ["u"];
+    expect(ownedSpotImagePaths([
       PLACEHOLDER_URL, url("profile-pictures/u/p.jpg"), "https://example.com/x.jpg", "not a url",
       "https://firebasestorage.googleapis.com/v0/b/other/o/spot-images%2Fu%2F1.jpg?alt=media&token=t",
-    ], ctx)).toEqual([]);
+    ].map((u) => ({url: u, owners})), ctx)).toEqual([]);
   });
 });

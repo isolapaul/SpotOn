@@ -32,6 +32,8 @@ import {
 /** Longest image id accepted from callers (image ids are array keys, never paths). */
 const MAX_IMAGE_ID_LENGTH = 200;
 const MAX_URL_LENGTH = 2048;
+/** Photos one user may have waiting for approval on one spot. */
+export const MAX_PENDING_PER_UPLOADER = 5;
 
 function requireUid(request: CallableRequest): string {
   const uid = request.auth?.uid;
@@ -153,10 +155,19 @@ export const addSpotImages = onCall(async (request) => {
       const now = Timestamp.now();
       const used = new Set(currentImages(spot, rawSpotId, now).map((image) => image?.id));
       // Item 4: admins, and owners of a spot still under review, add photos at once; everyone
-      // else's photos wait for an admin (photoSubmissions), counted against the limit meanwhile.
+      // else's photos wait for an admin (photoSubmissions). Only the caller's own waiting photos
+      // count here (at most MAX_PENDING_PER_UPLOADER per spot), so nobody can fill a spot's limit
+      // for others; the hard limit is checked again on approval.
       const direct = photosAddDirectly(spot, uid, callerIsAdmin);
       const waiting = direct ? [] : (await tx.get(db.collection("photoSubmissions")
-        .where("spotId", "==", rawSpotId))).docs.map((doc) => doc.get("url") as string);
+        .where("spotId", "==", rawSpotId).where("uploader", "==", uid)))
+        .docs.map((doc) => doc.get("url") as string);
+      if (urls.some((url) => waiting.includes(url))) {
+        throw new HttpsError("invalid-argument", "Image already waiting");
+      }
+      if (waiting.length + urls.length > MAX_PENDING_PER_UPLOADER && !direct) {
+        throw new HttpsError("resource-exhausted", "MAX_PENDING_PHOTOS");
+      }
       let plan;
       try {
         const ids = uniqueIdFactory(used);

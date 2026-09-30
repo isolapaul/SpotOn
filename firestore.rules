@@ -96,10 +96,14 @@ service cloud.firestore {
         && (!ak.hasAny(['description']) || (d.description is string && d.description.size() <= 2000))
         && (!ak.hasAny(['category']) || validCategory(d.category))
         && (!ak.hasAny(['location']) || validLocation(d.location))
-        && (!ak.hasAny(['primaryImageIndex']) || (d.primaryImageIndex is int && d.primaryImageIndex >= 0 && d.primaryImageIndex < 20))
+        && (!ak.hasAny(['primaryImageIndex']) || (d.primaryImageIndex is int && d.primaryImageIndex >= 0
+            && d.primaryImageIndex < d.get('imageUrls', []).size()))
         && (!ak.hasAny(['imageUrls', 'spotImages']) || validOwnerImages())
         && (!ak.hasAny(['status']) || (st == 'rejected' && d.status == 'pending' && !('rejection' in d)))
         && (!ak.hasAny(['rejection']) || (d.status == 'pending' && !('rejection' in d)));
+    }
+    function isAdminEdit() {
+      return isAdmin() && !changed().hasAny(['status', 'rejection', 'createdBy']);
     }
     match /spots/{spotId} {
       // T30: pending spots only for their owner and admins. Rules are not filters: the client queries
@@ -108,9 +112,11 @@ service cloud.firestore {
                   || (request.auth != null && resource.data.createdBy == request.auth.uid)
                   || isAdmin();
       allow create: if validSpotCreate();
-      // An owner's change to an approved spot is a proposal (spotEdits) since item 4.
-      allow update: if isAdmin() || isReviewAppend() || isOwnerDraftEdit();
-      allow delete: if isAdmin();
+      // An owner's change to an approved spot is a proposal (spotEdits) since item 4. Approving,
+      // rejecting (with a reason) and removing go through the moderation callables, so admins edit
+      // fields and photos here but never the status, and nobody deletes a spot directly.
+      allow update: if isAdminEdit() || isReviewAppend() || isOwnerDraftEdit();
+      allow delete: if false;
     }
 
     // ---------- users ----------

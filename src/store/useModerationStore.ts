@@ -14,7 +14,7 @@ import type { Spot } from '@/store/useSpotStore';
 
 const rejectSpotCallable = httpsCallable<{ spotId: string; reason: string }, unknown>(functions, 'rejectSpot');
 const removeSpotCallable = httpsCallable<{ spotId: string; reason: string }, unknown>(functions, 'removeSpot');
-const reviewSpotEditCallable = httpsCallable<{ spotId: string; approve: boolean; reason?: string }, unknown>(
+const reviewSpotEditCallable = httpsCallable<{ spotId: string; approve: boolean; seenAt: number; reason?: string }, unknown>(
   functions,
   'reviewSpotEdit',
 );
@@ -48,7 +48,7 @@ interface ModerationStore {
   rejectSpot: (spotId: string, reason: string) => Promise<void>;
   /** Deletes the spot (its photos and pending moderation go too); `ownerId` refreshes their profile. */
   removeSpot: (spotId: string, ownerId: string, reason: string) => Promise<void>;
-  reviewEdit: (spotId: string, approve: boolean, reason?: string) => Promise<void>;
+  reviewEdit: (edit: Pick<SpotEdit, 'spotId' | 'createdAtMs'>, approve: boolean, reason?: string) => Promise<void>;
   reviewPhoto: (submissionId: string, approve: boolean, reason?: string) => Promise<void>;
 }
 
@@ -133,8 +133,8 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
     // The server recounts the owner's spots; the next profile read should see it (T26).
     invalidatePublicProfile(ownerId);
   },
-  reviewEdit: async (spotId, approve, reason) => {
-    await reviewSpotEditCallable({ spotId, approve, ...(reason ? { reason } : {}) });
+  reviewEdit: async ({ spotId, createdAtMs }, approve, reason) => {
+    await reviewSpotEditCallable({ spotId, approve, seenAt: createdAtMs, ...(reason ? { reason } : {}) });
   },
   reviewPhoto: async (submissionId, approve, reason) => {
     await reviewPhotoCallable({ submissionId, approve, ...(reason ? { reason } : {}) });

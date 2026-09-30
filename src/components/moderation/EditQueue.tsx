@@ -37,8 +37,8 @@ export default function EditQueue({ edits, onOpenSpot }: Readonly<EditQueueProps
             key={edit.spotId}
             label={spot?.name ?? edit.spotName}
             rejectTitle="rejectEditTitle"
-            onApprove={() => reviewEdit(edit.spotId, true)}
-            onReject={(reason) => reviewEdit(edit.spotId, false, reason)}
+            onApprove={() => reviewEdit(edit, true)}
+            onReject={(reason) => reviewEdit(edit, false, reason)}
             approvedToast="editApprovedToast"
             rejectedToast="editRejectedToast"
           >
