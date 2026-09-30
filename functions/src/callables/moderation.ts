@@ -151,12 +151,15 @@ export const removeSpot = onCall(async (request) => {
   });
 });
 
-/** The proposal's createdAt the admin reviewed, in ms (required: nothing is applied unseen). */
+/**
+ * The proposal's createdAt the admin reviewed, in whole ms (required: nothing is applied unseen).
+ * Floored because the web SDK's toMillis() keeps the microseconds as a fraction.
+ */
 function requireSeenAt(x: unknown): number {
   if (typeof x !== "number" || !Number.isFinite(x)) {
     throw new HttpsError("invalid-argument", "The reviewed version (seenAt) is required");
   }
-  return x;
+  return Math.floor(x);
 }
 
 export const reviewSpotEdit = onCall(async (request) => {
@@ -178,28 +181,32 @@ export const reviewSpotEdit = onCall(async (request) => {
     const result = await db.runTransaction(async (tx) => {
       const [editSnap, spotSnap] = await Promise.all([tx.get(editRef), tx.get(spotRef)]);
       const createdAt = editSnap.get("createdAt") as Timestamp | undefined;
-      if (!editSnap.exists || editSnap.get("status") !== "pending" || createdAt?.toMillis() !== seenAt) {
+      const version = createdAt ? Math.floor(createdAt.toMillis()) : null;
+      if (!editSnap.exists || editSnap.get("status") !== "pending" || version !== seenAt) {
         throw new HttpsError("failed-precondition", "The proposal changed or is gone; reload");
       }
       const ownerId = editSnap.get("ownerId") as string;
       if (!spotSnap.exists) {
         tx.delete(editRef);
-        return {ownerId, spotName: String(editSnap.get("spotName") ?? ""), removed: [] as PhotoFile[], applied: false};
+        const spotName = String(editSnap.get("spotName") ?? "");
+        return {ownerId, spotName, removed: [] as PhotoFile[], applied: false, spotGone: true};
       }
       const spot = spotSnap.data() as DocumentData;
       if (!approve) {
         tx.update(editRef, {status: "rejected", rejection: {reason, at: Timestamp.now()}});
-        return {ownerId, spotName: String(spot.name ?? ""), removed: [] as PhotoFile[], applied: false};
+        return {ownerId, spotName: String(spot.name ?? ""), removed: [] as PhotoFile[], applied: false, spotGone: false};
       }
       const proposal = readProposal(editSnap.get("proposed"), isCategory);
       const plan = planEditApply(spot, proposal);
       if (Object.keys(plan.update).length) tx.update(spotRef, plan.update);
       tx.delete(editRef);
       const removed = spotPhotoFiles(spot).filter((f) => plan.removedUrls.includes(f.url));
-      return {ownerId, spotName: String(proposal.name ?? spot.name ?? ""), removed, applied: true};
+      return {ownerId, spotName: String(proposal.name ?? spot.name ?? ""), removed, applied: true, spotGone: false};
     });
 
     await deleteSpotImageFiles(result.removed);
+    // A spot deleted meanwhile: its proposal is dropped; the owner heard about the removal.
+    if (result.spotGone) return {applied: false};
     await notifyInbox({
       uid: result.ownerId,
       type: approve ? "edit_approved" : "edit_rejected",

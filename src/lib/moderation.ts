@@ -48,7 +48,8 @@ function isRecord(x: unknown): x is Record<string, unknown> {
 }
 
 function timestampMs(x: unknown): number {
-  return isRecord(x) && typeof x.toMillis === 'function' ? Number((x.toMillis as () => number)()) || 0 : 0;
+  // Whole ms: the web SDK keeps the microseconds as a fraction, the server compares whole ms.
+  return isRecord(x) && typeof x.toMillis === 'function' ? Math.floor(Number((x.toMillis as () => number)())) || 0 : 0;
 }
 
 /** A spotEdits document, or null when it is not a usable proposal. */
