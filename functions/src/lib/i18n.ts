@@ -53,6 +53,98 @@ export const translations = {
     de: (spotName: TParam, userName: TParam) =>
       `"${spotName}" hochgeladen von ${userName}`,
   },
+  // Moderation (item 4): to the owner or uploader, with the admin's reason.
+  spotRejected: {
+    hu: "A helyedet nem hagytuk jóvá",
+    en: "Your spot was not approved",
+    de: "Ihr Ort wurde nicht genehmigt",
+  },
+  spotRejectedBody: {
+    hu: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}. Javíthatod és újra beküldheted.`,
+    en: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}. You can edit and resubmit it.`,
+    de: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}. Sie können ihn bearbeiten und erneut einreichen.`,
+  },
+  spotRemoved: {
+    hu: "A helyedet eltávolítottuk",
+    en: "Your spot was removed",
+    de: "Ihr Ort wurde entfernt",
+  },
+  spotRemovedBody: {
+    hu: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+    en: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+    de: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+  },
+  editApproved: {
+    hu: "Jóváhagytuk a módosításodat",
+    en: "Your changes were approved",
+    de: "Ihre Änderungen wurden genehmigt",
+  },
+  editApprovedBody: {
+    hu: (spotName: TParam) => `"${spotName}" frissült a térképen`,
+    en: (spotName: TParam) => `"${spotName}" is updated on the map`,
+    de: (spotName: TParam) => `"${spotName}" wurde auf der Karte aktualisiert`,
+  },
+  editRejected: {
+    hu: "A módosításodat nem hagytuk jóvá",
+    en: "Your changes were not approved",
+    de: "Ihre Änderungen wurden nicht genehmigt",
+  },
+  editRejectedBody: {
+    hu: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+    en: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+    de: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+  },
+  photoApproved: {
+    hu: "Jóváhagytuk a fotódat",
+    en: "Your photo was approved",
+    de: "Ihr Foto wurde genehmigt",
+  },
+  photoApprovedBody: {
+    hu: (spotName: TParam) => `Mostantól látható itt: "${spotName}"`,
+    en: (spotName: TParam) => `It now shows on "${spotName}"`,
+    de: (spotName: TParam) => `Es ist jetzt bei "${spotName}" zu sehen`,
+  },
+  photoRejected: {
+    hu: "A fotódat nem hagytuk jóvá",
+    en: "Your photo was not approved",
+    de: "Ihr Foto wurde nicht genehmigt",
+  },
+  photoRejectedBody: {
+    hu: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+    en: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+    de: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+  },
+  // Moderation (item 4): to the admins.
+  spotResubmitted: {
+    hu: "Újra beküldött hely vár jóváhagyásra",
+    en: "A resubmitted spot awaits approval",
+    de: "Ein erneut eingereichter Ort wartet auf Genehmigung",
+  },
+  spotResubmittedBody: {
+    hu: (spotName: TParam, userName: TParam) => `"${spotName}" újra beküldve: ${userName}`,
+    en: (spotName: TParam, userName: TParam) => `"${spotName}" resubmitted by ${userName}`,
+    de: (spotName: TParam, userName: TParam) => `"${spotName}" erneut eingereicht von ${userName}`,
+  },
+  editProposed: {
+    hu: "Módosítás vár jóváhagyásra",
+    en: "A change awaits approval",
+    de: "Eine Änderung wartet auf Genehmigung",
+  },
+  editProposedBody: {
+    hu: (spotName: TParam) => `Módosították ezt: "${spotName}"`,
+    en: (spotName: TParam) => `Changes proposed for "${spotName}"`,
+    de: (spotName: TParam) => `Änderungen vorgeschlagen für "${spotName}"`,
+  },
+  photoSubmitted: {
+    hu: "Új fotó vár jóváhagyásra",
+    en: "A new photo awaits approval",
+    de: "Ein neues Foto wartet auf Genehmigung",
+  },
+  photoSubmittedBody: {
+    hu: (spotName: TParam) => `Fotó érkezett ehhez: "${spotName}"`,
+    en: (spotName: TParam) => `A photo was added to "${spotName}"`,
+    de: (spotName: TParam) => `Ein Foto wurde zu "${spotName}" hinzugefügt`,
+  },
 } satisfies Record<string, Record<Lang, Template>>;
 
 export type TKey = keyof typeof translations;

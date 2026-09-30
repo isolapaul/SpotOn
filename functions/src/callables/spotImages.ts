@@ -1,6 +1,8 @@
 /**
  * Spot image callables (T10): toggleImageLike and addSpotImages. Both rewrite the spot's image
  * arrays inside a transaction, so concurrent users cannot lose or forge each other's data.
+ * addSpotImages adds directly only for admins and for the owner of a spot under review; other
+ * photos become photoSubmissions that an admin approves (item 4, callables/moderation.ts).
  * Legacy spots (only imageUrls) are materialised to spotImages only by these user actions,
  * never on read. A non-approved spot answers like a missing one unless the caller is its creator
  * or an admin (T30). Logs only {uid, spotId, outcome}.
@@ -12,16 +14,19 @@ import * as logger from "firebase-functions/logger";
 import {getAdminRole} from "../lib/admin";
 import {db} from "../lib/app";
 import {isValidSpotId} from "../lib/ids";
+import {notifyAdminsToReview} from "../lib/inbox";
 import {
   currentImages,
   imageAccess,
   isOwnSpotImagePath,
   MAX_SPOT_IMAGES,
   parseStorageDownloadUrl,
+  photosAddDirectly,
   planAddImages,
   SpotAccessFields,
   SpotImageFields,
   toggleLikeInImages,
+  uniqueIdFactory,
 } from "../lib/spotImages";
 
 /** Longest image id accepted from callers (image ids are array keys, never paths). */
@@ -48,8 +53,9 @@ function isImageId(x: unknown): x is string {
 async function readableSpot(
   snap: DocumentSnapshot,
   uid: string,
-): Promise<SpotImageFields & SpotAccessFields> {
-  const spot = snap.exists ? snap.data() as SpotImageFields & SpotAccessFields : undefined;
+): Promise<SpotImageFields & SpotAccessFields & {name?: unknown}> {
+  type ReadableSpot = SpotImageFields & SpotAccessFields & {name?: unknown};
+  const spot = snap.exists ? snap.data() as ReadableSpot : undefined;
   if (!spot || (imageAccess(spot, uid) === "admin" && (await getAdminRole(uid)) === null)) {
     throw new HttpsError("not-found", "Spot not found");
   }
@@ -62,21 +68,6 @@ function outcomeOf(error: unknown): string {
 
 function errorMessage(error: unknown): string | undefined {
   return error instanceof Error ? error.message : undefined;
-}
-
-/**
- * Same id format as the client (`${ms}_${0..9999}`); within one call, the random part is re-rolled
- * until the id is not used by an existing image or an earlier id of this call.
- */
-function uniqueIdFactory(used: Set<string>): () => string {
-  return () => {
-    let id: string;
-    do {
-      id = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    } while (used.has(id));
-    used.add(id);
-    return id;
-  };
 }
 
 export const toggleImageLike = onCall(async (request) => {
@@ -152,29 +143,54 @@ export const addSpotImages = onCall(async (request) => {
     }
 
     const spotRef = db.collection("spots").doc(rawSpotId);
-    await db.runTransaction(async (tx) => {
+    const callerIsAdmin = (await getAdminRole(uid)) !== null;
+    const result = await db.runTransaction(async (tx) => {
       const spot = await readableSpot(await tx.get(spotRef), uid);
       const existingUrls = Array.isArray(spot.imageUrls) ? spot.imageUrls : [];
       if (urls.some((url) => existingUrls.includes(url))) {
         throw new HttpsError("invalid-argument", "Image already added");
       }
-
       const now = Timestamp.now();
       const used = new Set(currentImages(spot, rawSpotId, now).map((image) => image?.id));
+      // Item 4: admins, and owners of a spot still under review, add photos at once; everyone
+      // else's photos wait for an admin (photoSubmissions), counted against the limit meanwhile.
+      const direct = photosAddDirectly(spot, uid, callerIsAdmin);
+      const waiting = direct ? [] : (await tx.get(db.collection("photoSubmissions")
+        .where("spotId", "==", rawSpotId))).docs.map((doc) => doc.get("url") as string);
       let plan;
       try {
-        plan = planAddImages(spot, rawSpotId, urls, uid, now, uniqueIdFactory(used));
+        const ids = uniqueIdFactory(used);
+        plan = planAddImages(spot, rawSpotId, [...waiting, ...urls], uid, now, ids);
       } catch (error) {
         if (errorMessage(error) === "MAX_SPOT_IMAGES") {
           throw new HttpsError("resource-exhausted", "MAX_SPOT_IMAGES");
         }
         throw error;
       }
-      tx.update(spotRef, {...plan});
+      if (direct) {
+        tx.update(spotRef, {...plan});
+        return {direct: true, spotName: String(spot.name ?? ""), owner: String(spot.createdBy ?? "")};
+      }
+      for (const url of urls) {
+        tx.create(db.collection("photoSubmissions").doc(), {
+          spotId: rawSpotId,
+          spotName: String(spot.name ?? ""),
+          spotOwner: String(spot.createdBy ?? ""),
+          uploader: uid,
+          url,
+          status: "pending",
+          createdAt: now,
+        });
+      }
+      return {direct: false, spotName: String(spot.name ?? ""), owner: String(spot.createdBy ?? "")};
     });
 
-    logger.info("addSpotImages", {uid, spotId, outcome: "added"});
-    return {added: urls.length};
+    if (!result.direct) {
+      await notifyAdminsToReview("photoSubmitted", "photoSubmittedBody", [result.spotName],
+        {type: "photo_submitted", spotId: rawSpotId});
+    }
+    logger.info("addSpotImages", {uid, spotId, outcome: result.direct ? "added" : "submitted"});
+    return result.direct ? {added: urls.length, pending: 0} : {added: 0, pending: urls.length};
   } catch (error) {
     logger.info("addSpotImages", {uid, spotId, outcome: outcomeOf(error)});
     throw error;
