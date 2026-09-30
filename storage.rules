@@ -1,7 +1,8 @@
 rules_version = '2';
 
-// SpotOn Storage rules (T12). Owner-only image creates under 5 MB; no overwrite or delete
-// (nothing in the client does either, ROADMAP trap 9). Everything not matched is denied.
+// SpotOn Storage rules (T12). Owner-only image creates under 5 MB; no overwrite or delete (the
+// client never does either; deleteAccount removes files through the Admin SDK). Everything not
+// matched is denied.
 service firebase.storage {
   match /b/{bucket}/o {
     function validImage() {

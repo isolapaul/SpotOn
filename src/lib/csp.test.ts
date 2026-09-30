@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildCsp } from './csp.mjs';
 
-// T15's three policies, verbatim (docs/tasks/T15-web-hardening.md step 1). nonce: null must reproduce them.
+// T15's three static policies, verbatim. nonce: null must reproduce them.
 const T15_PROD =
   "default-src 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://server.arcgisonline.com https://firebasestorage.googleapis.com https://*.googleusercontent.com; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.cloudfunctions.net https://apis.google.com; frame-src 'self' https://*.firebaseapp.com https://apis.google.com https://accounts.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests";
 const T15_DEV =

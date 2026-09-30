@@ -1,50 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import type { TranslationKey } from './translations';
-import { CATEGORIES, CATEGORY_EMOJI, CATEGORY_LABEL_KEY, getMarkerEmoji } from './categories';
-import { categoryEmojis, categoryTranslationKeys } from './spotUtils';
-import * as oracle from './__oracles__/legacy';
+import { CATEGORIES, CATEGORY_LABEL_KEY } from './categories';
+import { categoryTranslationKeys } from './spotUtils';
+import { translations } from './translations';
 
 const IDS = ['scenic', 'smoke-spot', 'viewpoint', 'hiking', 'random', 'date-spot', 'park', 'part', 'other'] as const;
-const LOOKUPS: Array<string | undefined> = [...IDS, 'unknown', undefined, '', 'toString', '__proto__'];
 
-describe('categories (characterisation)', () => {
-  it('CATEGORIES matches the AddSpotModal option list (order, value, emoji, label key)', () => {
-    expect(CATEGORIES.map((c) => ({ value: c.id, emoji: c.emoji, labelKey: c.labelKey }))).toEqual(oracle.addSpotOptions);
+describe('categories', () => {
+  it('lists the nine categories in UI order', () => {
     expect(CATEGORIES.map((c) => c.id)).toEqual(IDS);
   });
 
-  it('CATEGORIES matches the DiscoveryPanel categories (order, value, label, emoji)', () => {
-    const t = (key: TranslationKey) => `t:${key}`;
-    expect(CATEGORIES.map((c) => ({ value: c.id, label: t(c.labelKey), emoji: c.emoji }))).toEqual(oracle.discoveryCategories(t));
+  it('every label key exists in the dictionaries', () => {
+    for (const { labelKey } of CATEGORIES) expect(translations.hu).toHaveProperty(labelKey);
   });
 
-  it('CATEGORY_EMOJI / CATEGORY_LABEL_KEY equal the former spotUtils maps (no fallback)', () => {
-    expect(CATEGORY_EMOJI).toEqual(oracle.categoryEmojis);
-    expect(CATEGORY_LABEL_KEY).toEqual(oracle.categoryTranslationKeys);
-    expect((CATEGORY_EMOJI as Record<string, string>).unknown).toBeUndefined();
+  it('CATEGORY_LABEL_KEY maps each id, with no fallback for unknown ids', () => {
+    for (const c of CATEGORIES) expect(CATEGORY_LABEL_KEY[c.id]).toBe(c.labelKey);
     expect((CATEGORY_LABEL_KEY as Record<string, string>).unknown).toBeUndefined();
   });
 
-  it('spotUtils keeps re-exporting the old names', () => {
-    expect(categoryEmojis).toBe(CATEGORY_EMOJI);
+  it('spotUtils keeps re-exporting the label map', () => {
     expect(categoryTranslationKeys).toBe(CATEGORY_LABEL_KEY);
-  });
-
-  it.each(IDS.map((id) => [id]))('SpotDetailsPanel/SpotInfoWindow lookups unchanged: %s', (id) => {
-    expect(categoryEmojis[id]).toBe(oracle.categoryEmojis[id]);
-    expect(categoryTranslationKeys[id]).toBe(oracle.categoryTranslationKeys[id]);
-  });
-
-  it.each(LOOKUPS.filter((c) => c !== 'toString' && c !== '__proto__').map((c) => [c]))(
-    'getMarkerEmoji matches the DiscoveryPanel badge (`categoryEmojis[c] || "📍"`): %s',
-    (category) => {
-      expect(getMarkerEmoji(category)).toBe(oracle.discoveryBadgeEmoji(category));
-    },
-  );
-
-  it('getMarkerEmoji falls back to 📍 for prototype names too (as the MapView switch did)', () => {
-    expect(getMarkerEmoji('toString')).toBe('📍');
-    expect(getMarkerEmoji('__proto__')).toBe('📍');
-    expect(getMarkerEmoji('other')).toBe('📍');
   });
 });

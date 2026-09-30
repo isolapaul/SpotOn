@@ -5,7 +5,7 @@ import InstallGate from '@/components/InstallGate';
 
 export const metadata: Metadata = {
   title: 'SpotOn - Discover Scenic Locations',
-  description: 'Find and share the best scenic locations, viewpoints, and smoke spots near you.',
+  description: 'Discover and share hidden gems, viewpoints and scenic places near you.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

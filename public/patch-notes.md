@@ -1,5 +1,4 @@
-## Patch Notes
-
-- v1.0.0 — Initial public release.
-- v1.1.0 — Added satellite view and small UI improvements.
-- v2.1.0 — SpotOn has moved to spoton.isolapaul.hu. Sign in once more there, and re-add it to your home screen if you had installed it.
+- v2.0.2 — Sharper maps on phones, and the Light, Dark and Silver styles no longer show a watermark.
+- v2.0.0 — A new look throughout: new map pins, place cards, a redesigned Explore and spot page, level badges and smoother gestures. Privacy policy and terms, and you can delete your account in Settings.
+- v1.0.0 — SpotOn has moved to spoton.isolapaul.hu. Sign in once more there, and re-add it to your home screen if you had installed it.
+- Earlier — Satellite view (February 2026), the switch to OpenStreetMap maps (June 2026).

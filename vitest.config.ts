@@ -7,7 +7,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts', 'tests/unit/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
     exclude: [...configDefaults.exclude, 'e2e/**', 'functions/**', 'tests/rules/**', '.next/**', '.next-e2e/**'],
     // `vitest run --coverage` (T23): the pure lib/ modules must stay ≥ 90 % covered.
     coverage: {

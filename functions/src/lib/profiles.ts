@@ -1,6 +1,6 @@
 /**
  * Pure helpers for public profiles, usernames and name styles (T09).
- * No Firebase imports: shared by the Cloud Functions and scripts/backfill-profiles.ts.
+ * No Firebase imports, so the pure parts are unit-tested.
  * The only import is the sibling pure module ./levels (itself import-free), which holds the
  * name-style allowlists.
  */

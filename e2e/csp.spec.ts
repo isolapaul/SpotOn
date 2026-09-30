@@ -7,8 +7,8 @@ import { buildCsp } from '../src/lib/csp.mjs';
 // T32: pages get a per-request nonce policy ('strict-dynamic', no 'unsafe-inline' in script-src) from
 // src/proxy.ts; /api/* keeps T15's static policy (the FCM service worker's CSP comes from its own response).
 // Map tiles are aborted (blockMapTiles) after the CSP check, so the tile hosts are still checked against
-// img-src; the tile images themselves are covered by scripts/check-headers.sh and the manual checklist.
-// Google popup sign-in cannot run against the emulator: manual check (docs/tasks/T32-nonce-csp.md step 7).
+// img-src; the tile images themselves are covered by the post-deploy checklist (docs/deploy.md §13).
+// Google popup sign-in cannot run against the emulator: it is checked by hand after a deploy.
 
 declare global {
   interface Window {

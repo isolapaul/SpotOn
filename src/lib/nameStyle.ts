@@ -40,11 +40,11 @@ export type NameFontValue = keyof typeof NAME_FONTS;
 
 const DEFAULT_FONT_CLASS = 'font-sans';
 
-export function isNameColorValue(v: unknown): v is NameColorValue {
+function isNameColorValue(v: unknown): v is NameColorValue {
   return typeof v === 'string' && Object.hasOwn(NAME_COLORS, v);
 }
 
-export function isNameFontValue(v: unknown): v is NameFontValue {
+function isNameFontValue(v: unknown): v is NameFontValue {
   return typeof v === 'string' && Object.hasOwn(NAME_FONTS, v);
 }
 

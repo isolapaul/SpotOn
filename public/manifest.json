@@ -1,7 +1,7 @@
 {
   "name": "SpotOn",
   "short_name": "SpotOn",
-  "description": "Discover scenic locations, smoke spots, and viewpoints near you",
+  "description": "Discover and share hidden gems, viewpoints and scenic places near you",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0E1013",
