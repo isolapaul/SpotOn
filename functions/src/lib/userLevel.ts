@@ -1,18 +1,21 @@
 /**
  * Stored XP and level (item 5): users/{uid}.{xp, level, levelFloor}, mirrored to
- * publicProfiles/{uid}.{xp, level}. Written only here (and by scripts/migrate-xp.ts).
+ * publicProfiles/{uid}.{xp, level}, and the owner's pin icon on their spots (item 6,
+ * spots.ownerPin). Written only here (and by scripts/migrate-xp.ts).
  */
 import {FieldValue} from "firebase-admin/firestore";
 import {db} from "./app";
 import {DELETED_OWNER} from "./accountDeletion";
 import {levelForSpotCount, validLevel} from "./levels";
+import {ownerPinFor} from "./pinIcons";
 import {userLevelFields, xpOf} from "./xp";
 
 /**
  * Recomputes one user's XP from every spot they earn it from (own spots and spots listing them in
- * `contributors`) and stores it. Writes are skipped when nothing changed; no users doc is created.
+ * `contributors`) and stores it, then puts the pin icon their level allows on each own spot.
+ * Writes are skipped when nothing changed; no users doc is created.
  */
-export async function recomputeXp(uid: string): Promise<string> {
+export async function syncUserLevel(uid: string): Promise<string> {
   if (!uid || uid === DELETED_OWNER) return "skipped";
   const userRef = db.collection("users").doc(uid);
   const profileRef = db.collection("publicProfiles").doc(uid);
@@ -37,6 +40,12 @@ export async function recomputeXp(uid: string): Promise<string> {
         profileSnap.get("level") !== fields.level) {
       const mirror = {xp: fields.xp, level: fields.level};
       tx.set(profileRef, {...mirror, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
+      outcome = "updated";
+    }
+    const pin = ownerPinFor(fields.level, userSnap.get("pinIcon"));
+    for (const spot of ownSnap.docs) {
+      if ((spot.get("ownerPin") ?? null) === pin) continue;
+      tx.update(spot.ref, {ownerPin: pin ?? FieldValue.delete()});
       outcome = "updated";
     }
     return outcome;

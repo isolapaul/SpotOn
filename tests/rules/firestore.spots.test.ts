@@ -212,6 +212,7 @@ describe('owner edits (approved spot): none since item 4, the owner proposes (sp
     const db = dbAs(env, ALICE);
     await assertFails(upd(db, SPOT_APPROVED, { createdBy: BOB }));
     await assertFails(upd(db, SPOT_APPROVED, { contributors: [BOB] }));
+    await assertFails(upd(db, SPOT_APPROVED, { ownerPin: 'crown' }));
     await assertFails(upd(db, SPOT_APPROVED, { status: 'pending' }));
     await assertFails(upd(db, SPOT_APPROVED, { highlighted: [{ userId: ALICE }] }));
     await assertFails(upd(db, SPOT_APPROVED, { isHighlighted: true }));
@@ -250,6 +251,7 @@ describe('admin and delete', () => {
     await assertFails(upd(db, SPOT_PENDING, { rejection: { reason: 'x', at: serverTimestamp() } }));
     await assertFails(upd(db, SPOT_APPROVED, { createdBy: BOB }));
     await assertFails(upd(db, SPOT_APPROVED, { contributors: [BOB] }));
+    await assertFails(upd(db, SPOT_APPROVED, { ownerPin: 'crown' }));
     await assertFails(deleteDoc(doc(db, 'spots', SPOT_APPROVED)));
   });
   it('SEC-02: denies delete by owner, other users and anonymous', async () => {

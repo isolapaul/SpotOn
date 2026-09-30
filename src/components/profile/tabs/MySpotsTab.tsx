@@ -8,6 +8,7 @@ import { useT } from '@/hooks/useT';
 import type { LevelInfo } from '@/lib/levelUtils';
 import HighlightManager from '../HighlightManager';
 import NameCustomizer from '../NameCustomizer';
+import PinIconPicker from '../PinIconPicker';
 import MySpotList from '../MySpotList';
 
 interface MySpotsTabProps {
@@ -22,6 +23,7 @@ export default function MySpotsTab({ user, spots, levelInfo, onOpenSpot }: Reado
   const t = useT();
   const [showHighlightPanel, setShowHighlightPanel] = useState(false);
   const [showCustomizationPanel, setShowCustomizationPanel] = useState(false);
+  const [showPinPanel, setShowPinPanel] = useState(false);
   const perkButtonClass = `w-full h-11 px-4 rounded-full font-semibold text-[15px] transition-transform active:scale-[.98] ${levelInfo.bgColor} ${levelInfo.textColor}`;
 
   return (
@@ -35,6 +37,16 @@ export default function MySpotsTab({ user, spots, levelInfo, onOpenSpot }: Reado
               <span className="inline-flex items-center justify-center gap-2">
                 <PerkIcon icon="highlight" className="w-4 h-4" />
                 {showHighlightPanel ? t('closeHighlightPanel') : t('highlightSpots')}
+              </span>
+            </button>
+          )}
+
+          {/* Pin style button (level 4, item 6) */}
+          {levelInfo.canCustomizeIcon && (
+            <button onClick={() => setShowPinPanel(!showPinPanel)} className={perkButtonClass}>
+              <span className="inline-flex items-center justify-center gap-2">
+                <PerkIcon icon="icons" className="w-4 h-4" />
+                {showPinPanel ? t('closePinStyle') : t('pinStyle')}
               </span>
             </button>
           )}
@@ -55,6 +67,8 @@ export default function MySpotsTab({ user, spots, levelInfo, onOpenSpot }: Reado
       {showHighlightPanel && levelInfo.level >= 3 && (
         <HighlightManager spots={spots} uid={user.uid} levelInfo={levelInfo} />
       )}
+
+      {showPinPanel && levelInfo.canCustomizeIcon && <PinIconPicker user={user} />}
 
       {/* Level 5 Customization Panel */}
       {showCustomizationPanel && levelInfo.level >= 5 && <NameCustomizer user={user} />}

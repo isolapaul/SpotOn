@@ -22,6 +22,13 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - The owner can change a spot's category and location while editing it; a rejected spot has a grey pin with a cross (only its owner and admins see it).
 - The notification centre also shows decisions about your spots and photos, on every device.
 
+### Added (levels)
+- Levels come from XP: an approved spot is worth 10 XP, an approved photo 3 XP and a review of someone else's approved spot 2 XP (once per spot). Levels start at 30, 100, 150 and 200 XP. If something is deleted its XP goes too, but nobody drops below the level they had before.
+- The profile shows your XP and how much you need for the next level; the level info explains how to earn XP.
+
+### Added (pin style)
+- From level 4 you can pick one of eight icons (star, crown, flame, mountain, leaf, bolt, diamond, moon) for the map pins of all your spots, in My Spots.
+
 ### Changed
 - The browser and system bars use the app's dark background colour.
 

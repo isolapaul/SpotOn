@@ -3,6 +3,7 @@
  * - claimUsername: transactional, uniqueness-enforcing username registry
  *   (usernames/{name} = {uid}).
  * - updateNameStyle: level-5-gated, allowlisted custom name colour/font.
+ * - updatePinIcon: level-4-gated, allowlisted pin icon for all own spots (item 6).
  * Error messages are the exact English strings the client shows via error.message.
  * Logs only {uid, outcome}: never payloads.
  */
@@ -11,7 +12,8 @@ import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {db} from "../lib/app";
 import {NAME_STYLE_MIN_LEVEL} from "../lib/levels";
-import {levelOf} from "../lib/userLevel";
+import {PIN_MIN_LEVEL, validPinIcon} from "../lib/pinIcons";
+import {levelOf, syncUserLevel} from "../lib/userLevel";
 import {
   NameStyleValidationError,
   normalizeUsername,
@@ -124,6 +126,33 @@ export const updateNameStyle = onCall(async (request) => {
     return {success: true};
   } catch (error) {
     logger.info("updateNameStyle", {uid, outcome: outcomeOf(error)});
+    throw error;
+  }
+});
+
+export const updatePinIcon = onCall(async (request) => {
+  const uid = requireUid(request);
+  try {
+    const raw: unknown = request.data?.icon;
+    const icon = raw === null ? null : validPinIcon(raw);
+    if (raw !== null && icon === null) throw new HttpsError("invalid-argument", "Unknown pin icon");
+    if ((await levelOf(uid)) < PIN_MIN_LEVEL) {
+      throw new HttpsError("permission-denied", "Level 4 required");
+    }
+    try {
+      await db.collection("users").doc(uid).update({pinIcon: icon ?? FieldValue.delete()});
+    } catch (error) {
+      if ((error as {code?: unknown})?.code === 5) {
+        throw new HttpsError("failed-precondition", "User profile missing");
+      }
+      throw error;
+    }
+    // Puts the icon on every own spot now (syncXp only runs on spot writes).
+    await syncUserLevel(uid);
+    logger.info("updatePinIcon", {uid, outcome: "updated"});
+    return {success: true};
+  } catch (error) {
+    logger.info("updatePinIcon", {uid, outcome: outcomeOf(error)});
     throw error;
   }
 });

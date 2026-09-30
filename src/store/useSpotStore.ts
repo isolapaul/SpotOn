@@ -69,6 +69,8 @@ export interface Spot {
   createdAt: DateInput;
   reviews?: Review[];
   averageRating?: number;
+  /** The owner's special pin icon (item 6), server-written; normalise before use. */
+  ownerPin?: string;
   highlighted?: {
     userId: string;
     highlightedAt: string;
