@@ -19,7 +19,7 @@ Open work, as of v2.0.2 (2026-09-30). Nothing here is started. Each item becomes
 | Item | Notes |
 |---|---|
 | Files over ~300 lines | `AuthModal.tsx`, `AddSpotModal.tsx` and `SettingsPanel.tsx` break the size convention in `CLAUDE.md`. |
-| Lint warnings | 19 warnings (`any`, `<img>`, setState in effects), none new. |
+| Deprecated dev tooling | Left because no update fixes them yet: ESLint 9 (`eslint-config-next` 16 bundles `eslint-plugin-react`, which crashes on ESLint 10), and transitive `glob@10`, `json-ptr` and `node-domexception` (from `firebase-tools` and `firebase-admin`; the latest versions still depend on them). `npm audit` reports 3 moderate advisories in `@opentelemetry/core` via `firebase-tools` (dev only, not in the image; `npm audit --omit=dev` is clean). |
 | Orphaned Storage files | Files stay when an admin deletes a spot or a photo; only `deleteAccount` cleans up (its own user's folder). |
 | Legacy user fields | `questProgress` / `questRewards` from the 2026 Valentine event are still on some `users` docs; nothing reads them. |
 | T23 characterisation oracles | `src/lib/__oracles__/legacy.ts` pins the pre-refactor behaviour for a few helpers. They could be replaced by plain unit tests. |
@@ -40,7 +40,8 @@ Open work, as of v2.0.2 (2026-09-30). Nothing here is started. Each item becomes
 - Delete feedback e-mails, database exports and server logs after at most 1 year.
 - Announce material changes to the terms or the privacy policy at least 15 days ahead in the app and by e-mail, and bump `TERMS_VERSION` (`src/lib/terms.ts`) so everyone accepts again.
 - Keep a simple record of processing (GDPR Art. 30) and a breach log (Art. 33(5)); write short balancing tests for the legitimate-interest purposes (feedback, logs, retained spots, map tiles).
-- Check whether Cloudflare sets cookies on the hostname, and whether every photo upload path strips EXIF location data. If it does, the privacy policy can say so.
+- Check whether Cloudflare sets cookies on the hostname.
+- Photo uploads (spot photos, profile picture and banner, feedback attachments) are re-encoded through a canvas and carry no EXIF, including GPS location (`e2e/exif.spec.ts`). The privacy policy may say so.
 
 ## Accepted trade-offs (kept for reference)
 
