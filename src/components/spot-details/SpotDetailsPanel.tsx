@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { X } from 'lucide-react';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useUiStore } from '@/store/useUiStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -12,6 +11,8 @@ import { getGalleryUrls, getHeroImageUrl, getSpotImages, imageFallbacks, sortSpo
 import { averageRating } from '@/lib/rating';
 import PanelShell from '../ui/PanelShell';
 import SpotHero from './SpotHero';
+import type { SpotBack } from '@/components/ui/BackButton';
+import CompactBar from './CompactBar';
 import Gallery from './Gallery';
 import { AdminStatusCard, DeleteSpotButton } from './AdminActions';
 import SpotTitle from './SpotTitle';
@@ -31,6 +32,8 @@ interface SpotDetailsPanelProps {
   /** The open spot (activePanel), or null. The panel renders the live store copy (T29). */
   spotId: string | null;
   onClose: () => void;
+  /** Opened from a list (profile, Explore): the way back to it. */
+  back?: SpotBack;
 }
 
 /**
@@ -39,7 +42,7 @@ interface SpotDetailsPanelProps {
  * Owns the state that spans several children: edit (title + form), highlight (hero + title) and
  * whether the gallery is open. The children own the rest and unmount while no spot is shown.
  */
-export default function SpotDetailsPanel({ spotId, onClose }: Readonly<SpotDetailsPanelProps>) {
+export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<SpotDetailsPanelProps>) {
   const spot = useSpotStore((s) => (spotId ? s.spots.find((x) => x.id === spotId) : undefined)) ?? null;
   const closeSpotPanel = useUiStore((s) => s.closeSpotPanel);
   useEffect(() => {
@@ -92,29 +95,7 @@ export default function SpotDetailsPanel({ spotId, onClose }: Readonly<SpotDetai
         <Gallery urls={allGalleryImages} open={galleryOpen} startIndex={0} onClose={closeGallery} alt={spot.name} />
       }
     >
-      {/* Compact bar: fades in once the title has scrolled under the top (design phase 3) */}
-      <div
-        aria-hidden={!compact || undefined}
-        className={`material-sheet absolute inset-x-0 top-0 z-10 flex items-end justify-center pb-3 px-16 pointer-events-none
-          border-b border-white/[.06] transition-opacity duration-150 ${compact ? 'opacity-100' : 'opacity-0'}`}
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 14px)' }}
-      >
-        <span className="text-[17px] font-semibold text-label truncate">{spot.name}</span>
-        {/* Rendered only while compact: the hero's own Close is the one in view otherwise */}
-        {compact && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t('close')}
-            className="no-min-size pointer-events-auto absolute left-3 w-11 h-11 grid place-items-center rounded-full"
-            style={{ bottom: '1px' }}
-          >
-            <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
-              <X className="w-4 h-4 text-label-secondary" strokeWidth={2.5} />
-            </span>
-          </button>
-        )}
-      </div>
+      <CompactBar title={spot.name} shown={compact} onClose={onClose} back={back} />
 
       <div
         onScroll={(e) => setCompact(e.currentTarget.scrollTop > COMPACT_AFTER)}
@@ -128,6 +109,7 @@ export default function SpotDetailsPanel({ spotId, onClose }: Readonly<SpotDetai
           imageCount={allGalleryImages.length}
           onOpenGallery={openGallery}
           onClose={onClose}
+          back={back}
           closeHidden={compact}
         />
 

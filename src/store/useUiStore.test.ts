@@ -13,7 +13,7 @@ vi.mock('@/store/useMapThemeStore', async () => {
 });
 
 import { useMapThemeStore } from '@/store/useMapThemeStore';
-import { isSpotPanel, useUiStore, type ActivePanel } from './useUiStore';
+import { hasBackStep, isSpotPanel, useUiStore, type ActivePanel } from './useUiStore';
 
 const theme = () => useMapThemeStore.getState().theme;
 const ui = () => useUiStore.getState();
@@ -28,6 +28,8 @@ beforeEach(() => {
     movedBannerVisible: false,
     previewSpotId: null,
     locateRequest: 0,
+    returnTo: null,
+    focusRequest: null,
   });
   useMapThemeStore.setState({ theme: 'dark' });
 });
@@ -200,6 +202,109 @@ describe('place card (design 1E)', () => {
     ui().previewSpot('b');
     ui().startSelectingLocation('dark');
     expect(ui().previewSpotId).toBeNull();
+  });
+});
+
+describe('opening a spot from a list, and back', () => {
+  it('from the profile: closes it, asks the map to fly, and shows the card on arrival', () => {
+    ui().openPanel('profile');
+    ui().openSpotFromList('s1', 'profile');
+    expect(ui()).toMatchObject({ activePanel: 'none', previewSpotId: null, returnTo: 'profile', focusRequest: { spotId: 's1', seq: 1 } });
+    ui().arriveAtSpot('s1');
+    expect(ui()).toMatchObject({ previewSpotId: 's1', returnTo: 'profile' });
+    ui().openSpotFromList('s1', 'profile');
+    expect(ui().focusRequest).toEqual({ spotId: 's1', seq: 2 });
+  });
+
+  it('an arrival after something else was opened, or for another spot, shows nothing', () => {
+    ui().openSpotFromList('s1', 'profile');
+    ui().openPanel('discovery');
+    ui().arriveAtSpot('s1');
+    expect(ui().previewSpotId).toBeNull();
+    ui().closePanel();
+    ui().openSpotFromList('s1', 'profile');
+    ui().arriveAtSpot('s2');
+    expect(ui().previewSpotId).toBeNull();
+  });
+
+  it('back from the card or from its details returns to the profile', () => {
+    ui().openSpotFromList('s1', 'profile');
+    ui().arriveAtSpot('s1');
+    ui().goBack();
+    expect(ui()).toMatchObject({ activePanel: 'profile', previewSpotId: null, returnTo: null });
+
+    ui().openSpotFromList('s1', 'profile');
+    ui().arriveAtSpot('s1');
+    ui().openPanel(spot('s1')); // Details from the card keeps the way back
+    expect(ui().returnTo).toBe('profile');
+    ui().goBack();
+    expect(ui().activePanel).toBe('profile');
+  });
+
+  it('closing (swipe down, ×, a map tap) stays on the map', () => {
+    ui().openSpotFromList('s1', 'profile');
+    ui().arriveAtSpot('s1');
+    ui().previewSpot(null);
+    expect(ui()).toMatchObject({ activePanel: 'none', previewSpotId: null, returnTo: null });
+
+    ui().openSpotFromList('s1', 'profile');
+    ui().arriveAtSpot('s1');
+    ui().openPanel(spot('s1'));
+    ui().closeSpot();
+    expect(ui()).toMatchObject({ activePanel: 'none', returnTo: null });
+  });
+
+  it('a spot opened from Explore returns to Explore on close and on back', () => {
+    ui().openPanel('discovery');
+    ui().openSpotFromList('s1', 'discovery');
+    expect(ui()).toMatchObject({ activePanel: spot('s1'), returnTo: 'discovery' });
+    ui().closeSpot();
+    expect(ui()).toMatchObject({ activePanel: 'discovery', returnTo: null });
+    ui().openSpotFromList('s1', 'discovery');
+    ui().goBack();
+    expect(ui().activePanel).toBe('discovery');
+  });
+
+  it('another pin or panel drops the way back', () => {
+    ui().openSpotFromList('s1', 'profile');
+    ui().arriveAtSpot('s1');
+    ui().previewSpot('s2');
+    expect(ui().returnTo).toBeNull();
+    ui().openSpotFromList('s1', 'discovery');
+    ui().openPanel('profile');
+    expect(ui().returnTo).toBeNull();
+  });
+
+  it('back without a way back closes what is open, the add form and the picking included', () => {
+    ui().openPanel('profile');
+    ui().goBack();
+    expect(ui().activePanel).toBe('none');
+    ui().previewSpot('s1');
+    ui().goBack();
+    expect(ui().previewSpotId).toBeNull();
+
+    ui().startSelectingLocation('dark');
+    ui().goBack();
+    expect(ui().selectingLocation).toBe(false);
+    expect(theme()).toBe('dark');
+
+    ui().startSelectingLocation('light');
+    ui().selectLocation({ lat: 1, lng: 2 });
+    ui().goBack();
+    expect(ui()).toMatchObject({ activePanel: 'none', pendingLocation: null });
+    expect(theme()).toBe('light');
+  });
+
+  it('hasBackStep is true while anything is open', () => {
+    expect(hasBackStep(ui())).toBe(false);
+    ui().previewSpot('s1');
+    expect(hasBackStep(ui())).toBe(true);
+    ui().previewSpot(null);
+    ui().startSelectingLocation('dark');
+    expect(hasBackStep(ui())).toBe(true);
+    ui().cancelSelectingLocation();
+    ui().openPanel('auth');
+    expect(hasBackStep(ui())).toBe(true);
   });
 });
 

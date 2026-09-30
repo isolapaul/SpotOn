@@ -27,7 +27,7 @@ test('level-5 user: level pill, progress, tabs, highlight manager and level info
 
   // 2. Tabs: a non-admin sees only My Spots and Favorites
   await expect(page.getByRole('button', { name: /Pending Approval/ })).toHaveCount(0);
-  const ownPendingSpot = page.getByRole('heading', { name: 'E2E Level5 Pending 02' });
+  const ownPendingSpot = page.locator('button[aria-label="E2E Level5 Pending 02"]'); // the profile card (the pin has the same name)
   await expect(ownPendingSpot).toBeVisible();
   await page.getByRole('button', { name: 'Favorites', exact: true }).click();
   await expect(ownPendingSpot).toHaveCount(0);

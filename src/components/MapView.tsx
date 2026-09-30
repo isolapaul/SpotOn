@@ -12,6 +12,7 @@ import {
   DEFAULT_MAP_ZOOM,
   DELAYS,
   LOCATE_ZOOM,
+  SPOT_FOCUS,
   Z,
 } from '@/lib/constants';
 
@@ -30,6 +31,10 @@ interface MapViewProps {
   onSpotPreview?: (spotId: string) => void;
   onMapLoad?: () => void;
   onMapClick?: () => void;
+  /** Fly to this spot (opened from the profile); each request has a new `seq`. */
+  focusRequest?: { spotId: string; seq: number } | null;
+  /** The map reached the focused spot. */
+  onSpotArrive?: (spotId: string) => void;
 }
 
 // Pin icons (design 1D): one size at every zoom, anchored at the pin's tip. Icons are cached so
@@ -147,6 +152,54 @@ function LocationPanner({ userLocation, locateRequest }: { userLocation: { lat: 
   return null;
 }
 
+// Flies to a focused spot (opened from the profile) and reports the arrival, once per request. The spot
+// lands a little above the centre, clear of the place card; reduced motion jumps instead of flying.
+function SpotFocuser({ focus, spots, onArrive }: {
+  focus: { spotId: string; seq: number } | null;
+  spots: Spot[];
+  onArrive?: (spotId: string) => void;
+}) {
+  const map = useMap();
+  const served = useRef(0);
+  const onArriveRef = useRef(onArrive);
+  useEffect(() => {
+    onArriveRef.current = onArrive;
+  });
+  // Only the target matters: a spots snapshot during the flight must not restart or cancel it.
+  const target = focus ? spots.find((s) => s.id === focus.spotId)?.location ?? null : null;
+  const lat = target?.lat;
+  const lng = target?.lng;
+
+  useEffect(() => {
+    if (!focus || focus.seq === served.current || lat === undefined || lng === undefined) return;
+    served.current = focus.seq;
+    const zoom = Math.max(map.getZoom(), SPOT_FOCUS.zoom);
+    const lifted = map.project([lat, lng], zoom).add([0, SPOT_FOCUS.liftPx]);
+    const center = map.unproject(lifted, zoom);
+    let done = false;
+    const arrive = () => {
+      if (done) return;
+      done = true;
+      onArriveRef.current?.(focus.spotId);
+    };
+    const reduced = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      map.setView(center, zoom, { animate: false });
+      arrive();
+      return;
+    }
+    map.once('moveend', arrive);
+    map.flyTo(center, zoom, { duration: SPOT_FOCUS.durationS });
+    const fallback = setTimeout(arrive, SPOT_FOCUS.fallbackMs);
+    return () => {
+      clearTimeout(fallback);
+      map.off('moveend', arrive);
+    };
+  }, [focus, lat, lng, map]);
+
+  return null;
+}
+
 // Marks the selected pin's DOM (data-selected) so CSS grows it; the icons stay cached and shared.
 function useSelectedPin(markers: Map<string, L.Marker>, selectedSpotId: string | null, spots: Spot[]) {
   useEffect(() => {
@@ -190,6 +243,8 @@ export default function MapView({
   onSpotPreview,
   onMapLoad,
   onMapClick,
+  focusRequest = null,
+  onSpotArrive,
 }: Readonly<MapViewProps>) {
   const { theme } = useMapThemeStore();
   const [markers] = useState(() => new Map<string, L.Marker>());
@@ -209,6 +264,7 @@ export default function MapView({
       >
         <MapReadyNotifier onMapLoad={onMapLoad} />
         <LocationPanner userLocation={userLocation} locateRequest={locateRequest} />
+        <SpotFocuser focus={focusRequest} spots={spots} onArrive={onSpotArrive} />
         <TileLayerSwitcher theme={theme} />
         <ZoomBandTracker />
         <MapEventHandler

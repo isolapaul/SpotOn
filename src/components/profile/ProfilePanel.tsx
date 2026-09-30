@@ -20,9 +20,11 @@ import AdminTab from './tabs/AdminTab';
 interface ProfilePanelProps {
   isOpen: boolean;
   onClose: () => void;
+  /** A spot card was tapped: the profile closes and the map flies to the spot. */
+  onOpenSpot: (spotId: string) => void;
 }
 
-export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelProps>) {
+export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<ProfilePanelProps>) {
   const user = useUserStore((s) => s.user);
   const spots = useSpotStore((s) => s.spots);
   const [activeTab, setActiveTab] = useState<ProfileTab>('my-spots');
@@ -95,12 +97,12 @@ export default function ProfilePanel({ isOpen, onClose }: Readonly<ProfilePanelP
       />
 
       <div className="px-4">
-        {activeTab === 'my-spots' && <MySpotsTab user={user} spots={myAllSpots} levelInfo={levelInfo} />}
+        {activeTab === 'my-spots' && <MySpotsTab user={user} spots={myAllSpots} levelInfo={levelInfo} onOpenSpot={onOpenSpot} />}
 
-        {activeTab === 'favorites' && <FavoritesTab spots={favoriteSpots} />}
+        {activeTab === 'favorites' && <FavoritesTab spots={favoriteSpots} onOpenSpot={onOpenSpot} />}
 
         {/* Pending Spots Tab - Admin Only */}
-        {activeTab === 'pending' && userIsAdmin && <PendingTab spots={pendingSpots} />}
+        {activeTab === 'pending' && userIsAdmin && <PendingTab spots={pendingSpots} onOpenSpot={onOpenSpot} />}
 
         {/* Admin Panel - Super Admin Only */}
         {activeTab === 'admin' && userIsSuperAdmin && (

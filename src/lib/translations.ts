@@ -6,6 +6,8 @@ export const translations = {
     add: 'Hozzáadás',
     favorites: 'Kedvencek',
     profile: 'Profil',
+    backToProfile: 'Vissza a profilhoz',
+    backToExplore: 'Vissza a felfedezéshez',
     
     // Auth
     signIn: 'Bejelentkezés',
@@ -472,6 +474,8 @@ export const translations = {
     add: 'Add',
     favorites: 'Favorites',
     profile: 'Profile',
+    backToProfile: 'Back to profile',
+    backToExplore: 'Back to Explore',
     
     // Auth
     signIn: 'Sign In',
@@ -938,6 +942,8 @@ export const translations = {
     add: 'Hinzufügen',
     favorites: 'Favoriten',
     profile: 'Profil',
+    backToProfile: 'Zurück zum Profil',
+    backToExplore: 'Zurück zum Entdecken',
     
     // Auth
     signIn: 'Anmelden',

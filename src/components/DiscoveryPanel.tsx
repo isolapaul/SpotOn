@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useLayoutEffect, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { X, Navigation, Star } from 'lucide-react';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
 import { CATEGORIES } from '@/lib/categories';
 import { haversineKm } from '@/lib/geo';
 import { averageRating } from '@/lib/rating';
-import { DISCOVERY_BATCH_SIZE } from '@/lib/constants';
 import type { Spot, SpotCategory } from '@/store/useSpotStore';
+import { useDiscoveryStore, type DiscoverySort } from '@/store/useDiscoveryStore';
 import CategoryIcon from '@/components/ui/CategoryIcon';
 import PanelShell from './ui/PanelShell';
 import FeaturedSpot from './discovery/FeaturedSpot';
@@ -21,8 +22,6 @@ interface DiscoveryPanelProps {
   onSpotSelect: (spot: Spot) => void;
 }
 
-type SortOption = 'nearest' | 'best-rated';
-
 const chipClass = (active: boolean) =>
   `no-min-size flex-shrink-0 h-9 px-3.5 rounded-full text-[14px] font-semibold flex items-center gap-1.5 touch-manipulation
    transition-colors duration-200 active:scale-95 ${active ? 'bg-brand-600 text-white' : 'bg-white/[.08] text-label-secondary'}`;
@@ -31,9 +30,16 @@ const chipClass = (active: boolean) =>
 export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSelect }: Readonly<DiscoveryPanelProps>) {
   const { spots } = useSpotStore();
   const t = useT();
-  const [sortBy, setSortBy] = useState<SortOption>('best-rated');
-  const [filterCategory, setFilterCategory] = useState<SpotCategory | null>(null);
-  const [visibleCount, setVisibleCount] = useState(DISCOVERY_BATCH_SIZE);
+  // The list view outlives the panel (useDiscoveryStore): a spot opened from here returns to it.
+  const { sortBy, filterCategory, visibleCount, setSort, setCategory, showMore, rememberScroll } = useDiscoveryStore(
+    useShallow(({ sortBy, filterCategory, visibleCount, setSort, setCategory, showMore, rememberScroll }) =>
+      ({ sortBy, filterCategory, visibleCount, setSort, setCategory, showMore, rememberScroll })),
+  );
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // Back at the scroll position the list was left at (before paint, so it never jumps).
+  useLayoutEffect(() => {
+    if (isOpen && scrollRef.current) scrollRef.current.scrollTop = useDiscoveryStore.getState().scrollTop;
+  }, [isOpen]);
 
   const getDistance = useCallback(
     (spot: Spot): number | null =>
@@ -57,15 +63,11 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   const displayedSpots = useMemo(() => sortedSpots.slice(0, visibleCount), [sortedSpots, visibleCount]);
   const hasMore = visibleCount < sortedSpots.length;
 
-  const handleSortChange = (option: SortOption) => {
+  const handleSortChange = (option: DiscoverySort) => {
     if (option === 'nearest' && !userLocation) return;
-    setSortBy(option);
-    setVisibleCount(DISCOVERY_BATCH_SIZE);
+    setSort(option);
   };
-  const pickCategory = (category: SpotCategory | null) => {
-    setFilterCategory(category);
-    setVisibleCount(DISCOVERY_BATCH_SIZE);
-  };
+  const pickCategory = (category: SpotCategory | null) => setCategory(category);
 
   if (!isOpen) return null;
 
@@ -80,7 +82,12 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
 
   return (
     <PanelShell onClose={onClose} backdropLabel="Close discovery panel" variant="surface">
-      <div className="flex-1 overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
+      <div
+        ref={scrollRef}
+        onScroll={(e) => rememberScroll(e.currentTarget.scrollTop)}
+        className="flex-1 overflow-y-auto overscroll-contain"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}
+      >
         {/* Large title */}
         <header className="px-5 flex items-end justify-between gap-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.75rem)' }}>
           <div className="min-w-0">
@@ -164,7 +171,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
             {hasMore ? (
               <button
                 type="button"
-                onClick={() => setVisibleCount((c) => c + DISCOVERY_BATCH_SIZE)}
+                onClick={showMore}
                 className="w-full h-12 rounded-[14px] bg-white/[.08] text-brand-400 font-semibold text-[15px] touch-manipulation active:bg-white/[.12]"
               >
                 {t('loadMore')} ({sortedSpots.length - visibleCount} {t('spots')})

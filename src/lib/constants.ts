@@ -21,6 +21,12 @@ export const DEFAULT_MAP_CENTER: [number, number] = [47.4979, 19.0402];
 export const DEFAULT_MAP_ZOOM = 6;
 /** Zoom used when panning to the user's location. */
 export const LOCATE_ZOOM = 13;
+/**
+ * Flying to a spot opened from the profile: at least this zoom (pins, not dots), this long, with the
+ * spot this many px above the centre so the place card does not cover it; a fallback in case Leaflet
+ * never reports the end of the move.
+ */
+export const SPOT_FOCUS = { zoom: 16, durationS: 0.9, liftPx: 110, fallbackMs: 1600 } as const;
 /** Cached user location max age (sessionStorage and geolocation maximumAge). */
 export const LOCATION_CACHE_MAX_AGE_MS = 600_000;
 export const GEOLOCATION_TIMEOUT_MS = 10_000;

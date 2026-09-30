@@ -29,7 +29,7 @@ Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only 
 ## 3. Repository map
 
 ```
-src/app/page.tsx                 Orchestrator: wires useUiStore (activePanel, location selection), useAppBootstrap, useVisibleSpots and useUserLocation to the panels and the map
+src/app/page.tsx                 Orchestrator: wires useUiStore (activePanel, location selection, returnTo/focusRequest navigation), useAppBootstrap, useVisibleSpots and useUserLocation to the panels and the map
 src/app/layout.tsx               Metadata, viewport, <InstallGate/> overlay
 src/app/privacy, src/app/terms   Legal pages (A1), rendered by components/legal/LegalPage from src/content/legal/*.hu.ts
 src/app/account-deletion         Public account deletion page for Google Play (components/legal/AccountDeletionPage)
@@ -50,11 +50,13 @@ src/store/spotListeners.ts       The approved / own / admin spot listeners behin
 src/store/useUserStore.ts        Auth flows, user doc, terms acceptance, admins, username, profile images, highlights, account deletion
 src/store/useUploadStore.ts      Background uploads of new spots, photos and reviews (G4)
 src/store/useLocationStore.ts    Location status + sessionStorage cache; the only geolocation caller
+src/store/useDiscoveryStore.ts   Explore's sort, filter, batch and scroll, kept while it is closed
 src/store/use*Store.ts           language (selected language only), map theme (+ tile configs), notifications, push prompt, toast (forwards to notifications), ui
 src/hooks/useAppBootstrap.ts     Loading orchestration: auth + spots listeners, map ready, app-ready delays
 src/hooks/useSheetDrag.ts, useCardDrag.ts  Vertical sheet / place-card gestures (thresholds in lib/sheetGesture)
 src/hooks/useStandaloneFullHeight.ts  iOS standalone full-height fix (lib/appViewport)
 src/hooks/viewTransition.ts      runViewTransition for sheet and photo-morph transitions
+src/hooks/useSystemBack.ts       The system back steps back in the app (one same-URL history entry while anything is open)
 src/hooks/usePushNotifications.ts FCM permission/token handling
 src/hooks/useUserLocation.ts     The user's location (one automatic request + manual request), from useLocationStore
 src/hooks/useVisibleSpots.ts     Map spots filtered by role (admins: all, others: approved + own)

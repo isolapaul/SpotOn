@@ -5,6 +5,7 @@ import type { Spot } from '@/store/useSpotStore';
 import { useCardDrag } from '@/hooks/useCardDrag';
 import { useT } from '@/hooks/useT';
 import { Z } from '@/lib/constants';
+import BackButton, { type SpotBack } from '@/components/ui/BackButton';
 import PlaceCardContent from './PlaceCardContent';
 
 /** Exit animation length (Tailwind `animate-card-out`). */
@@ -16,6 +17,8 @@ interface PlaceCardProps {
   userLocation: { lat: number; lng: number } | null;
   onClose: () => void;
   onDetails: (spot: Spot) => void;
+  /** Opened from the profile: a back capsule to it (a pull down or Close stays on the map). */
+  back?: SpotBack;
 }
 
 /**
@@ -24,7 +27,7 @@ interface PlaceCardProps {
  * map tap or when dragged down. Pulled up, or its grabber tapped, it opens the spot's details
  * (owner request). It keeps the last spot while it animates out.
  */
-export default function PlaceCard({ spot, userLocation, onClose, onDetails }: Readonly<PlaceCardProps>) {
+export default function PlaceCard({ spot, userLocation, onClose, onDetails, back }: Readonly<PlaceCardProps>) {
   const [shown, setShown] = useState<Spot | null>(spot);
   const [prev, setPrev] = useState<Spot | null>(spot);
   const [leaving, setLeaving] = useState(false);
@@ -83,6 +86,9 @@ export default function PlaceCard({ spot, userLocation, onClose, onDetails }: Re
         >
           <span aria-hidden="true" className="block mx-auto w-9 h-[5px] rounded-full bg-white/25 transition-colors group-active:bg-white/50" />
         </button>
+        {back && !leaving && (
+          <BackButton label={back.label} ariaLabel={back.ariaLabel} onClick={back.onBack} tone="sheet" className="mb-3 -ml-0.5" />
+        )}
         <PlaceCardContent
           key={shown.id}
           spot={shown}

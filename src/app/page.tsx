@@ -19,13 +19,14 @@ import MovedBanner from '@/components/MovedBanner';
 import { useShallow } from 'zustand/react/shallow';
 import { useUserStore } from '@/store/useUserStore';
 import { useMapThemeStore } from '@/store/useMapThemeStore';
-import { isSpotPanel, useUiStore } from '@/store/useUiStore';
+import { hasBackStep, isSpotPanel, useUiStore, type ReturnTarget } from '@/store/useUiStore';
 import { useT } from '@/hooks/useT';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 import { useIsClient } from '@/hooks/useIsClient';
 import { useInitialLanguage } from '@/hooks/useInitialLanguage';
 import { useMapThemeAttribute } from '@/hooks/useMapThemeAttribute';
 import { useStandaloneFullHeight } from '@/hooks/useStandaloneFullHeight';
+import { useSystemBack } from '@/hooks/useSystemBack';
 import { runViewTransition } from '@/hooks/viewTransition';
 import { useVisibleSpots } from '@/hooks/useVisibleSpots';
 import { useUserLocation } from '@/hooks/useUserLocation';
@@ -54,9 +55,14 @@ export default function Home() {
   const movedBannerVisible = useUiStore((s) => s.movedBannerVisible);
   const previewSpotId = useUiStore((s) => s.previewSpotId);
   const locateRequest = useUiStore((s) => s.locateRequest);
+  const returnTo = useUiStore((s) => s.returnTo);
+  const focusRequest = useUiStore((s) => s.focusRequest);
+  const canGoBack = useUiStore(hasBackStep);
   const { openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot } =
     useUiStore(useShallow(({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot }) =>
       ({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot })));
+  const { openSpotFromList, arriveAtSpot, closeSpot, goBack } =
+    useUiStore(useShallow(({ openSpotFromList, arriveAtSpot, closeSpot, goBack }) => ({ openSpotFromList, arriveAtSpot, closeSpot, goBack })));
 
   // Map: the shared location, or the default centre once location is denied (dot + one-time pan).
   const mapLocation = userLocation
@@ -69,6 +75,18 @@ export default function Home() {
   // Full-screen panels open and close as sheets; the place card's Details morphs its photo into the hero.
   const openSheet = (p: Parameters<typeof openPanel>[0]) => runViewTransition(() => openPanel(p));
   const closeSheet = () => runViewTransition(closePanel);
+  const openFromList = (spotId: string, from: ReturnTarget) => runViewTransition(() => openSpotFromList(spotId, from));
+  const back = () => runViewTransition(goBack);
+  // The system back steps back in the app (Android back gesture, browser Back) while anything is open.
+  useSystemBack(canGoBack, `${JSON.stringify(activePanel)}|${previewSpotId}`, back);
+  // The way back to the list a spot was opened from (the details, and the place card for the profile).
+  const backToList = returnTo
+    ? {
+        label: t(returnTo === 'profile' ? 'profile' : 'explore'),
+        ariaLabel: t(returnTo === 'profile' ? 'backToProfile' : 'backToExplore'),
+        onBack: back,
+      }
+    : undefined;
 
   const handleAddSpotClick = () => {
     // Pick the location on the satellite map for accuracy (signed in only)
@@ -108,7 +126,7 @@ export default function Home() {
         isOpen={activePanel === 'discovery'}
         onClose={closeSheet}
         userLocation={userLocation}
-        onSpotSelect={(spot) => openSheet({ type: 'spot', spotId: spot.id })}
+        onSpotSelect={(spot) => openFromList(spot.id, 'discovery')}
       />
       {/* Authentication Modal */}
       <AuthModal isOpen={activePanel === 'auth'} onClose={closePanel} />
@@ -119,9 +137,9 @@ export default function Home() {
       {/* Add Spot Modal */}
       <AddSpotModal isOpen={activePanel === 'addSpot'} onClose={closeAddSpot} selectedLocation={pendingLocation} />
       {/* Spot Details Panel */}
-      <SpotDetailsPanel spotId={spotId} onClose={closeSheet} />
+      <SpotDetailsPanel spotId={spotId} onClose={() => runViewTransition(closeSpot)} back={backToList} />
       {/* Profile Panel */}
-      <ProfilePanel isOpen={activePanel === 'profile'} onClose={closeSheet} />
+      <ProfilePanel isOpen={activePanel === 'profile'} onClose={closeSheet} onOpenSpot={(id) => openFromList(id, 'profile')} />
       {/* Full-screen map background */}
       <MapView
         isAddingSpot={selectingLocation}
@@ -134,6 +152,8 @@ export default function Home() {
         onSpotPreview={previewSpot}
         onMapLoad={onMapLoad}
         onMapClick={onMapClick}
+        focusRequest={focusRequest}
+        onSpotArrive={arriveAtSpot}
       />
       {/* Empty state (shares the top-left slot with the move banner) */}
       {visibleSpots.length === 0 && !selectingLocation && !movedBannerVisible && (
@@ -154,6 +174,7 @@ export default function Home() {
         userLocation={userLocation}
         onClose={() => previewSpot(null)}
         onDetails={(spot) => runViewTransition(() => openPanel({ type: 'spot', spotId: spot.id }), 'morph')}
+        back={returnTo === 'profile' ? backToList : undefined}
       />
       {/* Launcher (design 1C) */}
       <BottomNavigation

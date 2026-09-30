@@ -15,9 +15,10 @@ interface MySpotsTabProps {
   /** All of the user's spots (approved + pending). */
   spots: Spot[];
   levelInfo: LevelInfo;
+  onOpenSpot: (spotId: string) => void;
 }
 
-export default function MySpotsTab({ user, spots, levelInfo }: Readonly<MySpotsTabProps>) {
+export default function MySpotsTab({ user, spots, levelInfo, onOpenSpot }: Readonly<MySpotsTabProps>) {
   const t = useT();
   const [showHighlightPanel, setShowHighlightPanel] = useState(false);
   const [showCustomizationPanel, setShowCustomizationPanel] = useState(false);
@@ -59,7 +60,7 @@ export default function MySpotsTab({ user, spots, levelInfo }: Readonly<MySpotsT
       {showCustomizationPanel && levelInfo.level >= 5 && <NameCustomizer user={user} />}
 
       {/* My Spots List */}
-      <MySpotList spots={spots} />
+      <MySpotList spots={spots} onOpenSpot={onOpenSpot} />
     </div>
   );
 }
