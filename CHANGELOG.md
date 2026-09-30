@@ -39,6 +39,10 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - Search in Explore: spots by name, and people by username.
 - Notifications for follow requests, accepted requests and new spots from people you follow (with their own switch).
 
+### Changed (legal)
+- The Privacy Policy and the Terms of Use describe the new features (bio, follows, private profiles, search, XP levels, moderation with reasons, the map provider) and say that removals are announced in the app with the reason. Everyone is asked to accept the new version once.
+- Both documents are also available in English (/privacy/en, /terms/en); the English and German app link there. The Hungarian version is authoritative.
+
 ### Changed
 - The browser and system bars use the app's dark background colour.
 

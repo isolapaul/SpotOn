@@ -1,7 +1,8 @@
 'use client';
 
 import { Fragment } from 'react';
-import { useT } from '@/hooks/useT';
+import { useLanguage, useT } from '@/hooks/useT';
+import { legalHref } from '@/lib/legal';
 import { splitSlots } from '@/lib/i18n';
 import type { TranslationKey } from '@/lib/translations';
 
@@ -11,9 +12,10 @@ import type { TranslationKey } from '@/lib/translations';
  */
 export default function LegalNotice({ textKey, className }: Readonly<{ textKey: TranslationKey; className: string }>) {
   const t = useT();
+  const language = useLanguage();
   const links = {
-    terms: { href: '/terms', label: t('authTermsLink') },
-    privacy: { href: '/privacy', label: t('authPrivacyLink') },
+    terms: { href: legalHref('terms', language), label: t('authTermsLink') },
+    privacy: { href: legalHref('privacy', language), label: t('authPrivacyLink') },
   } as const;
 
   return (

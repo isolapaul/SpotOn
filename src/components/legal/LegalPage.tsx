@@ -23,14 +23,22 @@ function Block({ block }: Readonly<{ block: LegalBlock }>) {
 }
 
 /** A legal document page (privacy policy, terms). The body is fixed for the map, so this scrolls itself. */
-export default function LegalPage({ doc }: Readonly<{ doc: LegalDocument }>) {
+/** `other`: the same document in the other language (Hungarian is authoritative, item 9). */
+export default function LegalPage({ doc, other }: Readonly<{ doc: LegalDocument; other?: { href: string; label: string } }>) {
   return (
     <div className="fixed inset-0 overflow-y-auto bg-slate-950 text-white/80">
-      <article lang="hu" className="max-w-2xl mx-auto px-5 py-8" style={{ paddingTop: 'calc(2rem + env(safe-area-inset-top))' }}>
-        <Link href="/" className="inline-flex items-center gap-2 text-sky-400 hover:text-sky-300 text-sm font-medium mb-6">
-          <ArrowLeft className="w-4 h-4" />
-          SpotOn
-        </Link>
+      <article lang={doc.lang ?? 'hu'} className="max-w-2xl mx-auto px-5 py-8" style={{ paddingTop: 'calc(2rem + env(safe-area-inset-top))' }}>
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/" className="inline-flex items-center gap-2 text-sky-400 hover:text-sky-300 text-sm font-medium">
+            <ArrowLeft className="w-4 h-4" />
+            SpotOn
+          </Link>
+          {other && (
+            <Link href={other.href} hrefLang={other.href.endsWith('/en') ? 'en' : 'hu'} className="text-sky-400 hover:text-sky-300 text-sm font-medium">
+              {other.label}
+            </Link>
+          )}
+        </div>
         <h1 className="text-white text-3xl font-bold tracking-tight mb-1">{doc.title}</h1>
         <p className="text-white/50 text-sm mb-6">{doc.updated}</p>
         <div className="space-y-3 mb-8">
