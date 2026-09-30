@@ -1,6 +1,6 @@
 # SpotOn Cloud Functions
 
-Server-side logic for SpotOn: admin management, usernames and public profiles, spot image likes and additions, spot highlights, and push notifications.
+Server-side logic for SpotOn: admin management, usernames and public profiles, spot image likes and additions, spot highlights, account deletion and push notifications.
 Together with the Firestore/Storage rules (`firestore.rules`, `storage.rules` in the repository root) these functions are the authorization boundary; UI checks are only for user experience.
 
 ## Runtime
@@ -30,8 +30,10 @@ Together with the Firestore/Storage rules (`firestore.rules`, `storage.rules` in
 | `lookupUserByEmail` | Callable | Finds a user by email for the admin management screen | Super admin only |
 | `addAdmin` | Callable | Creates `admins/{uid}` with `role: 'admin'` for a user found by email | Super admin only |
 | `removeAdmin` | Callable | Deletes an `admins/{uid}` document (a super admin cannot be removed) | Super admin only |
+| `deleteAccount` | Callable | Deletes the caller's account: reviews, photos on others' spots, likes, highlights, profile files, username, user doc and Auth user; own spots stay under the `deleted-user` placeholder owner, with their photos moved out of the user's folder | Signed-in users, not admins (the typed confirmation must match) |
 
-The super admin is the `admins/{uid}` document with `role: 'super'`; it is created once with `scripts/bootstrap-super-admin.ts` (see `docs/security-rollout.md`).
+The super admin is the `admins/{uid}` document with `role: 'super'`. It exists already; to recreate it (for example on a new project), promote an existing Auth user with
+`npx tsx scripts/bootstrap-super-admin.ts --project <PROJECT_ID> --email <EMAIL>` (dry run; add `--apply` to write). The script uses Application Default Credentials.
 
 > **Never rename or drop an exported function; renaming deletes it on deploy.**
 > The deployed function with the old name is removed and clients that still call it break.
@@ -69,4 +71,4 @@ npx firebase emulators:start --only auth,firestore,storage,functions --project d
 firebase deploy --only functions
 ```
 
-Paul only, as a manual step, in the order described in [`docs/security-rollout.md`](../docs/security-rollout.md). Agents never deploy.
+Paul only, as a manual step (see [`docs/deploy.md` §16](../docs/deploy.md#16-firebase-deploys-functions-rules-indexes)). Agents never deploy.

@@ -18,7 +18,7 @@ export function getMovedTo(): URL | null {
   return parseMovedTo(process.env.NEXT_PUBLIC_MOVED_TO);
 }
 
-/** Dismissal is permanent per device (ROADMAP Q10): only the exact value '1' counts, with no expiry. */
+/** Dismissal is permanent per device (owner decision): only the exact value '1' counts, with no expiry. */
 export function isBannerDismissed(stored: string | null): boolean {
   return stored === '1';
 }

@@ -50,7 +50,8 @@ export const claimUsername = onCall(async (request) => {
       if (!user.exists) {
         throw new HttpsError("failed-precondition", "User profile missing");
       }
-      // Transitional guard: users not yet registered by the backfill.
+      // Legacy guard: usernames the one-off backfill (T09) could not register (duplicates, invalid
+      // legacy names) have no usernames/{name} doc, so the users collection is checked as well.
       const legacy = reg.exists ? null :
         await tx.get(db.collection("users").where("username", "==", name).limit(2));
       const current: unknown = user.get("username");

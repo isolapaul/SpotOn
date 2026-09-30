@@ -24,7 +24,7 @@ Browser
 - It runs as uid/gid 1000, with a read-only root filesystem, all capabilities dropped and `no-new-privileges`. Writes go only to two tmpfs mounts (`/tmp`, `/app/.next/cache`).
 - It is pinned by tag **and** digest and labelled `com.centurylinklabs.watchtower.enable=false`, so Watchtower never touches it. Updates happen only through `./update.sh` (§7), which verifies the cosign signature first.
 
-**Where this fits:** ROADMAP §4 step 4 (after the Cloud Functions deploy, the backfill, the transitional rules and the index deploy; about 1 h before the final rules deploy, in the same session). Release from the same commit as the rules and indexes (`docs/security-rollout.md` §0).
+**Where this fits:** the container is the client half of a release. When a release also changes Cloud Functions, rules or indexes, deploy those as described in §16, in that section's order.
 
 ## 2. Prerequisites
 
@@ -36,7 +36,7 @@ Browser
   ```
 - cosign v3 installed on the server (§5).
 - Paul's GitHub account (`isolapaul`) has access to the private package `ghcr.io/isolapaul/spoton`.
-- Server architecture is amd64 (ROADMAP Q8). On any other architecture, stop: the cosign binary name and the image platform change.
+- Server architecture is amd64 (assumed: i5-8500T). On any other architecture, stop: the cosign binary name and the image platform change.
 
 ## 3. GitHub repository variables
 
@@ -56,7 +56,7 @@ These are **variables, not secrets**: they are public client config that gets co
 
 The container build refuses to run without the last two (`scripts/check-public-env.mjs --production`).
 
-Any change to these requires a new tag and release (ROADMAP trap 5). Setting them in the server's `.env` does nothing.
+Any change to these requires a new tag and release (`NEXT_PUBLIC_*` values are compiled into the bundle). Setting them in the server's `.env` does nothing.
 
 Check that the package is **Private**: GitHub → Profile → Packages → `spoton` → Package settings.
 
@@ -81,7 +81,7 @@ One-time settings in the GitHub repository before the first `v*` tag is pushed:
 5. **After the first tag push:** GitHub → Profile → Packages → `spoton` → Package settings. The package must be **Private**, linked to `isolapaul/SpotOn`, and the repository must have **Actions** access (Manage Actions access), so that `image-rescan` can pull it with its read-only token.
 6. **Workflow artifacts are public for 1 day.** On a public repository, the `release-image` artifact (OCI image + SBOM) of each release run can be downloaded by anyone for 1 day (`retention-days: 1`). This is accepted: it contains only public code and the public `NEXT_PUBLIC_*` values, nothing from `.env`.
 
-### Optional, later: Dependabot for the compose file (ROADMAP Q4)
+### Optional, later: Dependabot for the compose file
 
 Do this only **after** the first real release is deployed, i.e. once `deploy/docker-compose.yml` in the repository holds a real `tag@digest` instead of the all-zero placeholder. It is not set up by default.
 
@@ -113,7 +113,7 @@ Run as `brvpaul`.
 - Create a classic PAT: GitHub → Settings → Developer settings → Personal access tokens → **Tokens (classic)** → Generate new token (classic).
   - Scope: **only** `read:packages`.
   - Expiry: 1 year. Put a calendar reminder a week before it expires.
-  - The GitHub Container Registry still requires a **classic** PAT; fine-grained tokens are not supported for it (ROADMAP Q3; sources: <https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry>, <https://github.com/orgs/community/discussions/38467>). Re-check this if GitHub adds fine-grained support, and switch to a read-only fine-grained token then.
+  - The GitHub Container Registry still requires a **classic** PAT; fine-grained tokens are not supported for it (sources: <https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry>, <https://github.com/orgs/community/discussions/38467>). Re-check this if GitHub adds fine-grained support, and switch to a read-only fine-grained token then.
 - Log in and lock down the credential file (the first command waits for you to paste the token; nothing is echoed):
   ```bash
   read -rs GHCR_PAT && echo "$GHCR_PAT" | docker login ghcr.io -u isolapaul --password-stdin && unset GHCR_PAT
@@ -160,10 +160,10 @@ The copied `docker-compose.yml` still contains the placeholder `v0.0.0@sha256:00
 
 ```bash
 cd /srv/docker/spoton
-./update.sh v2.1.0                           # tag from the release / Dependabot PR
+./update.sh v2.0.2                           # tag from the release / Dependabot PR
 ```
 
-A release starts when a `vX.Y.Z` tag is pushed on the commit to release; the release workflow then builds, scans, signs and publishes the image. For the first release (the security rollout) the tag is created on the deploy commit in `docs/security-rollout.md` §0.
+A release starts when a `vX.Y.Z` tag is pushed on the commit to release; the release workflow then builds, scans, signs and publishes the image.
 
 What the script (`deploy/update.sh`) does, in order:
 
@@ -206,14 +206,14 @@ docker exec spoton /nodejs/bin/node -e 'fetch("http://127.0.0.1:3000/api/health"
 
 ## 10. Firebase and Google Cloud consoles
 
-One-time, before switching users to the new domain (ROADMAP trap 4).
+One-time settings for the domain (already done for `spoton.isolapaul.hu`; repeat them for any new domain).
 
 - Firebase console → Authentication → Settings → **Authorized domains** → add `spoton.isolapaul.hu`.
 - Google Cloud console → APIs & Services → Credentials → OAuth 2.0 Client IDs → *Web client (auto created by Google Service)*:
   - **Authorized JavaScript origins** += `https://spoton.isolapaul.hu`;
   - **Authorized redirect URIs** += `https://spoton.isolapaul.hu/__/auth/handler`.
 - Google Cloud console → APIs & Services → Credentials → the Browser API key: if it has HTTP-referrer restrictions, add `https://spoton.isolapaul.hu/*`.
-- Cloud Functions: deploy with `APP_URL=https://spoton.isolapaul.hu` (T08 parameter; see `docs/security-rollout.md`).
+- Cloud Functions: `APP_URL=https://spoton.isolapaul.hu` (the notification click link; saved in the git-ignored `functions/.env.<PROJECT_ID>` at the first deploy).
 
 The `/__/auth/*` proxy to Firebase (T15) is built into the image; `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=spoton.isolapaul.hu` (§3) makes the client use it.
 
@@ -226,7 +226,7 @@ cp docker-compose.yml.<timestamp>.bak docker-compose.yml && docker compose up -d
 
 The newest `.bak` (written by the failed/bad update) holds the previous `tag@digest`; check with `grep -H image: docker-compose.yml.*.bak`.
 The previous digest is still in GHCR, because releases never overwrite tags, and it was already verified when it was first deployed.
-First release: there is no previous digest (the only `.bak` holds the `v0.0.0` placeholder); stop the container with `docker compose down` instead (`docs/security-rollout.md` §9).
+If the newest `.bak` still holds the `v0.0.0` placeholder (the very first install), there is no previous release: stop the container with `docker compose down` instead.
 
 ## 12. Backups
 
@@ -271,7 +271,7 @@ Only after the post-deploy checklist (§13) is green on `spoton.isolapaul.hu`.
 
 The Vercel build then shows one slim banner below the top buttons ("SpotOn has a new address: spoton.isolapaul.hu",
 Open and Hide). Hide hides it for good on that device. On the old domain the install overlay and the notification
-prompt are switched off (ROADMAP Q2). The Docker image cannot get the variable (`check-public-env.mjs --production`
+prompt are switched off (owner decision). The Docker image cannot get the variable (`check-public-env.mjs --production`
 rejects it), so the banner never appears on the new domain.
 
 Check: open `https://spot-on-rho.vercel.app` → one banner and no install overlay.
@@ -307,3 +307,26 @@ Delete the Vercel project. Then, in a cleanup task, remove `vercel.json`, `deplo
 `src/components/MovedBanner.tsx`, `src/lib/movedTo.ts` (+ test), the guards in `InstallGate` and
 `NotificationPrompt`, the `movedBanner*` translation keys, the `NEXT_PUBLIC_MOVED_TO` entry in `next.config.mjs`
 and `e2e/moved-banner.spec.ts`.
+
+## 16. Firebase deploys (functions, rules, indexes)
+
+Cloud Functions, Firestore/Storage rules and indexes are deployed by hand from a checkout of the release tag, never by an agent or CI.
+`<PROJECT_ID>` is the Firebase project id (Console → Project settings).
+
+```bash
+git checkout vX.Y.Z
+npm --prefix functions ci && npm --prefix functions run build
+npx firebase deploy --only functions --project <PROJECT_ID>            # or functions:<name> for one function
+npx firebase deploy --only firestore:indexes --project <PROJECT_ID>    # wait until they show "Enabled"
+npx firebase deploy --only firestore:rules,storage --project <PROJECT_ID>
+```
+
+Order, when a release needs several of them:
+
+1. **Functions and indexes first.** A new client that calls a missing callable or runs a query without its index fails.
+2. **Rules before the client when the rules only allow more** (for example a new user field such as `termsVersion`): the old client is unaffected, and the new client needs them.
+3. **Rules after the client when they allow less.** Rules do not filter queries, so an old client whose query the new rules no longer allow breaks for everyone; release the client that stops making it first.
+4. Never rename or drop an exported function: the old name is deleted on deploy and clients that still call it break.
+
+Keep a copy of the rules currently in production (Console → Firestore → Rules) before replacing them, so a bad deploy can be reverted by pasting them back.
+

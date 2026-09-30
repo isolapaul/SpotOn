@@ -4,7 +4,8 @@ rules_version = '2';
 // Server-only data (publicProfiles, usernames, admins, users.{username, customName*, highlightedSpots,
 // quest*, spotsCount}, spots.{highlighted, isHighlighted, spotImages likes/additions}) is written by
 // Cloud Functions through the Admin SDK, which bypasses these rules.
-// Rules do not filter queries (ROADMAP trap 1): every client query must be provably allowed (T30 spots).
+// Rules do not filter queries: every client query must be provably allowed (T30 spots), or it fails
+// for everyone.
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }

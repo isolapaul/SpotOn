@@ -1,199 +1,105 @@
-# SpotOn - Discover & Share Hidden Gems
+# SpotOn
 
-> **Live:** https://spoton.isolapaul.hu
+**Find the places worth going to, and share your own.**
 
-SpotOn is a mobile-first Progressive Web App for discovering and sharing places ("spots") on a map.
-Users sign in with Google or email, add spots with photos, review and favourite them, and level up by contributing; admins approve new spots.
-The web app runs as a hardened Docker container on a home server behind Cloudflare, and Firebase (Auth, Firestore, Storage, Cloud Messaging, Cloud Functions) is the backend.
-The UI is available in Hungarian (default), English and German.
+SpotOn is a map of hidden gems picked by the people who use it: viewpoints, quiet parks, date spots, beaches and hiking spots.
+You add a place with a few photos, the community rates and saves it, and every spot you contribute levels you up.
 
----
+- **Live:** https://spoton.isolapaul.hu (installable web app for iOS, Android and desktop)
+- **Android:** a Google Play release is planned
+- **Languages:** Hungarian, English, German
+- **Privacy policy:** https://spoton.isolapaul.hu/privacy · **Terms:** https://spoton.isolapaul.hu/terms
 
-## Features
-
-- Interactive Leaflet map (OpenStreetMap, CARTO and Esri tiles) with category emoji markers, GPS location and 5 map themes (Standard, Light, Dark, Silver, Satellite).
-- Discovery panel: sort spots by nearest or best rated, filter by 9 categories.
-- Add spots with up to 20 photos, compressed in the browser before upload.
-- New spots stay pending until an admin approves them; spots added by admins are approved immediately.
-- Photo galleries: other users can add photos to a spot and like individual images.
-- 5-star reviews with comments and an average rating per spot.
-- Favourites list and your own spots grouped by status (approved / pending).
-- Profiles with photo, banner and a unique username (claimed server-side).
-- Levels 1-5 based on spots created (3 / 10 / 15 / 20); perks are name colours, 7-day spot highlights (level 3+) and a custom name colour and font (level 5). Spot counts, highlights and name styles are checked by Cloud Functions.
-- Push notifications (Firebase Cloud Messaging) for approvals, new reviews, favourites and, for admins, new pending spots, with per-type settings and an in-app notification centre.
-- Role-based admins stored in `admins/{uid}`: admins approve or delete spots; the super admin (`role: 'super'`) adds and removes admins through Cloud Functions.
-- Feedback form (message plus up to 3 screenshots) delivered by email; in-app patch notes.
-- Installable PWA with iOS safe-area support and navigation hand-off to Google Maps / Apple Maps.
+This is a personal project. The code is public so that it can be read; it is not open source (see [License](#license)).
 
 ---
 
-## Architecture
+## What you can do
+
+- **Explore the map.** Every spot is a pin with its category. Tap one for a place card with the photo, rating and distance, and pull it up for the full page. Choose from five map styles, including satellite.
+- **Discover.** Explore lists the spots nearest you or the best rated, filtered by nine categories.
+- **Add a spot** with up to 20 photos, which are compressed on your phone before upload. An admin approves new spots before everyone sees them.
+- **Review, save and share.** Rate spots, write reviews, add your own photos to other spots, like photos and keep favourites.
+- **Level up.** Your 3rd, 10th, 15th and 20th spot each unlock a new level, with a badge, a name colour, highlight slots for your own spots, and at the top level your own name style.
+- **Stay in the loop.** Optional push notifications when your spot is approved, reviewed or saved.
+- **Own your data.** Delete your account in Settings at any time. See the privacy policy for what is kept and for how long.
+
+---
+
+## How it is built
+
+| Layer | Technology |
+|---|---|
+| App | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, installable PWA |
+| Map | Leaflet with OpenStreetMap, CARTO and Esri tiles |
+| State | Zustand |
+| Backend | Firebase: Authentication, Firestore, Storage, Cloud Messaging, and Cloud Functions v2 (`europe-west3`) |
+| Hosting | Hardened Docker container on a home server, reached through a Cloudflare Tunnel |
+| Quality | Vitest unit tests, Firestore/Storage rules tests and Playwright end-to-end tests against the Firebase emulators, in CI on every pull request |
 
 ```mermaid
 flowchart LR
-  U[Browser / PWA] -->|HTTPS| CF[Cloudflare edge]
-  CF -->|Tunnel| CD[cloudflared<br/>docker network: edge]
-  CD -->|HTTP :3000| APP[spoton container<br/>Next.js standalone, distroless]
-  APP -->|/__/auth proxy| FA[&lt;project&gt;.firebaseapp.com]
-  APP -->|SMTP, /api/feedback| MAIL[SMTP provider]
-  U -->|Firebase JS SDK| FB[(Auth · Firestore · Storage · FCM)]
-  U -->|callables| FN[Cloud Functions v2<br/>europe-west3]
+  U[Browser / PWA] -->|HTTPS| CF[Cloudflare]
+  CF -->|Tunnel| APP[SpotOn container<br/>Next.js, distroless]
+  U -->|Firebase SDK| FB[(Auth · Firestore · Storage · FCM)]
+  U -->|callables| FN[Cloud Functions]
   FB -->|triggers| FN
   FN -->|push| U
+  APP -->|feedback e-mail| MAIL[SMTP]
   U -->|map tiles| T[OSM · CARTO · Esri]
 ```
 
-- The container serves the Next.js 16 App Router app (`src/app`) and three API routes: `/api/feedback` (SMTP), `/api/firebase-messaging-sw` (generated FCM service worker) and `/api/health`. It is stateless; all data lives in Firebase.
-- The browser talks to Firebase directly through the JS SDK. `/__/auth/*` is proxied to `<project>.firebaseapp.com`, so the sign-in redirect runs on the app's own domain.
-- Cloud Functions (`functions/`) hold the server-side logic: admin management, usernames, likes, image additions, highlights, profile mirrors and notifications.
-- **Authorization is enforced by the Firestore/Storage rules (`firestore.rules`, `storage.rules`) and Cloud Functions, never by the UI.** UI checks are only for user experience.
-- Cloudflare terminates TLS; the container publishes no host ports and is reachable only by `cloudflared` on the docker network `edge`.
+**Security and privacy by design.**
+- Every read and write is checked on the server, by the Firestore and Storage rules and the Cloud Functions in this repository, not by the app's UI.
+- Pages send a strict, nonce-based Content Security Policy.
+- The container runs as a non-root user on a read-only file system, publishes no ports, and is deployed only when its cosign signature verifies.
+- All data stays in the EU: Firestore eur3, Storage EUR4, Functions in Frankfurt.
+- No ads, no analytics and no tracking cookies.
 
 ---
 
-## Local development
+## Repository layout
 
-**Prerequisites:** Node 22 (see `.nvmrc`) and Java 21 (for the Firebase emulators).
-
-```bash
-git clone https://github.com/isolapaul/SpotOn.git
-cd SpotOn
-npm ci
-```
-
-Create `.env.local` with the build-time `NEXT_PUBLIC_FIREBASE_*` values and, if you want to test the feedback form, the runtime `SMTP_*` / `FEEDBACK_RECIPIENT` values (see [Environment variables](#environment-variables)). Never commit it.
-
-```bash
-npm run dev          # http://localhost:3000
-```
-
-### Against the emulators (no real Firebase project)
-
-The emulator ports are configured in `firebase.json` (Auth 9099, Firestore 8080, Storage 9199, Functions 5001). The project id is always `demo-spoton`.
-
-```bash
-# terminal 1: emulators (functions need a build first)
-npm --prefix functions ci && npm --prefix functions run build
-npx firebase emulators:start --only auth,firestore,storage,functions --project demo-spoton
-
-# terminal 2 (optional): seed the E2E fixtures
-FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 npx tsx scripts/seed-emulator.ts
-
-# terminal 3: the app, connected to the emulators
-NEXT_PUBLIC_USE_EMULATORS=1 \
-NEXT_PUBLIC_FIREBASE_API_KEY=demo-key \
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=demo-spoton.firebaseapp.com \
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-spoton \
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=demo-spoton.appspot.com \
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=0 \
-NEXT_PUBLIC_FIREBASE_APP_ID=demo-app \
-NEXT_PUBLIC_FIREBASE_VAPID_KEY=demo-vapid \
-npm run dev
-```
-
-The automated suites start the emulators themselves: `npm run test:e2e` (Playwright, via `firebase emulators:exec`; it also seeds them with `scripts/seed-emulator.ts`) and `npm run test:rules` (Firestore/Storage emulators only).
-To run a single E2E spec, and for the sandbox caveats, see [`CLAUDE.md` §4](CLAUDE.md#4-commands).
-
----
-
-## Scripts
-
-| Script | Purpose |
+| Path | What is there |
 |---|---|
-| `npm run dev` | Next.js dev server on port 3000 |
-| `npm run build` | Production build (standalone output) |
-| `npm start` | Serve the production build |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Unit tests (Vitest) |
-| `npm run verify` | typecheck + lint + unit tests + build: the gate for every change |
-| `npm run verify:fn` | Functions build + lint + unit tests |
-| `npm run test:e2e` | Builds the functions, starts the Auth/Firestore/Storage/Functions emulators, seeds them and runs Playwright |
-| `npm run test:rules` | Firestore/Storage rules tests on the emulators (Java 21) |
-| `npm run functions:build` | Build the Cloud Functions |
-| `npm run functions:deploy` | `firebase deploy --only functions`: Paul only, see [`docs/security-rollout.md`](docs/security-rollout.md) |
-| `npm run functions:logs` | `firebase functions:log` |
-
-Cloud Functions (`npm --prefix functions run <script>`): `build`, `build:watch`, `lint`, `test`, `serve` (build + functions emulator), `shell`, `start`, `deploy`, `logs`. See [`functions/README.md`](functions/README.md).
+| `src/app` | Pages (`/`, `/privacy`, `/terms`) and API routes (`/api/feedback`, `/api/firebase-messaging-sw`, `/api/health`) |
+| `src/components`, `src/hooks`, `src/store`, `src/lib` | UI, React hooks, Zustand stores with the Firebase calls, and pure unit-tested helpers |
+| `src/content/legal` | The privacy policy and terms texts |
+| `functions/` | Cloud Functions (see [`functions/README.md`](functions/README.md)) |
+| `firestore.rules`, `storage.rules`, `tests/rules/` | Security rules and their tests |
+| `e2e/`, `scripts/seed-emulator.ts` | Playwright tests and their emulator fixtures |
+| `Dockerfile`, `deploy/`, `.github/workflows/` | Container image, server compose file and update script, CI and the signed release pipeline |
+| `docs/deploy.md` | Release and server runbook |
+| `docs/BACKLOG.md` | Open work |
+| `CLAUDE.md` | Conventions and rules for everyone (people and AI agents) who changes the code |
 
 ---
 
-## Environment variables
+## Development
 
-| Variable | Phase | Secret? | Set where (dev / container / Vercel) | Used by |
-|---|---|---|---|---|
-| `NEXT_PUBLIC_FIREBASE_API_KEY`, `…_AUTH_DOMAIN`, `…_PROJECT_ID`, `…_STORAGE_BUCKET`, `…_MESSAGING_SENDER_ID`, `…_APP_ID`, `…_VAPID_KEY` | build | no (public config) | `.env.local` / GitHub repo **variables** → Docker build args / Vercel env | `lib/firebase.ts`, SW route, push hook (`usePushNotifications`, `useUserStore`), `next.config.mjs`; `…_PROJECT_ID` also `/api/feedback` (ID-token check) |
-| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` (note) | build | no | container: `spoton.isolapaul.hu` (D6); Vercel: `<project>.firebaseapp.com`; dev: `localhost` or firebaseapp | Auth |
-| `NEXT_PUBLIC_USE_EMULATORS` | build | no | tests/dev only; rejected by the container build | `lib/firebase.ts`, CSP |
-| `NEXT_PUBLIC_MOVED_TO` | build | no | Vercel only (T19); rejected by the container build | `MovedBanner` |
-| `NEXT_PUBLIC_CONTROLLER_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` | build | no (published on the legal pages) | GitHub repo **variables** → Docker build args (required there) / Vercel env; unset in dev shows `[nincs megadva]` | `/privacy`, `/terms` |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | runtime | `SMTP_PASS` yes | `.env.local` / `/srv/docker/spoton/.env` (chmod 600) / Vercel env | `/api/feedback` |
-| `FEEDBACK_RECIPIENT` | runtime | no (personal) | same as SMTP; required, else 503 | `/api/feedback` |
-| `APP_URL` (functions param) | functions deploy | no | Firebase functions params | notification links |
-| `NEXT_DIST_DIR` | build | no | E2E only (T04, `.next-e2e`) | `next.config.mjs` `distDir` |
-| `VERCEL` | runtime | no | set automatically by Vercel only; switches `/api/feedback` IP source to `x-real-ip` (T14) | `src/app/api/feedback/route.ts` |
-| `FIREBASE_CONFIG`, `FUNCTIONS_EMULATOR`, `FIREBASE_STORAGE_EMULATOR_HOST` | functions runtime | no | set automatically by the Cloud Functions runtime / emulator; never set by hand | `functions/src/callables/spotImages.ts` (bucket name, emulator Storage URLs) |
+This is for the owner and invited contributors. Running the app for real needs its own Firebase project; everything below runs against the local Firebase emulators with the demo project `demo-spoton` instead.
 
-- **Changing any build-phase variable needs a new image or tag** ([ROADMAP](docs/ROADMAP.md) trap 5): `NEXT_PUBLIC_*` values are compiled into the bundle. Setting them in the server's `.env` does nothing. The container build validates them with `scripts/check-public-env.mjs --production`.
-- `NEXT_PUBLIC_*` values are public client config, never secrets. Keep `SMTP_PASS` and everything else out of git: put local values in `.env.local`. Only `.env`, `.env.local`, `.env.production` and `functions/.env.*` are git-ignored; other `.env.*` variants are not.
-- `APP_URL` for the emulator is in `functions/.env.demo-spoton`; for production it is entered at the first functions deploy (see [`docs/security-rollout.md`](docs/security-rollout.md)).
-- `NODE_ENV` is set by Next.js itself.
+Requirements: Node 22 (`.nvmrc`) and Java 21 (for the emulators).
 
----
+```bash
+npm ci && npm --prefix functions ci
+npm run verify        # typecheck, lint, unit tests, production build
+npm run verify:fn     # Cloud Functions build, lint and unit tests
+npm run test:rules    # security rules on the emulators
+npm run test:e2e      # Playwright end-to-end tests on the seeded emulators
+```
 
-## Deployment
+`npm run build` and the e2e tests need the public Firebase config as build-time variables. For the emulators, demo values are enough; see [`CLAUDE.md`](CLAUDE.md) §4.
 
-1. Push a tag `vX.Y.Z`.
-2. [`.github/workflows/release.yml`](.github/workflows/release.yml) builds the image, gates it with Trivy (HIGH/CRITICAL), and generates a CycloneDX SBOM.
-3. The scanned image is pushed by digest to the private registry `ghcr.io/isolapaul/spoton`, then signed and its SBOM attested with cosign (keyless).
-4. On the server, `./update.sh vX.Y.Z` verifies the signature, pins the digest, pulls and starts it: see [`docs/deploy.md`](docs/deploy.md).
-5. The old Vercel deployment is retired in stages: [`docs/deploy.md` §15 "Leaving Vercel"](docs/deploy.md#15-leaving-vercel-t19).
+Releases are `vX.Y.Z` tags. They build, scan, sign and publish the container image, which is then deployed on the server with `./update.sh`. See [`docs/deploy.md`](docs/deploy.md) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 
 ## Security
 
-The security boundary is server-side: Firestore and Storage rules in this repository plus Cloud Functions decide who may read and write what; the UI only mirrors those decisions.
-The web app sends a strict Content-Security-Policy and security headers (`next.config.mjs`).
-The container runs distroless as a non-root user with a read-only root filesystem, all capabilities dropped and no published ports, and only images whose cosign signature and SBOM attestation verify are deployed.
-
-- Audit: [`docs/audit/security-review.md`](docs/audit/security-review.md)
-- Production rollout of the rules and functions: [`docs/security-rollout.md`](docs/security-rollout.md)
-
-Please report vulnerabilities privately via GitHub's private vulnerability reporting (repository **Security** tab → **Report a vulnerability**), not in a public issue.
-
----
-
-## Contributing / agents
-
-- **Read [`CLAUDE.md`](CLAUDE.md) first**: stack, data model, commands and the hard rules for every change.
-- Plan and progress: [`docs/ROADMAP.md`](docs/ROADMAP.md); individual work items: [`docs/tasks/`](docs/tasks/).
-- Gates before every commit: `npm run verify`, `npm run verify:fn` (if `functions/` changed), `npm run test:rules` and `npm run test:e2e`.
-
----
-
-## PWA Installation
-
-### iOS (Safari)
-1. Open the website in Safari
-2. Tap the "Share" button
-3. Select "Add to Home Screen"
-
-### Android (Chrome)
-1. Open the website in Chrome
-2. Accept the "Add to Home screen" prompt, or use Menu > "Install app"
-
-### Desktop (Chrome/Edge)
-1. Click the "Install" icon in the address bar, or use Menu > "Install SpotOn"
-
----
+Please report vulnerabilities privately through GitHub's private vulnerability reporting (**Security** tab → **Report a vulnerability**), not in a public issue.
 
 ## License
 
-MIT License - Free to use and modify
-
----
-
-## Created By
-
-**Isola Paul Luka**
+Copyright © 2026 Isola Paul Luka. All rights reserved. See [`LICENSE`](LICENSE).
+The source code is published for reading only. It may not be copied, modified, redistributed or used, and the SpotOn name and logo may not be used, without written permission.
