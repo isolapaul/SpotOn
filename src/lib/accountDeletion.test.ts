@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { deleteAccountErrorKey } from './accountDeletion';
+import { deleteAccountErrorKey, deletionConfirmWord } from './accountDeletion';
+
+describe('deletionConfirmWord', () => {
+  it('prefers the username, then the e-mail, then "delete"', () => {
+    expect(deletionConfirmWord({ username: 'anna', email: 'a@example.com' })).toBe('anna');
+    expect(deletionConfirmWord({ username: '', email: 'a@example.com' })).toBe('a@example.com');
+    expect(deletionConfirmWord({ username: null, email: null })).toBe('delete');
+  });
+});
 
 describe('deleteAccountErrorKey', () => {
   it('maps the server refusals', () => {

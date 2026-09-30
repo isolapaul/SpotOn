@@ -7,6 +7,7 @@ import { useIsClient } from '@/hooks/useIsClient';
 import { useT } from '@/hooks/useT';
 import { splitBold } from '@/lib/i18n';
 import { getMovedTo } from '@/lib/movedTo';
+import { INSTALL_GATE_EXEMPT_PATHS } from '@/lib/constants';
 
 const DISMISS_KEY = 'spoton-install-prompt-dismissed';
 
@@ -38,8 +39,8 @@ export default function InstallGate() {
   const [dismissed, setDismissed] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const t = useT();
-  // The legal pages must stay readable without installing (A1).
-  const isLegalPage = ['/privacy', '/terms'].includes(usePathname() ?? '');
+  // The legal and account deletion pages must stay usable without installing (A1, Google Play).
+  const isLegalPage = INSTALL_GATE_EXEMPT_PATHS.includes(usePathname() ?? '');
   // Decided once after hydration (the server render and the first client render show nothing).
   const shouldPrompt = useMemo(() => isClient && shouldPromptInstall(), [isClient]);
   const isIOS = useMemo(() => isClient && /iPhone|iPad|iPod/i.test(navigator.userAgent), [isClient]);
