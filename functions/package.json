@@ -29,6 +29,7 @@
     "vitest": "5.0.2"
   },
   "private": true,
+  "license": "UNLICENSED",
   "overrides": {
     "gaxios": {
       "uuid": "11.1.1"

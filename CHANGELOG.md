@@ -1,6 +1,24 @@
 # Changelog
 
-## Unreleased
+Versions are the git tags that were released to the server (`vX.Y.Z`, see `docs/deploy.md`).
+Releases before the move to the container ran on Vercel and were not tagged; they are listed by date.
+
+## v2.0.2 — 2026-09-29
+
+### Fixed
+- The Light, Dark and Silver map styles no longer show CARTO's "API KEY REQUIRED" watermark: the tiles are requested with the app's CARTO key (`NEXT_PUBLIC_CARTO_API_KEY`, a build-time variable).
+- The Standard and Satellite maps are sharp on phones: on high-density screens they load the next zoom level at half size instead of stretching the tiles.
+
+## v2.0.1 — 2026-09-29
+
+Tagged by mistake on the v2.0.0 commit; the same code as v2.0.0. Skipped.
+
+## v2.0.0 — 2026-09-29
+
+### Added (legal, account)
+- Privacy policy (`/privacy`) and terms of use (`/terms`), in Hungarian, readable without installing the app and linked from Settings and the sign-in sheet.
+- Signing in or signing up accepts the terms (the sign-in sheet says so and links both documents); the accepted version and time are recorded. Users who signed up earlier are asked once to accept or sign out.
+- Delete your account in Settings: your profile, username, reviews, likes, highlights, profile pictures and photos on other people's spots are removed. Your own spots stay on the map without your name, photo or account id, and their photos move out of your folder.
 
 ### Fixed (design 1A)
 - The installed iPhone app now fills the whole screen: the map runs under the status bar and down to the bottom edge, with no band below it (a workaround for an iOS 26 bug). The page background follows the map style instead of black.
@@ -58,7 +76,9 @@
 - A review and photos can be sent together with one button; photos alone still work (no rating needed).
 - A network step that gets no answer within 60 seconds fails with a clear message and a Retry button instead of hanging; a retry never duplicates a spot, photo or review.
 
-## v2.1.0 — 2026-09-26
+## v1.0.0 — 2026-09-28
+
+The first release of the container at https://spoton.isolapaul.hu, with the security hardening.
 
 ### Changed
 - **New address: https://spoton.isolapaul.hu.** The old Vercel address shows one "SpotOn has moved" banner, later redirects permanently (308) and is then deleted. Users sign in once more on the new address and re-add it to the home screen (T19).
@@ -96,7 +116,7 @@
 - Custom name colour/font and notification settings survive a reload and a new sign-in (T11a).
 - Missing default avatar and manifest screenshot references (T15).
 
-## v2.0.0 — 2026-06-29
+## 2026-06-29 (Vercel, not tagged)
 
 ### Changed
 - Switched from Google Maps to OpenStreetMap/Leaflet (CARTO and Esri satellite tiles).
@@ -104,12 +124,12 @@
 - Refactored the core stores and components.
 - Removed the retro, purple and night map themes.
 
-## v1.1.0 — 2026-02-19
+## 2026-02-19 (Vercel, not tagged)
 
 ### Features
 - Satellite view on the map, bug fixes and small UI improvements.
 
-## v1.0.0 - Initial Production Release
+## Initial release (Vercel, not tagged)
 
 ### Features
 - **Map Exploration**: Interactive Google Maps integration with spot markers, clustering, and geolocation
