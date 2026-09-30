@@ -13,6 +13,8 @@ const GONE = { uid: 'e2e-delete-me', email: 'delete-me@spoton.test', username: '
 const OWN_SPOT = 'e2e-delete-own-spot';
 const OTHER_SPOT = 'e2e-delete-other-spot';
 const LEGACY = { uid: 'e2e-terms', email: 'terms@spoton.test', username: 'e2e_terms' };
+// Google Play: deleted through the public /account-deletion page.
+const WEB_GONE = { uid: 'e2e-web-delete', email: 'web-delete@spoton.test', username: 'e2e_web_delete' };
 
 /**
  * The Auth emulator's REST API with its admin token ("Bearer owner"). Not firebase-admin/auth: its
@@ -188,5 +190,65 @@ test.describe('account deletion', () => {
     expect(other?.imageUrls).toEqual(['https://example.com/owner.jpg']);
     expect(other?.primaryImageIndex).toBe(0);
     expect(other?.spotImages).toMatchObject([{ id: 'a', likes: 1, likedBy: [E2E.admin.uid] }]);
+  });
+});
+
+test('assetlinks.json is served as JSON (empty without ANDROID_CERT_SHA256)', async ({ request }) => {
+  const res = await request.get('/.well-known/assetlinks.json');
+  expect(res.ok()).toBe(true);
+  expect(res.headers()['content-type']).toContain('application/json');
+  expect(await res.json()).toEqual([]);
+});
+
+test.describe('account deletion page (Google Play)', () => {
+  const removeWebGone = async () => {
+    const { db, auth } = admin();
+    await auth.deleteUser(WEB_GONE.uid).catch(() => {});
+    await Promise.all([
+      db.doc(`users/${WEB_GONE.uid}`).delete(),
+      db.doc(`publicProfiles/${WEB_GONE.uid}`).delete(),
+      db.doc(`usernames/${WEB_GONE.username}`).delete(),
+    ]);
+  };
+  test.beforeAll(async () => {
+    await removeWebGone();
+    const { db, auth } = admin();
+    const t = Timestamp.now();
+    await auth.createUser({ uid: WEB_GONE.uid, email: WEB_GONE.email, password: E2E.password });
+    await db.doc(`users/${WEB_GONE.uid}`).set({
+      uid: WEB_GONE.uid, email: WEB_GONE.email, username: WEB_GONE.username,
+      photoURL: '', profilePictureURL: '', profileBannerURL: '', savedSpots: [], createdAt: t, lastLoginAt: t,
+      termsVersion: TERMS_VERSION,
+    });
+    await db.doc(`usernames/${WEB_GONE.username}`).set({ uid: WEB_GONE.uid });
+  });
+  test.afterAll(removeWebGone);
+
+  test('explains deletion without the install prompt, then deletes after sign-in', async ({ page }) => {
+    // Only the language is seeded: the install prompt must not cover this page.
+    await page.addInitScript(() => {
+      window.localStorage.setItem('spoton-language', JSON.stringify({ state: { language: 'en', hasSelectedLanguage: true }, version: 0 }));
+    });
+    await page.goto('/account-deletion');
+    await expect(page.getByRole('heading', { name: 'Delete your SpotOn account' })).toBeVisible();
+    await expect(page.getByText('Open SpotOn, tap your profile, open Settings and tap Delete account.')).toBeVisible();
+    await expect(page.getByText('SpotOn Experience')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await page.getByRole('button', { name: 'With Email' }).click();
+    await page.locator('input[type="email"]').fill(WEB_GONE.email);
+    await page.locator('input[type="password"]').fill(E2E.password);
+    await page.locator('form button[type="submit"]').click();
+    await expect(page.getByText(`Signed in as ${WEB_GONE.username}`)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Delete account' }).click();
+    await page.getByLabel(/type your username/).fill(WEB_GONE.username);
+    await page.getByRole('button', { name: 'Delete permanently' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Your account has been deleted.' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign In' })).toHaveCount(0);
+
+    const { db, auth } = admin();
+    expect(await auth.exists(WEB_GONE.uid)).toBe(false);
+    expect((await db.doc(`users/${WEB_GONE.uid}`).get()).exists).toBe(false);
   });
 });
