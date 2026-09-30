@@ -1,40 +1,23 @@
-// Spot categories (T23, DUP-05): single source for ids, emoji and label keys. Pure: types only.
+// Spot categories (T23, DUP-05): single source for ids and label keys. Pure: types only.
+// The map pins and tiles draw each category's glyph (components/ui/CategoryIcon).
 import type { SpotCategory } from '@/store/useSpotStore';
 import type { TranslationKey } from './translations';
 
-/** All categories in UI order (AddSpotModal options, DiscoveryPanel filter chips). */
-export const CATEGORIES: ReadonlyArray<{ id: SpotCategory; emoji: string; labelKey: TranslationKey }> = [
-  { id: 'scenic', emoji: '🌅', labelKey: 'categoryScenic' },
-  { id: 'smoke-spot', emoji: '💨', labelKey: 'categorySmoke' },
-  { id: 'viewpoint', emoji: '🏔️', labelKey: 'categoryViewpoint' },
-  { id: 'hiking', emoji: '🥾', labelKey: 'categoryHiking' },
-  { id: 'random', emoji: '🎲', labelKey: 'categoryRandom' },
-  { id: 'date-spot', emoji: '❤️', labelKey: 'categoryDateSpot' },
-  { id: 'park', emoji: '🌳', labelKey: 'categoryPark' },
-  { id: 'part', emoji: '🏖️', labelKey: 'categoryPart' },
-  { id: 'other', emoji: '📍', labelKey: 'categoryOther' },
+/** All categories in UI order (AddSpotModal tiles, DiscoveryPanel filter chips). */
+export const CATEGORIES: ReadonlyArray<{ id: SpotCategory; labelKey: TranslationKey }> = [
+  { id: 'scenic', labelKey: 'categoryScenic' },
+  { id: 'smoke-spot', labelKey: 'categorySmoke' },
+  { id: 'viewpoint', labelKey: 'categoryViewpoint' },
+  { id: 'hiking', labelKey: 'categoryHiking' },
+  { id: 'random', labelKey: 'categoryRandom' },
+  { id: 'date-spot', labelKey: 'categoryDateSpot' },
+  { id: 'park', labelKey: 'categoryPark' },
+  { id: 'part', labelKey: 'categoryPart' },
+  { id: 'other', labelKey: 'categoryOther' },
 ];
-
-/** Emoji per category, no fallback (an unknown category yields undefined). */
-export const CATEGORY_EMOJI = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.emoji])) as Record<SpotCategory, string>;
 
 /** Translation key per category, no fallback. */
 export const CATEGORY_LABEL_KEY = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.labelKey])) as Record<
   SpotCategory,
   TranslationKey
 >;
-
-/** Fallback emoji for an unknown category (also the 'other' emoji). */
-export const DEFAULT_CATEGORY_EMOJI = '📍';
-
-/**
- * Emoji for a map marker or badge: the category's emoji, else '📍'. Only own keys count, so
- * prototype names such as 'toString' fall back as well (as MapView's former switch did).
- * (hasOwnProperty.call rather than Object.hasOwn: the latter needs Safari 15.4+.)
- */
-export function getMarkerEmoji(category: string | undefined): string {
-  return category !== undefined && Object.prototype.hasOwnProperty.call(CATEGORY_EMOJI, category)
-    ? CATEGORY_EMOJI[category as SpotCategory]
-    : DEFAULT_CATEGORY_EMOJI;
-}
-

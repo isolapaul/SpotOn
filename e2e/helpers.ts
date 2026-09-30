@@ -51,11 +51,6 @@ export function spotMarker(page: Page, category: string) {
   return page.locator(`.leaflet-marker-icon:has(.spot-pin[data-category="${category}"])`);
 }
 
-/** Pins by variant: 'approved' (green) or 'pending' (any non-approved status). */
-export function pinsOf(page: Page, variant: 'approved' | 'pending') {
-  return page.locator(`.leaflet-marker-icon .spot-pin[data-variant="${variant}"]`);
-}
-
 /** Signs in through the AuthModal email form (English UI). App must be open and signed out. */
 export async function signInWithEmail(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Profile' }).click();

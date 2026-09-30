@@ -1,8 +1,6 @@
-// Spot helpers. The category maps moved to categories.ts (T23) and are re-exported under their
-// old names so existing imports keep working.
-import { CATEGORY_EMOJI, CATEGORY_LABEL_KEY } from './categories';
-
-export const categoryEmojis = CATEGORY_EMOJI;
+// Spot helpers. The category label map lives in categories.ts (T23) and is re-exported here under
+// its old name.
+import { CATEGORY_LABEL_KEY } from './categories';
 
 export const categoryTranslationKeys = CATEGORY_LABEL_KEY;
 

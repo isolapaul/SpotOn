@@ -75,4 +75,3 @@ export const useUiStore = create<UiStore>((set, get) => ({
   requestLocate: () => set((s) => ({ locateRequest: s.locateRequest + 1 })),
 }));
 
-export default useUiStore;

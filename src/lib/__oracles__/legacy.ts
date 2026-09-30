@@ -2,8 +2,7 @@
 // T23 characterisation oracles: the pre-T23 implementations, copied verbatim from the call sites
 // (only wrapped in functions and given parameter types). Imported by tests only; excluded from
 // coverage. Do not "fix" anything here: these pin today's behaviour, quirks included.
-import type { Review, SpotCategory, SpotImage } from '@/store/useSpotStore';
-import type { TranslationKey } from '@/lib/translations';
+import type { Review, SpotImage } from '@/store/useSpotStore';
 
 type OracleSpot = {
   imageUrls?: string[];
@@ -124,120 +123,6 @@ export function infoWindowPreviewImageUrl(spot: OracleSpot, sortedSpotImages: { 
     '/placeholder-spot.jpg';
   return previewImageUrl;
 }
-
-// ---------------------------------------------------------------------------------------------
-// Categories (DUP-05)
-// ---------------------------------------------------------------------------------------------
-/** spotUtils.ts `categoryEmojis`. */
-export const categoryEmojis: Record<SpotCategory, string> = {
-  scenic: '🌅',
-  'smoke-spot': '💨',
-  viewpoint: '🏔️',
-  other: '📍',
-  hiking: '🥾',
-  random: '🎲',
-  'date-spot': '❤️',
-  park: '🌳',
-  part: '🏖️',
-};
-
-/** spotUtils.ts `categoryTranslationKeys`. */
-export const categoryTranslationKeys: Record<SpotCategory, TranslationKey> = {
-  scenic: 'categoryScenic',
-  'smoke-spot': 'categorySmoke',
-  viewpoint: 'categoryViewpoint',
-  other: 'categoryOther',
-  hiking: 'categoryHiking',
-  random: 'categoryRandom',
-  'date-spot': 'categoryDateSpot',
-  park: 'categoryPark',
-  part: 'categoryPart',
-};
-
-/**
- * AddSpotModal `<option>` list: value, emoji prefix and label key, in render order
- * (`<option value="scenic" className="bg-gray-800">🌅 {t('categoryScenic')}</option>` …).
- */
-export const addSpotOptions: { value: SpotCategory; emoji: string; labelKey: TranslationKey }[] = [
-  { value: 'scenic', emoji: '🌅', labelKey: 'categoryScenic' },
-  { value: 'smoke-spot', emoji: '💨', labelKey: 'categorySmoke' },
-  { value: 'viewpoint', emoji: '🏔️', labelKey: 'categoryViewpoint' },
-  { value: 'hiking', emoji: '🥾', labelKey: 'categoryHiking' },
-  { value: 'random', emoji: '🎲', labelKey: 'categoryRandom' },
-  { value: 'date-spot', emoji: '❤️', labelKey: 'categoryDateSpot' },
-  { value: 'park', emoji: '🌳', labelKey: 'categoryPark' },
-  { value: 'part', emoji: '🏖️', labelKey: 'categoryPart' },
-  { value: 'other', emoji: '📍', labelKey: 'categoryOther' },
-];
-
-/** DiscoveryPanel `categories` (verbatim, with `t` injected). */
-export function discoveryCategories(t: (key: TranslationKey) => string): { value: SpotCategory; label: string; emoji: string }[] {
-  const categories: { value: SpotCategory; label: string; emoji: string }[] = [
-    { value: 'scenic', label: t('categoryScenic'), emoji: '🌅' },
-    { value: 'smoke-spot', label: t('categorySmoke'), emoji: '💨' },
-    { value: 'viewpoint', label: t('categoryViewpoint'), emoji: '🏔️' },
-    { value: 'hiking', label: t('categoryHiking'), emoji: '🥾' },
-    { value: 'random', label: t('categoryRandom'), emoji: '🎲' },
-    { value: 'date-spot', label: t('categoryDateSpot'), emoji: '❤️' },
-    { value: 'park', label: t('categoryPark'), emoji: '🌳' },
-    { value: 'part', label: t('categoryPart'), emoji: '🏖️' },
-    { value: 'other', label: t('categoryOther'), emoji: '📍' },
-  ];
-  return categories;
-}
-
-/** DiscoveryPanel thumbnail badge emoji. */
-export function discoveryBadgeEmoji(category: any): string {
-  return categoryEmojis[category as SpotCategory] || '📍';
-}
-
-// ---------------------------------------------------------------------------------------------
-// Map markers: MapView `getCategoryIcon` without `L.divIcon` (returns the `html` string).
-// ---------------------------------------------------------------------------------------------
-export const getCategoryIconSvg = (category: string, status: 'approved' | 'pending' | 'rejected', isHighlighted: boolean = false, size = 48) => {
-  let emoji = '📍';
-  switch (category) {
-    case 'scenic': emoji = '🌅'; break;
-    case 'smoke-spot': emoji = '💨'; break;
-    case 'viewpoint': emoji = '🏔️'; break;
-    case 'hiking': emoji = '🥾'; break;
-    case 'random': emoji = '🎲'; break;
-    case 'date-spot': emoji = '❤️'; break;
-    case 'park': emoji = '🌳'; break;
-    case 'part': emoji = '🏖️'; break;
-  }
-
-  let bgColor = status === 'approved' ? '#10b981' : '#eab308';
-  if (isHighlighted) bgColor = '#FFD700';
-
-  const svg = isHighlighted
-    ? `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 56 56">
-        <defs>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-        <circle cx="28" cy="28" r="24" fill="${bgColor}" stroke="#FFA500" stroke-width="3" filter="url(#glow)"/>
-        <text x="28" y="35" font-size="22" text-anchor="middle">${emoji}</text>
-        <text x="46" y="14" font-size="18">⭐</text>
-      </svg>`
-    : `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 48 48">
-        <circle cx="24" cy="24" r="20" fill="${bgColor}" opacity="0.9"/>
-        <text x="24" y="30" font-size="20" text-anchor="middle" fill="white">${emoji}</text>
-      </svg>`;
-
-  return svg;
-};
-
-/** MapView `getMarkerSize` (the useCallback body). */
-export const getMarkerSize = (zoom: number) => {
-  if (zoom <= 5) return 24;
-  if (zoom <= 10) return 32;
-  if (zoom <= 14) return 48;
-  if (zoom <= 18) return 64;
-  return 80;
-};
 
 // ---------------------------------------------------------------------------------------------
 // Image compression options per call site (DUP-11), as they are after T14/T15.

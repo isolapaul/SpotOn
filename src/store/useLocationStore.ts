@@ -94,4 +94,3 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
     }),
 }));
 
-export default useLocationStore;
