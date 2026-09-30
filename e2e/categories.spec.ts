@@ -45,22 +45,26 @@ test('the super admin creates, renames and deletes a category only while unused'
 
   // Create
   const form = page.locator('div.space-y-3').filter({ has: page.getByRole('button', { name: 'Add Category' }) });
-  await form.getByLabel('Category Name').fill(NAME);
+  await form.getByLabel('Name (Hungarian)').fill(NAME);
+  await form.getByLabel('English (optional)').fill(`${NAME} EN`);
   await form.getByRole('radio', { name: 'Lake' }).click();
   await form.getByRole('button', { name: 'Add Category' }).click();
   await expect(page.getByText(NAME, { exact: true })).toBeVisible();
   await expect.poll(() => categoryIdByName(NAME)).toBeTruthy();
+  expect((await adminDb().doc(`categories/${(await categoryIdByName(NAME))!}`).get()).get('nameEn')).toBe(`${NAME} EN`);
   const id = (await categoryIdByName(NAME))!;
 
   // Rename and change the icon
   await page.getByRole('button', { name: `Edit: ${NAME}` }).click();
   const editForm = page.locator('li').filter({ has: page.getByRole('button', { name: 'Save' }) });
-  await editForm.getByLabel('Category Name').fill(RENAMED);
+  await editForm.getByLabel('Name (Hungarian)').fill(RENAMED);
+  await editForm.getByLabel('English (optional)').fill('');
   await editForm.getByRole('radio', { name: 'Cave' }).click();
   await editForm.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText(RENAMED, { exact: true })).toBeVisible();
   await expect.poll(async () => (await adminDb().doc(`categories/${id}`).get()).data())
     .toMatchObject({ name: RENAMED, icon: 'cave' });
+  expect((await adminDb().doc(`categories/${id}`).get()).get('nameEn')).toBeUndefined();
 
   // A spot uses it: delete is disabled, and it shows in Explore
   await adminDb().doc(`spots/${SPOT_ID}`).set({
@@ -79,10 +83,11 @@ test('the super admin creates, renames and deletes a category only while unused'
   await expect.poll(async () => (await adminDb().doc(`categories/${id}`).get()).exists).toBe(false);
 });
 
-test('a custom category is offered in Explore', async ({ page }) => {
-  const ref = await adminDb().collection('categories').add({ name: NAME, icon: 'lake', createdAt: Timestamp.now() });
+test('a custom category is offered in Explore, in the UI language', async ({ page }) => {
+  const ref = await adminDb().collection('categories').add({ name: NAME, nameEn: `${NAME} EN`, icon: 'lake', createdAt: Timestamp.now() });
   await openApp(page);
   await page.getByRole('button', { name: 'Explore', exact: true }).click();
-  await expect(page.getByRole('button', { name: NAME, exact: true })).toBeVisible();
+  // The English UI shows the English name.
+  await expect(page.getByRole('button', { name: `${NAME} EN`, exact: true })).toBeVisible();
   await ref.delete();
 });

@@ -2,12 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { useCategoryStore } from '@/store/useCategoryStore';
+import { useCategoryStore, type CategoryFields } from '@/store/useCategoryStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useT } from '@/hooks/useT';
 import GlyphIcon from '@/components/ui/GlyphIcon';
-import type { CategoryIconId } from '@/lib/categoryIcons';
 import { resolveCategory, type CustomCategory } from '@/lib/categories';
 import CategoryForm from './CategoryForm';
 
@@ -36,9 +35,9 @@ export default function CategoryManager() {
   }, [spots]);
   const sorted = useMemo(() => [...categories].sort((a, b) => a.name.localeCompare(b.name)), [categories]);
 
-  const create = async (name: string, icon: CategoryIconId) => {
+  const create = async (fields: CategoryFields) => {
     try {
-      await createCategory(name, icon);
+      await createCategory(fields);
       showToast(t('categoryAdded'), 'success');
       setFormKey((k) => k + 1);
     } catch (error) {
@@ -46,9 +45,9 @@ export default function CategoryManager() {
     }
   };
 
-  const save = async (id: string, name: string, icon: CategoryIconId) => {
+  const save = async (id: string, fields: CategoryFields) => {
     try {
-      await updateCategory(id, { name, icon });
+      await updateCategory(id, fields);
       showToast(t('categorySaved'), 'success');
       setEditing(null);
     } catch (error) {
@@ -75,7 +74,7 @@ export default function CategoryManager() {
           <CategoryForm
             initial={category}
             submitLabel={t('save')}
-            onSubmit={(name, icon) => save(category.id, name, icon)}
+            onSubmit={(fields) => save(category.id, fields)}
             onCancel={() => setEditing(null)}
           />
         </li>
@@ -89,7 +88,11 @@ export default function CategoryManager() {
           </span>
           <div className="flex-1 min-w-0">
             <p className="text-white font-medium truncate">{category.name}</p>
-            <p className="text-white/50 text-xs">{t('categoryUsedBy', { count })}</p>
+            <p className="text-white/50 text-xs truncate">
+              {[category.nameEn, category.nameDe].filter(Boolean).join(' · ')}
+              {category.nameEn || category.nameDe ? ' · ' : ''}
+              {t('categoryUsedBy', { count })}
+            </p>
           </div>
           <button type="button" onClick={() => setEditing(category.id)} aria-label={`${t('edit')}: ${category.name}`} className="p-2 rounded-full text-white/70 hover:bg-white/10">
             <Pencil className="w-4 h-4" aria-hidden="true" />

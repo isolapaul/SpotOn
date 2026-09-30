@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { CATEGORIES, CATEGORY_LABEL_KEY, categoryOptions, parseCustomCategory, resolveCategory } from './categories';
+import { CATEGORIES, CATEGORY_LABEL_KEY, categoryOptions, customCategoryName, parseCustomCategory, resolveCategory } from './categories';
 import { CATEGORY_GLYPHS } from './categoryGlyphs';
 import { CATEGORY_ICON_GLYPHS, CATEGORY_ICON_IDS, CATEGORY_ICON_LABELS } from './categoryIcons';
 import { translations } from './translations';
@@ -32,6 +32,13 @@ describe('custom categories (item 7)', () => {
     expect(parseCustomCategory('c2', { name: 'Bars', icon: '🍺' })).toEqual(bar);
     expect(parseCustomCategory('c3', { name: '  ', icon: 'lake' })).toBeNull();
     expect(parseCustomCategory('c4', null)).toBeNull();
+    expect(parseCustomCategory('c5', { name: 'Tavak', nameEn: 'Lakes', nameDe: ' ', icon: 'lake' }))
+      .toEqual({ id: 'c5', name: 'Tavak', nameEn: 'Lakes', icon: 'lake' });
+  });
+
+  it('names fall back to Hungarian', () => {
+    const c = { id: 'c', name: 'Tavak', nameEn: 'Lakes', icon: null };
+    expect([customCategoryName(c, 'hu'), customCategoryName(c, 'en'), customCategoryName(c, 'de')]).toEqual(['Tavak', 'Lakes', 'Tavak']);
   });
 
   it('lists built-ins, custom ones by name, then other', () => {
@@ -40,7 +47,7 @@ describe('custom categories (item 7)', () => {
   });
 
   it('resolves labels and glyphs; unknown ids show as other', () => {
-    expect(resolveCategory('c1', [lake])).toMatchObject({ label: { text: 'Lakes' }, glyph: CATEGORY_ICON_GLYPHS.lake, custom: true });
+    expect(resolveCategory('c1', [lake])).toMatchObject({ label: { custom: lake }, glyph: CATEGORY_ICON_GLYPHS.lake, custom: true });
     expect(resolveCategory('c2', [bar]).glyph).toBe(CATEGORY_GLYPHS.other);
     expect(resolveCategory('park', [])).toMatchObject({ label: { key: 'categoryPark' }, custom: false });
     expect(resolveCategory('gone', []).id).toBe('other');

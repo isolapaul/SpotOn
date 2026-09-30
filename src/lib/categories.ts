@@ -2,6 +2,7 @@
 // in categories/{id}. Single source for ids, labels and glyphs. Pure: types only.
 import type { SpotCategory } from '@/store/useSpotStore';
 import type { TranslationKey } from './translations';
+import type { Language } from './i18n';
 import { CATEGORY_GLYPHS, type Glyph } from './categoryGlyphs';
 import { CATEGORY_ICON_GLYPHS, normalizeCategoryIcon, type CategoryIconId } from './categoryIcons';
 
@@ -26,25 +27,44 @@ export const CATEGORY_LABEL_KEY = Object.fromEntries(CATEGORIES.map((c) => [c.id
 
 export const MAX_CATEGORY_NAME = 50;
 
-/** A category the super admin created; `icon` is null for a legacy (emoji) or unknown icon. */
+/**
+ * A category the super admin created: the Hungarian `name` is required, English and German are
+ * optional and fall back to it (no auto-translation). `icon` is null for a legacy (emoji) icon.
+ */
 export interface CustomCategory {
   id: string;
   name: string;
+  nameEn?: string;
+  nameDe?: string;
   icon: CategoryIconId | null;
+}
+
+function optionalName(x: unknown): string | undefined {
+  return typeof x === 'string' && x.trim() ? x.trim() : undefined;
 }
 
 /** A categories/{id} document, or null when it has no usable name. */
 export function parseCustomCategory(id: string, data: unknown): CustomCategory | null {
   if (typeof data !== 'object' || data === null) return null;
-  const { name, icon } = data as { name?: unknown; icon?: unknown };
-  if (typeof name !== 'string' || !name.trim()) return null;
-  return { id, name: name.trim(), icon: normalizeCategoryIcon(icon) };
+  const { name, nameEn, nameDe, icon } = data as Record<string, unknown>;
+  const hu = optionalName(name);
+  if (!hu) return null;
+  const en = optionalName(nameEn);
+  const de = optionalName(nameDe);
+  return { id, name: hu, ...(en ? { nameEn: en } : {}), ...(de ? { nameDe: de } : {}), icon: normalizeCategoryIcon(icon) };
+}
+
+/** A custom category's name in a UI language (Hungarian when that one is empty). */
+export function customCategoryName(c: CustomCategory, language: Language): string {
+  if (language === 'en') return c.nameEn ?? c.name;
+  if (language === 'de') return c.nameDe ?? c.name;
+  return c.name;
 }
 
 /** A category ready to show: its label (a translation key or the admin's text) and glyph. */
 export interface CategoryOption {
   id: string;
-  label: { key: TranslationKey } | { text: string };
+  label: { key: TranslationKey } | { custom: CustomCategory };
   glyph: Glyph;
   custom: boolean;
 }
@@ -54,7 +74,7 @@ function builtIn(c: (typeof CATEGORIES)[number]): CategoryOption {
 }
 
 function customOption(c: CustomCategory): CategoryOption {
-  return { id: c.id, label: { text: c.name }, glyph: c.icon ? CATEGORY_ICON_GLYPHS[c.icon] : CATEGORY_GLYPHS.other, custom: true };
+  return { id: c.id, label: { custom: c }, glyph: c.icon ? CATEGORY_ICON_GLYPHS[c.icon] : CATEGORY_GLYPHS.other, custom: true };
 }
 
 const OTHER = builtIn(CATEGORIES[CATEGORIES.length - 1]);

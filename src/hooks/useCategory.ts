@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useCategoryStore } from '@/store/useCategoryStore';
-import { categoryOptions, resolveCategory, type CategoryOption } from '@/lib/categories';
-import { useT } from './useT';
+import { categoryOptions, customCategoryName, resolveCategory, type CategoryOption } from '@/lib/categories';
+import { useLanguage, useT } from './useT';
 
 /** Every category in UI order (built-ins, the super admin's ones, 'other'). */
 export function useCategoryOptions(): CategoryOption[] {
@@ -18,7 +18,11 @@ export function useCategory(id: string | undefined): CategoryOption {
 /** The label text of an option. */
 export function useCategoryText(): (option: CategoryOption) => string {
   const t = useT();
-  return useCallback((option) => ('key' in option.label ? t(option.label.key) : option.label.text), [t]);
+  const language = useLanguage();
+  return useCallback(
+    (option) => ('key' in option.label ? t(option.label.key) : customCategoryName(option.label.custom, language)),
+    [t, language],
+  );
 }
 
 /** A category's label by id. */

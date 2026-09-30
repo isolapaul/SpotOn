@@ -98,7 +98,7 @@ docs/play-store.md               Play listing texts, Data safety and content rat
   customNameColor/Font, isAdmin, spotsCount); public `get`, no client writes.
 - `usernames/{name}`: `{uid}` registry, written only by the `claimUsername` callable.
 - `admins/{uid}`: email, username, photoURL, addedAt, addedBy, role ('super' | 'admin').
-- `categories/{id}` (item 7): name, icon (one of `src/lib/categoryIcons.ts`; legacy docs may hold an emoji), createdAt, updatedAt. Written by the super admin (rules); deleted only by the `deleteCategory` callable while unused. A spot's `category` is a built-in id or such a doc id (rules `validCategory`); unknown ids show as 'other'.
+- `categories/{id}` (item 7): name (Hungarian), nameEn?, nameDe? (fall back to name), icon (one of `src/lib/categoryIcons.ts`; legacy docs may hold an emoji), createdAt, updatedAt. Written by the super admin (rules); deleted only by the `deleteCategory` callable while unused. A spot's `category` is a built-in id or such a doc id (rules `validCategory`); unknown ids show as 'other'.
 - `spotEdits/{spotId}` (item 4): the owner's proposed edit of an approved spot, at most one per spot: spotId, spotName, ownerId, status ('pending'|'rejected'), proposed{name?, description?, category?, location?, removeImageUrls?, primaryImageUrl?}, rejection{reason,at}, createdAt. Reviewed with `reviewSpotEdit`.
 - `photoSubmissions/{id}` (item 4): a photo waiting for an admin: spotId, spotName, spotOwner, uploader, url, status, createdAt. Written only by `addSpotImages`, resolved by `reviewPhotoSubmission`.
 - `users/{uid}/inbox/{id}` (item 4): moderation decisions for the user (type, spotId, spotName, reason?, read, createdAt), written only by Cloud Functions; the notification centre shows them.

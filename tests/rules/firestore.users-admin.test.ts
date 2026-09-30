@@ -150,6 +150,7 @@ describe('categories (item 7)', () => {
     await assertSucceeds(getDocs(collection(dbAs(env, null), 'categories')));
     const db = dbAs(env, SUPER);
     await assertSucceeds(addDoc(collection(db, 'categories'), cat()));
+    await assertSucceeds(addDoc(collection(db, 'categories'), { ...cat(), nameEn: 'Lakes', nameDe: 'Seen' }));
     await assertSucceeds(updateDoc(doc(db, 'categories', 'c1'), { name: 'Renamed', icon: 'cave', updatedAt: serverTimestamp() }));
   });
   it('denies other admins, users, deletes and invalid values', async () => {
@@ -162,6 +163,8 @@ describe('categories (item 7)', () => {
     await assertFails(addDoc(collection(db, 'categories'), { ...cat(), extra: 1 }));
     await assertFails(addDoc(collection(db, 'categories'), { ...cat(), name: 'x'.repeat(51) }));
     await assertFails(addDoc(collection(db, 'categories'), { ...cat(), icon: '🏖️' }));
+    await assertFails(addDoc(collection(db, 'categories'), { ...cat(), nameEn: '' }));
+    await assertFails(addDoc(collection(db, 'categories'), { ...cat(), nameDe: 'x'.repeat(51) }));
     await assertFails(addDoc(collection(db, 'categories'), { ...cat(), createdAt: Timestamp.now() }));
     // The seeded legacy doc has an emoji icon: a rename must also pick a real icon.
     await assertFails(updateDoc(doc(db, 'categories', 'c1'), { name: 'Renamed', updatedAt: serverTimestamp() }));

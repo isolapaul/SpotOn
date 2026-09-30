@@ -324,6 +324,9 @@ export const translations = {
     // Category Management
     manageCategories: 'Kategóriák kezelése',
     categoryName: 'Kategória neve',
+    categoryNameHu: 'Név (magyar)',
+    categoryNameEn: 'Angol (nem kötelező)',
+    categoryNameDe: 'Német (nem kötelező)',
     categoryIcon: 'Kategória ikon',
     addCategory: 'Kategória hozzáadása',
     categoryAdded: 'Kategória hozzáadva!',
@@ -888,6 +891,9 @@ export const translations = {
     // Category Management
     manageCategories: 'Manage Categories',
     categoryName: 'Category name',
+    categoryNameHu: 'Name (Hungarian)',
+    categoryNameEn: 'English (optional)',
+    categoryNameDe: 'German (optional)',
     categoryIcon: 'Category icon',
     addCategory: 'Add Category',
     categoryAdded: 'Category added!',
@@ -1441,6 +1447,9 @@ export const translations = {
     // Category Management
     manageCategories: 'Kategorien verwalten',
     categoryName: 'Kategoriename',
+    categoryNameHu: 'Name (Ungarisch)',
+    categoryNameEn: 'Englisch (optional)',
+    categoryNameDe: 'Deutsch (optional)',
     categoryIcon: 'Kategorie-Symbol',
     addCategory: 'Kategorie hinzufügen',
     categoryAdded: 'Kategorie hinzugefügt!',

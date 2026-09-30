@@ -3,20 +3,28 @@
 import { useState } from 'react';
 import GlyphIcon from '@/components/ui/GlyphIcon';
 import { useT } from '@/hooks/useT';
-import { MAX_CATEGORY_NAME } from '@/lib/categories';
+import { MAX_CATEGORY_NAME, type CustomCategory } from '@/lib/categories';
 import { CATEGORY_ICON_GLYPHS, CATEGORY_ICON_IDS, CATEGORY_ICON_LABELS, type CategoryIconId } from '@/lib/categoryIcons';
+import type { CategoryFields } from '@/store/useCategoryStore';
 
 interface CategoryFormProps {
-  initial?: { name: string; icon: CategoryIconId | null };
+  initial?: CustomCategory;
   submitLabel: string;
-  onSubmit: (name: string, icon: CategoryIconId) => Promise<void>;
+  onSubmit: (fields: CategoryFields) => Promise<void>;
   onCancel?: () => void;
 }
 
-/** A category's name and icon (one of the hand-drawn set), for creating and editing (item 7). */
+const INPUT = 'w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-white/30';
+
+/**
+ * A category's names and icon (one of the hand-drawn set), for creating and editing (item 7).
+ * Hungarian is required; empty English/German names fall back to it.
+ */
 export default function CategoryForm({ initial, submitLabel, onSubmit, onCancel }: Readonly<CategoryFormProps>) {
   const t = useT();
   const [name, setName] = useState(initial?.name ?? '');
+  const [nameEn, setNameEn] = useState(initial?.nameEn ?? '');
+  const [nameDe, setNameDe] = useState(initial?.nameDe ?? '');
   const [icon, setIcon] = useState<CategoryIconId | null>(initial?.icon ?? null);
   const [saving, setSaving] = useState(false);
   const ready = name.trim().length > 0 && icon !== null && !saving;
@@ -25,23 +33,23 @@ export default function CategoryForm({ initial, submitLabel, onSubmit, onCancel 
     if (!ready || !icon) return;
     setSaving(true);
     try {
-      await onSubmit(name, icon);
+      await onSubmit({ name, nameEn, nameDe, icon });
     } finally {
       setSaving(false);
     }
   };
 
+  const field = (label: string, value: string, set: (v: string) => void) => (
+    <input type="text" aria-label={label} placeholder={label} value={value} maxLength={MAX_CATEGORY_NAME} onChange={(e) => set(e.target.value)} className={INPUT} />
+  );
+
   return (
     <div className="space-y-3">
-      <input
-        type="text"
-        aria-label={t('categoryName')}
-        placeholder={t('categoryName')}
-        value={name}
-        maxLength={MAX_CATEGORY_NAME}
-        onChange={(e) => setName(e.target.value)}
-        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-white/30"
-      />
+      {field(t('categoryNameHu'), name, setName)}
+      <div className="grid grid-cols-2 gap-2">
+        {field(t('categoryNameEn'), nameEn, setNameEn)}
+        {field(t('categoryNameDe'), nameDe, setNameDe)}
+      </div>
       <div role="radiogroup" aria-label={t('categoryIcon')} className="grid grid-cols-4 gap-2">
         {CATEGORY_ICON_IDS.map((id) => {
           const selected = icon === id;
@@ -68,12 +76,7 @@ export default function CategoryForm({ initial, submitLabel, onSubmit, onCancel 
             {t('cancel')}
           </button>
         )}
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!ready}
-          className="flex-1 py-3 rounded-xl font-semibold bg-brand-600 text-white disabled:opacity-50"
-        >
+        <button type="button" onClick={submit} disabled={!ready} className="flex-1 py-3 rounded-xl font-semibold bg-brand-600 text-white disabled:opacity-50">
           {saving ? t('saving') : submitLabel}
         </button>
       </div>

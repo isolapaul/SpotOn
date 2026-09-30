@@ -236,16 +236,22 @@ service cloud.firestore {
       return i in ['waterfall', 'lake', 'beach', 'forest', 'cave', 'castle', 'ruins', 'bridge',
                    'church', 'museum', 'cafe', 'food', 'camping', 'picnic', 'bike', 'street-art'];
     }
+    // Hungarian name required; English and German optional (they fall back to it).
+    function validCategoryDoc(d) {
+      return isStr(d.name, 1, 50) && validCategoryIcon(d.icon)
+        && (!('nameEn' in d) || isStr(d.nameEn, 1, 50))
+        && (!('nameDe' in d) || isStr(d.nameDe, 1, 50));
+    }
     match /categories/{categoryId} {
       allow read: if true;
       allow create: if isSuperAdmin()
-        && request.resource.data.keys().hasOnly(['name', 'icon', 'createdAt'])
-        && isStr(request.resource.data.name, 1, 50) && validCategoryIcon(request.resource.data.icon)
+        && request.resource.data.keys().hasOnly(['name', 'nameEn', 'nameDe', 'icon', 'createdAt'])
+        && validCategoryDoc(request.resource.data)
         && request.resource.data.createdAt == request.time;
       // Rename and icon change (a legacy emoji icon must be replaced then).
       allow update: if isSuperAdmin()
-        && changed().hasOnly(['name', 'icon', 'updatedAt'])
-        && isStr(request.resource.data.name, 1, 50) && validCategoryIcon(request.resource.data.icon)
+        && changed().hasOnly(['name', 'nameEn', 'nameDe', 'icon', 'updatedAt'])
+        && validCategoryDoc(request.resource.data)
         && request.resource.data.updatedAt == request.time;
       // Only through the deleteCategory callable, which checks that nothing uses it.
       allow delete: if false;
