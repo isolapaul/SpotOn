@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { ChevronRight } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
 import { useLanguage, useT } from '@/hooks/useT';
-import { categoryTranslationKeys } from '@/lib/spotUtils';
+import { useCategoryLabel } from '@/hooks/useCategory';
 import { formatDistance } from '@/lib/geo';
 import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
 import CategoryIcon from '@/components/ui/CategoryIcon';
@@ -23,6 +23,7 @@ interface SpotRowProps {
 /** One row of the Explore list (grouped inset style, design phase 3). */
 export default function SpotRow({ spot, rating, reviewCount, distanceKm, index, onSelect }: Readonly<SpotRowProps>) {
   const t = useT();
+  const categoryLabel = useCategoryLabel();
   const language = useLanguage();
   const ratingText = language === 'en' ? rating.toFixed(1) : rating.toFixed(1).replace('.', ',');
 
@@ -42,7 +43,7 @@ export default function SpotRow({ spot, rating, reviewCount, distanceKm, index, 
         <span className="mt-0.5 flex items-center gap-1.5 text-[14px] text-label-secondary min-w-0">
           <CategoryIcon category={spot.category} className="w-4 h-4 flex-shrink-0 text-brand-400" />
           <span className="truncate">
-            {t(categoryTranslationKeys[spot.category])}
+            {categoryLabel(spot.category)}
             {distanceKm !== null && <span className="tabular-nums"> · {formatDistance(distanceKm, language)}</span>}
           </span>
         </span>

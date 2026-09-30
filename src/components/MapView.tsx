@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -8,6 +8,9 @@ import type { Spot } from '@/store/useSpotStore';
 import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
 import { buildPinHtml, markerVariant, PIN_ANCHOR, PIN_SIZE, zoomBand, type MarkerVariant } from '@/lib/mapMarkers';
 import { normalizePinIcon, type PinIconId } from '@/lib/pinGlyphs';
+import type { CategoryIconId } from '@/lib/categoryIcons';
+import { normalizeCategory } from '@/lib/categoryGlyphs';
+import { useCategoryStore } from '@/store/useCategoryStore';
 import {
   DEFAULT_MAP_CENTER,
   DEFAULT_MAP_ZOOM,
@@ -43,12 +46,18 @@ interface MapViewProps {
 // marker DOM) whenever the reference changes, so zooming never rebuilds markers any more.
 const iconCache = new Map<string, L.DivIcon>();
 
-const getPinIcon = (category: string, variant: MarkerVariant, highlighted: boolean, pin: PinIconId | null) => {
-  const key = `${category}|${variant}|${highlighted ? 1 : 0}|${pin ?? ''}`;
+const getPinIcon = (
+  category: string,
+  categoryIcon: CategoryIconId | null,
+  variant: MarkerVariant,
+  highlighted: boolean,
+  pin: PinIconId | null,
+) => {
+  const key = `${normalizeCategory(category)}|${categoryIcon ?? ''}|${variant}|${highlighted ? 1 : 0}|${pin ?? ''}`;
   let icon = iconCache.get(key);
   if (!icon) {
     icon = L.divIcon({
-      html: buildPinHtml({ category, variant, highlighted, pin }),
+      html: buildPinHtml({ category, categoryIcon, variant, highlighted, pin }),
       className: 'spot-marker',
       iconSize: [...PIN_SIZE],
       iconAnchor: [...PIN_ANCHOR],
@@ -250,6 +259,9 @@ export default function MapView({
   const { theme } = useMapThemeStore();
   const [markers] = useState(() => new Map<string, L.Marker>());
   useSelectedPin(markers, selectedSpotId, spots);
+  // Icons of the super admin's categories (item 7), by category id.
+  const customCategories = useCategoryStore((s) => s.categories);
+  const customIcons = useMemo(() => new Map(customCategories.map((c) => [c.id, c.icon])), [customCategories]);
 
   // Highlight-expiry reference time, computed once per render (not per marker)
   const nowIso = new Date().toISOString();
@@ -292,7 +304,7 @@ export default function MapView({
               key={spot.id}
               position={[spot.location.lat, spot.location.lng]}
               title={spot.name}
-              icon={getPinIcon(spot.category, markerVariant(spot.status), isHighlighted, normalizePinIcon(spot.ownerPin))}
+              icon={getPinIcon(spot.category, customIcons.get(spot.category) ?? null, markerVariant(spot.status), isHighlighted, normalizePinIcon(spot.ownerPin))}
               zIndexOffset={isHighlighted ? 1000 : 0}
               ref={(m) => {
                 if (m) {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSpotStore, type Spot, type SpotCategory, type SpotFieldsPatch } from '@/store/useSpotStore';
+import { useSpotStore, type Spot, type CategoryId, type SpotFieldsPatch } from '@/store/useSpotStore';
 import { useModerationStore } from '@/store/useModerationStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -15,8 +15,8 @@ export interface SpotEdit {
   setEditName: (value: string) => void;
   editDescription: string;
   setEditDescription: (value: string) => void;
-  editCategory: SpotCategory;
-  setEditCategory: (value: SpotCategory) => void;
+  editCategory: CategoryId;
+  setEditCategory: (value: CategoryId) => void;
   /** Enter edit mode with the spot's current name, description and category. */
   start: () => void;
   cancel: () => void;
@@ -28,9 +28,9 @@ interface Draft {
   spotId: string;
   name: string;
   description: string;
-  category: SpotCategory;
+  category: CategoryId;
   /** The values when editing started: a save compares against them. */
-  base: { name: string; description: string; category: SpotCategory };
+  base: { name: string; description: string; category: CategoryId };
 }
 
 /** The fields the user changed since editing started (a blank name is never saved). */

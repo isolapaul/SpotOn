@@ -7,9 +7,10 @@ import type { Spot } from '@/store/useSpotStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useLanguage, useT } from '@/hooks/useT';
+import { useCategoryLabel } from '@/hooks/useCategory';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
-import { categoryTranslationKeys, getNavigationUrl } from '@/lib/spotUtils';
+import { getNavigationUrl } from '@/lib/spotUtils';
 import { averageRating } from '@/lib/rating';
 import { formatDistance, haversineKm } from '@/lib/geo';
 import { getPreviewImageUrl, imageFallbacks, isImageUnoptimized, PLACEHOLDER_URL, sortSpotImagesByLikes } from '@/lib/spotImages';
@@ -52,6 +53,7 @@ function Thumb({ spot, morphSource }: Readonly<{ spot: Spot; morphSource: boolea
 /** The place card's body (design 1E): keyed by spot, so switching pins resets its state. */
 export default function PlaceCardContent({ spot, userLocation, onClose, onDetails, morphSource }: Readonly<PlaceCardContentProps>) {
   const t = useT();
+  const categoryLabel = useCategoryLabel();
   const language = useLanguage();
   const isAdmin = useIsAdmin();
   const approveSpot = useSpotStore((s) => s.approveSpot);
@@ -94,7 +96,7 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
           <p className="mt-0.5 flex items-center gap-1.5 text-[15px] text-label-secondary min-w-0 motion-safe:animate-rise-in" style={{ animationDelay: '60ms' }}>
             <CategoryIcon category={spot.category} className="w-4 h-4 flex-shrink-0 text-brand-400" />
             <span className="truncate">
-              {t(categoryTranslationKeys[spot.category])}
+              {categoryLabel(spot.category)}
               {distance && <span className="tabular-nums"> · {distance}</span>}
             </span>
           </p>

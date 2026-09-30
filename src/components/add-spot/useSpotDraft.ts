@@ -1,11 +1,11 @@
 import { useState, type ChangeEvent } from 'react';
-import type { SpotCategory } from '@/store/useSpotStore';
+import type { CategoryId } from '@/store/useSpotStore';
 import { checkDraftImages, primaryAfterRemoval } from '@/lib/draftImages';
 import type { TranslationKey } from '@/lib/translations';
 
 export interface DraftFields {
   name: string;
-  category: SpotCategory;
+  category: CategoryId;
   description: string;
 }
 

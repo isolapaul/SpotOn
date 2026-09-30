@@ -116,6 +116,8 @@ describe('create (addSpot)', () => {
     await assertFails(create(db, newSpot(ALICE, { imageUrls: Array(21).fill(IMG1) })));
     await assertFails(create(db, newSpot(ALICE, { imageUrls: [] })));
     await assertFails(create(db, newSpot(ALICE, { spotImages: Array(21).fill(spotImage('1', IMG1, ALICE)) })));
+    await assertSucceeds(create(db, newSpot(ALICE, { category: 'c1' }))); // item 7: a custom category
+    await assertFails(create(db, newSpot(ALICE, { category: 'c-missing' })));
     await assertFails(create(db, newSpot(ALICE, { primaryImageIndex: 1 })));
     await assertFails(create(db, newSpot(ALICE, { primaryImageIndex: -1 })));
     await assertFails(create(db, newSpot(ALICE, { category: 'nightclub' })));

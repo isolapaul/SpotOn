@@ -4,6 +4,7 @@ import { useSpotStore, type SpotScope } from '@/store/useSpotStore';
 import { useModerationStore } from '@/store/useModerationStore';
 import { useInboxStore } from '@/store/useInboxStore';
 import { useMyLevelStore } from '@/store/useMyLevelStore';
+import { useCategoryStore } from '@/store/useCategoryStore';
 import { DELAYS } from '@/lib/constants';
 
 /**
@@ -97,9 +98,10 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
       syncScopes(scope);
     });
 
-    // Start both initializations in parallel
+    // Start both initializations in parallel; the super admin's categories are public (item 7).
     initializeAuth();
     initializeSpots();
+    useCategoryStore.getState().start();
     syncScopes(scope);
 
     // Cleanup
@@ -109,6 +111,7 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
       unsubscribeUser();
       // Clean up all spots listeners (read from the store at cleanup time)
       useSpotStore.getState().stopSpots();
+      useCategoryStore.getState().stop();
       syncScopes({ uid: null, isAdmin: false });
     };
   }, []);

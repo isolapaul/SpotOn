@@ -3,6 +3,7 @@
 // nothing read from Firestore reaches the markup (Leaflet inserts divIcon html with innerHTML).
 import { CATEGORY_GLYPHS, glyphToSvgMarkup, normalizeCategory } from './categoryGlyphs';
 import { normalizePinIcon, PIN_GLYPHS } from './pinGlyphs';
+import { CATEGORY_ICON_GLYPHS, normalizeCategoryIcon } from './categoryIcons';
 
 /**
  * approved: public green pin; rejected: grey with a cross (item 4: only its owner and admins see it);
@@ -52,9 +53,19 @@ const VARIANT_LOOK: Readonly<Record<MarkerVariant, { fill: string; ink: string; 
   rejected: { fill: PIN_COLORS.rejected, ink: '#FFFFFF', ring: '#FFFFFF', dashed: false, badge: CROSS_BADGE },
 };
 
-/** `pin`: the owner's special icon (item 6, spots.ownerPin); it replaces the category glyph. */
-export function buildPinHtml(o: { category: string | undefined; variant: MarkerVariant; highlighted: boolean; pin?: unknown }): string {
+/**
+ * `categoryIcon`: the icon of a custom category (item 7; its pins say data-category="other").
+ * `pin`: the owner's special icon (item 6, spots.ownerPin); it replaces either category glyph.
+ */
+export function buildPinHtml(o: {
+  category: string | undefined;
+  categoryIcon?: unknown;
+  variant: MarkerVariant;
+  highlighted: boolean;
+  pin?: unknown;
+}): string {
   const category = normalizeCategory(o.category);
+  const categoryIcon = normalizeCategoryIcon(o.categoryIcon);
   const pin = normalizePinIcon(o.pin);
   const look = VARIANT_LOOK[o.variant];
   const fill = look.fill;
@@ -62,7 +73,8 @@ export function buildPinHtml(o: { category: string | undefined; variant: MarkerV
   const ring = o.highlighted ? PIN_COLORS.highlight : look.ring;
   const dash = look.dashed && !o.highlighted ? ' stroke-dasharray="4 3"' : '';
   const badge = o.highlighted ? STAR_BADGE : look.badge;
-  const glyph = glyphToSvgMarkup(pin ? PIN_GLYPHS[pin] : CATEGORY_GLYPHS[category], ink);
+  const categoryGlyph = categoryIcon ? CATEGORY_ICON_GLYPHS[categoryIcon] : CATEGORY_GLYPHS[category];
+  const glyph = glyphToSvgMarkup(pin ? PIN_GLYPHS[pin] : categoryGlyph, ink);
 
   return (
     `<div class="spot-pin" data-variant="${o.variant}" data-category="${category}" data-highlighted="${o.highlighted}"${pin ? ` data-pin="${pin}"` : ''}>` +

@@ -5,8 +5,8 @@ import { ArrowRight, X } from 'lucide-react';
 import { useLanguage, useT } from '@/hooks/useT';
 import { formatDistance, haversineKm } from '@/lib/geo';
 import { proposalDiff, type DiffRow, type EditProposal } from '@/lib/moderation';
-import { categoryTranslationKeys } from '@/lib/spotUtils';
-import type { Spot, SpotCategory } from '@/store/useSpotStore';
+import { useCategoryLabel } from '@/hooks/useCategory';
+import type { Spot } from '@/store/useSpotStore';
 import CategoryIcon from '../ui/CategoryIcon';
 
 function Thumb({ url, removed = false }: Readonly<{ url: string; removed?: boolean }>) {
@@ -40,10 +40,11 @@ function Change({ before, after }: Readonly<{ before: React.ReactNode; after: Re
 function Row({ row }: Readonly<{ row: DiffRow }>) {
   const t = useT();
   const language = useLanguage();
+  const categoryLabel = useCategoryLabel();
   const category = (id: string) => (
     <span className="inline-flex items-center gap-1.5">
       <CategoryIcon category={id} className="w-4 h-4" />
-      {categoryTranslationKeys[id as SpotCategory] ? t(categoryTranslationKeys[id as SpotCategory]) : id}
+      {categoryLabel(id)}
     </span>
   );
   switch (row.kind) {

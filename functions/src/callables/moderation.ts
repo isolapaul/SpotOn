@@ -55,11 +55,9 @@ function spotPhotoFiles(spot: DocumentData): PhotoFile[] {
   return [...urls].map((url) => ({url, owners: [addedBy.get(url) ?? "", creator]}));
 }
 
-/** Built-in categories, or one an admin created (categories/{id}, item 7). */
-async function isKnownCategory(id: string): Promise<boolean> {
-  if (BUILT_IN_CATEGORIES.includes(id)) return true;
-  return id.length > 0 && id.length <= 100 && !id.includes("/") &&
-    (await db.collection("categories").doc(id).get()).exists;
+/** A proposed category that is not built in and could be a categories/{id} doc id, else null. */
+function customCategoryId(x: unknown): string | null {
+  return isValidSpotId(x) && !BUILT_IN_CATEGORIES.includes(x) ? x : null;
 }
 
 /** Runs a callable body with one log line: {uid, id, outcome}. */
@@ -172,12 +170,6 @@ export const reviewSpotEdit = onCall(async (request) => {
     const editRef = db.collection("spotEdits").doc(spotId);
     const spotRef = db.collection("spots").doc(spotId);
 
-    // Only a custom category needs a lookup; it is re-checked below against the reviewed proposal.
-    const peek = (await editRef.get()).get("proposed.category");
-    const customCategory = typeof peek === "string" && !BUILT_IN_CATEGORIES.includes(peek) &&
-      (await isKnownCategory(peek)) ? peek : null;
-    const isCategory = (id: string) => BUILT_IN_CATEGORIES.includes(id) || id === customCategory;
-
     const result = await db.runTransaction(async (tx) => {
       const [editSnap, spotSnap] = await Promise.all([tx.get(editRef), tx.get(spotRef)]);
       const createdAt = editSnap.get("createdAt") as Timestamp | undefined;
@@ -196,6 +188,13 @@ export const reviewSpotEdit = onCall(async (request) => {
         tx.update(editRef, {status: "rejected", rejection: {reason, at: Timestamp.now()}});
         return {ownerId, spotName: String(spot.name ?? ""), removed: [] as PhotoFile[], applied: false, spotGone: false};
       }
+      // A custom category (item 7) must still exist; read in the transaction, so a category
+      // deleted meanwhile is never applied.
+      const custom = customCategoryId(editSnap.get("proposed.category"));
+      const customExists = custom !== null &&
+        (await tx.get(db.collection("categories").doc(custom))).exists;
+      const isCategory = (id: string) =>
+        BUILT_IN_CATEGORIES.includes(id) || (customExists && id === custom);
       const proposal = readProposal(editSnap.get("proposed"), isCategory);
       const plan = planEditApply(spot, proposal);
       if (Object.keys(plan.update).length) tx.update(spotRef, plan.update);

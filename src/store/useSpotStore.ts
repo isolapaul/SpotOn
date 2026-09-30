@@ -46,11 +46,13 @@ export interface SpotImage {
 }
 
 export type SpotCategory = 'scenic' | 'smoke-spot' | 'viewpoint' | 'other' | 'hiking' | 'random' | 'date-spot' | 'park' | 'part';
+/** A built-in SpotCategory or the id of a categories/{id} doc the super admin created (item 7). */
+export type CategoryId = string;
 
 export interface Spot {
   id: string;
   name: string;
-  category: SpotCategory;
+  category: CategoryId;
   description: string;
   imageUrls: string[];
   spotImages?: SpotImage[];

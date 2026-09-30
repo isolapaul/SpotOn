@@ -8,4 +8,5 @@ export {addAdmin, removeAdmin, lookupUserByEmail} from "./callables/admins";
 export {syncPublicProfile, syncSpotsCount, syncAdminFlag} from "./triggers/profiles";
 export {claimUsername, updateNameStyle, updatePinIcon} from "./callables/profile";
 export {deleteAccount} from "./callables/account";
+export {deleteCategory} from "./callables/categories";
 export {approveSpot, rejectSpot, removeSpot, reviewSpotEdit, reviewPhotoSubmission} from "./callables/moderation";

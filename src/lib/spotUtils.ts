@@ -1,8 +1,4 @@
-// Spot helpers. The category label map lives in categories.ts (T23) and is re-exported here under
-// its old name.
-import { CATEGORY_LABEL_KEY } from './categories';
-
-export const categoryTranslationKeys = CATEGORY_LABEL_KEY;
+// Spot helpers. Category labels: hooks/useCategory (item 7).
 
 export const getPlatform = (): 'ios' | 'android' | 'desktop' => {
   const userAgent = navigator.userAgent.toLowerCase();

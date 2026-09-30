@@ -3,7 +3,7 @@
 import { Pencil, Star } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
 import { useLanguage, useT } from '@/hooks/useT';
-import { categoryTranslationKeys } from '@/lib/spotUtils';
+import { useCategoryLabel } from '@/hooks/useCategory';
 import CategoryIcon from '@/components/ui/CategoryIcon';
 import StarRating from '../ui/StarRating';
 import type { SpotEdit } from './useSpotEdit';
@@ -19,13 +19,14 @@ interface SpotTitleProps {
 /** Title (or the name input while editing), highlight star, edit button and the rating row. */
 export default function SpotTitle({ spot, avgRating, canEdit, edit, isHighlightedByUser }: Readonly<SpotTitleProps>) {
   const t = useT();
+  const categoryLabel = useCategoryLabel();
   const language = useLanguage();
   const ratingText = avgRating > 0 ? (language === 'en' ? avgRating.toFixed(1) : avgRating.toFixed(1).replace('.', ',')) : '-';
   return (
     <div>
       <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-brand-500/15 text-brand-300 text-[13px] font-semibold mb-2">
         <CategoryIcon category={spot.category} className="w-3.5 h-3.5" />
-        {t(categoryTranslationKeys[spot.category])}
+        {categoryLabel(spot.category)}
       </span>
       <div className="flex items-start justify-between gap-2 mb-1.5">
         {edit.isEditing ? (

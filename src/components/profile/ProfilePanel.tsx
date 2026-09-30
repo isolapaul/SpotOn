@@ -5,7 +5,6 @@ import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useModerationStore } from '@/store/useModerationStore';
 import { useIsAdmin, useIsSuperAdmin } from '@/hooks/useIsAdmin';
-import { useCategories } from '@/hooks/useCategories';
 import { useMyLevel } from '@/hooks/useMyLevel';
 import SettingsPanel from '../SettingsPanel';
 import PanelShell from '../ui/PanelShell';
@@ -47,8 +46,6 @@ export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<P
   const myAllSpots = useMemo(() => (uid ? spots.filter((spot) => spot.createdBy === uid) : []), [spots, uid]);
   const mine = useMyLevel();
 
-  // Dynamic categories (super admin only), live while the panel is open
-  const { categories, addCategory, isAdding } = useCategories(isOpen && userIsSuperAdmin);
 
   if (!isOpen || !user || !mine) return null;
 
@@ -111,7 +108,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<P
 
         {/* Admin Panel - Super Admin Only */}
         {activeTab === 'admin' && userIsSuperAdmin && (
-          <AdminTab categories={categories} addCategory={addCategory} isAdding={isAdding} />
+          <AdminTab />
         )}
       </div>
       </div>
