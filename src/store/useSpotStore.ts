@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import {
   doc,
   updateDoc,
-  deleteDoc,
   runTransaction,
   Timestamp,
 } from 'firebase/firestore';
@@ -10,7 +9,6 @@ import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '@/lib/firebase';
 import type { DateInput } from '@/lib/dates';
 import { removeImage, type RemovableImageFields } from '@/lib/spotImages';
-import { invalidatePublicProfile } from '@/store/publicProfiles';
 import { startApprovedScope, stopAllScopes, syncScopes, type SpotScope } from '@/store/spotListeners';
 
 export type { SpotScope } from '@/store/spotListeners';
@@ -65,6 +63,8 @@ export interface Spot {
   createdByName?: string;
   createdByPhoto?: string;
   status: 'pending' | 'approved' | 'rejected';
+  /** Why an admin rejected it (item 4); only on rejected spots, removed on resubmit. */
+  rejection?: { reason: string; at: Timestamp };
   /** A Timestamp; null while a local create waits for its serverTimestamp. */
   createdAt: DateInput;
   reviews?: Review[];
@@ -75,6 +75,9 @@ export interface Spot {
     expiresAt: string;
   }[];
 }
+
+/** The fields an edit form changes directly (lib/moderation proposes them for approved spots instead). */
+export type SpotFieldsPatch = Partial<Pick<Spot, 'name' | 'description' | 'category' | 'location'>>;
 
 interface SpotStore {
   spots: Spot[];
@@ -90,9 +93,8 @@ interface SpotStore {
   stopSpots: () => void;
   toggleSpotImageLike: (spotId: string, imageId: string) => Promise<void>;
   approveSpot: (spotId: string) => Promise<void>;
-  deleteSpot: (spotId: string) => Promise<void>;
-  updateSpotDescription: (spotId: string, description: string) => Promise<void>;
-  updateSpotName: (spotId: string, name: string) => Promise<void>;
+  /** Direct field edits: admins on any spot, owners on a spot under review or rejected (the rules). */
+  updateSpotFields: (spotId: string, fields: SpotFieldsPatch) => Promise<void>;
   deleteSpotImage: (spotId: string, imageUrl: string) => Promise<void>;
   setPrimaryImage: (spotId: string, imageIndex: number) => Promise<void>;
 }
@@ -110,7 +112,7 @@ function updateSpotInState(
   }));
 }
 
-export const useSpotStore = create<SpotStore>((set, get) => ({
+export const useSpotStore = create<SpotStore>((set) => ({
   spots: [],
   isLoading: false,
   ownLoadedFor: null,
@@ -136,34 +138,12 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
     }
   },
 
-  deleteSpot: async (spotId) => {
+  updateSpotFields: async (spotId, fields) => {
     try {
-      const createdBy = get().spots.find((spot) => spot.id === spotId)?.createdBy;
-      await deleteDoc(doc(db, 'spots', spotId));
-      if (createdBy) invalidatePublicProfile(createdBy);
-      set((state) => ({ spots: state.spots.filter((spot) => spot.id !== spotId) }));
+      await updateDoc(doc(db, 'spots', spotId), { ...fields });
+      updateSpotInState(set, spotId, (spot) => ({ ...spot, ...fields }));
     } catch (error) {
-      console.error('Error deleting spot:', error);
-      throw error;
-    }
-  },
-
-  updateSpotDescription: async (spotId, description) => {
-    try {
-      await updateDoc(doc(db, 'spots', spotId), { description });
-      updateSpotInState(set, spotId, (spot) => ({ ...spot, description }));
-    } catch (error) {
-      console.error('Error updating spot description:', error);
-      throw error;
-    }
-  },
-
-  updateSpotName: async (spotId, name) => {
-    try {
-      await updateDoc(doc(db, 'spots', spotId), { name });
-      updateSpotInState(set, spotId, (spot) => ({ ...spot, name }));
-    } catch (error) {
-      console.error('Error updating spot name:', error);
+      console.error('Error updating spot:', error);
       throw error;
     }
   },

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore } from '@/store/useSpotStore';
+import { useModerationStore } from '@/store/useModerationStore';
 import { useIsAdmin, useIsSuperAdmin } from '@/hooks/useIsAdmin';
 import { useCategories } from '@/hooks/useCategories';
 import { getLevelInfo } from '@/lib/levelUtils';
@@ -27,6 +28,8 @@ interface ProfilePanelProps {
 export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<ProfilePanelProps>) {
   const user = useUserStore((s) => s.user);
   const spots = useSpotStore((s) => s.spots);
+  // Edits and photos waiting for review count toward the admin's badge too (item 4).
+  const queuedCount = useModerationStore((s) => s.editQueue.length + s.photoQueue.length);
   const [activeTab, setActiveTab] = useState<ProfileTab>('my-spots');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showLevelInfo, setShowLevelInfo] = useState(false);
@@ -93,7 +96,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<P
         onChange={setActiveTab}
         isAdmin={userIsAdmin}
         isSuperAdmin={userIsSuperAdmin}
-        pendingCount={pendingSpots.length}
+        pendingCount={pendingSpots.length + queuedCount}
       />
 
       <div className="px-4">

@@ -11,6 +11,7 @@ import {
   Settings2,
   ShieldCheck,
   Star,
+  XCircle,
   type LucideIcon,
 } from 'lucide-react';
 import type { Notification } from '@/store/useNotificationStore';
@@ -22,6 +23,7 @@ type NotificationType = Notification['type'];
 // One icon and tint per type; the colour carries the mood, so texts need no emoji (static classes).
 const LOOK: Readonly<Record<NotificationType, { icon: LucideIcon; tint: string }>> = {
   spot_approved: { icon: CheckCircle2, tint: 'bg-emerald-500/15 text-emerald-400' },
+  moderation_declined: { icon: XCircle, tint: 'bg-red-500/15 text-red-400' },
   new_review: { icon: Star, tint: 'bg-amber-400/15 text-amber-300' },
   new_like: { icon: Heart, tint: 'bg-pink-500/15 text-pink-400' },
   new_pending_spot: { icon: ShieldCheck, tint: 'bg-indigo-500/15 text-indigo-300' },

@@ -151,11 +151,12 @@ export const useUploadStore = create<UploadStore>((set, get) => {
 
     submitPhotos: ({ spotId, spotName, files, userId }) => {
       const uploaded: Array<UploadedImage | undefined> = [];
+      const spec: JobSpec = { kind: 'photos', label: spotName, spotId, doneKey: 'spotPhotosAdded', failKey: 'spotPhotoAddError' };
       start(
-        { kind: 'photos', label: spotName, spotId, doneKey: 'spotPhotosAdded', failKey: 'spotPhotoAddError' },
+        spec,
         async () => {
           const urls = (await uploadSpotImages(files, userId, uploaded)).map((u) => u.url);
-          await attachSpotImages(spotId, urls);
+          if (await attachSpotImages(spotId, urls)) spec.doneKey = 'photosSentForReview';
         },
       );
     },
@@ -177,7 +178,8 @@ export const useUploadStore = create<UploadStore>((set, get) => {
         if (!photosAttached) {
           spec.failKey = 'spotPhotoAddError';
           const urls = (await uploadSpotImages(files, userId, uploaded)).map((u) => u.url);
-          await attachSpotImages(spotId, urls);
+          // Photos that wait for an admin say so (item 4).
+          if (await attachSpotImages(spotId, urls)) spec.doneKey = stored ? 'reviewAddedPhotosForReview' : 'photosSentForReview';
           photosAttached = true;
         }
         if (stored) {

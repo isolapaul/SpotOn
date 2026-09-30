@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Bell, X } from 'lucide-react';
-import { useNotificationStore, type Notification } from '@/store/useNotificationStore';
+import type { Notification } from '@/store/useNotificationStore';
+import { useNotificationFeed } from '@/hooks/useNotificationFeed';
 import { useT } from '@/hooks/useT';
 import { isSameLocalDay } from '@/lib/notificationText';
 import ModalShell from '../ui/ModalShell';
@@ -17,7 +18,7 @@ interface NotificationSheetProps {
 
 /** The notification list, growing out of the control stack's bell (iOS-like sheet, grouped by day). */
 export default function NotificationSheet({ onClose }: Readonly<NotificationSheetProps>) {
-  const { notifications, markAsRead, markAllAsRead, clearAll } = useNotificationStore();
+  const { notifications, markAsRead, markAllAsRead, clearAll } = useNotificationFeed();
   const t = useT();
   const [closing, setClosing] = useState(false);
   // "Now" for grouping and relative times, fixed when the sheet opens (render stays pure).

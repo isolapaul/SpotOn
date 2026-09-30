@@ -1,14 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle, Trash2 } from 'lucide-react';
+import { CheckCircle, Trash2, XCircle } from 'lucide-react';
 import { useSpotStore, type Spot } from '@/store/useSpotStore';
+import { useModerationStore } from '@/store/useModerationStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useT } from '@/hooks/useT';
 import { DELAYS } from '@/lib/constants';
+import { statusClass, statusLabelKey } from '@/lib/spotStatus';
+import Button from '../ui/Button';
+import ReasonSheet from '../moderation/ReasonSheet';
 
-// Admin-only parts of the details panel. UI only: approve/delete are enforced by the rules.
-// Two exports because they sit at different DOM positions (status card first, delete button
+// Admin-only parts of the details panel. UI only: the rules and the moderation callables enforce
+// them. Two exports because they sit at different DOM positions (status card first, delete button
 // after the image manager).
 
 interface AdminActionProps {
@@ -17,12 +21,17 @@ interface AdminActionProps {
   onClose: () => void;
 }
 
-/** Status pill and, for a pending spot, Approve (closes the panel 1 s after a successful approve). */
+/**
+ * Status pill and, for a pending spot, Approve (closes the panel 1 s after a successful approve) and
+ * Reject with a reason (item 4). A rejected spot shows the reason it was given.
+ */
 export function AdminStatusCard({ spot, onClose }: Readonly<AdminActionProps>) {
   const approveSpot = useSpotStore((s) => s.approveSpot);
+  const rejectSpot = useModerationStore((s) => s.rejectSpot);
   const showToast = useToastStore((s) => s.showToast);
   const t = useT();
   const [isApproving, setIsApproving] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
   const approveCloseTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const shownSpotIdRef = useRef<string | undefined>(undefined);
 
@@ -53,50 +62,64 @@ export function AdminStatusCard({ spot, onClose }: Readonly<AdminActionProps>) {
     }
   };
 
+  const handleReject = async (reason: string) => {
+    await rejectSpot(spot.id, reason);
+    showToast(t('spotRejectedToast'), 'success');
+  };
+
   return (
     <div className="rounded-[18px] bg-surface-1 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <span className={`text-xs px-3 py-1 rounded-full font-medium ${spot.status === 'approved' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-          {spot.status === 'approved' ? t('approved') : t('pending')}
+      <div className="flex items-center justify-between gap-2">
+        <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusClass(spot.status)}`}>
+          {t(statusLabelKey(spot.status))}
         </span>
         {spot.status === 'pending' && (
-          <button
-            onClick={handleApprove}
-            disabled={isApproving}
-            className="px-4 py-2 rounded-xl font-medium bg-gradient-to-r from-green-500 to-green-600 text-white text-sm shadow-lg shadow-green-500/20 hover:shadow-xl active:scale-98 transition-all disabled:opacity-50 flex items-center gap-2"
-          >
-            <CheckCircle className="w-4 h-4" />
-            {isApproving ? t('approving') : t('approve')}
-          </button>
+          <div className="flex gap-2">
+            <Button variant="destructive" size="sm" onClick={() => setRejecting(true)}>
+              <XCircle className="w-4 h-4" aria-hidden="true" />
+              {t('reject')}
+            </Button>
+            <Button size="sm" onClick={handleApprove} disabled={isApproving}>
+              <CheckCircle className="w-4 h-4" aria-hidden="true" />
+              {isApproving ? t('approving') : t('approve')}
+            </Button>
+          </div>
         )}
       </div>
+      {spot.status === 'rejected' && spot.rejection && (
+        <p className="text-[14px] text-label-secondary">{t('rejectionReason', { reason: spot.rejection.reason })}</p>
+      )}
+      {rejecting && (
+        <ReasonSheet title="rejectSpotTitle" confirmLabel="reject" onConfirm={handleReject} onClose={() => setRejecting(false)} />
+      )}
     </div>
   );
 }
 
-/** Deletes the spot after a confirm, then closes the panel. */
+/** Deletes the spot with a reason for its owner (item 4), then closes the panel. */
 export function DeleteSpotButton({ spot, onClose }: Readonly<AdminActionProps>) {
-  const deleteSpot = useSpotStore((s) => s.deleteSpot);
+  const removeSpot = useModerationStore((s) => s.removeSpot);
   const showToast = useToastStore((s) => s.showToast);
   const t = useT();
+  const [asking, setAsking] = useState(false);
 
-  const handleDeleteSpot = async () => {
-    if (!confirm(t('confirmDeleteSpot'))) return;
-    try {
-      await deleteSpot(spot.id);
-      showToast(t('spotDeleted'), 'success');
-      onClose();
-    } catch {
-      showToast(t('spotDeleteError'), 'error');
-    }
+  const handleRemove = async (reason: string) => {
+    await removeSpot(spot.id, spot.createdBy, reason);
+    showToast(t('spotDeleted'), 'success');
+    onClose();
   };
 
   return (
-    <button
-      onClick={handleDeleteSpot}
-      className="w-full py-3 rounded-xl font-medium text-sm bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
-    >
-      <Trash2 className="w-4 h-4" /> {t('deleteSpot')}
-    </button>
+    <>
+      <button
+        onClick={() => setAsking(true)}
+        className="w-full py-3 rounded-xl font-medium text-sm bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 active:scale-98 transition-all flex items-center justify-center gap-2"
+      >
+        <Trash2 className="w-4 h-4" /> {t('deleteSpot')}
+      </button>
+      {asking && (
+        <ReasonSheet title="removeSpotTitle" confirmLabel="deleteSpot" onConfirm={handleRemove} onClose={() => setAsking(false)} />
+      )}
+    </>
   );
 }

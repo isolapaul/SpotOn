@@ -5,8 +5,9 @@ import { E2E } from './fixtures';
 import { test, blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstRunOverlays, spotMarker } from './helpers';
 
 // T21 (BUG-03): "set primary" in the image manager targets the clicked image, even when imageUrls
-// starts with the placeholder. Deleting an image keeps the same image primary (BUG-27) through the
-// owner-edit rule. The fixture is reset before and after the run (and at the start of the delete
+// starts with the placeholder. Deleting an image keeps the same image primary (BUG-27). Run as an
+// admin: since item 4 an owner's photo changes on an approved spot are proposed for review instead
+// (e2e/moderation.spec.ts), while admins (and owners of spots under review) still apply them directly. The fixture is reset before and after the run (and at the start of the delete
 // test), so retries always see the seeded state. The details panel reads the live spot (T29); it is still closed and reopened
 // before asserting, which also checks the reopened state.
 
@@ -60,7 +61,7 @@ test.beforeEach(async ({ page }) => {
 
 test('set primary in the image manager targets the clicked image', async ({ page }) => {
   await openApp(page);
-  await signInWithEmail(page, E2E.user.email, E2E.password);
+  await signInWithEmail(page, E2E.admin.email, E2E.password);
   await openDetails(page);
 
   await page.getByRole('button', { name: /Manage images/ }).click();
@@ -86,7 +87,7 @@ test('deleting an image before the primary keeps the same image primary', async 
   await adminDb().doc(`spots/${spot.id}`).update({ primaryImageIndex: 2 }); // urlB
 
   await openApp(page);
-  await signInWithEmail(page, E2E.user.email, E2E.password);
+  await signInWithEmail(page, E2E.admin.email, E2E.password);
   await openDetails(page);
 
   await page.getByRole('button', { name: /Manage images/ }).click();

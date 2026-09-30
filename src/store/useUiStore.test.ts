@@ -30,6 +30,7 @@ beforeEach(() => {
     locateRequest: 0,
     returnTo: null,
     focusRequest: null,
+    relocatingSpotId: null,
   });
   useMapThemeStore.setState({ theme: 'dark' });
 });
@@ -305,6 +306,27 @@ describe('opening a spot from a list, and back', () => {
     ui().cancelSelectingLocation();
     ui().openPanel('auth');
     expect(hasBackStep(ui())).toBe(true);
+  });
+});
+
+describe('relocating a spot (item 4 edit)', () => {
+  it('leaves the spot for satellite picking, and a pick or a cancel returns to it with the theme', () => {
+    ui().openPanel(spot('s1'));
+    ui().startRelocating('s1', 'dark');
+    expect(ui()).toMatchObject({ relocatingSpotId: 's1', selectingLocation: true, activePanel: 'none' });
+    expect(theme()).toBe('satellite');
+    ui().finishRelocating();
+    expect(ui()).toMatchObject({ relocatingSpotId: null, selectingLocation: false, activePanel: spot('s1') });
+    expect(theme()).toBe('dark');
+
+    ui().startRelocating('s1', 'light');
+    ui().cancelSelectingLocation();
+    expect(ui()).toMatchObject({ relocatingSpotId: null, activePanel: spot('s1') });
+    expect(theme()).toBe('light');
+
+    ui().startRelocating('s1', 'light');
+    ui().goBack();
+    expect(ui().activePanel).toEqual(spot('s1'));
   });
 });
 

@@ -191,6 +191,8 @@ export const usePushNotifications = () => {
     listenerSetup = true;
     
     onMessage(messaging, (payload) => {
+      // Moderation decisions also land in the server inbox (item 4), which the centre shows already.
+      if (payload.data?.inbox === '1') return;
       // Read the language at message time: this listener is registered once (no stale closure).
       const title = payload.notification?.title || translate(useLanguageStore.getState().language ?? 'hu', 'newNotification');
       const body = payload.notification?.body || '';

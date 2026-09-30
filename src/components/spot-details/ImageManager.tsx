@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Star, Trash2, Image as ImageIcon, Images } from 'lucide-react';
 import { useSpotStore, type Spot } from '@/store/useSpotStore';
+import { useModerationStore } from '@/store/useModerationStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useT } from '@/hooks/useT';
 import { PLACEHOLDER_URL, getSpotImages } from '@/lib/spotImages';
@@ -12,6 +13,8 @@ interface ImageManagerProps {
   spot: Spot;
   /** Number of gallery images, shown on the toggle. */
   imageCount: number;
+  /** direct: admins, the owner of a spot under review; propose: the owner of an approved spot (item 4). */
+  route: 'direct' | 'propose';
 }
 
 /** A manager tile: `index` is the image's position in imageUrls (what primaryImageIndex indexes). */
@@ -30,16 +33,25 @@ function getManagedImages(spot: Spot): ManagedImage[] {
   ];
 }
 
-/** "Manage images" (owner/admin): toggle, then set-primary and delete per image. */
-export default function ImageManager({ spot, imageCount }: Readonly<ImageManagerProps>) {
+/**
+ * "Manage images" (owner/admin): toggle, then set-primary and delete per image. On an approved spot
+ * the owner's changes are proposed for review instead of applied (item 4).
+ */
+export default function ImageManager({ spot, imageCount, route }: Readonly<ImageManagerProps>) {
   const setPrimaryImage = useSpotStore((s) => s.setPrimaryImage);
   const deleteSpotImage = useSpotStore((s) => s.deleteSpotImage);
+  const proposeEdit = useModerationStore((s) => s.proposeEdit);
   const showToast = useToastStore((s) => s.showToast);
   const t = useT();
   const [showManageImages, setShowManageImages] = useState(false);
 
   const handleSetPrimaryImage = async (index: number) => {
     try {
+      if (route === 'propose') {
+        const url = spot.imageUrls?.[index];
+        if (url && (await proposeEdit(spot, { primaryImageUrl: url }))) showToast(t('editSentForReview'), 'success');
+        return;
+      }
       await setPrimaryImage(spot.id, index);
       showToast(t('primaryImageSet'), 'success');
     } catch {
@@ -50,6 +62,10 @@ export default function ImageManager({ spot, imageCount }: Readonly<ImageManager
   const handleDeleteImage = async (imageUrl: string) => {
     if (!confirm(t('confirmDeleteImage'))) return;
     try {
+      if (route === 'propose') {
+        if (await proposeEdit(spot, { removeImageUrls: [imageUrl] })) showToast(t('editSentForReview'), 'success');
+        return;
+      }
       await deleteSpotImage(spot.id, imageUrl);
       showToast(t('imageDeleted'), 'success');
     } catch {

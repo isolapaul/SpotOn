@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, type SpotScope } from '@/store/useSpotStore';
+import { useModerationStore } from '@/store/useModerationStore';
+import { useInboxStore } from '@/store/useInboxStore';
 import { DELAYS } from '@/lib/constants';
 
 /**
@@ -10,6 +12,13 @@ import { DELAYS } from '@/lib/constants';
 function spotScopeOf(state: { user: { uid: string } | null; loading: boolean; isAdmin: boolean }): SpotScope {
   const uid = !state.loading && state.user ? state.user.uid : null;
   return { uid, isAdmin: uid !== null && state.isAdmin };
+}
+
+/** Every per-user listener follows the same scope: spots (T30), moderation and the inbox (item 4). */
+function syncScopes(scope: SpotScope) {
+  useSpotStore.getState().syncSpotScopes(scope);
+  useModerationStore.getState().sync(scope);
+  useInboxStore.getState().sync(scope.uid);
 }
 
 /**
@@ -80,13 +89,13 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
       const next = spotScopeOf(state);
       if (next.uid === scope.uid && next.isAdmin === scope.isAdmin) return;
       scope = next;
-      useSpotStore.getState().syncSpotScopes(scope);
+      syncScopes(scope);
     });
 
     // Start both initializations in parallel
     initializeAuth();
     initializeSpots();
-    useSpotStore.getState().syncSpotScopes(scope);
+    syncScopes(scope);
 
     // Cleanup
     return () => {
@@ -95,6 +104,7 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
       unsubscribeUser();
       // Clean up all spots listeners (read from the store at cleanup time)
       useSpotStore.getState().stopSpots();
+      syncScopes({ uid: null, isAdmin: false });
     };
   }, []);
 

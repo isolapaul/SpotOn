@@ -48,6 +48,8 @@ async function resetFixtures() {
     isHighlighted: FieldValue.delete(),
   });
   await db.doc(`users/${E2E.level5.uid}`).update({ highlightedSpots: FieldValue.delete() });
+  const submissions = await db.collection('photoSubmissions').where('spotId', '==', E2E.interactionSpot.id).get();
+  await Promise.all(submissions.docs.map((d) => d.ref.delete()));
   const created = await db.collection('spots').where('createdBy', '==', E2E.user.uid).get();
   await Promise.all(
     created.docs
@@ -163,30 +165,48 @@ test('viewing a legacy spot does not write to it', async ({ page }) => {
   expect(spot?.imageUrls).toEqual(['/icon-512x512.png']);
 });
 
-test('adding a photo to a legacy spot materialises its images server-side', async ({ page }) => {
+test("another user's photo waits for approval; the spot is unchanged meanwhile (item 4)", async ({ page }) => {
   await openApp(page);
   await signInWithEmail(page, E2E.user.email, E2E.password);
   await openDetails(page, E2E.interactionSpot.category);
 
   await page.locator('#spot-photos-input').setInputFiles(await jpegUpload(page));
-  await expectNotification(page, 'Photos added!');
+  await expectNotification(page, 'Your photos are waiting for approval');
 
   const spot = await spotData(E2E.interactionSpot.id);
-  const imageUrls: string[] = spot?.imageUrls ?? [];
-  const ids = ((spot?.spotImages ?? []) as Array<{ id: string }>).map((i) => i.id);
-  expect(imageUrls).toHaveLength(2);
-  expect(imageUrls[0]).toBe('/icon-512x512.png');
-  expect(storagePathOf(imageUrls[1]).startsWith(`spot-images/${E2E.user.uid}/`)).toBe(true);
-  expect(ids).toHaveLength(2);
-  expect(ids[0]).toBe(`${E2E.interactionSpot.id}_0`);
-  expect(ids[1]).toMatch(/^\d+_\d+$/);
-
-  await closeDetails(page);
-  await openDetails(page, E2E.interactionSpot.category);
-  await expect(page.getByRole('img', { name: '2 photos' })).toBeVisible();
+  expect(spot?.imageUrls).toEqual(['/icon-512x512.png']);
+  expect(spot && 'spotImages' in spot).toBe(false);
+  const submissions = await adminDb().collection('photoSubmissions').where('spotId', '==', E2E.interactionSpot.id).get();
+  expect(submissions.size).toBe(1);
+  expect(submissions.docs[0].data()).toMatchObject({ uploader: E2E.user.uid, status: 'pending', spotName: E2E.interactionSpot.name });
+  expect(storagePathOf(submissions.docs[0].get('url')).startsWith(`spot-images/${E2E.user.uid}/`)).toBe(true);
 });
 
-test('a review and a photo go up together with one submit', async ({ page }) => {
+test('an admin approves the photo: the legacy spot is materialised server-side', async ({ page }) => {
+  await openApp(page);
+  await signInWithEmail(page, E2E.admin.email, E2E.password);
+  await page.getByRole('button', { name: 'Profile' }).click();
+  await page.getByRole('button', { name: /Pending Approval/ }).click();
+  await page.getByRole('radio', { name: /Photos/ }).click();
+  await page.getByRole('region', { name: E2E.interactionSpot.name }).getByRole('button', { name: 'Approve', exact: true }).click();
+  await expectNotification(page, 'Photo approved');
+
+  await expect.poll(async () => ((await spotData(E2E.interactionSpot.id))?.imageUrls ?? []).length).toBe(2);
+  const spot = await spotData(E2E.interactionSpot.id);
+  const imageUrls: string[] = spot?.imageUrls ?? [];
+  const images = (spot?.spotImages ?? []) as Array<{ id: string; addedBy?: string }>;
+  expect(imageUrls[0]).toBe('/icon-512x512.png');
+  expect(storagePathOf(imageUrls[1]).startsWith(`spot-images/${E2E.user.uid}/`)).toBe(true);
+  expect(images.map((i) => i.id)[0]).toBe(`${E2E.interactionSpot.id}_0`);
+  expect(images[1]).toMatchObject({ addedBy: E2E.user.uid });
+  expect(images[1].id).toMatch(/^\d+_\d+$/);
+  expect((await adminDb().collection('photoSubmissions').where('spotId', '==', E2E.interactionSpot.id).get()).size).toBe(0);
+  // The uploader hears about it in the app.
+  const inbox = await adminDb().collection(`users/${E2E.user.uid}/inbox`).where('type', '==', 'photo_approved').get();
+  expect(inbox.size).toBeGreaterThanOrEqual(1);
+});
+
+test('a review goes up at once; its photo waits for approval', async ({ page }) => {
   const comment = `E2E review with photo ${Date.now().toString(36)}`;
   await openApp(page);
   await signInWithEmail(page, E2E.level5.email, E2E.password);
@@ -198,14 +218,14 @@ test('a review and a photo go up together with one submit', async ({ page }) => 
   await page.locator('#review-photos-input').setInputFiles(await jpegUpload(page));
   await expect(page.getByRole('img', { name: 'Photo 1' })).toBeVisible();
   await page.getByRole('button', { name: 'Submit Review' }).click();
-  await expectNotification(page, 'Review and photos added!');
+  await expectNotification(page, 'Review posted, your photos are waiting for approval');
 
   const spot = await spotData(E2E.interactionSpot.id);
   const reviews: Array<Record<string, unknown>> = spot?.reviews ?? [];
   expect(reviews.find((r) => r.comment === comment)).toMatchObject({ userId: E2E.level5.uid, rating: 5 });
-  const imageUrls: string[] = spot?.imageUrls ?? [];
-  expect(imageUrls).toHaveLength(3);
-  expect(storagePathOf(imageUrls[2]).startsWith(`spot-images/${E2E.level5.uid}/`)).toBe(true);
+  expect(spot?.imageUrls).toHaveLength(2);
+  const submissions = await adminDb().collection('photoSubmissions').where('uploader', '==', E2E.level5.uid).get();
+  expect(submissions.docs.some((d) => storagePathOf(d.get('url')).startsWith(`spot-images/${E2E.level5.uid}/`))).toBe(true);
 });
 
 test('admin approves the pending spot', async ({ page }) => {
@@ -215,8 +235,7 @@ test('admin approves the pending spot', async ({ page }) => {
   await page.getByRole('button', { name: 'Profile' }).click();
   await page.getByRole('button', { name: /Pending Approval/ }).click();
 
-  const card = page.locator('.glass-card').filter({ hasText: newSpotName });
-  await card.getByRole('button', { name: 'Approve' }).click();
+  await page.getByRole('region', { name: newSpotName }).getByRole('button', { name: 'Approve', exact: true }).click();
 
   await expect.poll(async () => (await spotData(createdSpotId!))?.status).toBe('approved');
 });
