@@ -74,22 +74,11 @@ service cloud.firestore {
       return newL is list && newL.size() <= oldL.size() && newL.removeAll(oldL).size() == 0;
     }
     // Owner image edits may only remove entries (SEC-10); removing the last one leaves the placeholder.
+    // Used for spots under review (isOwnerDraftEdit).
     function validOwnerImages() {
       let newU = request.resource.data.get('imageUrls', []);
       return (newU == ['/placeholder-spot.jpg'] || onlyRemoved(resource.data.get('imageUrls', []), newU))
         && onlyRemoved(resource.data.get('spotImages', []), request.resource.data.get('spotImages', []));
-    }
-    function isOwnerEdit() {
-      let d = request.resource.data;
-      let ak = changed();
-      return signedIn()
-        && resource.data.createdBy == request.auth.uid
-        && resource.data.status == 'approved'
-        && ak.hasOnly(['name', 'description', 'primaryImageIndex', 'imageUrls', 'spotImages'])
-        && (!ak.hasAny(['name']) || isStr(d.name, 1, 100))
-        && (!ak.hasAny(['description']) || (d.description is string && d.description.size() <= 2000))
-        && (!ak.hasAny(['primaryImageIndex']) || (d.primaryImageIndex is int && d.primaryImageIndex >= 0 && d.primaryImageIndex < 20))
-        && (!ak.hasAny(['imageUrls', 'spotImages']) || validOwnerImages());
     }
     // Item 4: the owner edits a spot still under review (pending) or rejected, and may resubmit a
     // rejected one: status rejected → pending, with the rejection removed. Photos: removals here;
@@ -119,7 +108,8 @@ service cloud.firestore {
                   || (request.auth != null && resource.data.createdBy == request.auth.uid)
                   || isAdmin();
       allow create: if validSpotCreate();
-      allow update: if isAdmin() || isReviewAppend() || isOwnerEdit() || isOwnerDraftEdit();
+      // An owner's change to an approved spot is a proposal (spotEdits) since item 4.
+      allow update: if isAdmin() || isReviewAppend() || isOwnerDraftEdit();
       allow delete: if isAdmin();
     }
 
