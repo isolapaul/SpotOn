@@ -8,7 +8,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "functions:build": "cd functions && npm run build",
     "functions:deploy": "firebase deploy --only functions",
     "functions:logs": "firebase functions:log",

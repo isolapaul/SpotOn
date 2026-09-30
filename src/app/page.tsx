@@ -1,7 +1,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
 import BottomNavigation from '@/components/BottomNavigation';
 import AuthModal from '@/components/AuthModal';
 import AddSpotModal from '@/components/AddSpotModal';
@@ -23,6 +22,7 @@ import { useMapThemeStore } from '@/store/useMapThemeStore';
 import { isSpotPanel, useUiStore } from '@/store/useUiStore';
 import { useT } from '@/hooks/useT';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
+import { useIsClient } from '@/hooks/useIsClient';
 import { useInitialLanguage } from '@/hooks/useInitialLanguage';
 import { useMapThemeAttribute } from '@/hooks/useMapThemeAttribute';
 import { useStandaloneFullHeight } from '@/hooks/useStandaloneFullHeight';
@@ -38,7 +38,7 @@ const MapView = dynamic(() => import('@/components/MapView'), {
 });
 
 export default function Home() {
-  const [isClient, setIsClient] = useState(false);
+  const isClient = useIsClient();
   const { isAppReady, onMapLoad } = useAppBootstrap();
   useInitialLanguage();
   useMapThemeAttribute();
@@ -57,10 +57,6 @@ export default function Home() {
   const { openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot } =
     useUiStore(useShallow(({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot }) =>
       ({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot })));
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   // Map: the shared location, or the default centre once location is denied (dot + one-time pan).
   const mapLocation = userLocation

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
+import Image from 'next/image';
 import { X, Camera, Send, MessageSquareText } from 'lucide-react';
 import Button, { CloseButton } from './ui/Button';
 import { compressImage } from '@/lib/imageCompression';
@@ -153,11 +154,15 @@ export default function FeedbackPanel({ open, onClose }: Props) {
             {files.length > 0 && (
               <div className="grid grid-cols-3 gap-3">
                 {files.map((f, i) => (
-                  <div key={i} className="relative bg-surface-3 rounded-[14px] overflow-hidden motion-safe:animate-item-in">
-                    <img
+                  <div key={i} className="relative h-28 bg-surface-3 rounded-[14px] overflow-hidden motion-safe:animate-item-in">
+                    {/* A local blob: URL preview: nothing to optimise */}
+                    <Image
                       src={URL.createObjectURL(f)}
                       alt={f.name}
-                      className="object-cover w-full h-28"
+                      fill
+                      unoptimized
+                      sizes="33vw"
+                      className="object-cover"
                     />
                     <button
                       onClick={() => removeFile(i)}

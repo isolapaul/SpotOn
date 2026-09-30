@@ -41,9 +41,10 @@ function compareSpots(a: Spot, b: Spot): number {
   const ga = group(a.createdAt);
   const gb = group(b.createdAt);
   if (ga !== gb) return ga - gb;
-  if (ga === 1) {
-    const ta = a.createdAt as TimestampLike;
-    const tb = b.createdAt as TimestampLike;
+  // Group 1 means both are Timestamps; the guards only narrow the types.
+  if (ga === 1 && isTimestamp(a.createdAt) && isTimestamp(b.createdAt)) {
+    const ta = a.createdAt;
+    const tb = b.createdAt;
     if (ta.seconds !== tb.seconds) return tb.seconds - ta.seconds;
     if (ta.nanoseconds !== tb.nanoseconds) return tb.nanoseconds - ta.nanoseconds;
   }

@@ -14,7 +14,7 @@ export default defineConfig([
     files: ['**/*.{js,jsx,mjs,ts,tsx,mts,cts}'],
     rules: {
       'react-hooks/rules-of-hooks': 'error',
-      // Pre-existing violations at T01 (baseline 51 / 10 / 1). Warn only; fix while touching code.
+      // Warnings, but `npm run lint` allows none (--max-warnings 0): the baseline is fixed.
       '@typescript-eslint/no-explicit-any': 'warn',
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/purity': 'warn',

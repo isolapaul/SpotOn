@@ -7,6 +7,7 @@ import { useUploadStore } from '@/store/useUploadStore';
 import { useT } from '@/hooks/useT';
 import { X, MapPin, Upload } from 'lucide-react';
 import { useState, useRef, ChangeEvent } from 'react';
+import Image from 'next/image';
 import type { SpotCategory } from '@/store/useSpotStore';
 import { MAX_SPOT_IMAGES, MAX_UPLOAD_BYTES } from '@/lib/constants';
 import { CATEGORIES } from '@/lib/categories';
@@ -282,10 +283,14 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
                       index === primaryImageIndex ? 'border-primary-500' : 'border-white/20'
                     }`}
                   >
-                    <img
+                    {/* A local data: URL preview: nothing to optimise */}
+                    <Image
                       src={preview}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      fill
+                      unoptimized
+                      sizes="33vw"
+                      className="object-cover"
                     />
                     {/* Primary badge */}
                     {index === primaryImageIndex && (
