@@ -212,14 +212,13 @@ describe('owner edits (approved spot)', () => {
     await assertSucceeds(upd(db, SPOT_APPROVED, { imageUrls: [PLACEHOLDER], spotImages: [], primaryImageIndex: 0 }));
     await assertSucceeds(upd(db, SPOT_LEGACY, { imageUrls: [IMG1], spotImages: [], primaryImageIndex: 0 }));
   });
-  it('SEC-02: denies invalid values and edits of a pending spot', async () => {
+  it('SEC-02: denies invalid values', async () => {
     const db = dbAs(env, ALICE);
     await assertFails(upd(db, SPOT_APPROVED, { name: '' }));
     await assertFails(upd(db, SPOT_APPROVED, { description: 'x'.repeat(2001) }));
     await assertFails(upd(db, SPOT_APPROVED, { primaryImageIndex: 20 }));
     await assertFails(upd(db, SPOT_APPROVED, { primaryImageIndex: '1' }));
-    await assertFails(upd(db, SPOT_PENDING, { name: 'Renamed' }));
-    await assertFails(upd(db, SPOT_PENDING, { description: 'd' }));
+    // (edits of the owner's pending spot are allowed since item 4: firestore.moderation.test.ts)
   });
   it('SEC-02/09: denies owner changes to createdBy, status, highlighted, isHighlighted', async () => {
     const db = dbAs(env, ALICE);
