@@ -35,9 +35,9 @@ export async function skipFirstRunOverlays(page: Page, language: 'en' | 'hu' | '
   }, language);
 }
 
-/** Aborts map tile requests so tests never depend on third-party tile servers. */
+/** Aborts map requests so tests never depend on Mapbox (without a token none are made anyway). */
 export async function blockMapTiles(page: Page) {
-  await page.route(/(openstreetmap|cartocdn|arcgisonline)\./, (route) => route.abort());
+  await page.route(/(api|events)\.mapbox\.com|tiles\.mapbox\.com/, (route) => route.abort());
 }
 
 /** Opens the app and waits until LoadingScreen has unmounted. */
@@ -46,9 +46,9 @@ export async function openApp(page: Page) {
   await expect(page.getByTestId('loading-screen')).toHaveCount(0, { timeout: 30_000 });
 }
 
-/** Leaflet marker(s) of the given category (design 1D pins carry data-category). */
+/** Map marker(s) of the given category (design 1D pins carry data-category). */
 export function spotMarker(page: Page, category: string) {
-  return page.locator(`.leaflet-marker-icon:has(.spot-pin[data-category="${category}"])`);
+  return page.locator(`.spot-marker:has(.spot-pin[data-category="${category}"])`);
 }
 
 /** Signs in through the AuthModal email form (English UI). App must be open and signed out. */

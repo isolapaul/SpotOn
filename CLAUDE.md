@@ -20,7 +20,7 @@ Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only 
 |---|---|
 | Framework | Next.js 16 App Router (`src/app`, `src/proxy.ts`), TypeScript strict |
 | UI | React 19, Tailwind CSS 3 (design tokens in `tailwind.config.ts`; materials, pins and view transitions in `src/app/globals.css`), lucide-react |
-| Map | Leaflet + react-leaflet 5 (OpenStreetMap / CARTO / Esri tiles) |
+| Map | Mapbox GL JS 3 (Mapbox styles per theme; no token = a plain offline background) |
 | State | Zustand 5 (`src/store/*`, several persisted to localStorage) |
 | Backend (BaaS) | Firebase: Auth, Firestore, Storage, Cloud Messaging (web push) |
 | Server code | Cloud Functions v2 in `functions/` (region `europe-west3`) |
@@ -70,7 +70,7 @@ src/lib/csp.mjs                  CSP builder shared by src/proxy.ts (pages) and 
 src/lib/levelUtils.ts, levelTheme.ts  Level thresholds 3/10/15/20 spots, perks, badge colours, level-up rule
 src/lib/categories.ts, spotUtils.ts  The nine categories and their label keys; navigation URLs
 src/lib/terms.ts                 TERMS_VERSION and the acceptance check (A1)
-src/lib/mapTiles.ts              CARTO API key on tile URLs
+src/lib/mapStyles.ts             Mapbox style per theme, offline fallback without a token
 functions/src/index.ts           Exports only: triggers (functions/src/triggers: notifications, publicProfiles/spotsCount/admin-flag sync)
                                  and callables (functions/src/callables: highlights, spot images/likes, admins, username/name style, account deletion)
 firestore.rules, storage.rules   Security rules; tests in tests/rules/ (`npm run test:rules`)
@@ -129,7 +129,7 @@ In the Claude Code sandbox, the functions emulator cannot register Firestore tri
 | `NEXT_PUBLIC_USE_EMULATORS` | build time, tests only | `lib/firebase.ts` |
 | `NEXT_PUBLIC_MOVED_TO` | build time, Vercel only (T19) | domain-move banner |
 | `NEXT_PUBLIC_CONTROLLER_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` | build time (required by the container build) | legal pages `/privacy`, `/terms` (A1) |
-| `NEXT_PUBLIC_CARTO_API_KEY` | build time, optional (CARTO watermarks keyless tiles) | `store/useMapThemeStore.ts` via `lib/mapTiles` |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | build time, required for releases (public `pk.` token, URL-restricted) | `components/MapView.tsx` via `lib/mapStyles` |
 | `SMTP_HOST/PORT/USER/PASS`, `FEEDBACK_RECIPIENT` | runtime (container `.env`) | `/api/feedback` |
 | `ANDROID_CERT_SHA256` | runtime (container `.env`), optional | `/.well-known/assetlinks.json` (docs/deploy.md §17.3) |
 

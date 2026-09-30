@@ -96,7 +96,7 @@ test('new spot image is uploaded to spot-images/{uid}/ and the spot is pending',
   await signInWithEmail(page, E2E.user.email, E2E.password);
 
   await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.locator('.leaflet-container').click({ position: { x: 300, y: 450 } });
+  await page.locator('.mapboxgl-map').click({ position: { x: 300, y: 450 } });
   await page.locator('#spot-name').fill(newSpotName);
   await page.locator('#spot-image').setInputFiles(await jpegUpload(page));
   await expect(page.getByAltText('Preview 1')).toBeVisible();

@@ -3,11 +3,11 @@ import { E2E } from './fixtures';
 import { test, blockMapTiles, openApp, signInWithEmail, skipFirstRunOverlays } from './helpers';
 
 // T29: the panel state machine (activePanel in useUiStore) and the add-spot location selection.
-// Read-only: the add form is closed without submitting, so no fixture is changed. Tiles are
-// aborted by blockMapTiles, so tile checks assert DOM presence only (never visibility or load).
+// Read-only: the add form is closed without submitting, so no fixture is changed. The e2e build has
+// no Mapbox token, so the theme is checked on the map container (data-map-style).
 
-const satelliteTile = (page: Page) => page.locator('img.leaflet-tile[src*="arcgisonline"]');
-const standardTile = (page: Page) => page.locator('img.leaflet-tile[src*="tile.openstreetmap.org"]');
+const satelliteTile = (page: Page) => page.locator('[data-map-style="satellite"]');
+const standardTile = (page: Page) => page.locator('[data-map-style="standard"]');
 // The picking hint lives in the launcher capsule (design 1C); Add turns into Cancel meanwhile.
 const clickMapBanner = (page: Page) => page.getByText('Tap the map to place', { exact: true });
 const addButton = (page: Page) => page.getByRole('button', { name: 'Add', exact: true });
@@ -40,7 +40,7 @@ test('add spot: one banner, satellite while selecting, theme restored on cancel 
   // 3. Pick a point away from the markers and the blue dot (both within ~80 px of the centre).
   await addButton(page).click();
   await expect(satelliteTile(page).first()).toBeAttached();
-  const map = page.locator('.leaflet-container');
+  const map = page.locator('.mapboxgl-map');
   const box = (await map.boundingBox())!;
   await map.click({ position: { x: box.width / 2 - 300, y: box.height / 2 + 150 } });
   await expect(page.locator('#spot-name')).toBeVisible();

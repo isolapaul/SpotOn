@@ -16,17 +16,22 @@ export const FEEDBACK_MAX_FILES = FEEDBACK_LIMITS.maxAttachments;
 /** Horizontal swipe distance (px) that triggers the gesture. */
 export const SWIPE_THRESHOLDS = { panel: 150, spotDetails: 100, gallery: 50 } as const;
 
-/** Map defaults (Budapest). */
+/**
+ * Map defaults (Budapest). Zooms are Mapbox GL zooms (512px tiles): one less than the Leaflet
+ * zoom of the same scale the app used before.
+ */
 export const DEFAULT_MAP_CENTER: [number, number] = [47.4979, 19.0402];
-export const DEFAULT_MAP_ZOOM = 6;
+export const DEFAULT_MAP_ZOOM = 5;
+/** The closest zoom (Leaflet's 18 on screen). */
+export const MAX_MAP_ZOOM = 18;
 /** Zoom used when panning to the user's location. */
-export const LOCATE_ZOOM = 13;
+export const LOCATE_ZOOM = 12;
 /**
  * Flying to a spot opened from the profile: at least this zoom (pins, not dots), this long, with the
- * spot this many px above the centre so the place card does not cover it; a fallback in case Leaflet
+ * spot this many px above the centre so the place card does not cover it; a fallback in case the map
  * never reports the end of the move.
  */
-export const SPOT_FOCUS = { zoom: 16, durationS: 0.9, liftPx: 110, fallbackMs: 1600 } as const;
+export const SPOT_FOCUS = { zoom: 15, durationS: 0.9, liftPx: 110, fallbackMs: 1600 } as const;
 /** Cached user location max age (sessionStorage and geolocation maximumAge). */
 export const LOCATION_CACHE_MAX_AGE_MS = 600_000;
 export const GEOLOCATION_TIMEOUT_MS = 10_000;

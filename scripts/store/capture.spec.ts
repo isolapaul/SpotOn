@@ -48,7 +48,7 @@ test.describe('phone screenshots (1080×1920, English)', () => {
     await settle(page);
     await shot(page, '01-map');
 
-    await page.locator('.leaflet-marker-icon:has(.spot-pin[data-category="scenic"])').first().click();
+    await page.locator('.spot-marker:has(.spot-pin[data-category="scenic"])').first().click();
     await expect(page.getByText("Fisherman's Bastion terrace").first()).toBeVisible();
     await settle(page);
     await shot(page, '02-place-card');

@@ -53,10 +53,11 @@ describe('buildPinHtml', () => {
 
 describe('zoomBand', () => {
   it('collapses pins to dots at region zoom and below', () => {
-    expect(zoomBand(6)).toBe('far');
-    expect(zoomBand(10)).toBe('far');
-    expect(zoomBand(11)).toBe('near');
-    expect(zoomBand(18)).toBe('near');
+    // Mapbox zooms (Leaflet's 10 is Mapbox's 9).
+    expect(zoomBand(5)).toBe('far');
+    expect(zoomBand(9.9)).toBe('far');
+    expect(zoomBand(10)).toBe('near');
+    expect(zoomBand(17)).toBe('near');
   });
 });
 
