@@ -1,6 +1,6 @@
 'use client';
 
-import { TrendingUp, X } from 'lucide-react';
+import { Check, TrendingUp, X } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { getLevelInfo, getLevelProgress, XP_REWARDS, type LevelInfo } from '@/lib/levelUtils';
 import type { TranslationKey } from '@/lib/translations';
@@ -121,8 +121,9 @@ export default function LevelInfoModal({ levelInfo, xp, onClose }: Readonly<Leve
                         {level}. {t(info.nameKey)}
                       </h4>
                       {isUnlocked && (
-                        <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 font-medium">
-                          {t('unlocked')} ✓
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 font-medium">
+                          {t('unlocked')}
+                          <Check className="w-3 h-3" aria-hidden="true" />
                         </span>
                       )}
                     </div>
