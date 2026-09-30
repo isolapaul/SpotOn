@@ -95,7 +95,7 @@ export const LEVEL_PERKS: Readonly<Record<LevelNumber, readonly Perk[]>> = {
  * The level-up rule: `seen` is the highest level already shown to this user on this device (null:
  * never recorded). A celebration is due only for a level above it; the first sighting is just
  * recorded, so opening the app never celebrates old levels. `next` is the value to store: it never
- * goes down, because the spot listeners load in parts and a partial load looks like a lower level.
+ * goes down, because XP can drop (deleted content takes it back) and regaining a level is no news.
  */
 export function levelUpStep(seen: number | null, level: number): { celebrate: boolean; next: number } {
   if (seen === null) return { celebrate: false, next: level };

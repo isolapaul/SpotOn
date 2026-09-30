@@ -61,7 +61,7 @@ function Avatar() {
   const mine = useMyLevel();
   if (!mine) return <AvatarFace />;
   return (
-    <LevelRing level={mine.info.level} progress={mine.progress} count={mine.count}>
+    <LevelRing level={mine.info.level} progress={mine.progress} xp={mine.xp}>
       <AvatarFace />
       <LevelBadge
         key={mine.info.level}

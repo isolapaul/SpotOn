@@ -1,20 +1,20 @@
 'use client';
 
 import { useT } from '@/hooks/useT';
-import { getLevelProgress, getSpotsRemainingText, type LevelInfo } from '@/lib/levelUtils';
+import { getLevelProgress, getXpRemainingText, type LevelInfo } from '@/lib/levelUtils';
 import LevelBadge from '@/components/ui/LevelBadge';
 import PerkIcon from '@/components/ui/PerkIcon';
 
 interface LevelProgressCardProps {
   levelInfo: LevelInfo;
-  spotsCount: number;
+  xp: number;
 }
 
 /** Current level, progress to the next one and a perks preview (level 3+). */
-export default function LevelProgressCard({ levelInfo, spotsCount }: Readonly<LevelProgressCardProps>) {
+export default function LevelProgressCard({ levelInfo, xp }: Readonly<LevelProgressCardProps>) {
   const t = useT();
-  const progress = getLevelProgress(spotsCount);
-  const spotsRemaining = getSpotsRemainingText(spotsCount, levelInfo.spotsForNext, t);
+  const progress = getLevelProgress(xp, levelInfo);
+  const remaining = getXpRemainingText(xp, levelInfo, t);
 
   return (
     <div className={`w-full max-w-md px-4 py-3 rounded-xl ${levelInfo.bgColor} border ${levelInfo.borderColor} transition-all mb-3`}>
@@ -26,7 +26,7 @@ export default function LevelProgressCard({ levelInfo, spotsCount }: Readonly<Le
               {t(levelInfo.nameKey)}
             </p>
             <p className="text-white/60 text-xs">
-              {spotsRemaining}
+              {t('xpTotal', { xp })} · {remaining}
             </p>
           </div>
         </div>

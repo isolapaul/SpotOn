@@ -83,8 +83,6 @@ interface SpotStore {
   spots: Spot[];
   isLoading: boolean;
   error: string | null;
-  /** The uid whose own spots (all statuses) have fully loaded, else null (level counts wait for it). */
-  ownLoadedFor: string | null;
   /** Starts the approved-spots listener (T30); resolves on its first snapshot (the loading gate). */
   startSpots: () => Promise<void>;
   /** Starts/stops the own-spots and all-spots listeners for the signed-in user (idempotent). */
@@ -116,7 +114,6 @@ function updateSpotInState(
 export const useSpotStore = create<SpotStore>((set) => ({
   spots: [],
   isLoading: false,
-  ownLoadedFor: null,
   error: null,
 
   startSpots: () => startApprovedScope(set),

@@ -3,6 +3,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { useSpotStore, type SpotScope } from '@/store/useSpotStore';
 import { useModerationStore } from '@/store/useModerationStore';
 import { useInboxStore } from '@/store/useInboxStore';
+import { useMyLevelStore } from '@/store/useMyLevelStore';
 import { DELAYS } from '@/lib/constants';
 
 /**
@@ -14,11 +15,15 @@ function spotScopeOf(state: { user: { uid: string } | null; loading: boolean; is
   return { uid, isAdmin: uid !== null && state.isAdmin };
 }
 
-/** Every per-user listener follows the same scope: spots (T30), moderation and the inbox (item 4). */
+/**
+ * Every per-user listener follows the same scope: spots (T30), moderation and the inbox (item 4),
+ * the own level (item 5).
+ */
 function syncScopes(scope: SpotScope) {
   useSpotStore.getState().syncSpotScopes(scope);
   useModerationStore.getState().sync(scope);
   useInboxStore.getState().sync(scope.uid);
+  useMyLevelStore.getState().sync(scope.uid);
 }
 
 /**

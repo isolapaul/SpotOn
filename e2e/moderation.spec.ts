@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
-import { getApps, initializeApp } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
+import { adminDb } from './adminDb';
 import { E2E } from './fixtures';
 import { test, blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstRunOverlays } from './helpers';
 
@@ -15,17 +15,6 @@ const PENDING = { id: `e2e-mod-pending-${SUFFIX}`, name: `E2E Mod Pending ${SUFF
 const APPROVED = { id: `e2e-mod-approved-${SUFFIX}`, name: `E2E Mod Approved ${SUFFIX}` };
 const REMOVE = { id: `e2e-mod-remove-${SUFFIX}`, name: `E2E Mod Remove ${SUFFIX}` };
 const RENAMED = `E2E Mod Renamed ${SUFFIX}`;
-
-function adminDb() {
-  if (!process.env.FIRESTORE_EMULATOR_HOST) {
-    throw new Error('refusing to run: FIRESTORE_EMULATOR_HOST not set (run via firebase emulators:exec)');
-  }
-  if (process.env.GCLOUD_PROJECT && process.env.GCLOUD_PROJECT !== 'demo-spoton') {
-    throw new Error('refusing to run: unexpected GCLOUD_PROJECT');
-  }
-  if (!getApps().length) initializeApp({ projectId: 'demo-spoton' });
-  return getFirestore();
-}
 
 const spotData = async (id: string) => (await adminDb().doc(`spots/${id}`).get()).data();
 

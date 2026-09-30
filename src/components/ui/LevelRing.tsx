@@ -4,7 +4,7 @@ import { useEffect, useId, useState, type ReactNode } from 'react';
 import { levelTheme } from '@/lib/levelTheme';
 
 // Progress ring toward the next level around an avatar (design; owner: colour per level). The ring
-// fills smoothly when the count changes, and a new spot sends out a ping in the level colour.
+// fills smoothly when the XP changes, and new XP sends out a ping in the level colour.
 
 const SIZE = 48;
 const STROKE = 2.5;
@@ -15,20 +15,20 @@ interface LevelRingProps {
   level: number;
   /** 0–100 toward the next level (100 at the top level). */
   progress: number;
-  /** The spot count: a rise after the first seconds (not the initial load) pings. */
-  count: number;
+  /** The XP: a rise after the first seconds (not the initial load) pings. */
+  xp: number;
   children: ReactNode;
 }
 
-/** The spot listeners load in parts; rises before this are loading, not new spots. */
+/** The level listener answers from the cache first; rises before this are loading, not new XP. */
 const SETTLE_MS = 4000;
 
-export default function LevelRing({ level, progress, count, children }: Readonly<LevelRingProps>) {
+export default function LevelRing({ level, progress, xp, children }: Readonly<LevelRingProps>) {
   const theme = levelTheme(level);
   const id = useId().replaceAll(':', '');
   const offset = CIRC * (1 - Math.min(100, Math.max(0, progress)) / 100);
   const [settled, setSettled] = useState(false);
-  const [prevCount, setPrevCount] = useState(count);
+  const [prevXp, setPrevXp] = useState(xp);
   const [pings, setPings] = useState(0);
 
   useEffect(() => {
@@ -36,9 +36,9 @@ export default function LevelRing({ level, progress, count, children }: Readonly
     return () => clearTimeout(t);
   }, []);
 
-  if (count !== prevCount) {
-    setPrevCount(count);
-    if (settled && count > prevCount) setPings((p) => p + 1);
+  if (xp !== prevXp) {
+    setPrevXp(xp);
+    if (settled && xp > prevXp) setPings((p) => p + 1);
   }
 
   return (

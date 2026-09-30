@@ -4,7 +4,7 @@
  * The only import is the sibling pure module ./levels (itself import-free), which holds the
  * name-style allowlists.
  */
-import {NAME_COLORS, NAME_FONTS} from "./levels";
+import {NAME_COLORS, NAME_FONTS, validLevel} from "./levels";
 
 /** Lowercase a-z, 0-9 and _; 3–20 characters. */
 export const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
@@ -70,6 +70,8 @@ export interface PublicProfile {
   customNameFont: string | null;
   isAdmin: boolean;
   spotsCount?: number;
+  xp?: number;
+  level?: number;
 }
 
 function nonEmptyString(x: unknown): string | null {
@@ -82,7 +84,8 @@ function allowlisted(x: unknown, allowlist: readonly string[]): string | null {
 
 /**
  * Public projection of a users/{uid} doc. Non-allowlisted (legacy) name styles become null;
- * spotsCount is included only when the user doc holds a non-negative integer.
+ * spotsCount and xp are included only when the user doc holds a non-negative integer, level only
+ * when it is 1-5 (item 5).
  */
 export function buildPublicProfile(
   user: Record<string, unknown>,
@@ -99,6 +102,9 @@ export function buildPublicProfile(
   if (typeof count === "number" && Number.isInteger(count) && count >= 0) {
     profile.spotsCount = count;
   }
+  if (typeof user.xp === "number" && Number.isInteger(user.xp) && user.xp >= 0) profile.xp = user.xp;
+  const level = validLevel(user.level);
+  if (level !== null) profile.level = level;
   return profile;
 }
 

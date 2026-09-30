@@ -72,12 +72,12 @@ describe('getCustomNameColorValue / getUserNameColor', () => {
   });
 
   it('use an allowlisted custom colour, else the level colour', () => {
-    expect(getUserNameColor(25, 'text-rose-400')).toBe('#fb7185');
-    expect(getUserNameColor(25, '#ff0000')).toBe('#06b6d4');
-    expect(getUserNameColor(0, 'expression(alert(1))')).toBe('#cd7f32');
-    expect(getUserNameColor(3)).toBe('#aeb4bf');
-    expect(getUserNameColor(10)).toBe('#f5c542');
-    expect(getUserNameColor(15)).toBe('#f5c542');
-    expect(getUserNameColor(20)).toBe('#06b6d4');
+    expect(getUserNameColor(5, 'text-rose-400')).toBe('#fb7185');
+    expect(getUserNameColor(5, '#ff0000')).toBe('#06b6d4');
+    expect(getUserNameColor(1, 'expression(alert(1))')).toBe('#cd7f32');
+    expect(getUserNameColor(2)).toBe('#aeb4bf');
+    expect(getUserNameColor(3)).toBe('#f5c542');
+    expect(getUserNameColor(4)).toBe('#f5c542');
+    expect(getUserNameColor(5)).toBe('#06b6d4');
   });
 });

@@ -2,8 +2,8 @@ import { expect } from '@playwright/test';
 import { E2E } from './fixtures';
 import { test, blockMapTiles, openApp, signInWithEmail, skipFirstRunOverlays } from './helpers';
 
-// Level identity: the level-up celebration shows once when the own spot count passes a level this
-// device has not seen, and never on a first sighting. Read-only: only localStorage is set.
+// Level identity: the level-up celebration shows once when the own level (from the server, item 5)
+// passes a level this device has not seen, and never on a first sighting. Read-only: only localStorage is set.
 
 test.beforeEach(async ({ page }) => {
   await skipFirstRunOverlays(page);

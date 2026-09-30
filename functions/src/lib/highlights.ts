@@ -12,7 +12,7 @@
  * - users.highlightedSpots: string[]
  */
 import {isValidSpotId} from "./ids";
-import {maxHighlightsForCount} from "./levels";
+import {maxHighlightsForLevel} from "./levels";
 
 /** A highlight lasts 7 days. */
 export const HIGHLIGHT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -88,9 +88,9 @@ export function hasActiveEntry(spot: DocData | undefined, uid: string, now: Date
   return asArray(spot?.highlighted).some((e) => isActiveEntry(e, uid, now));
 }
 
-/** Highlight slots for a spot count (level slots only; the Valentine bonus is gone, SEC-22). */
-export function computeAllowance(spotsCount: number): number {
-  return maxHighlightsForCount(spotsCount);
+/** Highlight slots for a level (level slots only; the Valentine bonus is gone, SEC-22). */
+export function computeAllowance(level: number): number {
+  return maxHighlightsForLevel(level);
 }
 
 /**

@@ -6,7 +6,7 @@ import { useSpotStore } from '@/store/useSpotStore';
 import { useModerationStore } from '@/store/useModerationStore';
 import { useIsAdmin, useIsSuperAdmin } from '@/hooks/useIsAdmin';
 import { useCategories } from '@/hooks/useCategories';
-import { getLevelInfo } from '@/lib/levelUtils';
+import { useMyLevel } from '@/hooks/useMyLevel';
 import SettingsPanel from '../SettingsPanel';
 import PanelShell from '../ui/PanelShell';
 import ProfileBanner from './ProfileBanner';
@@ -45,16 +45,17 @@ export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<P
   // admin spots listener, T30), so no second listener is needed.
   const uid = user?.uid;
   const myAllSpots = useMemo(() => (uid ? spots.filter((spot) => spot.createdBy === uid) : []), [spots, uid]);
+  const mine = useMyLevel();
 
   // Dynamic categories (super admin only), live while the panel is open
   const { categories, addCategory, isAdding } = useCategories(isOpen && userIsSuperAdmin);
 
-  if (!isOpen || !user) return null;
+  if (!isOpen || !user || !mine) return null;
 
   const favoriteSpots = spots.filter((spot) => user.savedSpots.includes(spot.id));
   const pendingSpots = spots.filter((spot) => spot.status === 'pending');
-  // D8: every own spot (pending too) counts toward the level
-  const levelInfo = getLevelInfo(myAllSpots.length);
+  // Item 5: the level comes from XP, computed by the server.
+  const { info: levelInfo, xp } = mine;
 
   return (
     <PanelShell
@@ -66,7 +67,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<P
           {/* Settings Panel (nested: stacks inside this root's Z.panel context, see Z.panelInner*) */}
           <SettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
           {showLevelInfo && (
-            <LevelInfoModal levelInfo={levelInfo} spotsCount={myAllSpots.length} onClose={() => setShowLevelInfo(false)} />
+            <LevelInfoModal levelInfo={levelInfo} xp={xp} onClose={() => setShowLevelInfo(false)} />
           )}
         </>
       }
@@ -83,6 +84,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<P
       <ProfileHeader
         user={user}
         levelInfo={levelInfo}
+        xp={xp}
         spotsCount={myAllSpots.length}
         favoritesCount={favoriteSpots.length}
         isAdmin={userIsAdmin}

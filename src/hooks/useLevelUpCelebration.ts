@@ -29,7 +29,7 @@ function writeSeen(uid: string, level: number) {
 export function useLevelUpCelebration(): { level: number | null; dismiss: () => void } {
   const uid = useUserStore((s) => s.user?.uid);
   const mine = useMyLevel();
-  // Only a complete count: a partial load would record (or celebrate) the wrong level.
+  // Only the server's answer: a cached level may be stale and would record (or celebrate) it.
   const level = mine?.loaded ? mine.info.level : undefined;
   const [celebrate, setCelebrate] = useState<number | null>(null);
 

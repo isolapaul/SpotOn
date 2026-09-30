@@ -18,12 +18,10 @@ interface ScopeSlot {
   unsubscribe: () => void;
   /** null until the first snapshot. */
   spots: Spot[] | null;
-  /** A snapshot from the server (not only the local cache) has arrived. */
-  fromServer: boolean;
 }
 /** The store fields the listeners write (the store's `set`). */
 type SpotSet = (
-  partial: Partial<{ spots: Spot[]; isLoading: boolean; error: string | null; ownLoadedFor: string | null }>,
+  partial: Partial<{ spots: Spot[]; isLoading: boolean; error: string | null }>,
 ) => void;
 
 // T30: up to three spots listeners, so pending spots only reach their owner and admins:
@@ -64,26 +62,17 @@ function startScope(
   set: SpotSet,
   hooks: { first?: () => void; failed?: (error: Error) => void } = {},
 ) {
-  const slot: ScopeSlot = { uid, spots: null, fromServer: false, unsubscribe: () => {} };
+  const slot: ScopeSlot = { uid, spots: null, unsubscribe: () => {} };
   slots[name] = slot;
   slot.unsubscribe = onSnapshot(
     scopeQuery(name, uid),
     (snapshot) => {
       if (slots[name] !== slot) return; // stopped meanwhile
       const first = slot.spots === null;
-      // The SDK may answer a new query from its cache first (e.g. the approved spots it already
-      // holds), before the server's full result.
-      const firstFromServer = !slot.fromServer && snapshot.metadata?.fromCache !== true;
-      if (firstFromServer) slot.fromServer = true;
       slot.spots = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Spot);
       // `admin` supersedes `own` only once it has data, so the switch never empties anything.
       if (name === 'admin' && first) stopScope('own');
-      // ownLoadedFor: this user's own spots are all in (own or admin scope); a level computed before
-      // that would count only their approved spots.
-      let extra: Parameters<SpotSet>[0] = {};
-      if (name === 'approved') extra = { isLoading: false, error: null };
-      else if (firstFromServer) extra = { ownLoadedFor: uid };
-      recompute(set, extra);
+      recompute(set, name === 'approved' ? { isLoading: false, error: null } : {});
       if (first) hooks.first?.();
     },
     (error) => {
@@ -132,12 +121,12 @@ export function syncScopes({ uid, isAdmin }: SpotScope, set: SpotSet) {
     dropped = stopScope('admin') || dropped;
     if (uid && !slots.own) startScope('own', uid, set);
   }
-  if (dropped) recompute(set, { ownLoadedFor: null });
+  if (dropped) recompute(set);
 }
 
 export function stopAllScopes(set: SpotSet) {
   stopScope('admin');
   stopScope('own');
   stopScope('approved');
-  set({ spots: [], ownLoadedFor: null });
+  set({ spots: [] });
 }

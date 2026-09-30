@@ -146,6 +146,15 @@ describe("buildPublicProfile", () => {
     expect(buildPublicProfile({...base, spotsCount: 0}, {isAdmin: false}).spotsCount).toBe(0);
   });
 
+  it("mirrors xp and level only when valid (item 5)", () => {
+    expect(buildPublicProfile({...base, xp: 42, level: 2}, {isAdmin: false}))
+      .toMatchObject({xp: 42, level: 2});
+    for (const bad of [{xp: -1, level: 0}, {xp: 1.5, level: 6}, {xp: "3", level: "2"}]) {
+      const p = buildPublicProfile({...base, ...bad}, {isAdmin: false});
+      expect("xp" in p || "level" in p).toBe(false);
+    }
+  });
+
   it("nulls a missing or non-string username and missing styles", () => {
     const p = buildPublicProfile({username: 42}, {isAdmin: false});
     expect(p).toEqual({
