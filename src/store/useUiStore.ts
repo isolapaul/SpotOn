@@ -2,13 +2,18 @@ import { create } from 'zustand';
 import { useMapThemeStore, type MapTheme } from './useMapThemeStore';
 
 /** The one panel or modal page.tsx shows over the map (T29). Opening one replaces the other. */
-export type ActivePanel = 'none' | 'auth' | 'addSpot' | 'profile' | 'discovery' | { type: 'spot'; spotId: string };
+export type UserPanel = { type: 'user'; uid: string };
+export type ActivePanel = 'none' | 'auth' | 'addSpot' | 'profile' | 'discovery' | { type: 'spot'; spotId: string } | UserPanel;
 
-/** Where "back" from a spot returns to: the list it was opened from. */
-export type ReturnTarget = 'profile' | 'discovery';
+/** Where "back" from a spot returns to: the list it was opened from (item 8: someone's profile too). */
+export type ReturnTarget = 'profile' | 'discovery' | UserPanel;
 
 export function isSpotPanel(p: ActivePanel): p is { type: 'spot'; spotId: string } {
   return typeof p === 'object' && p !== null && p.type === 'spot';
+}
+
+export function isUserPanel(p: ActivePanel | ReturnTarget | null): p is UserPanel {
+  return typeof p === 'object' && p !== null && p.type === 'user';
 }
 
 interface UiStore {
@@ -57,6 +62,11 @@ interface UiStore {
   /** Back (the back buttons and the system back): one step up, else close what is open. */
   goBack: () => void;
 
+  /** Item 8: someone's profile page; closing it returns to where it was opened (a spot, Explore). */
+  userFrom: ActivePanel | null;
+  openUserProfile: (uid: string) => void;
+  closeUserProfile: () => void;
+
   /** Picking a new location for this spot (item 4 edit), instead of placing a new spot. */
   relocatingSpotId: string | null;
   /** Leaves the spot for the satellite map to pick its new location. */
@@ -79,7 +89,7 @@ export const useUiStore = create<UiStore>((set, get) => ({
   openPanel: (p) => {
     const { previewSpotId, returnTo } = get();
     const keepsWayBack = isSpotPanel(p) && p.spotId === previewSpotId;
-    set({ activePanel: p, previewSpotId: null, returnTo: keepsWayBack ? returnTo : null });
+    set({ activePanel: p, previewSpotId: null, returnTo: keepsWayBack ? returnTo : null, ...(keepsWayBack ? {} : { userFrom: null }) });
   },
   closePanel: () => set({ activePanel: 'none', returnTo: null }),
   closeSpotPanel: (spotId) => {
@@ -111,13 +121,20 @@ export const useUiStore = create<UiStore>((set, get) => ({
 
   returnTo: null,
   focusRequest: null,
+  userFrom: null,
+  openUserProfile: (uid) => {
+    const { activePanel } = get();
+    const from = isSpotPanel(activePanel) || activePanel === 'discovery' ? activePanel : null;
+    set({ activePanel: { type: 'user', uid }, userFrom: from, previewSpotId: null, returnTo: null });
+  },
+  closeUserProfile: () => set({ activePanel: get().userFrom ?? 'none', userFrom: null, returnTo: null }),
   openSpotFromList: (spotId, from) => {
     if (from === 'discovery') {
       set({ activePanel: { type: 'spot', spotId }, previewSpotId: null, returnTo: 'discovery' });
       return;
     }
     const seq = (get().focusRequest?.seq ?? 0) + 1;
-    set({ activePanel: 'none', previewSpotId: null, returnTo: 'profile', focusRequest: { spotId, seq } });
+    set({ activePanel: 'none', previewSpotId: null, returnTo: from, focusRequest: { spotId, seq } });
   },
   arriveAtSpot: (spotId) => {
     const { focusRequest, activePanel, returnTo } = get();
@@ -145,6 +162,7 @@ export const useUiStore = create<UiStore>((set, get) => ({
     const s = get();
     if (s.activePanel === 'addSpot') return s.closeAddSpot();
     if (s.activePanel === 'none' && s.previewSpotId === null && s.selectingLocation) return s.cancelSelectingLocation();
+    if (isUserPanel(s.activePanel)) return s.closeUserProfile();
     const onSpot = isSpotPanel(s.activePanel) || s.previewSpotId !== null;
     set({ activePanel: onSpot && s.returnTo ? s.returnTo : 'none', previewSpotId: null, returnTo: null });
   },

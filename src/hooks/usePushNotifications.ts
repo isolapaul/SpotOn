@@ -70,6 +70,7 @@ export const usePushNotifications = () => {
       spotApproved: true,
       spotReviewed: true,
       newPendingSpot: true,
+      follows: true,
     };
 
     // Never overwrite the user's stored notification choices (BUG-02)

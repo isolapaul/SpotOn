@@ -24,7 +24,9 @@ describe('INBOX_TEXT', () => {
       }
     }
   });
-  it('approvals are the three positive decisions', () => {
-    expect(Object.keys(INBOX_TEXT).filter((type) => isApproval(type as never))).toEqual(['spot_approved', 'edit_approved', 'photo_approved']);
+  it('the positive look: the three approvals and follow news (item 8)', () => {
+    expect(Object.keys(INBOX_TEXT).filter((type) => isApproval(type as never))).toEqual([
+      'spot_approved', 'edit_approved', 'photo_approved', 'follow_request', 'follow_accepted', 'followed_spot',
+    ]);
   });
 });

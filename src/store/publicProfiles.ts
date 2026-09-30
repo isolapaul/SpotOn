@@ -16,6 +16,11 @@ export interface PublicProfile {
   xp?: number;
   level?: number;
   isAdmin?: boolean;
+  /** Item 8. */
+  bio?: string | null;
+  isPrivate?: boolean;
+  followersCount?: number;
+  followingCount?: number;
 }
 
 interface CacheEntry {
@@ -43,6 +48,11 @@ async function readPublicProfile(uid: string): Promise<PublicProfile | null> {
   if (typeof data.spotsCount === 'number') profile.spotsCount = data.spotsCount;
   if (typeof data.xp === 'number') profile.xp = data.xp;
   if (typeof data.level === 'number') profile.level = data.level;
+  if (typeof data.bio === 'string') profile.bio = data.bio;
+  if (typeof data.isPrivate === 'boolean') profile.isPrivate = data.isPrivate;
+  // Counters change by increments, so a stale mirror may briefly read negative: never show that.
+  if (typeof data.followersCount === 'number') profile.followersCount = Math.max(0, data.followersCount);
+  if (typeof data.followingCount === 'number') profile.followingCount = Math.max(0, data.followingCount);
   if (typeof data.isAdmin === 'boolean') profile.isAdmin = data.isAdmin;
   return profile;
 }

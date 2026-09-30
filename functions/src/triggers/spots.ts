@@ -6,6 +6,7 @@ import * as logger from "firebase-functions/logger";
 import "../lib/app";
 import {sendNotificationToAdmins, sendNotificationToUser} from "../lib/notify";
 import {notifyAdminsToReview, notifyInbox} from "../lib/inbox";
+import {notifyFollowersOfSpot} from "../lib/followNews";
 
 // ========================================
 // TRIGGER 1: Spot Approved
@@ -28,6 +29,8 @@ export const onSpotApproved = onDocumentUpdated(
 
       // Inbox + push (item 4): the approval stays readable in the notification centre.
       await notifyInbox({uid: creatorId, type: "spot_approved", spotId, spotName});
+      // Followers hear about it (item 8).
+      await notifyFollowersOfSpot(creatorId, spotId, String(spotName ?? ""));
     }
   },
 );
@@ -88,6 +91,12 @@ export const onNewPendingSpot = onDocumentCreated(
     const spotData = event.data?.data();
 
     if (!spotData) return;
+
+    // An admin's spot is created approved: its followers hear about it (item 8).
+    if (spotData.status === "approved") {
+      await notifyFollowersOfSpot(spotData.createdBy, event.params.spotId,
+        String(spotData.name ?? ""));
+    }
 
     // Only notify admins if status is pending
     if (spotData.status === "pending") {

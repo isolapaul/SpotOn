@@ -22,7 +22,7 @@ export function useNotificationFeed() {
     const fromInbox = inbox.items.map((item: InboxItem): Notification => ({
       id: INBOX_PREFIX + item.id,
       title: t(INBOX_TEXT[item.type].title),
-      body: t(INBOX_TEXT[item.type].body, { name: item.spotName, reason: item.reason ?? '' }),
+      body: t(INBOX_TEXT[item.type].body, { name: item.spotName, reason: item.reason ?? '', user: item.actorName ?? '' }),
       timestamp: item.createdAt,
       read: item.read,
       type: isApproval(item.type) ? 'spot_approved' : 'moderation_declined',

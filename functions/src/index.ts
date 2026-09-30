@@ -9,4 +9,7 @@ export {syncPublicProfile, syncSpotsCount, syncAdminFlag} from "./triggers/profi
 export {claimUsername, updateNameStyle, updatePinIcon} from "./callables/profile";
 export {deleteAccount} from "./callables/account";
 export {deleteCategory} from "./callables/categories";
+export {
+  getProfile, followUser, unfollowUser, respondFollowRequest, removeFollower, searchUsers,
+} from "./callables/follows";
 export {approveSpot, rejectSpot, removeSpot, reviewSpotEdit, reviewPhotoSubmission} from "./callables/moderation";

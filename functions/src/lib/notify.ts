@@ -13,7 +13,7 @@ const APP_URL = defineString("APP_URL", {
   description: "Public base URL of the web app (notification click link)",
 });
 
-export type NotificationSettingsKey = "spotApproved" | "spotReviewed" | "newPendingSpot";
+export type NotificationSettingsKey = "spotApproved" | "spotReviewed" | "newPendingSpot" | "follows";
 
 export async function sendNotificationToUser(
   userId: string,

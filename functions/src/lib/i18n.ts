@@ -145,6 +145,37 @@ export const translations = {
     en: (spotName: TParam) => `A photo was added to "${spotName}"`,
     de: (spotName: TParam) => `Ein Foto wurde zu "${spotName}" hinzugefügt`,
   },
+  // Follows (item 8).
+  followRequest: {
+    hu: "Új követési kérés",
+    en: "New follow request",
+    de: "Neue Folgeanfrage",
+  },
+  followRequestBody: {
+    hu: (user: TParam) => `${user} követni szeretne`,
+    en: (user: TParam) => `${user} wants to follow you`,
+    de: (user: TParam) => `${user} möchte dir folgen`,
+  },
+  followAccepted: {
+    hu: "Elfogadták a követési kérésedet",
+    en: "Follow request accepted",
+    de: "Folgeanfrage angenommen",
+  },
+  followAcceptedBody: {
+    hu: (user: TParam) => `Mostantól követed: ${user}`,
+    en: (user: TParam) => `You now follow ${user}`,
+    de: (user: TParam) => `Du folgst jetzt ${user}`,
+  },
+  followedSpot: {
+    hu: "Új hely attól, akit követsz",
+    en: "New spot from someone you follow",
+    de: "Neuer Ort von jemandem, dem du folgst",
+  },
+  followedSpotBody: {
+    hu: (user: TParam, spotName: TParam) => `${user}: "${spotName}"`,
+    en: (user: TParam, spotName: TParam) => `${user}: "${spotName}"`,
+    de: (user: TParam, spotName: TParam) => `${user}: "${spotName}"`,
+  },
 } satisfies Record<string, Record<Lang, Template>>;
 
 export type TKey = keyof typeof translations;

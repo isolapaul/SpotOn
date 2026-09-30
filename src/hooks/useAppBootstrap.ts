@@ -5,6 +5,7 @@ import { useModerationStore } from '@/store/useModerationStore';
 import { useInboxStore } from '@/store/useInboxStore';
 import { useMyLevelStore } from '@/store/useMyLevelStore';
 import { useCategoryStore } from '@/store/useCategoryStore';
+import { useFollowStore } from '@/store/useFollowStore';
 import { DELAYS } from '@/lib/constants';
 
 /**
@@ -18,13 +19,14 @@ function spotScopeOf(state: { user: { uid: string } | null; loading: boolean; is
 
 /**
  * Every per-user listener follows the same scope: spots (T30), moderation and the inbox (item 4),
- * the own level (item 5).
+ * the own level (item 5), incoming follow requests (item 8).
  */
 function syncScopes(scope: SpotScope) {
   useSpotStore.getState().syncSpotScopes(scope);
   useModerationStore.getState().sync(scope);
   useInboxStore.getState().sync(scope.uid);
   useMyLevelStore.getState().sync(scope.uid);
+  useFollowStore.getState().sync(scope.uid);
 }
 
 /**

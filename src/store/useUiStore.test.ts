@@ -337,3 +337,22 @@ describe('requestLocate (design 1C)', () => {
     expect(ui().locateRequest).toBe(2);
   });
 });
+
+describe('user profiles (item 8)', () => {
+  beforeEach(() => useUiStore.setState({ activePanel: 'none', previewSpotId: null, returnTo: null, userFrom: null }));
+  it('back from a profile opened in Explore returns to Explore', () => {
+    useUiStore.getState().openPanel('discovery');
+    useUiStore.getState().openUserProfile('u1');
+    expect(useUiStore.getState().activePanel).toEqual({ type: 'user', uid: 'u1' });
+    useUiStore.getState().goBack();
+    expect(useUiStore.getState().activePanel).toBe('discovery');
+  });
+  it('a spot opened from a profile flies there, and back returns to the profile', () => {
+    useUiStore.getState().openUserProfile('u1');
+    useUiStore.getState().openSpotFromList('s1', { type: 'user', uid: 'u1' });
+    expect(useUiStore.getState()).toMatchObject({ activePanel: 'none', focusRequest: { spotId: 's1' } });
+    useUiStore.getState().arriveAtSpot('s1');
+    useUiStore.getState().goBack();
+    expect(useUiStore.getState().activePanel).toEqual({ type: 'user', uid: 'u1' });
+  });
+});

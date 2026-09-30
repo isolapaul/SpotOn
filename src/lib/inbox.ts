@@ -9,7 +9,10 @@ export type InboxType =
   | 'edit_approved'
   | 'edit_rejected'
   | 'photo_approved'
-  | 'photo_rejected';
+  | 'photo_rejected'
+  | 'follow_request'
+  | 'follow_accepted'
+  | 'followed_spot';
 
 export interface InboxItem {
   id: string;
@@ -17,6 +20,9 @@ export interface InboxItem {
   spotId: string;
   spotName: string;
   reason?: string;
+  /** The other user of a follow notice (item 8). */
+  actorUid?: string;
+  actorName?: string;
   read: boolean;
   /** ms since epoch; a pending server timestamp reads as now. */
   createdAt: number;
@@ -31,11 +37,15 @@ export const INBOX_TEXT: Readonly<Record<InboxType, { title: TranslationKey; bod
   edit_rejected: { title: 'inboxEditRejected', body: 'inboxReasonBody' },
   photo_approved: { title: 'inboxPhotoApproved', body: 'inboxPhotoApprovedBody' },
   photo_rejected: { title: 'inboxPhotoRejected', body: 'inboxReasonBody' },
+  follow_request: { title: 'inboxFollowRequest', body: 'inboxFollowRequestBody' },
+  follow_accepted: { title: 'inboxFollowAccepted', body: 'inboxFollowAcceptedBody' },
+  followed_spot: { title: 'inboxFollowedSpot', body: 'inboxFollowedSpotBody' },
 };
 
 /** Decisions in the user's favour (a positive look in the notification centre). */
 export function isApproval(type: InboxType): boolean {
-  return type === 'spot_approved' || type === 'edit_approved' || type === 'photo_approved';
+  return type === 'spot_approved' || type === 'edit_approved' || type === 'photo_approved'
+    || type === 'follow_request' || type === 'follow_accepted' || type === 'followed_spot';
 }
 
 function isInboxType(x: unknown): x is InboxType {
@@ -52,6 +62,7 @@ export function parseInboxItem(id: string, data: Record<string, unknown>, now: n
     spotId: typeof data.spotId === 'string' ? data.spotId : '',
     spotName: typeof data.spotName === 'string' ? data.spotName : '',
     ...(typeof data.reason === 'string' ? { reason: data.reason } : {}),
+    ...(typeof data.actorUid === 'string' ? { actorUid: data.actorUid, actorName: typeof data.actorName === 'string' ? data.actorName : '' } : {}),
     read: data.read === true,
     createdAt: typeof at?.toMillis === 'function' ? at.toMillis() : now,
   };

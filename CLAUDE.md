@@ -96,7 +96,8 @@ docs/play-store.md               Play listing texts, Data safety and content rat
   questProgress/questRewards (legacy Valentine event; unused).
 - `publicProfiles/{uid}`: server-maintained public mirror of a user (username, profilePictureURL,
   customNameColor/Font, isAdmin, spotsCount); public `get`, no client writes.
-- `usernames/{name}`: `{uid}` registry, written only by the `claimUsername` callable.
+- `usernames/{name}`: `{uid}` registry, written only by the `claimUsername` callable (the `searchUsers` callable reads it by prefix).
+- Item 8: `users/{uid}.bio` (≤150), `.profilePrivate`, `.showSaved` (client-written); `publicProfiles` mirrors `bio`, `isPrivate` and holds `followersCount`/`followingCount`. `follows/{follower}_{target}` and `followRequests/{requester}_{target}` are written only by the follow callables and read by their two sides; `rateLimits/{uid}` is server-only (people search). A private profile hides only the lists on the profile page (`getProfile`), never the spots on the map.
 - `admins/{uid}`: email, username, photoURL, addedAt, addedBy, role ('super' | 'admin').
 - `categories/{id}` (item 7): name (Hungarian), nameEn?, nameDe? (fall back to name), icon (one of `src/lib/categoryIcons.ts`; legacy docs may hold an emoji), createdAt, updatedAt. Written by the super admin (rules); deleted only by the `deleteCategory` callable while unused. A spot's `category` is a built-in id or such a doc id (rules `validCategory`); unknown ids show as 'other'.
 - `spotEdits/{spotId}` (item 4): the owner's proposed edit of an approved spot, at most one per spot: spotId, spotName, ownerId, status ('pending'|'rejected'), proposed{name?, description?, category?, location?, removeImageUrls?, primaryImageUrl?}, rejection{reason,at}, createdAt. Reviewed with `reviewSpotEdit`.

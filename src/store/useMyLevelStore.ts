@@ -8,6 +8,9 @@ interface MyLevelStore {
   uid: string | null;
   xp: number;
   level: number;
+  /** Item 8: the own follower and following counts (the same live public profile). */
+  followers: number;
+  following: number;
   /** A server answer has arrived (not only the local cache), so the level is current. */
   loaded: boolean;
   /** Listens to the signed-in user's publicProfiles/{uid} (null stops). */
@@ -16,7 +19,7 @@ interface MyLevelStore {
 
 let listening: { uid: string; unsubscribe: Unsubscribe } | null = null;
 
-const EMPTY = { uid: null, xp: 0, level: 1, loaded: false } as const;
+const EMPTY = { uid: null, xp: 0, level: 1, followers: 0, following: 0, loaded: false } as const;
 
 /**
  * The signed-in user's XP and level (item 5), live from the server-maintained public profile.
@@ -38,8 +41,11 @@ export const useMyLevelStore = create<MyLevelStore>((set) => ({
       (snap) => {
         const data = snap.data();
         const xp = typeof data?.xp === 'number' && data.xp >= 0 ? data.xp : 0;
+        const count = (x: unknown) => (typeof x === 'number' && x > 0 ? x : 0);
         set((state) => ({
           xp,
+          followers: count(data?.followersCount),
+          following: count(data?.followingCount),
           level: profileLevel(data),
           loaded: state.loaded || !snap.metadata.fromCache,
         }));

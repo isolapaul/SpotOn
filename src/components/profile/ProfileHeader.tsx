@@ -7,6 +7,8 @@ import UsernameEditor from './UsernameEditor';
 import ProfileBadges from './ProfileBadges';
 import LevelProgressCard from './LevelProgressCard';
 import ProfileStats from './ProfileStats';
+import BioEditor from './BioEditor';
+import { useMyLevelStore } from '@/store/useMyLevelStore';
 
 interface ProfileHeaderProps {
   user: User;
@@ -32,6 +34,8 @@ export default function ProfileHeader({
   failedAvatarSrc,
   onAvatarFailed,
 }: Readonly<ProfileHeaderProps>) {
+  const followers = useMyLevelStore((s) => s.followers);
+  const following = useMyLevelStore((s) => s.following);
   return (
     <div className="flex-shrink-0 px-5 -mt-14 mb-5 relative">
       <div className="flex flex-col items-center">
@@ -46,9 +50,11 @@ export default function ProfileHeader({
 
           <ProfileBadges isAdmin={isAdmin} levelInfo={levelInfo} onOpenLevelInfo={onOpenLevelInfo} />
 
+          <BioEditor bio={user.bio} />
+
           <LevelProgressCard levelInfo={levelInfo} xp={xp} />
 
-          <ProfileStats spotsCount={spotsCount} favoritesCount={favoritesCount} />
+          <ProfileStats spotsCount={spotsCount} favoritesCount={favoritesCount} followers={followers} following={following} />
         </div>
       </div>
     </div>

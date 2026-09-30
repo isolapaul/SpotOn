@@ -34,7 +34,7 @@ describe('mapUserDoc', () => {
       highlightedSpots: ['s3'],
       customNameColor: 'gold',
       customNameFont: 'serif',
-      notificationSettings: { spotApproved: false, spotReviewed: true, newPendingSpot: false },
+      notificationSettings: { spotApproved: false, spotReviewed: true, newPendingSpot: false, follows: true },
       spotsCount: 7,
     });
   });
@@ -80,7 +80,7 @@ describe('mapUserDoc', () => {
     const user = mapUserDoc('u6', noAuth, {
       notificationSettings: { spotApproved: false, spotReviewed: 'no', extra: true },
     });
-    expect(user.notificationSettings).toEqual({ spotApproved: false, spotReviewed: true, newPendingSpot: true });
+    expect(user.notificationSettings).toEqual({ spotApproved: false, spotReviewed: true, newPendingSpot: true, follows: true });
   });
 
   it.each([null, 'on', true, 5, ['spotApproved']])('omits notificationSettings for non-object %j', (value) => {
