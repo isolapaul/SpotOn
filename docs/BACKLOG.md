@@ -6,8 +6,7 @@ Open work, as of v2.0.2 (2026-09-30). Nothing here is started. Each item becomes
 
 | Item | Notes |
 |---|---|
-| Google Play release | Needs a packaging choice (Trusted Web Activity or a native wrapper), a store listing, the Data safety form and a content rating. |
-| Account deletion without the app | Google Play requires a web page or link where users can ask for deletion without installing the app. Today they can only e-mail the contact address from the privacy policy. |
+| Google Play release | Trusted Web Activity; the repository side is ready (`docs/deploy.md` §17, `docs/play-store.md`). Left: the developer account, the Bubblewrap build, the closed test and the listing. |
 | Legal pages in English and German | `/privacy` and `/terms` are Hungarian only; English and German users get the Hungarian text. |
 | Accessible labels in all languages | aria-labels and alt texts are English, because the e2e selectors depend on them. |
 | Category manager | The super admin can add categories to `categories/{id}`, but nothing reads them; the add-spot form uses the nine built-in categories. Finish the feature or remove it. |

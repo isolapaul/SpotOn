@@ -3,6 +3,15 @@
 Versions are the git tags that were released to the server (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and were not tagged; they are listed by date.
 
+## Unreleased (v2.1.0)
+
+### Added
+- A public page for deleting your account without the app (`/account-deletion`): what is deleted and what stays, how to do it in the app, and sign-in and deletion right on the page.
+- Preparation for the Android app on Google Play: an adaptive (maskable) app icon, screenshots in the web manifest, and the Android app link file.
+
+### Changed
+- The browser and system bars use the app's dark background colour.
+
 ## v2.0.2 — 2026-09-29
 
 ### Fixed
