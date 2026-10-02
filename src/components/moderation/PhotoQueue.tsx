@@ -32,7 +32,7 @@ export default function PhotoQueue({ photos }: Readonly<{ photos: PhotoSubmissio
           approvedToast="photoApprovedToast"
           rejectedToast="photoRejectedToast"
         >
-          <span className="relative block w-full aspect-[4/3] rounded-[14px] overflow-hidden bg-surface-3">
+          <span className="relative block w-full aspect-4/3 rounded-r2 overflow-hidden bg-surface-3">
             <Image src={photo.url} alt={photo.spotName} fill sizes="(max-width: 640px) 100vw, 480px" unoptimized className="object-cover" />
           </span>
           <div>

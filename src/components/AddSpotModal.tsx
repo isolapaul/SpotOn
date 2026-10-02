@@ -17,7 +17,7 @@ interface AddSpotModalProps {
 }
 
 const INPUT_CLASS = `w-full px-4 py-3 rounded-xl glass text-white placeholder-white/40
-  border border-white/10 focus:border-white/30 focus:outline-none transition-all duration-200`;
+  border border-white/10 focus:border-white/30 focus:outline-hidden transition-all duration-200`;
 
 // Swipe-to-dismiss intentionally disabled to prevent accidental dismissal on iOS
 export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Readonly<AddSpotModalProps>) {
@@ -86,7 +86,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
         {selectedLocation && (
           <div className="glass p-3 rounded-xl">
             <p className="text-white/80 text-sm flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 flex-shrink-0 text-brand-400" aria-hidden="true" />
+              <MapPin className="w-4 h-4 shrink-0 text-brand-400" aria-hidden="true" />
               {t('location')}: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
             </p>
           </div>

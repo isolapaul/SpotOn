@@ -130,7 +130,7 @@ export default function UsernameSetupModal({ isOpen, onClose }: Readonly<Usernam
                 placeholder={t('usernamePlaceholder')}
                 maxLength={20}
                 className="w-full pl-10 pr-12 py-3 rounded-xl bg-surface-3 border border-transparent
-                  text-white placeholder-white/40 focus:outline-none focus:ring-2 
+                  text-white placeholder-white/40 focus:outline-hidden focus:ring-2 
                   focus:ring-primary-500 focus:border-transparent transition-all"
               />
               {/* Status indicator */}

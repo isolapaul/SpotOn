@@ -105,7 +105,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
         paddingRight: 'max(1rem, env(safe-area-inset-right))',
         paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))'
       }}
-      backdropClassName="absolute inset-0 bg-black/50 backdrop-blur-sm"
+      backdropClassName="absolute inset-0 bg-black/50 backdrop-blur-xs"
       panelClassName="w-[92%] max-w-2xl max-h-[90vh]"
     >
         <div className="flex items-center justify-between pl-5 pr-2 pt-3 pb-2">
@@ -138,7 +138,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
             onChange={(e) => setMessage(e.target.value)}
             maxLength={FEEDBACK_LIMITS.maxMessageChars}
             placeholder={t('feedbackPlaceholder')}
-            className="w-full min-h-[180px] bg-surface-3 rounded-[14px] p-3.5 text-label placeholder-white/40 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500/60"
+            className="w-full min-h-[180px] bg-surface-3 rounded-r2 p-3.5 text-label placeholder-white/40 resize-none focus:outline-hidden focus:ring-2 focus:ring-brand-500/60"
           />
 
           <div className="mt-4">
@@ -154,7 +154,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
             {files.length > 0 && (
               <div className="grid grid-cols-3 gap-3">
                 {files.map((f, i) => (
-                  <div key={i} className="relative h-28 bg-surface-3 rounded-[14px] overflow-hidden motion-safe:animate-item-in">
+                  <div key={i} className="relative h-28 bg-surface-3 rounded-r2 overflow-hidden motion-safe:animate-item-in">
                     {/* A local blob: URL preview: nothing to optimise */}
                     <Image
                       src={URL.createObjectURL(f)}
@@ -188,7 +188,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
           </div>
         </div>
 
-        <div className="p-4 pt-3 border-t border-white/[.06]">
+        <div className="p-4 pt-3 border-t border-white/6">
           <Button block onClick={handleSubmit} disabled={sending || message.trim().length === 0}>
             <Send className="w-4 h-4" />
             {sending ? t('sending') : t('sendFeedback')}

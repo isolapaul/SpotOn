@@ -39,7 +39,7 @@ export default function AdminList() {
           adminUsers.map((admin) => (
             <div key={admin.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4">
               {admin.photoURL ? (
-                <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500/30 flex-shrink-0">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500/30 shrink-0">
                   <Image
                     src={admin.photoURL}
                     alt={admin.name}
@@ -49,7 +49,7 @@ export default function AdminList() {
                   />
                 </div>
               ) : (
-                <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500/30 flex-shrink-0 bg-brand-600 flex items-center justify-center">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-amber-500/30 shrink-0 bg-brand-600 flex items-center justify-center">
                   <span className="text-white text-lg font-bold">{(admin.name?.charAt(0) || 'U').toUpperCase()}</span>
                 </div>
               )}
@@ -65,7 +65,7 @@ export default function AdminList() {
               <button
                 onClick={() => handleRemoveAdmin(admin.id, admin.name)}
                 className="p-2 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30
-                  hover:bg-red-500/30 active:scale-95 transition-all duration-200 flex-shrink-0"
+                  hover:bg-red-500/30 active:scale-95 transition-all duration-200 shrink-0"
                 aria-label="Remove admin"
               >
                 <Trash2 className="w-4 h-4" />

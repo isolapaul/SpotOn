@@ -26,8 +26,8 @@ interface DiscoveryPanelProps {
 }
 
 const chipClass = (active: boolean) =>
-  `no-min-size flex-shrink-0 h-9 px-3.5 rounded-full text-[14px] font-semibold flex items-center gap-1.5 touch-manipulation
-   transition-colors duration-200 active:scale-95 ${active ? 'bg-brand-600 text-white' : 'bg-white/[.08] text-label-secondary'}`;
+  `no-min-size shrink-0 h-9 px-3.5 rounded-full text-[14px] font-semibold flex items-center gap-1.5 touch-manipulation
+   transition-colors duration-200 active:scale-95 ${active ? 'bg-brand-600 text-white' : 'bg-white/8 text-label-secondary'}`;
 
 /** Explore (design phase 3): large title, segmented sort, category chips, a featured spot and a grouped list. */
 export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSelect }: Readonly<DiscoveryPanelProps>) {
@@ -142,10 +142,10 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
 
         {/* Segmented sort */}
         <div className="px-5 mt-4">
-          <div role="radiogroup" className="relative grid grid-cols-2 p-0.5 rounded-[10px] bg-white/[.08]">
+          <div role="radiogroup" className="relative grid grid-cols-2 p-0.5 rounded-[10px] bg-white/8">
             <span
               aria-hidden="true"
-              className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-[8px] bg-white/[.16] shadow-sm transition-transform duration-350 ease-ios"
+              className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-r1 bg-white/16 shadow-xs transition-transform duration-350 ease-ios"
               style={{ transform: sortBy === 'nearest' ? 'translateX(0)' : 'translateX(100%)' }}
             />
             {(
@@ -171,13 +171,13 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
         </div>
 
         {/* Category chips */}
-        <div className="mt-3 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mt-3 flex gap-2 overflow-x-auto px-5 pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden">
           <button type="button" aria-pressed={onlyNew} onClick={() => setOnlyNew(!onlyNew)} className={chipClass(onlyNew)}>
             <Sparkles className="w-4 h-4" aria-hidden="true" />
             {t('newThisWeek')}
             <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[12px] leading-5 tabular-nums ${onlyNew ? 'bg-white/25' : 'bg-white/10'}`}>{newIds.size}</span>
           </button>
-          <span aria-hidden="true" className="flex-shrink-0 w-px my-1.5 bg-white/[.12]" />
+          <span aria-hidden="true" className="shrink-0 w-px my-1.5 bg-white/12" />
           <button type="button" aria-pressed={filterCategory === null} onClick={() => pickCategory(null)} className={chipClass(filterCategory === null)}>
             {t('allCategories')}
           </button>
@@ -200,7 +200,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
           <div key={`${sortBy}-${filterCategory ?? 'all'}-${onlyNew}`} className="px-4 mt-4 space-y-4">
             <FeaturedSpot {...props(featured)} />
             {rest.length > 0 && (
-              <div className="rounded-[18px] bg-surface-1 overflow-hidden divide-y divide-white/[.06]">
+              <div className="rounded-[18px] bg-surface-1 overflow-hidden divide-y divide-white/6">
                 {rest.map((spot, i) => (
                   <SpotRow key={spot.id} {...props(spot)} index={i} />
                 ))}
@@ -210,7 +210,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
               <button
                 type="button"
                 onClick={showMore}
-                className="w-full h-12 rounded-[14px] bg-white/[.08] text-brand-400 font-semibold text-[15px] touch-manipulation active:bg-white/[.12]"
+                className="w-full h-12 rounded-r2 bg-white/8 text-brand-400 font-semibold text-[15px] touch-manipulation active:bg-white/12"
               >
                 {t('loadMore')} ({sortedSpots.length - visibleCount} {t('spots')})
               </button>

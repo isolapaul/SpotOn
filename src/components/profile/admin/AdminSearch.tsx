@@ -70,7 +70,7 @@ export default function AdminSearch() {
           onChange={(e) => setAdminEmailInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearchUser()}
           className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl
-            text-white placeholder:text-white/40 focus:outline-none focus:border-amber-500/50"
+            text-white placeholder:text-white/40 focus:outline-hidden focus:border-amber-500/50"
         />
 
         <button

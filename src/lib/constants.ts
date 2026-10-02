@@ -70,13 +70,13 @@ export const DELAYS = {
  * and are therefore not comparable with the rest:
  * - `mapInner` sits inside the map container's `mapBase` (`z-0`) context.
  * - `panelInnerBackdrop` / `panelInnerSheet` (SettingsPanel) are rendered inside ProfilePanel's
- *   `panel` (`z-[60]`) root, so they stack above the profile content although 40/50 < 60 (BUG-22).
+ *   `panel` (`z-60`) root, so they stack above the profile content although 40/50 < 60 (BUG-22).
  */
 export const Z = {
-  mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-[1000]', dock: 'z-50', prompt: 'z-50', placeCard: 'z-[55]',
-  panel: 'z-[60]', panelInnerBackdrop: 'z-40', panelInnerSheet: 'z-50', panelModal: 'z-[70]',
-  gallery: 'z-[100]', floatingButton: 'z-[1500]', modal: 'z-[2000]', usernameSetup: 'z-[3500]',
-  blocking: 'z-[9999]',
+  mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-1000', dock: 'z-50', prompt: 'z-50', placeCard: 'z-55',
+  panel: 'z-60', panelInnerBackdrop: 'z-40', panelInnerSheet: 'z-50', panelModal: 'z-70',
+  gallery: 'z-100', floatingButton: 'z-1500', modal: 'z-2000', usernameSetup: 'z-3500',
+  blocking: 'z-9999',
 } as const;
 
 /** Z keys that live inside another layer's stacking context (see Z). */

@@ -71,11 +71,11 @@ export default function NotificationItem({ notification, index, now, onClick }: 
   return (
     <button
       onClick={() => onClick(notification.id)}
-      className="w-full text-left flex gap-3 p-3.5 rounded-2xl bg-white/[0.06] hover:bg-white/[0.09]
+      className="w-full text-left flex gap-3 p-3.5 rounded-2xl bg-white/6 hover:bg-white/9
         active:scale-[0.98] transition touch-manipulation motion-safe:animate-item-in"
       style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
     >
-      <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${tint}`}>
+      <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${tint}`}>
         <Icon className="w-[18px] h-[18px]" strokeWidth={2.2} />
       </div>
       <div className="flex-1 min-w-0">
@@ -87,7 +87,7 @@ export default function NotificationItem({ notification, index, now, onClick }: 
           >
             {headline}
           </h4>
-          <span className="flex-shrink-0 flex items-center gap-1.5 text-xs text-white/40 whitespace-nowrap">
+          <span className="shrink-0 flex items-center gap-1.5 text-xs text-white/40 whitespace-nowrap">
             {!notification.read && <span className="w-2 h-2 rounded-full bg-brand-400" aria-hidden="true" />}
             {formatTimestamp(notification.timestamp)}
           </span>

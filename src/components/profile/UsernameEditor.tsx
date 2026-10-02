@@ -49,7 +49,7 @@ export default function UsernameEditor({ username }: Readonly<UsernameEditorProp
           value={newUsername}
           onChange={(e) => setNewUsername(e.target.value.toLowerCase().replaceAll(/[^a-z0-9_]/g, ''))}
           maxLength={20}
-          className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary-500 w-48"
+          className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-2xl font-bold focus:outline-hidden focus:ring-2 focus:ring-primary-500 w-48"
           autoFocus
         />
         <button

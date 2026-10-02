@@ -28,7 +28,7 @@ export default function LoadingScreen({ isLoading }: Readonly<LoadingScreenProps
   return (
     <div
       data-testid="loading-screen"
-      className={`fixed inset-0 z-[9999] bg-surface-0 flex flex-col items-center justify-center transition-[opacity,transform] duration-500 ${
+      className={`fixed inset-0 z-9999 bg-surface-0 flex flex-col items-center justify-center transition-[opacity,transform] duration-500 ${
         isLoading ? 'opacity-100' : 'opacity-0 scale-[1.04]'
       }`}
     >

@@ -11,7 +11,7 @@ import CategoryIcon from '../ui/CategoryIcon';
 
 function Thumb({ url, removed = false }: Readonly<{ url: string; removed?: boolean }>) {
   return (
-    <span className="relative w-16 h-16 flex-shrink-0 rounded-[12px] overflow-hidden bg-surface-3">
+    <span className="relative w-16 h-16 shrink-0 rounded-[12px] overflow-hidden bg-surface-3">
       <Image src={url} alt="" fill sizes="64px" unoptimized className={`object-cover ${removed ? 'opacity-50' : ''}`} />
       {removed && (
         <span className="absolute inset-0 grid place-items-center">
@@ -30,9 +30,9 @@ function Label({ children }: Readonly<{ children: React.ReactNode }>) {
 function Change({ before, after }: Readonly<{ before: React.ReactNode; after: React.ReactNode }>) {
   return (
     <div className="flex items-center gap-2 text-[15px] flex-wrap">
-      <span className="text-label-tertiary line-through decoration-white/30 break-words min-w-0">{before}</span>
-      <ArrowRight className="w-4 h-4 text-label-tertiary flex-shrink-0" aria-hidden="true" />
-      <span className="text-label break-words min-w-0">{after}</span>
+      <span className="text-label-tertiary line-through decoration-white/30 wrap-break-word min-w-0">{before}</span>
+      <ArrowRight className="w-4 h-4 text-label-tertiary shrink-0" aria-hidden="true" />
+      <span className="text-label wrap-break-word min-w-0">{after}</span>
     </div>
   );
 }

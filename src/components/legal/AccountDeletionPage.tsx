@@ -100,7 +100,7 @@ export default function AccountDeletionPage() {
           )}
           {stage === 'deleted' && (
             <p role="status" className="flex items-start gap-2 text-[15px] text-label motion-safe:animate-item-in">
-              <CircleCheck className="w-5 h-5 text-brand-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <CircleCheck className="w-5 h-5 text-brand-400 shrink-0 mt-0.5" aria-hidden="true" />
               {t('accountDeletionDone')}
             </p>
           )}

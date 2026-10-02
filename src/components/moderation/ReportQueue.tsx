@@ -75,15 +75,15 @@ function ReportCard({ group, onOpenSpot }: Readonly<{ group: ReportGroup; onOpen
         <p className="text-label font-semibold">{title}</p>
       )}
       {group.kind === 'photo' ? (
-        <span className="relative block w-full aspect-[4/3] rounded-[14px] overflow-hidden bg-surface-3">
+        <span className="relative block w-full aspect-4/3 rounded-r2 overflow-hidden bg-surface-3">
           <Image src={group.targetId} alt="" fill sizes="480px" unoptimized className="object-cover" />
         </span>
       ) : group.preview && (
-        <p className="text-label-secondary text-[14px] whitespace-pre-line break-words line-clamp-4">
+        <p className="text-label-secondary text-[14px] whitespace-pre-line wrap-break-word line-clamp-4">
           {group.kind === 'profile' ? group.preview.split(':').slice(1).join(':').trim() || '–' : group.preview}
         </p>
       )}
-      <ul className="rounded-[12px] bg-white/[.04] divide-y divide-white/[.06]">
+      <ul className="rounded-[12px] bg-white/4 divide-y divide-white/6">
         {group.reports.slice(0, 5).map((r) => (
           <li key={r.id} className="px-3 py-2 text-[13px]">
             <span className="text-label font-medium">{t(REASON_LABEL[r.reason])}</span>

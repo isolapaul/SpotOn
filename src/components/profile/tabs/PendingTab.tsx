@@ -36,10 +36,10 @@ export default function PendingTab({ spots, onOpenSpot }: Readonly<PendingTabPro
 
   return (
     <div className="space-y-4">
-      <div role="radiogroup" className="relative grid grid-cols-4 p-0.5 rounded-[10px] bg-white/[.08]">
+      <div role="radiogroup" className="relative grid grid-cols-4 p-0.5 rounded-[10px] bg-white/8">
         <span
           aria-hidden="true"
-          className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc((100%-4px)/4)] rounded-[8px] bg-white/[.16] shadow-sm transition-transform duration-350 ease-ios"
+          className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc((100%-4px)/4)] rounded-r1 bg-white/16 shadow-xs transition-transform duration-350 ease-ios"
           style={{ transform: `translateX(${index * 100}%)` }}
         />
         {QUEUES.map(({ id, label }) => (

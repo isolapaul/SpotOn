@@ -18,11 +18,11 @@ export default function ProfileBanner({ bannerUrl, onOpenSettings, onClose }: Re
   const t = useT();
   return (
     <div
-      className="relative w-full flex-shrink-0 bg-gradient-to-br from-brand-700/50 via-surface-2 to-surface-1"
+      className="relative w-full shrink-0 bg-linear-to-br from-brand-700/50 via-surface-2 to-surface-1"
       style={{ height: 'calc(env(safe-area-inset-top, 0px) + 136px)' }}
     >
       {bannerUrl ? <Image src={bannerUrl} alt="" fill sizes="100vw" className="object-cover" priority /> : null}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-surface-0/70" />
+      <div className="absolute inset-0 bg-linear-to-b from-black/35 via-transparent to-surface-0/70" />
 
       <div className="absolute left-3 right-3 flex justify-between items-center" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 6px)' }}>
         <button onClick={onOpenSettings} className={MEDIA_BUTTON} aria-label={t('settings')}>

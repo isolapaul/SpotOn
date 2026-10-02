@@ -19,7 +19,7 @@ export default function CompactBar({ title, shown, onClose, back }: Readonly<Com
     <div
       aria-hidden={!shown || undefined}
       className={`material-sheet absolute inset-x-0 top-0 z-10 flex items-end justify-center pb-3 px-16 pointer-events-none
-        border-b border-white/[.06] transition-opacity duration-150 ${shown ? 'opacity-100' : 'opacity-0'}`}
+        border-b border-white/6 transition-opacity duration-150 ${shown ? 'opacity-100' : 'opacity-0'}`}
       style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 14px)' }}
     >
       <span className="text-[17px] font-semibold text-label truncate">{title}</span>

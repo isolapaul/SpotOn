@@ -125,13 +125,13 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
       {/* Backdrop */}
       <button
         type="button"
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm ${Z.panelInnerBackdrop} transition-opacity cursor-default`}
+        className={`fixed inset-0 bg-black/60 backdrop-blur-xs ${Z.panelInnerBackdrop} transition-opacity cursor-default`}
         onClick={onClose}
         aria-label="Close settings"
       />
       
       {/* Settings Panel */}
-      <div className={`fixed inset-y-0 right-0 w-full sm:w-96 bg-surface-0 ${Z.panelInnerSheet} overflow-y-auto border-l border-white/[.06]`}>
+      <div className={`fixed inset-y-0 right-0 w-full sm:w-96 bg-surface-0 ${Z.panelInnerSheet} overflow-y-auto border-l border-white/6`}>
         {/* Header */}
         <div className="sticky top-0 bg-surface-0/85 backdrop-blur-xl px-5 pb-3 z-10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
           <div className="flex items-center justify-between">
@@ -253,8 +253,8 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
                   onClick={() => handleLanguageChange(lang)}
                   className={`no-min-size w-full text-left py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
                     language === lang
-                      ? 'bg-white/[.08] text-label'
-                      : 'bg-transparent text-label-secondary active:bg-white/[.06]'
+                      ? 'bg-white/8 text-label'
+                      : 'bg-transparent text-label-secondary active:bg-white/6'
                   }`}
                 >
                   <span className="flex items-center justify-between">
@@ -300,8 +300,8 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
             <button
               onClick={() => setShowNotificationSettings(true)}
               disabled={isNotificationLoading}
-              className="mt-3 w-full py-2.5 px-4 rounded-xl bg-white/[.08] text-label font-medium text-sm
-                active:bg-white/[.12] transition-colors disabled:opacity-50"
+              className="mt-3 w-full py-2.5 px-4 rounded-xl bg-white/8 text-label font-medium text-sm
+                active:bg-white/12 transition-colors disabled:opacity-50"
             >
               {t('notificationSettingsButton')}
             </button>

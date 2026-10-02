@@ -14,7 +14,7 @@ interface CategoryFormProps {
   onCancel?: () => void;
 }
 
-const INPUT = 'w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-white/30';
+const INPUT = 'w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-hidden focus:border-white/30';
 
 /**
  * A category's names and icon (one of the hand-drawn set), for creating and editing (item 7).
@@ -62,7 +62,7 @@ export default function CategoryForm({ initial, submitLabel, onSubmit, onCancel 
               aria-label={t(CATEGORY_ICON_LABELS[id])}
               onClick={() => setIcon(id)}
               className={`no-min-size h-12 rounded-xl grid place-items-center transition-colors ${
-                selected ? 'bg-brand-600 text-white' : 'bg-white/[.06] text-label-secondary hover:bg-white/10'
+                selected ? 'bg-brand-600 text-white' : 'bg-white/6 text-label-secondary hover:bg-white/10'
               }`}
             >
               <GlyphIcon glyph={CATEGORY_ICON_GLYPHS[id]} className="w-6 h-6" />
@@ -72,7 +72,7 @@ export default function CategoryForm({ initial, submitLabel, onSubmit, onCancel 
       </div>
       <div className="flex gap-2">
         {onCancel && (
-          <button type="button" onClick={onCancel} className="flex-1 py-3 rounded-xl font-semibold bg-white/[.06] text-white">
+          <button type="button" onClick={onCancel} className="flex-1 py-3 rounded-xl font-semibold bg-white/6 text-white">
             {t('cancel')}
           </button>
         )}

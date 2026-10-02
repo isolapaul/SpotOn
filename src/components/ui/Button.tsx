@@ -8,7 +8,7 @@ const VARIANTS = {
   tinted: 'bg-brand-500/15 text-brand-300 active:bg-brand-500/25',
   gray: 'bg-white/10 text-label active:bg-white/15',
   plain: 'bg-transparent text-brand-400 active:opacity-60',
-  destructive: 'bg-[#FF453A]/15 text-[#FF6961] active:bg-[#FF453A]/25',
+  destructive: 'bg-danger-500/15 text-[#FF6961] active:bg-danger-500/25',
 } as const;
 
 const SIZES = {
@@ -32,7 +32,7 @@ export default function Button({ variant = 'filled', size = 'lg', block = false,
       {...rest}
       className={`no-min-size inline-flex items-center justify-center rounded-full font-semibold touch-manipulation
         transition-[transform,background-color,opacity] duration-150 active:scale-[.97] disabled:opacity-40 disabled:active:scale-100
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ${VARIANTS[variant]} ${SIZES[size]} ${
+        focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-400 ${VARIANTS[variant]} ${SIZES[size]} ${
           block ? 'w-full' : ''
         } ${className}`}
     >

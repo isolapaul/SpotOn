@@ -12,7 +12,7 @@ const PALETTES: Record<MapTheme, { bg: string; park: string; water: string; road
 export default function MapStyleThumb({ theme }: Readonly<{ theme: MapTheme }>) {
   const p = PALETTES[theme];
   return (
-    <svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true" className="flex-shrink-0 rounded-[9px] ring-1 ring-black/10">
+    <svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true" className="shrink-0 rounded-[9px] ring-1 ring-black/10">
       <rect width="40" height="40" fill={p.bg} />
       <rect x="4" y="5" width="14" height="10" rx="3" fill={p.park} />
       <path d="M-2 30c10-6 16 4 26-2s12-10 18-8" fill="none" strokeWidth="6" stroke={p.water} />

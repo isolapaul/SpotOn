@@ -115,14 +115,14 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
         onChange={(e) => setComment(e.target.value)}
         placeholder={t('writeReview')}
         maxLength={1000}
-        className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
+        className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-hidden focus:ring-2 focus:ring-primary-500 transition-all resize-none"
         rows={3}
       />
 
       {photos.length > 0 && (
         <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
           {photos.map(({ preview: src }, i) => (
-            <div key={src} className="relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden motion-safe:animate-item-in">
+            <div key={src} className="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden motion-safe:animate-item-in">
               <Image src={src} alt={`Photo ${i + 1}`} fill sizes="64px" unoptimized className="object-cover" />
               <button
                 type="button"
@@ -142,7 +142,7 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
           type="button"
           onClick={() => photoInputRef.current?.click()}
           disabled={isUploading}
-          className="relative flex-shrink-0 w-12 rounded-xl bg-white/10 text-white border border-white/20 hover:bg-white/20 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center"
+          className="relative shrink-0 w-12 rounded-xl bg-white/10 text-white border border-white/20 hover:bg-white/20 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center"
           aria-label="Attach photos"
           title={t('addPhotos')}
         >

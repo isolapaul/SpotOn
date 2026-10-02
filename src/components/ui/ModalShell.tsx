@@ -14,22 +14,22 @@ const VARIANTS = {
     /** A glass backdrop that closes on click is a button; it keeps the arrow cursor. */
     backdropButton: 'absolute inset-0 bg-black/70 backdrop-blur-xl cursor-default',
     // Design phase 3: a floating dark sheet (Auth, AddSpot, UsernameSetup).
-    panelStart: 'relative bg-surface-2 rounded-[28px] ring-1 ring-white/10 shadow-sheet',
+    panelStart: 'relative bg-surface-2 rounded-r4 ring-1 ring-white/10 shadow-sheet',
     panelEnd: 'animate-slide-up',
   },
   slate: {
     outerStyle: undefined,
-    backdrop: 'absolute inset-0 bg-black/50 backdrop-blur-sm touch-manipulation',
-    backdropButton: 'absolute inset-0 bg-black/50 backdrop-blur-sm touch-manipulation',
+    backdrop: 'absolute inset-0 bg-black/50 backdrop-blur-xs touch-manipulation',
+    backdropButton: 'absolute inset-0 bg-black/50 backdrop-blur-xs touch-manipulation',
     panelStart: 'relative bg-surface-2',
-    panelEnd: 'rounded-[28px] shadow-sheet ring-1 ring-white/10 overflow-hidden animate-scale-in flex flex-col',
+    panelEnd: 'rounded-r4 shadow-sheet ring-1 ring-white/10 overflow-hidden animate-scale-in flex flex-col',
   },
   sheet: {
     outerStyle: undefined,
-    backdrop: 'absolute inset-0 bg-black/40 backdrop-blur-sm touch-manipulation',
-    backdropButton: 'absolute inset-0 bg-black/40 backdrop-blur-sm touch-manipulation',
+    backdrop: 'absolute inset-0 bg-black/40 backdrop-blur-xs touch-manipulation',
+    backdropButton: 'absolute inset-0 bg-black/40 backdrop-blur-xs touch-manipulation',
     panelStart: 'relative bg-surface-2',
-    panelEnd: 'rounded-[28px] shadow-2xl ring-1 ring-white/10 overflow-hidden flex flex-col',
+    panelEnd: 'rounded-r4 shadow-2xl ring-1 ring-white/10 overflow-hidden flex flex-col',
   },
 } as const;
 

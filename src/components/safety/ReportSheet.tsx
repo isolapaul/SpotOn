@@ -61,7 +61,7 @@ export default function ReportSheet({ target, onClose }: Readonly<{ target: Repo
       <div role="dialog" aria-modal="true" aria-labelledby="report-title">
         <h3 id="report-title" className="text-label text-[20px] font-bold">{t('reportTitle')}</h3>
         <p className="text-label-secondary text-[14px] mt-1 mb-3">{t('reportHint')}</p>
-        <div role="radiogroup" aria-labelledby="report-title" className="rounded-[14px] bg-white/[.06] divide-y divide-white/[.06] overflow-hidden">
+        <div role="radiogroup" aria-labelledby="report-title" className="rounded-r2 bg-white/6 divide-y divide-white/6 overflow-hidden">
           {REPORT_REASONS.map((r) => (
             <button
               key={r}
@@ -69,7 +69,7 @@ export default function ReportSheet({ target, onClose }: Readonly<{ target: Repo
               role="radio"
               aria-checked={reason === r}
               onClick={() => setReason(r)}
-              className="no-min-size w-full flex items-center justify-between px-4 h-12 text-left text-label text-[15px] active:bg-white/[.06]"
+              className="no-min-size w-full flex items-center justify-between px-4 h-12 text-left text-label text-[15px] active:bg-white/6"
             >
               {t(REASON_LABEL[r])}
               {reason === r && <Check className="w-4 h-4 text-brand-400" aria-hidden="true" />}
@@ -83,7 +83,7 @@ export default function ReportSheet({ target, onClose }: Readonly<{ target: Repo
           maxLength={MAX_TEXT}
           rows={3}
           placeholder={t('reportDetails')}
-          className="mt-3 w-full rounded-[14px] bg-white/[.06] border border-white/10 focus:border-white/30 focus:outline-none px-4 py-3 text-label placeholder-white/35 resize-none"
+          className="mt-3 w-full rounded-r2 bg-white/6 border border-white/10 focus:border-white/30 focus:outline-hidden px-4 py-3 text-label placeholder-white/35 resize-none"
         />
         <div className="flex gap-2 mt-4">
           <Button variant="gray" size="md" block onClick={onClose} disabled={busy}>{t('cancel')}</Button>

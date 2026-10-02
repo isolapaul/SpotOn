@@ -77,7 +77,7 @@ export default function HighlightManager({ spots, uid, levelInfo }: Readonly<Hig
                   : 'bg-white/5 border-white/10'
               }`}>
                 <div className="flex gap-3 items-center">
-                  <div className="relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
+                  <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0">
                     <Image
                       src={getThumbnailUrl(spot)}
                       alt={spot.name}

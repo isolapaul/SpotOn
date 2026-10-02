@@ -19,7 +19,7 @@ Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only 
 | Layer | Tech |
 |---|---|
 | Framework | Next.js 16 App Router (`src/app`, `src/proxy.ts`), TypeScript strict |
-| UI | React 19, Tailwind CSS 3 (design tokens in `tailwind.config.ts`; materials, pins and view transitions in `src/app/globals.css`), lucide-react |
+| UI | React 19, Tailwind CSS 4 (CSS-first: design tokens in the `@theme` block, the `chrome-dark` variant and `@utility` classes in `src/app/globals.css`, with materials, pins and view transitions; no `tailwind.config`), lucide-react |
 | Map | Mapbox GL JS 3 (Mapbox styles per theme; no token = a plain offline background) |
 | State | Zustand 5 (`src/store/*`, several persisted to localStorage) |
 | Backend (BaaS) | Firebase: Auth, Firestore, Storage, Cloud Messaging (web push) |
@@ -167,7 +167,7 @@ Never commit `.env*` files — sole exception: `functions/.env.demo-spoton` (emu
 - One way to translate: `useT()` (React) or `translate()` from `lib/i18n` (non-React code). No hardcoded user-visible strings — add keys to all three languages in `lib/translations.ts`. No emoji in interface text.
 - Shared primitives (`components/ui/`): `PanelShell`, `ModalShell`, `Button`/`CloseButton`, `StarRating`, `CategoryIcon`, `LevelBadge`; sheet gestures via `useSheetDrag` / `useCardDrag`. Don't hand-roll new overlays.
 - Constants (limits, thresholds, categories, z-index) live in `lib/` — no magic numbers in JSX.
-- Tailwind classes must be static strings (JIT cannot see `replace()`-built class names). Buttons with custom layouts need `no-min-size` (the global button rule centres content and sets a minimum size).
+- Tailwind classes must be static strings (the scanner cannot see `replace()`-built class names). The app's plain CSS in globals.css lives in `@layer utilities` (as it came after the utilities under v3); the `.mapboxgl-*` overrides stay unlayered, because mapbox-gl.css is unlayered and would win over any layer. Children of `space-y-*` should not carry their own vertical margins (v4 puts the space as margin-bottom); use `flex flex-col gap-*` there. Buttons with custom layouts need `no-min-size` (the global button rule centres content and sets a minimum size).
 - Types: shared domain types live next to their store (`Spot`, `Review`, `SpotImage` in `useSpotStore.ts`) until a `src/domain/` module is introduced; no `any` in new code.
 - No `innerHTML`/`dangerouslySetInnerHTML`.
 

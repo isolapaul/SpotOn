@@ -45,20 +45,20 @@ export default function UploadStatus() {
         key={`${job.id}-${job.status}`}
         className="pointer-events-auto max-w-full flex items-center gap-2.5 pl-3.5 pr-2 min-h-[44px] py-1.5 rounded-full material-sheet shadow-float motion-safe:animate-toast-in"
       >
-        <span className="flex-shrink-0">{icon}</span>
+        <span className="shrink-0">{icon}</span>
         <span className={`text-sm text-white/90 ${job.status === 'failed' ? 'line-clamp-2' : 'truncate'}`}>{label}</span>
         {job.status === 'failed' ? (
           <>
             <button
               onClick={() => retry(job.id)}
-              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full bg-brand-600 text-white text-sm font-semibold active:scale-95 transition touch-manipulation"
+              className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full bg-brand-600 text-white text-sm font-semibold active:scale-95 transition touch-manipulation"
             >
               <RotateCw className="w-3.5 h-3.5" strokeWidth={2.5} />
               {t('uploadRetry')}
             </button>
             <button
               onClick={() => dismiss(job.id)}
-              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 active:scale-90 transition touch-manipulation"
+              className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 active:scale-90 transition touch-manipulation"
               aria-label="Dismiss"
             >
               <X className="w-4 h-4 text-white/60" strokeWidth={2.5} />

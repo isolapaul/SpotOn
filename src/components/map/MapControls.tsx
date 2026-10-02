@@ -24,15 +24,15 @@ function Cell({ label, onClick, children }: Readonly<{ label: string; onClick: (
       aria-label={label}
       onClick={onClick}
       className="relative w-11 h-11 grid place-items-center text-chrome-ink-soft touch-manipulation
-        active:bg-black/[.08] chrome-dark:active:bg-white/10 transition-colors
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500"
+        active:bg-black/8 chrome-dark:active:bg-white/10 transition-colors
+        focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500"
     >
       {children}
     </button>
   );
 }
 
-const Hairline = () => <span aria-hidden="true" className="block mx-auto w-6 h-px bg-black/[.06] chrome-dark:bg-white/10" />;
+const Hairline = () => <span aria-hidden="true" className="block mx-auto w-6 h-px bg-black/6 chrome-dark:bg-white/10" />;
 
 export default function MapControls() {
   const t = useT();

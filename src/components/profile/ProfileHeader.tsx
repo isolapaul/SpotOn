@@ -37,7 +37,7 @@ export default function ProfileHeader({
   const followers = useMyLevelStore((s) => s.followers);
   const following = useMyLevelStore((s) => s.following);
   return (
-    <div className="flex-shrink-0 px-5 -mt-14 mb-5 relative">
+    <div className="shrink-0 px-5 -mt-14 mb-5 relative">
       <div className="flex flex-col items-center">
         {/* Large Profile Picture */}
         <ProfileAvatar user={user} failedSrc={failedAvatarSrc} onFailed={onAvatarFailed} />

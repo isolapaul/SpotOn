@@ -46,11 +46,11 @@ export const MAX_LEVEL = 5;
 
 /** UI tints per level, matching the badge colours in lib/levelTheme (static Tailwind strings). */
 const LEVEL_TINTS: Record<number, { textColor: string; bgColor: string; borderColor: string; progressColor: string; progressBarClass: string }> = {
-  1: { textColor: 'text-emerald-300', bgColor: 'bg-emerald-500/15', borderColor: 'border-emerald-400/30', progressColor: '#34C759', progressBarClass: 'bg-gradient-to-r from-[#5EE08A] to-[#0E8A4F]' },
-  2: { textColor: 'text-sky-300', bgColor: 'bg-sky-500/15', borderColor: 'border-sky-400/30', progressColor: '#0A84FF', progressBarClass: 'bg-gradient-to-r from-[#6FD3FF] to-[#0A64D6]' },
-  3: { textColor: 'text-violet-300', bgColor: 'bg-violet-500/15', borderColor: 'border-violet-400/30', progressColor: '#AF52DE', progressBarClass: 'bg-gradient-to-r from-[#D59BFF] to-[#6E2FD6]' },
-  4: { textColor: 'text-orange-300', bgColor: 'bg-orange-500/15', borderColor: 'border-orange-400/30', progressColor: '#FF9F0A', progressBarClass: 'bg-gradient-to-r from-[#FFD66B] to-[#FF7A00]' },
-  5: { textColor: 'text-fuchsia-300', bgColor: 'bg-fuchsia-500/15', borderColor: 'border-fuchsia-400/30', progressColor: '#C084FC', progressBarClass: 'bg-gradient-to-r from-[#5EEAD4] via-[#A78BFA] to-[#F472B6]' },
+  1: { textColor: 'text-emerald-300', bgColor: 'bg-emerald-500/15', borderColor: 'border-emerald-400/30', progressColor: '#34C759', progressBarClass: 'bg-linear-to-r from-[#5EE08A] to-[#0E8A4F]' },
+  2: { textColor: 'text-sky-300', bgColor: 'bg-sky-500/15', borderColor: 'border-sky-400/30', progressColor: '#0A84FF', progressBarClass: 'bg-linear-to-r from-[#6FD3FF] to-[#0A64D6]' },
+  3: { textColor: 'text-violet-300', bgColor: 'bg-violet-500/15', borderColor: 'border-violet-400/30', progressColor: '#AF52DE', progressBarClass: 'bg-linear-to-r from-[#D59BFF] to-[#6E2FD6]' },
+  4: { textColor: 'text-orange-300', bgColor: 'bg-orange-500/15', borderColor: 'border-orange-400/30', progressColor: '#FF9F0A', progressBarClass: 'bg-linear-to-r from-[#FFD66B] to-[#FF7A00]' },
+  5: { textColor: 'text-fuchsia-300', bgColor: 'bg-fuchsia-500/15', borderColor: 'border-fuchsia-400/30', progressColor: '#C084FC', progressBarClass: 'bg-linear-to-r from-[#5EEAD4] via-[#A78BFA] to-[#F472B6]' },
 };
 
 function clampLevel(level: number): number {

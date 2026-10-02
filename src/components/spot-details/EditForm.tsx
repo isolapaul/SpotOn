@@ -28,7 +28,7 @@ export default function EditForm({ spotId, edit }: Readonly<EditFormProps>) {
           value={edit.editDescription}
           onChange={(e) => edit.setEditDescription(e.target.value)}
           maxLength={2000}
-          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
+          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-hidden focus:ring-2 focus:ring-primary-500 transition-all resize-none"
           rows={4}
         />
       </div>
@@ -36,7 +36,7 @@ export default function EditForm({ spotId, edit }: Readonly<EditFormProps>) {
       <button
         type="button"
         onClick={() => startRelocating(spotId, useMapThemeStore.getState().theme)}
-        className="no-min-size w-full h-11 rounded-xl bg-white/[.06] text-label text-[15px] font-medium flex items-center justify-center gap-2 active:scale-[.98] transition-transform"
+        className="no-min-size w-full h-11 rounded-xl bg-white/6 text-label text-[15px] font-medium flex items-center justify-center gap-2 active:scale-[.98] transition-transform"
       >
         <MapPin className="w-4 h-4 text-brand-400" aria-hidden="true" />
         {t('changeLocation')}

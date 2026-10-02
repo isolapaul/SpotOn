@@ -17,7 +17,7 @@ interface SpotActionsProps {
   highlight: SpotHighlight;
 }
 
-const TILE = `no-min-size flex-1 min-w-0 h-14 rounded-[14px] flex flex-col items-center justify-center gap-1 text-[12px] font-semibold
+const TILE = `no-min-size flex-1 min-w-0 h-14 rounded-r2 flex flex-col items-center justify-center gap-1 text-[12px] font-semibold
   touch-manipulation active:scale-[.97] transition-transform duration-150 disabled:opacity-40`;
 
 function Tile({ label, ariaLabel, onClick, children, pressed, disabled }: Readonly<{
@@ -29,7 +29,7 @@ function Tile({ label, ariaLabel, onClick, children, pressed, disabled }: Readon
   disabled?: boolean;
 }>) {
   return (
-    <button type="button" onClick={onClick} aria-label={ariaLabel} aria-pressed={pressed} disabled={disabled} className={`${TILE} bg-white/[.08] text-label`}>
+    <button type="button" onClick={onClick} aria-label={ariaLabel} aria-pressed={pressed} disabled={disabled} className={`${TILE} bg-white/8 text-label`}>
       {children}
       <span className="truncate max-w-full px-1">{label}</span>
     </button>

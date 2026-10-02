@@ -141,7 +141,7 @@ export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<Spo
           ) : null}
 
           {/* Info: one grouped card */}
-          <div className="rounded-[18px] bg-surface-1 divide-y divide-white/[.06] overflow-hidden">
+          <div className="rounded-[18px] bg-surface-1 divide-y divide-white/6 overflow-hidden">
             <SpotLocation location={spot.location} navigationUrl={navigationUrl} />
             <CreatorInfo spot={spot} />
           </div>

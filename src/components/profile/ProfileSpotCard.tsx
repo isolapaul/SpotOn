@@ -27,7 +27,7 @@ export default function ProfileSpotCard({ spot, onOpen, children }: Readonly<Pro
       className="no-min-size w-full text-left rounded-[18px] bg-surface-1 p-3 flex items-center gap-3.5 touch-manipulation
         transition-transform duration-150 ease-ios active:scale-[.98] active:bg-surface-2"
     >
-      <span className="relative w-[72px] h-[72px] flex-shrink-0 rounded-[14px] overflow-hidden bg-brand-500/15 text-brand-400 grid place-items-center">
+      <span className="relative w-[72px] h-[72px] shrink-0 rounded-r2 overflow-hidden bg-brand-500/15 text-brand-400 grid place-items-center">
         {url === PLACEHOLDER_URL || failed ? (
           <CategoryIcon category={spot.category} className="w-8 h-8" />
         ) : (
@@ -39,7 +39,7 @@ export default function ProfileSpotCard({ spot, onOpen, children }: Readonly<Pro
         <span className="block text-[14px] text-label-secondary line-clamp-2 mt-0.5">{spot.description}</span>
         {children}
       </span>
-      <ChevronRight className="w-5 h-5 flex-shrink-0 text-label-tertiary" aria-hidden="true" />
+      <ChevronRight className="w-5 h-5 shrink-0 text-label-tertiary" aria-hidden="true" />
     </button>
   );
 }

@@ -40,7 +40,7 @@ export default function ProfileMenu({ uid, name, blocked, onChanged }: Readonly<
     }
   };
 
-  const item = 'no-min-size w-full flex items-center gap-3 px-4 h-12 text-left text-[15px] active:bg-white/[.06]';
+  const item = 'no-min-size w-full flex items-center gap-3 px-4 h-12 text-left text-[15px] active:bg-white/6';
   return (
     <div className="relative">
       <button type="button" onClick={() => setOpen((o) => !o)} aria-label={t('moreActions')} aria-expanded={open}
@@ -50,13 +50,13 @@ export default function ProfileMenu({ uid, name, blocked, onChanged }: Readonly<
         </span>
       </button>
       {open && (
-        <div role="menu" className="absolute right-1 top-12 z-10 w-60 rounded-[14px] bg-surface-3 shadow-sheet ring-1 ring-white/10 overflow-hidden divide-y divide-white/[.06] motion-safe:animate-scale-in origin-top-right">
+        <div role="menu" className="absolute right-1 top-12 z-10 w-60 rounded-r2 bg-surface-3 shadow-sheet ring-1 ring-white/10 overflow-hidden divide-y divide-white/6 motion-safe:animate-scale-in origin-top-right">
           {confirming ? (
             <div className="p-4">
               <p className="text-label text-[15px] font-semibold">{t(blocked ? 'unblockConfirm' : 'blockConfirm', { name })}</p>
               {!blocked && <p className="text-label-secondary text-[13px] mt-1">{t('blockExplain')}</p>}
               <div className="flex gap-2 mt-3">
-                <button type="button" onClick={() => setConfirming(false)} className="flex-1 h-9 rounded-lg bg-white/[.08] text-label text-sm">{t('cancel')}</button>
+                <button type="button" onClick={() => setConfirming(false)} className="flex-1 h-9 rounded-lg bg-white/8 text-label text-sm">{t('cancel')}</button>
                 <button type="button" onClick={toggleBlock} className="flex-1 h-9 rounded-lg bg-red-500/20 text-red-300 text-sm font-semibold">
                   {t(blocked ? 'unblock' : 'block')}
                 </button>

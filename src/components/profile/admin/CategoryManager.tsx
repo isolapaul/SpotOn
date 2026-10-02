@@ -83,7 +83,7 @@ export default function CategoryManager() {
     return (
       <li key={category.id} className="rounded-xl bg-white/5 p-3">
         <div className="flex items-center gap-3">
-          <span className="w-9 h-9 rounded-full grid place-items-center bg-brand-600 text-white flex-shrink-0">
+          <span className="w-9 h-9 rounded-full grid place-items-center bg-brand-600 text-white shrink-0">
             <GlyphIcon glyph={resolveCategory(category.id, categories).glyph} className="w-5 h-5" />
           </span>
           <div className="flex-1 min-w-0">
@@ -110,7 +110,7 @@ export default function CategoryManager() {
         {confirming === category.id && (
           <div className="mt-3 flex items-center gap-2">
             <p className="flex-1 text-white/80 text-sm">{t('confirmDeleteCategory', { name: category.name })}</p>
-            <button type="button" onClick={() => setConfirming(null)} className="px-3 py-2 rounded-lg bg-white/[.06] text-white text-sm">
+            <button type="button" onClick={() => setConfirming(null)} className="px-3 py-2 rounded-lg bg-white/6 text-white text-sm">
               {t('cancel')}
             </button>
             <button type="button" onClick={() => remove(category)} className="px-3 py-2 rounded-lg bg-red-500/20 text-red-300 text-sm font-semibold">

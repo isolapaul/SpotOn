@@ -62,7 +62,7 @@ export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount,
 
   return (
     <div
-      className="relative w-full flex-shrink-0 pointer-events-auto cursor-pointer bg-surface-2"
+      className="relative w-full shrink-0 pointer-events-auto cursor-pointer bg-surface-2"
       style={{ height: 'min(46vh, 420px)' }}
       onClick={openGallery}
       role="button"
@@ -83,12 +83,12 @@ export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount,
           onError={() => setFailed((f) => [...f, imageUrl])}
         />
       ) : (
-        <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-brand-700/40 to-surface-2 text-brand-300">
+        <div className="absolute inset-0 grid place-items-center bg-linear-to-br from-brand-700/40 to-surface-2 text-brand-300">
           <CategoryIcon category={spot.category} className="w-16 h-16" />
         </div>
       )}
-      <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/40 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-surface-0/80 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-28 bg-linear-to-b from-black/40 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-[30%] bg-linear-to-t from-surface-0/80 to-transparent" />
 
       {back ? (
         <BackButton

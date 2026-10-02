@@ -62,9 +62,9 @@ test('InstallGate keeps its rich-text DOM (hu, Android)', async ({ page }) => {
   // innerHTML captured from the pre-T24 JSX (<strong> + &quot;) build; step numbers in the brand colour since the design sweep
   await expect(page.locator('ol')).toHaveJSProperty(
     'innerHTML',
-    '<li class="flex items-start gap-2"><span class="font-bold text-brand-400 flex-shrink-0">1.</span>'
+    '<li class="flex items-start gap-2"><span class="font-bold text-brand-400 shrink-0">1.</span>'
       + '<span>Kattints a <strong>három pontra</strong> (⋮) a böngésző jobb felső sarkában.</span></li>'
-      + '<li class="flex items-start gap-2"><span class="font-bold text-brand-400 flex-shrink-0">2.</span>'
+      + '<li class="flex items-start gap-2"><span class="font-bold text-brand-400 shrink-0">2.</span>'
       + '<span>Válaszd az <strong>"App telepítése"</strong> vagy <strong>"Kezdőképernyőre adás"</strong> gombot.</span></li>',
   );
 });

@@ -35,7 +35,7 @@ export default function ListPicker({ spotId, onClose }: Readonly<{ spotId: strin
       <div role="dialog" aria-modal="true" aria-labelledby="list-picker-title">
         <h3 id="list-picker-title" className="text-label text-[20px] font-bold mb-3">{t('saveToList')}</h3>
         {lists.length > 0 && (
-          <ul className="rounded-[14px] bg-white/[.06] divide-y divide-white/[.06] overflow-hidden max-h-[45vh] overflow-y-auto">
+          <ul className="rounded-r2 bg-white/6 divide-y divide-white/6 overflow-hidden max-h-[45vh] overflow-y-auto">
             {lists.map((l) => {
               const inList = l.spotIds.includes(spotId);
               const full = !inList && l.spotIds.length >= MAX_LIST_SPOTS;
@@ -47,7 +47,7 @@ export default function ListPicker({ spotId, onClose }: Readonly<{ spotId: strin
                     aria-checked={inList}
                     disabled={busy !== null || full}
                     onClick={() => run(l.id, () => toggleSpot(l.id, spotId, !inList))}
-                    className="no-min-size w-full flex items-center gap-3 px-4 h-12 text-left active:bg-white/[.06] disabled:opacity-50"
+                    className="no-min-size w-full flex items-center gap-3 px-4 h-12 text-left active:bg-white/6 disabled:opacity-50"
                   >
                     <span className={`w-5 h-5 rounded-md grid place-items-center border ${inList ? 'bg-brand-600 border-brand-600' : 'border-white/30'}`}>
                       {inList && <Check className="w-3.5 h-3.5 text-white" aria-hidden="true" />}
@@ -69,7 +69,7 @@ export default function ListPicker({ spotId, onClose }: Readonly<{ spotId: strin
               value={name}
               maxLength={MAX_LIST_NAME}
               onChange={(e) => setName(e.target.value)}
-              className="flex-1 min-w-0 px-4 h-11 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-white/30"
+              className="flex-1 min-w-0 px-4 h-11 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-hidden focus:border-white/30"
             />
             <button
               type="button"

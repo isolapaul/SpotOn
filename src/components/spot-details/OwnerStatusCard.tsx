@@ -64,7 +64,7 @@ export default function OwnerStatusCard({ spot, onEdit }: Readonly<OwnerStatusCa
   if (spot.status === 'pending') {
     return (
       <p className={`${CARD} flex items-center gap-2 text-[15px] text-label-secondary`}>
-        <Clock className="w-4 h-4 text-amber-300 flex-shrink-0" aria-hidden="true" />
+        <Clock className="w-4 h-4 text-amber-300 shrink-0" aria-hidden="true" />
         {t('underReviewNote')}
       </p>
     );

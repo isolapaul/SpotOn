@@ -69,6 +69,7 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 ### Changed (platform)
 - Push notifications use Firebase Installation IDs (the token API is deprecated); a device moves over the next time the app opens. The service worker runs on the modular Firebase SDK.
 - Node.js 24 LTS for the app image, the build and Cloud Functions; dependencies on their latest releases.
+- Tailwind CSS 4 (the screens are pixel-identical to before).
 
 ### Changed (legal)
 - The Privacy Policy and the Terms of Use describe the new features (bio, follows, private profiles, search, XP levels, moderation with reasons, the map provider) and say that removals are announced in the app with the reason. Everyone is asked to accept the new version once.
