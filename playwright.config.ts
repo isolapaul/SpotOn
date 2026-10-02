@@ -46,7 +46,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npx next build && npx next start -H 127.0.0.1 -p ${PORT}`,
+    command: `npm run build && npx next start -H 127.0.0.1 -p ${PORT}`,
     url: BASE_URL,
     env: E2E_ENV,
     timeout: 300_000,

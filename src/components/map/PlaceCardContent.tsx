@@ -1,5 +1,6 @@
 'use client';
 
+import { SPOT_CHANGED_ERROR } from '@/store/useSpotStore';
 import { useState } from 'react';
 import Image from 'next/image';
 import { CheckCircle2, Heart, Navigation, Share, X } from 'lucide-react';
@@ -79,7 +80,7 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
       onClose();
     } catch (error) {
       console.error('Failed to approve spot:', error);
-      showToast(t('approveError'), 'error');
+      showToast(t(error instanceof Error && error.message === SPOT_CHANGED_ERROR ? 'spotChangedReview' : 'approveError'), 'error');
     } finally {
       setApproving(false);
     }

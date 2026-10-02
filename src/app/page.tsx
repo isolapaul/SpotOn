@@ -36,7 +36,7 @@ import { useSpotLink } from '@/hooks/useSpotLink';
 import { useMemo } from 'react';
 import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 
-// Dynamic import to avoid SSR issues with Leaflet
+// Client-only: mapbox-gl needs `window` and WebGL
 const MapView = dynamic(() => import('@/components/MapView'), {
   ssr: false,
   loading: () => null, // No loading indicator here, we use LoadingScreen
@@ -122,7 +122,7 @@ export default function Home() {
       <NotificationPrompt />
       {/* Background uploads (G4): above panels too, so a review sent from a spot panel reports back */}
       <UploadStatus />
-      {/* Level-up moment: over everything, whenever the own spot count crosses a level */}
+      {/* Level-up moment: over everything, whenever the own XP level goes up */}
       <LevelUpCelebration />
       {/* Top-right control stack (design 1C); only over the bare map: it lives outside <main>, so it
           would sit above any panel or modal (the sign-in sheet showed it on top) */}

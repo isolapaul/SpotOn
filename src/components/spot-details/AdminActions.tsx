@@ -1,5 +1,6 @@
 'use client';
 
+import { SPOT_CHANGED_ERROR } from '@/store/useSpotStore';
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle, Trash2, XCircle } from 'lucide-react';
 import { useSpotStore, type Spot } from '@/store/useSpotStore';
@@ -55,8 +56,8 @@ export function AdminStatusCard({ spot, onClose }: Readonly<AdminActionProps>) {
       if (shownSpotIdRef.current === approvedId) {
         approveCloseTimerRef.current = setTimeout(() => onClose(), DELAYS.approveClose);
       }
-    } catch {
-      showToast(t('approveError'), 'error');
+    } catch (error) {
+      showToast(t(error instanceof Error && error.message === SPOT_CHANGED_ERROR ? 'spotChangedReview' : 'approveError'), 'error');
     } finally {
       setIsApproving(false);
     }

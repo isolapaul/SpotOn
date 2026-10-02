@@ -1,5 +1,6 @@
 'use client';
 
+import { useT } from '@/hooks/useT';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -111,6 +112,7 @@ export default function MapView({
   onSpotArrive,
 }: Readonly<MapViewProps>) {
   const theme = useMapThemeStore((s) => s.theme);
+  const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markers = useRef(new Map<string, SpotMarker>());
@@ -122,13 +124,18 @@ export default function MapView({
   // Icons of the super admin's categories (item 7), by category id.
   const customCategories = useCategoryStore((s) => s.categories);
   const customIcons = useMemo(() => new Map(customCategories.map((c) => [c.id, c.icon])), [customCategories]);
-  const map = useMapInstance(containerRef, mapRef, theme, latest);
+  // The theme the current map shows (set when a map is created with the theme of that moment).
+  const appliedThemeRef = useRef(theme);
+  const themeRef = useRef(theme);
+  useEffect(() => {
+    themeRef.current = theme;
+  });
+  const { map, failed } = useMapInstance(containerRef, mapRef, themeRef, appliedThemeRef, latest);
 
   // The theme: swap the style in place (HTML markers stay).
-  const appliedTheme = useRef(theme);
   useEffect(() => {
-    if (!map || appliedTheme.current === theme) return;
-    appliedTheme.current = theme;
+    if (!map || appliedThemeRef.current === theme) return;
+    appliedThemeRef.current = theme;
     map.setStyle(styleFor(theme, MAPBOX_TOKEN));
   }, [map, theme]);
 
@@ -151,7 +158,7 @@ export default function MapView({
     new mapboxgl.Marker({ element: htmlElement('draft-pin-marker', DRAFT_PIN_HTML), anchor: 'top-left', offset: PIN_OFFSET }));
 
   // Clusters: nearby pins merge when zoomed out. Highlighted and selected pins always stay pins.
-  const nowIso = new Date().toISOString();
+  const nowIso = useMinuteClock();
   const view = useMapView(map);
   const { shownSpots, clusters, index } = useClusters(spots, view, selectedSpotId, nowIso);
   useClusterMarkers(map, clusters, index);
@@ -218,16 +225,37 @@ export default function MapView({
     }
   }, [map, shownSpots, customIcons, selectedSpotId, nowIso]);
 
-  // Unmount: drop every marker (the map itself is removed by useMapInstance).
+  // A map going away (unmount, or a rebuilt map): drop its markers, so the new map gets its own.
   useEffect(() => {
+    if (!map) return;
     const all = markers.current;
     return () => {
       for (const entry of all.values()) entry.marker.remove();
       all.clear();
     };
-  }, []);
+  }, [map]);
 
-  return <div ref={containerRef} className={`absolute inset-0 w-full h-full ${Z.mapBase}`} data-map-provider="mapbox" data-map-style={theme} />;
+  // The container stays empty for Mapbox; the no-WebGL note is a sibling.
+  return (
+    <>
+      <div ref={containerRef} className={`absolute inset-0 w-full h-full ${Z.mapBase}`} data-map-provider="mapbox" data-map-style={theme} />
+      {failed && (
+        <p role="status" className={`absolute inset-x-6 top-1/3 text-center text-label-secondary text-[15px] ${Z.mapBase}`}>
+          {t('mapUnavailable')}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** The current time as an ISO string, refreshed every minute (highlight expiry; stable between renders). */
+function useMinuteClock(): string {
+  const [now, setNow] = useState(() => new Date().toISOString());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date().toISOString()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  return now;
 }
 
 type Latest = React.RefObject<{
@@ -238,33 +266,67 @@ type Latest = React.RefObject<{
   onSpotArrive?: (spotId: string) => void;
 }>;
 
+type Theme = Parameters<typeof styleFor>[0];
+
 /**
- * Creates the Mapbox map once (2D like before: no rotation or pitch) and removes it on unmount.
- * Map clicks place a new spot while picking, else close the place card.
+ * Creates the Mapbox map once (2D like before: flat Mercator, no rotation or pitch) and removes it
+ * on unmount. Map clicks place a new spot while picking, else close the place card. Without WebGL
+ * (some in-app browsers, hardware acceleration off) there is no map: `failed`, the rest of the app
+ * works. A rejected token or style falls back to the offline background style once.
  */
 function useMapInstance(
   containerRef: React.RefObject<HTMLDivElement | null>,
   mapRef: React.RefObject<mapboxgl.Map | null>,
-  theme: Parameters<typeof styleFor>[0],
+  themeRef: React.RefObject<Theme>,
+  appliedThemeRef: React.RefObject<Theme>,
   latest: Latest,
-): mapboxgl.Map | null {
-  const initialTheme = useRef(theme);
-  const [state, setState] = useState<mapboxgl.Map | null>(null);
+): { map: mapboxgl.Map | null; failed: boolean } {
+  const [state, setState] = useState<{ map: mapboxgl.Map | null; failed: boolean }>({ map: null, failed: false });
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     if (MAPBOX_TOKEN) mapboxgl.accessToken = MAPBOX_TOKEN;
-    const map = new mapboxgl.Map({
-      container,
-      style: styleFor(initialTheme.current, MAPBOX_TOKEN),
-      center: [DEFAULT_MAP_CENTER[1], DEFAULT_MAP_CENTER[0]],
-      zoom: DEFAULT_MAP_ZOOM,
-      maxZoom: MAX_MAP_ZOOM,
-      dragRotate: false,
-      pitchWithRotate: false,
-      touchPitch: false,
-      attributionControl: false,
-      logoPosition: 'bottom-left',
+    const theme = themeRef.current;
+    let map: mapboxgl.Map;
+    try {
+      if (!mapboxgl.supported()) throw new Error('WebGL is not supported');
+      map = new mapboxgl.Map({
+        container,
+        style: styleFor(theme, MAPBOX_TOKEN),
+        // The hosted v11/v12 styles turn on the globe at low zoom; the map stays flat as before.
+        projection: 'mercator',
+        center: [DEFAULT_MAP_CENTER[1], DEFAULT_MAP_CENTER[0]],
+        zoom: DEFAULT_MAP_ZOOM,
+        maxZoom: MAX_MAP_ZOOM,
+        dragRotate: false,
+        pitchWithRotate: false,
+        touchPitch: false,
+        attributionControl: false,
+        logoPosition: 'bottom-left',
+        // Only the map-load count the privacy policy describes, no performance telemetry.
+        performanceMetricsCollection: false,
+      });
+    } catch (error) {
+      // Reported from the next microtask: the failure comes from outside React (WebGL).
+      console.error('Map unavailable:', error);
+      let live = true;
+      queueMicrotask(() => {
+        if (live) setState({ map: null, failed: true });
+      });
+      return () => {
+        live = false;
+      };
+    }
+    appliedThemeRef.current = theme;
+    let fellBack = false;
+    map.on('error', (e) => {
+      const status = (e.error as { status?: number } | undefined)?.status;
+      console.error('Map error:', e.error);
+      // A revoked or restricted token: the theme's background instead of an empty canvas.
+      if (!fellBack && MAPBOX_TOKEN && (status === 401 || status === 403)) {
+        fellBack = true;
+        map.setStyle(styleFor(appliedThemeRef.current, undefined));
+      }
     });
     map.touchZoomRotate.disableRotation();
     map.keyboard.disableRotation();
@@ -277,13 +339,13 @@ function useMapInstance(
       else onMapClick?.();
     });
     mapRef.current = map;
-    setState(map);
+    setState({ map, failed: false });
     return () => {
       mapRef.current = null;
-      setState(null);
+      setState({ map: null, failed: false });
       map.remove();
     };
-  }, [containerRef, mapRef, latest]);
+  }, [containerRef, mapRef, themeRef, appliedThemeRef, latest]);
   return state;
 }
 
@@ -340,8 +402,10 @@ function useSpotFocuser(
       arrive();
       return;
     }
-    map.once('moveend', arrive);
+    // flyTo first: it stops a running ease, which fires a moveend at once; only the flight's own
+    // moveend means arrival.
     map.flyTo({ center: [lng, lat], zoom, offset: [0, -SPOT_FOCUS.liftPx], duration: SPOT_FOCUS.durationS * 1000, essential: true });
+    map.once('moveend', arrive);
     const fallback = setTimeout(arrive, SPOT_FOCUS.fallbackMs);
     return () => {
       clearTimeout(fallback);
@@ -409,9 +473,7 @@ function useClusters(spots: Spot[], view: MapViewState | null, selectedSpotId: s
         })),
     );
     return idx;
-    // nowIso changes every render; highlights are re-read with the spots.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spots, selectedSpotId]);
+  }, [spots, selectedSpotId, nowIso]);
 
   return useMemo(() => {
     if (!view) return { shownSpots: spots, clusters: [], index };
@@ -481,10 +543,11 @@ function useClusterMarkers(map: mapboxgl.Map | null, clusters: ClusterFeature<Cl
     }
   }, [map, clusters]);
   useEffect(() => {
+    if (!map) return;
     const all = markers.current;
     return () => {
       for (const entry of all.values()) entry.marker.remove();
       all.clear();
     };
-  }, []);
+  }, [map]);
 }

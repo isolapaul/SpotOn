@@ -1,5 +1,6 @@
 'use client';
 
+import { actionErrorKey } from '@/lib/callableErrors';
 import { ListCards, ListView } from './lists/ListsRow';
 import type { SpotList as SpotListType } from '@/lib/lists';
 import { useEffect, useMemo, useState } from 'react';
@@ -92,7 +93,7 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
       setVersion((v) => v + 1);
     } catch (error) {
       console.error('Follow action failed:', error);
-      showToast(t('genericError'), 'error');
+      showToast(t(actionErrorKey(error)), 'error');
     } finally {
       setBusy(false);
     }

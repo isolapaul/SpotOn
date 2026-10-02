@@ -10,7 +10,7 @@ updates:
       root-minor-patch:
         update-types: [minor, patch]
     ignore:
-      # Node 22 runtime (D14): types must stay on 22.x.
+      # Node 24 runtime (D14): types must stay on 24.x.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
       # ESLint 10 breaks eslint-plugin-react (bundled by eslint-config-next 16.3.x).
@@ -19,7 +19,7 @@ updates:
       # TypeScript 7 (native compiler): typescript-eslint supports <6.1 and Next's type check uses the TS 6 API.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
-      # React 19 / react-leaflet 5 / zustand 5 are T31.
+      # React 19 / zustand 5 are T31; mapbox-gl majors change the rendering (check the map by hand).
       - dependency-name: "react"
         update-types: ["version-update:semver-major"]
       - dependency-name: "react-dom"
@@ -28,7 +28,7 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@types/react-dom"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "react-leaflet"
+      - dependency-name: "mapbox-gl"
         update-types: ["version-update:semver-major"]
       - dependency-name: "zustand"
         update-types: ["version-update:semver-major"]

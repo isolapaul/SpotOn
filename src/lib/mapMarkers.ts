@@ -43,9 +43,8 @@ export function markerVariant(status: string | undefined): MarkerVariant {
 }
 
 /**
- * The pin's HTML: an SVG pin (shown from the city zoom in) and a small status dot (shown when the
- * map is zoomed far out, via the `data-zoom-band="far"` rule in globals.css). Status is never
- * colour-only: pending has a dashed ring and a clock, rejected a cross, highlighted a gold ring and a star.
+ * The pin's HTML: an SVG pin, the same at every zoom (zoomed out, nearby pins merge into clusters
+ * instead). Status is never colour-only: pending has a dashed ring and a clock, rejected a cross, highlighted a gold ring and a star.
  */
 const VARIANT_LOOK: Readonly<Record<MarkerVariant, { fill: string; ink: string; ring: string; dashed: boolean; badge: string }>> = {
   approved: { fill: PIN_COLORS.approved, ink: '#FFFFFF', ring: '#FFFFFF', dashed: false, badge: '' },
@@ -85,7 +84,6 @@ export function buildPinHtml(o: {
     `<g transform="translate(12 10) scale(.8333)" fill="none" stroke="${ink}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>` +
     badge +
     `</svg>` +
-    `<span class="spot-pin__dot"></span>` +
     `</div>`
   );
 }

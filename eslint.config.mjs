@@ -8,6 +8,7 @@ export default defineConfig([
   globalIgnores([
     '.next/**', '.next-e2e/**', 'out/**', 'build/**', 'next-env.d.ts', 'functions/**',
     'coverage/**', 'playwright-report/**', 'test-results/**',
+    'src/app/api/firebase-messaging-sw/swBundle.generated.ts', // scripts/build-sw.mjs output
     'postcss.config.cjs', // CommonJS config; not covered by the Next/react-hooks plugin globs
   ]),
   {

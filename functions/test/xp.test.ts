@@ -26,6 +26,9 @@ describe("spotPhotos", () => {
     expect(spotPhotos({createdBy: "o", imageUrls: ["x", "x", PLACEHOLDER_URL]}))
       .toEqual([{url: "x", addedBy: "o"}]);
     expect(spotPhotos(spot())).toEqual([{url: "a.jpg", addedBy: "owner"}, {url: "b.jpg", addedBy: "bob"}]);
+    // A spotImages entry the spot does not show earns nothing (no hidden photos for XP).
+    expect(spotPhotos({createdBy: "o", imageUrls: ["a"], spotImages: [{url: "fake", addedBy: "bob"}]}))
+      .toEqual([{url: "a", addedBy: "o"}]);
     expect(spotPhotos({createdBy: "o", imageUrls: ["x"], spotImages: [{url: "x"}]}))
       .toEqual([{url: "x", addedBy: "o"}]);
   });
@@ -72,8 +75,12 @@ describe("levels", () => {
   });
   it("freezes the floor from the old spot count once, then keeps it", () => {
     expect(levelForSpotCount(20)).toBe(5);
+    // The migration: the old spot-count level, never below a stored floor.
     expect(userLevelFields(10, undefined, 20)).toEqual({xp: 10, level: 5, levelFloor: 5});
-    expect(userLevelFields(10, 1, 20)).toEqual({xp: 10, level: 1, levelFloor: 1});
-    expect(userLevelFields(120, 2, 0)).toEqual({xp: 120, level: 3, levelFloor: 2});
+    expect(userLevelFields(10, 1, 20)).toEqual({xp: 10, level: 5, levelFloor: 5});
+    expect(userLevelFields(10, 4, 3)).toEqual({xp: 10, level: 4, levelFloor: 4});
+    // The trigger: a stored floor is kept; none (a new account) is 1, whatever it created.
+    expect(userLevelFields(10, undefined, null)).toEqual({xp: 10, level: 1, levelFloor: 1});
+    expect(userLevelFields(120, 2, null)).toEqual({xp: 120, level: 3, levelFloor: 2});
   });
 });

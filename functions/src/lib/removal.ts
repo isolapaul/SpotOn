@@ -3,7 +3,7 @@
  * photo of a spot, one review. Each is read and changed in one transaction, the files go after it,
  * and the author hears about it (inbox + push).
  */
-import {DocumentData} from "firebase-admin/firestore";
+import {DocumentData, FieldValue, WriteBatch} from "firebase-admin/firestore";
 import {HttpsError} from "firebase-functions/v2/https";
 import {db} from "./app";
 import {notifyInbox} from "./inbox";
@@ -47,17 +47,31 @@ export async function removeSpotWithReason(adminUid: string, spotId: string, rea
   }
 }
 
-/** A deleted spot's replies, visits and reports (they are no use without it). */
+/**
+ * A deleted spot's replies, visits, reports and admin-notice cooldown (they are no use without
+ * it), and its id in everyone's lists (it would count towards a list's limit, shown nowhere).
+ */
 export async function deleteSpotChildren(spotId: string): Promise<void> {
-  const [replies, visits, reports] = await Promise.all([
+  const [replies, visits, reports, lists] = await Promise.all([
     db.collection("spots").doc(spotId).collection("replies").get(),
     db.collection("visits").where("spotId", "==", spotId).get(),
     db.collection("reports").where("spotId", "==", spotId).get(),
+    db.collectionGroup("lists").where("spotIds", "array-contains", spotId).select().get(),
   ]);
-  const refs = [...replies.docs, ...visits.docs, ...reports.docs].map((d) => d.ref);
-  for (let i = 0; i < refs.length; i += 400) {
+  const writes: ((batch: WriteBatch) => void)[] = [
+    ...[...replies.docs, ...visits.docs, ...reports.docs].map((d) => (b: WriteBatch) => {
+      b.delete(d.ref);
+    }),
+    ...lists.docs.map((d) => (b: WriteBatch) => {
+      b.update(d.ref, {spotIds: FieldValue.arrayRemove(spotId)});
+    }),
+    (b) => {
+      b.delete(db.collection("adminNotices").doc(`edit_${spotId}`));
+    },
+  ];
+  for (let i = 0; i < writes.length; i += 400) {
     const batch = db.batch();
-    refs.slice(i, i + 400).forEach((ref) => batch.delete(ref));
+    writes.slice(i, i + 400).forEach((write) => write(batch));
     await batch.commit();
   }
 }

@@ -55,7 +55,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
     }
   };
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);

@@ -50,7 +50,8 @@ async function readPublicProfile(uid: string): Promise<PublicProfile | null> {
   if (typeof data.level === 'number') profile.level = data.level;
   if (typeof data.bio === 'string') profile.bio = data.bio;
   if (typeof data.isPrivate === 'boolean') profile.isPrivate = data.isPrivate;
-  // Counters change by increments, so a stale mirror may briefly read negative: never show that.
+  // Counters change by atomic increments in the follow transactions; a negative value would mean
+  // drift (a bug), never show it.
   if (typeof data.followersCount === 'number') profile.followersCount = Math.max(0, data.followersCount);
   if (typeof data.followingCount === 'number') profile.followingCount = Math.max(0, data.followingCount);
   if (typeof data.isAdmin === 'boolean') profile.isAdmin = data.isAdmin;

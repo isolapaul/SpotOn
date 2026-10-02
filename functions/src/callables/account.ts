@@ -10,10 +10,14 @@
  * 2. Storage: removed photos, uploads no own spot shows, profile pictures and banners;
  * 3. the inbox, the spot lists, the user's spotEdits proposals and photoSubmissions (item 4);
  * 4. usernames/{name}, users/{uid} (syncPublicProfile then drops publicProfiles), publicProfiles;
+ * 4b. follows both ways (counters adjusted), follow requests, request-notice cooldowns, rate
+ *     limits;
+ * 4c. blocks both ways, reports the user filed, their replies and the replies to their reviews,
+ *     notices in other users' inboxes that name them;
  * 5. the Firebase Auth user.
  * Logs only uid and counts.
  */
-import {FieldValue} from "firebase-admin/firestore";
+import {DocumentData, DocumentReference, FieldValue} from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
@@ -52,7 +56,7 @@ async function deleteQuietly(paths: Iterable<string>): Promise<number> {
  */
 async function relocateOwnPhotos(
   spotId: string,
-  data: FirebaseFirestore.DocumentData,
+  data: DocumentData,
   ownPrefix: string,
   pathOf: (url: string) => string | null,
 ): Promise<(url: string) => string | null> {
@@ -115,6 +119,8 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
   const removedPaths = new Set<string>();
   const keptPaths = new Set<string>();
   let spotsChanged = 0;
+  /** The user's removed reviews per spot: other people's replies to them go too (step 4c). */
+  const removedReviews = new Map<string, string[]>();
   const ownPrefix = `spot-images/${uid}/`;
   const spots = await db.collection("spots").get();
   for (const doc of spots.docs) {
@@ -129,7 +135,14 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
     const result = await db.runTransaction(async (tx) => {
       const snap = await tx.get(doc.ref);
       const data = snap.data();
-      if (!data) return {changed: false, deletePaths: [] as string[], kept: [] as string[]};
+      if (!data) {
+        const none: string[] = [];
+        return {changed: false, deletePaths: none, kept: none, reviewIds: none};
+      }
+      const reviewIds = (Array.isArray(data.reviews) ? data.reviews : [])
+        .filter((r: {userId?: unknown; id?: unknown}) =>
+          r?.userId === uid && typeof r?.id === "string")
+        .map((r: {id: string}) => r.id);
       const plan = planSpotCleanup(data, uid, pathOf, relocate);
       // Files the spot still shows after the update (a photo that could not be copied keeps its
       // old place and must not be deleted).
@@ -138,11 +151,14 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
         finalUrls.map((url: unknown) => (typeof url === "string" ? pathOf(url) : null))
           .filter((p: string | null): p is string => !!p) :
         [];
-      if (!plan.update && !plan.anonymize) return {changed: false, deletePaths: [], kept};
+      if (!plan.update && !plan.anonymize) {
+        return {changed: false, deletePaths: [], kept, reviewIds};
+      }
       const anonymized = {createdByName: FieldValue.delete(), createdByPhoto: FieldValue.delete()};
       tx.update(doc.ref, {...plan.update, ...(plan.anonymize ? anonymized : {})});
-      return {changed: true, deletePaths: plan.deletePaths, kept};
+      return {changed: true, deletePaths: plan.deletePaths, kept, reviewIds};
     });
+    if (result.reviewIds.length) removedReviews.set(doc.id, result.reviewIds);
     result.kept.forEach((p) => keptPaths.add(p));
     result.deletePaths.forEach((p) => removedPaths.add(p));
     if (result.changed) spotsChanged += 1;
@@ -174,17 +190,20 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
   await userRef.delete();
   await db.collection("publicProfiles").doc(uid).delete();
 
-  // 4b. Follows (item 8), after the users doc is gone (so no new edge can appear): both
-  // directions (the other side's count drops, only for an edge that still exists), requests,
+  // 4b. Follows (item 8), after the users doc is gone (the follow callables read both users docs
+  // in their transactions, so no new edge or counter can appear): both directions (the other
+  // side's count drops, only for an edge that still exists), requests, request-notice cooldowns,
   // rate limits.
-  const [following, followers, sent, received] = await Promise.all([
+  const [following, followers, sent, received, noticesSent, noticesReceived] = await Promise.all([
     db.collection("follows").where("follower", "==", uid).get(),
     db.collection("follows").where("target", "==", uid).get(),
     db.collection("followRequests").where("requester", "==", uid).get(),
     db.collection("followRequests").where("target", "==", uid).get(),
+    db.collection("followNotices").where("requester", "==", uid).get(),
+    db.collection("followNotices").where("target", "==", uid).get(),
   ]);
   const counters = db.collection("publicProfiles");
-  const dropEdge = (ref: FirebaseFirestore.DocumentReference, other: string, field: string) =>
+  const dropEdge = (ref: DocumentReference, other: string, field: string) =>
     db.runTransaction(async (tx) => {
       if (!(await tx.get(ref)).exists) return;
       tx.delete(ref);
@@ -193,17 +212,28 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
   await Promise.all([
     ...following.docs.map((d) => dropEdge(d.ref, String(d.get("target")), "followersCount")),
     ...followers.docs.map((d) => dropEdge(d.ref, String(d.get("follower")), "followingCount")),
-    ...[...sent.docs, ...received.docs].map((d) => d.ref.delete()),
+    ...[...sent.docs, ...received.docs, ...noticesSent.docs, ...noticesReceived.docs]
+      .map((d) => d.ref.delete()),
     db.collection("rateLimits").doc(uid).delete(),
   ]);
 
-  // 4c. Blocks either way, reports the user filed and their replies (reports about them stay for
-  // until resolved; their author field no longer resolves to anyone).
+  // 4c. Blocks either way, reports the user filed, their replies and other people's replies to
+  // their (removed) reviews, and the notices in other users' inboxes that name them (follow
+  // news, replies). Reports about them stay until an admin resolves them; their author field no
+  // longer resolves to anyone.
+  const replyQueries = [...removedReviews].flatMap(([spotId, ids]) => {
+    const replies = db.collection("spots").doc(spotId).collection("replies");
+    const chunks: string[][] = [];
+    for (let i = 0; i < ids.length; i += 30) chunks.push(ids.slice(i, i + 30));
+    return chunks.map((chunk) => replies.where("reviewId", "in", chunk).get());
+  });
   const safety = await Promise.all([
     db.collection("blocks").where("blocker", "==", uid).get(),
     db.collection("blocks").where("blocked", "==", uid).get(),
     db.collection("reports").where("reporter", "==", uid).get(),
     db.collectionGroup("replies").where("userId", "==", uid).get(),
+    db.collectionGroup("inbox").where("actorUid", "==", uid).get(),
+    ...replyQueries,
   ]);
   await Promise.all(safety.flatMap((q) => q.docs.map((d) => d.ref.delete())));
 

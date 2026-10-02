@@ -47,7 +47,23 @@ service cloud.firestore {
         && (!('createdByPhoto' in d) || isStr(d.createdByPhoto, 0, 2048))
         && d.imageUrls is list && d.imageUrls.size() >= 1 && d.imageUrls.size() <= 20
         && d.spotImages is list && d.spotImages.size() <= 20
+        && ownNewImages(d)
         && d.primaryImageIndex is int && d.primaryImageIndex >= 0 && d.primaryImageIndex < d.imageUrls.size();
+    }
+    // A new spot's photos are the creator's and shown (spotImages[i].url in imageUrls): no photo
+    // credited to another account, none hidden (XP counts photos, item 5). Rules have no loops,
+    // so each of the at most 20 entries is checked by index.
+    function ownNewImage(d, i) {
+      return d.spotImages.size() <= i
+        || (d.spotImages[i] is map && d.spotImages[i].get('addedBy', '') == request.auth.uid
+            && d.spotImages[i].get('url', '') in d.imageUrls);
+    }
+    function ownNewImages(d) {
+      return ownNewImage(d, 0) && ownNewImage(d, 1) && ownNewImage(d, 2) && ownNewImage(d, 3)
+        && ownNewImage(d, 4) && ownNewImage(d, 5) && ownNewImage(d, 6) && ownNewImage(d, 7)
+        && ownNewImage(d, 8) && ownNewImage(d, 9) && ownNewImage(d, 10) && ownNewImage(d, 11)
+        && ownNewImage(d, 12) && ownNewImage(d, 13) && ownNewImage(d, 14) && ownNewImage(d, 15)
+        && ownNewImage(d, 16) && ownNewImage(d, 17) && ownNewImage(d, 18) && ownNewImage(d, 19);
     }
     // New reviews carry no PII and no self-asserted badges (SEC-03, SEC-05).
     function validNewReview(r) {
@@ -88,7 +104,8 @@ service cloud.firestore {
     }
     // Item 4: the owner edits a spot still under review (pending) or rejected, and may resubmit a
     // rejected one: status rejected → pending, with the rejection removed. Photos: removals here;
-    // additions go through addSpotImages (direct for the owner of a spot under review).
+    // additions go through addSpotImages (direct for the owner of a spot under review). Every
+    // edit stamps updatedAt, the version approveSpot checks (an admin approves what they saw).
     function isOwnerDraftEdit() {
       let d = request.resource.data;
       let ak = changed();
@@ -97,7 +114,8 @@ service cloud.firestore {
         && resource.data.createdBy == request.auth.uid
         && st in ['pending', 'rejected']
         && ak.hasOnly(['name', 'description', 'category', 'location', 'primaryImageIndex', 'imageUrls', 'spotImages',
-                       'status', 'rejection'])
+                       'status', 'rejection', 'updatedAt'])
+        && d.updatedAt == request.time
         && (!ak.hasAny(['name']) || isStr(d.name, 1, 100))
         && (!ak.hasAny(['description']) || (d.description is string && d.description.size() <= 2000))
         && (!ak.hasAny(['category']) || validCategory(d.category))
@@ -112,21 +130,19 @@ service cloud.firestore {
       return isAdmin() && !changed().hasAny(['status', 'rejection', 'createdBy', 'contributors', 'ownerPin']);
     }
     match /spots/{spotId} {
-      // Replies to reviews (questions and answers): on approved spots, by signed-in users; the author
-      // edits the text or deletes, admins delete through reports (Cloud Functions).
+      // Replies to reviews (questions and answers): created only by the addReply callable (it checks
+      // the review, blocks and a rate limit); the author edits the text or deletes, admins delete
+      // through reports (Cloud Functions).
       match /replies/{replyId} {
         function spotVisible() {
           return get(/databases/$(database)/documents/spots/$(spotId)).data.status == 'approved';
         }
         allow read: if spotVisible() || isAdmin();
-        allow create: if signedIn() && spotVisible()
-          && request.resource.data.keys().hasOnly(['reviewId', 'userId', 'text', 'createdAt'])
-          && request.resource.data.userId == request.auth.uid
-          && isStr(request.resource.data.reviewId, 1, 200)
-          && isStr(request.resource.data.text.trim(), 1, 500)
-          && request.resource.data.createdAt == request.time;
+        allow create: if false;
+        // The stored text itself is 1-500 characters and not only whitespace.
         allow update: if signedIn() && resource.data.userId == request.auth.uid
           && changed().hasOnly(['text', 'editedAt'])
+          && isStr(request.resource.data.text, 1, 500)
           && isStr(request.resource.data.text.trim(), 1, 500)
           && request.resource.data.editedAt == request.time;
         allow delete: if signedIn() && resource.data.userId == request.auth.uid;
@@ -146,7 +162,7 @@ service cloud.firestore {
 
     // ---------- users ----------
     function userClientKeys() {
-      return ['uid', 'email', 'photoURL', 'profilePictureURL', 'profileBannerURL', 'savedSpots', 'fcmTokens',
+      return ['uid', 'email', 'photoURL', 'profilePictureURL', 'profileBannerURL', 'savedSpots', 'fcmTokens', 'fcmFids',
               'language', 'notificationsEnabled', 'notificationSettings', 'lastTokenUpdate', 'lastLoginAt', 'createdAt',
               'termsVersion', 'termsAcceptedAt', 'bio', 'profilePrivate', 'showSaved'];
     }
@@ -170,6 +186,7 @@ service cloud.firestore {
         && (!ak.hasAny(['profileBannerURL']) || isStr(d.profileBannerURL, 0, 2048))
         && (!ak.hasAny(['savedSpots']) || (d.savedSpots is list && withinCapOrShrinking(d.savedSpots, 'savedSpots', 1000)))
         && (!ak.hasAny(['fcmTokens']) || (d.fcmTokens is list && withinCapOrShrinking(d.fcmTokens, 'fcmTokens', 100)))
+        && (!ak.hasAny(['fcmFids']) || (d.fcmFids is list && withinCapOrShrinking(d.fcmFids, 'fcmFids', 100)))
         && (!ak.hasAny(['language']) || d.language in ['hu', 'en', 'de'])
         && (!ak.hasAny(['notificationsEnabled']) || d.notificationsEnabled is bool)
         && (!ak.hasAny(['notificationSettings']) || validNotifSettings(d.notificationSettings))
@@ -199,7 +216,7 @@ service cloud.firestore {
       match /lists/{listId} {
         function validList(d) {
           return d.keys().hasOnly(['name', 'spotIds', 'shared', 'createdAt', 'updatedAt'])
-            && isStr(d.name.trim(), 1, 50) && d.spotIds is list && d.spotIds.size() <= 200
+            && isStr(d.name, 1, 50) && isStr(d.name.trim(), 1, 50) && d.spotIds is list && d.spotIds.size() <= 200
             && d.shared is bool && d.updatedAt == request.time;
         }
         allow read, delete: if isSelf(userId);
@@ -223,9 +240,12 @@ service cloud.firestore {
         && (!('primaryImageUrl' in p) || isStr(p.primaryImageUrl, 1, 2048));
     }
     match /spotEdits/{spotId} {
+      // The owner's approved spot; spotName is its current name (shown to admins in the queue
+      // and the push, so it must not be made up).
       function ownSpot() {
         let spot = get(/databases/$(database)/documents/spots/$(spotId)).data;
-        return spot.createdBy == request.auth.uid && spot.status == 'approved';
+        return spot.createdBy == request.auth.uid && spot.status == 'approved'
+          && request.resource.data.spotName == spot.name;
       }
       allow get, list: if isAdmin() || (signedIn() && resource.data.ownerId == request.auth.uid);
       allow create, update: if signedIn()

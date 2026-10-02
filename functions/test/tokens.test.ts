@@ -12,6 +12,7 @@ describe("isPrunableTokenError", () => {
   it.each([
     "messaging/registration-token-not-registered",
     "messaging/invalid-registration-token",
+    "messaging/installation-id-not-registered",
   ])("prunes %s", (code) => {
     expect(isPrunableTokenError(code)).toBe(true);
     expect(PRUNABLE_TOKEN_ERROR_CODES.has(code)).toBe(true);

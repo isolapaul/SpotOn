@@ -18,5 +18,10 @@ describe('spot links', () => {
     expect(previewFromDocument('s', doc('approved'))).toEqual({ id: 's', name: 'Lake', description: 'Nice', imageUrl: 'https://x/a.jpg', rating: 4.5 });
     expect(previewFromDocument('s', doc('pending'))).toBeNull();
     expect(previewFromDocument('s', null)).toBeNull();
+    // The index counts every stored photo, also the non-https ones.
+    const three = { fields: { status: { stringValue: 'approved' }, name: { stringValue: 'L' },
+      imageUrls: { arrayValue: { values: [{ stringValue: '/p.jpg' }, { stringValue: 'https://x/a.jpg' }, { stringValue: 'https://x/b.jpg' }] } },
+      primaryImageIndex: { integerValue: '2' } } };
+    expect(previewFromDocument('s', three)?.imageUrl).toBe('https://x/b.jpg');
   });
 });

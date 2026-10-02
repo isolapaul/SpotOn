@@ -54,7 +54,7 @@ These are **variables, not secrets**: they are public client config that gets co
 - `NEXT_PUBLIC_CONTACT_EMAIL` = the contact e-mail shown there (public; use an address you are happy to publish)
 - `NEXT_PUBLIC_MAPBOX_TOKEN` = the Mapbox **public** access token (starts with `pk.`), restricted in the Mapbox account to the URL `https://spoton.isolapaul.hu`. Required for releases (the build refuses to start without it); without it the map is a blank background. It is public by nature: every map request carries it. The old `NEXT_PUBLIC_CARTO_API_KEY` variable is no longer used and can be deleted.
 
-The container build refuses to run without the last two (`scripts/check-public-env.mjs --production`).
+The container build refuses to run without the last three (`scripts/check-public-env.mjs --production`).
 
 Any change to these requires a new tag and release (`NEXT_PUBLIC_*` values are compiled into the bundle). Setting them in the server's `.env` does nothing.
 

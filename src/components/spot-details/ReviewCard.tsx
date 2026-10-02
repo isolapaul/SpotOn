@@ -1,5 +1,6 @@
 'use client';
 
+import { actionErrorKey } from '@/lib/callableErrors';
 import { useState } from 'react';
 import Image from 'next/image';
 import { MessageCircle, Pencil, Trash2 } from 'lucide-react';
@@ -56,7 +57,7 @@ export default function ReviewCard({ review, profile, spotId, open, replies }: R
       after();
     } catch (error) {
       console.error('Review action failed:', error);
-      showToast(t('genericError'), 'error');
+      showToast(t(actionErrorKey(error)), 'error');
     } finally {
       setBusy(false);
     }
@@ -171,7 +172,7 @@ export default function ReviewCard({ review, profile, spotId, open, replies }: R
               <button
                 type="button"
                 disabled={busy || !replyText.trim() || !me}
-                onClick={() => me && run(() => addReply(spotId, review.id, me, replyText), t('replySent'), () => { setReplyText(''); setReplying(false); })}
+                onClick={() => me && run(() => addReply(spotId, review.id, replyText), t('replySent'), () => { setReplyText(''); setReplying(false); })}
                 className="px-4 h-10 rounded-xl bg-brand-600 text-white text-sm font-semibold disabled:opacity-50"
               >
                 {t('send')}

@@ -70,10 +70,15 @@ export interface InboxNotice {
   actorName?: string;
 }
 
-/** Keeps the newest INBOX_LIMIT items. */
+/**
+ * Keeps the newest INBOX_LIMIT items. A count aggregate (one read per 1000 items) and then only
+ * the oldest extra items are read; an offset query would bill every skipped item each time.
+ */
 async function trimInbox(uid: string): Promise<void> {
-  const old = await db.collection("users").doc(uid).collection("inbox")
-    .orderBy("createdAt", "desc").offset(INBOX_LIMIT).select().get();
+  const inbox = db.collection("users").doc(uid).collection("inbox");
+  const extra = (await inbox.count().get()).data().count - INBOX_LIMIT;
+  if (extra <= 0) return;
+  const old = await inbox.orderBy("createdAt", "asc").limit(extra).select().get();
   if (old.empty) return;
   const batch = db.batch();
   old.docs.forEach((doc) => batch.delete(doc.ref));

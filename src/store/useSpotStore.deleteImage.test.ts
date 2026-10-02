@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // deleteSpotImage computes the removal from the fresh doc read inside a transaction, never from the
-// (possibly stale) listener copy, and writes only the three image fields.
+// (possibly stale) listener copy, and writes only the three image fields and updatedAt (the version
+// approveSpot checks).
 // firebase/firestore is mocked: runTransaction() runs the callback against `fresh`.
 
 const { tx, state } = vi.hoisted(() => ({
@@ -60,7 +61,7 @@ describe('deleteSpotImage', () => {
       spotImages: [img('/a', 1, ['u2']), img('/c')],
       primaryImageIndex: 1,
     });
-    expect(Object.keys(data).sort()).toEqual(['imageUrls', 'primaryImageIndex', 'spotImages']);
+    expect(Object.keys(data).sort()).toEqual(['imageUrls', 'primaryImageIndex', 'spotImages', 'updatedAt']);
 
     const local = useSpotStore.getState().spots[0];
     expect(local.imageUrls).toEqual(['/a', '/c']);

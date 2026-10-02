@@ -35,7 +35,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
     onClose();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) return draft.setError('mustBeLoggedIn');
     if (!selectedLocation) return draft.setError('pleaseSelectLocation');

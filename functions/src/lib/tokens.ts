@@ -1,10 +1,12 @@
 /**
  * Pure FCM send-result classifier (no firebase imports).
- * A token is pruned only when FCM says it is dead.
+ * A registration (FID) is pruned only when FCM says it is dead (installation-id-not-registered;
+ * the token codes are kept for registrations FCM still reports that way).
  */
 export const PRUNABLE_TOKEN_ERROR_CODES: ReadonlySet<string> = new Set([
   "messaging/registration-token-not-registered",
   "messaging/invalid-registration-token",
+  "messaging/installation-id-not-registered",
 ]);
 
 export function isPrunableTokenError(code: string | undefined): boolean {

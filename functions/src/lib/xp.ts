@@ -25,16 +25,18 @@ function records(x: unknown): Data[] {
 /** Each real photo of a spot once, with the uid it counts for. */
 export function spotPhotos(spot: Data): {url: string; addedBy: string}[] {
   const creator = typeof spot.createdBy === "string" ? spot.createdBy : "";
+  // Only photos the spot shows count (imageUrls): a spotImages entry without its URL there is
+  // not a photo anyone sees.
+  const shown = new Set((Array.isArray(spot.imageUrls) ? spot.imageUrls : [])
+    .filter((url): url is string => typeof url === "string" && url !== PLACEHOLDER_URL));
   const byUrl = new Map<string, string>();
   for (const image of records(spot.spotImages)) {
-    if (typeof image.url !== "string") continue;
+    if (typeof image.url !== "string" || !shown.has(image.url)) continue;
     byUrl.set(image.url, typeof image.addedBy === "string" && image.addedBy ? image.addedBy : creator);
   }
-  const urls = Array.isArray(spot.imageUrls) ? spot.imageUrls : [];
-  for (const url of urls) {
-    if (typeof url === "string" && !byUrl.has(url)) byUrl.set(url, creator);
+  for (const url of shown) {
+    if (!byUrl.has(url)) byUrl.set(url, creator);
   }
-  byUrl.delete(PLACEHOLDER_URL);
   return [...byUrl].map(([url, addedBy]) => ({url, addedBy}));
 }
 
@@ -84,14 +86,19 @@ export function xpOf(uid: string, spots: Iterable<Data>): number {
 }
 
 /**
- * The level fields stored on users/{uid}: the floor is frozen the first time (the old
- * spot-count level, every status), then kept.
+ * The level fields stored on users/{uid}. The floor (the old spot-count level, so nobody drops a
+ * level when XP replaced it) is set only by the one-time migration, which passes the user's spot
+ * count: it never goes below a floor stored earlier. The trigger passes null: a user without a
+ * floor (an account created after the migration) gets 1, so creating many pending spots at once
+ * cannot buy a permanent level.
  */
 export function userLevelFields(
   xp: number,
   storedFloor: unknown,
-  ownSpotsCount: number,
+  migrationSpotsCount: number | null,
 ): {xp: number; level: number; levelFloor: number} {
-  const levelFloor = validLevel(storedFloor) ?? levelForSpotCount(ownSpotsCount);
+  const stored = validLevel(storedFloor) ?? 1;
+  const levelFloor = migrationSpotsCount === null ?
+    stored : Math.max(stored, levelForSpotCount(migrationSpotsCount));
   return {xp, level: effectiveLevel(xp, levelFloor), levelFloor};
 }

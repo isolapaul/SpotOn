@@ -1,5 +1,6 @@
 'use client';
 
+import { SPOT_CHANGED_ERROR } from '@/store/useSpotStore';
 import { useState, type ReactNode } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { useToastStore } from '@/store/useToastStore';
@@ -34,7 +35,7 @@ export default function QueueCard({ label, children, rejectTitle, onApprove, onR
       showToast(t(approvedToast), 'success');
     } catch (error) {
       console.error('Approve failed:', error);
-      showToast(t('moderationError'), 'error');
+      showToast(t(error instanceof Error && error.message === SPOT_CHANGED_ERROR ? 'spotChangedReview' : 'moderationError'), 'error');
       setBusy(false);
     }
   };

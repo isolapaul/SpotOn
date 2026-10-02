@@ -6,7 +6,8 @@ import { fetchSpotPreview } from '@/lib/spotPreview';
 // preview (Open Graph) for approved spots. Pending, rejected or missing spots get the plain app.
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const spot = await fetchSpotPreview(decodeURIComponent(id));
+  // Next decodes route params already (a second decode would throw on e.g. %25).
+  const spot = await fetchSpotPreview(id);
   if (!spot) return { title: 'SpotOn' };
   const description = [spot.rating !== null ? `★ ${spot.rating}` : '', spot.description].filter(Boolean).join(' · ');
   return {

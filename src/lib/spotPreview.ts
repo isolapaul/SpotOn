@@ -36,14 +36,16 @@ function documentUrl(spotId: string): string | null {
 export function previewFromDocument(id: string, doc: { fields?: Record<string, Value> } | null): SpotPreview | null {
   const f = doc?.fields;
   if (!f || str(f.status) !== 'approved') return null;
-  const urls = (f.imageUrls?.arrayValue?.values ?? []).map(str).filter((u) => u.startsWith('https://'));
-  const primary = num(f.primaryImageIndex) ?? 0;
+  // primaryImageIndex points into the stored list; only https photos can be a link preview.
+  const all = (f.imageUrls?.arrayValue?.values ?? []).map(str);
+  const urls = all.filter((u) => u.startsWith('https://'));
+  const chosen = all[num(f.primaryImageIndex) ?? 0];
   const ratings = (f.reviews?.arrayValue?.values ?? []).map((r) => num(r.mapValue?.fields?.rating)).filter((r): r is number => r !== null);
   return {
     id,
     name: str(f.name),
     description: str(f.description).slice(0, 200),
-    imageUrl: urls[primary] ?? urls[0] ?? null,
+    imageUrl: chosen?.startsWith('https://') ? chosen : urls[0] ?? null,
     rating: ratings.length ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : null,
   };
 }

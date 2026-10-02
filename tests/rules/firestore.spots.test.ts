@@ -119,6 +119,9 @@ describe('create (addSpot)', () => {
     await assertSucceeds(create(db, newSpot(ALICE, { category: 'c1' }))); // item 7: a custom category
     await assertFails(create(db, newSpot(ALICE, { category: 'c-missing' })));
     await assertFails(create(db, newSpot(ALICE, { primaryImageIndex: 1 })));
+    // Item 5: a new spot's photos are the creator's and shown (no XP for hidden or credited photos).
+    await assertFails(create(db, newSpot(ALICE, { spotImages: [spotImage('9_x', IMG1, BOB)] })));
+    await assertFails(create(db, newSpot(ALICE, { spotImages: [spotImage('9_x', IMG1, ALICE), spotImage('9_y', 'https://hidden.test/y.jpg', ALICE)] })));
     await assertFails(create(db, newSpot(ALICE, { primaryImageIndex: -1 })));
     await assertFails(create(db, newSpot(ALICE, { category: 'nightclub' })));
     await assertFails(create(db, newSpot(ALICE, { location: { lat: 91, lng: 0 } })));

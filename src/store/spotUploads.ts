@@ -17,7 +17,7 @@ import { db, functions, storage } from '@/lib/firebase';
 import { UPLOAD_TIMEOUT_MS } from '@/lib/constants';
 import { PLACEHOLDER_URL, extForMime } from '@/lib/spotImages';
 import { compressImage } from '@/lib/imageCompression';
-import { MAX_SPOT_IMAGES_ERROR } from '@/lib/uploadErrors';
+import { MAX_PENDING_PHOTOS_ERROR, MAX_SPOT_IMAGES_ERROR } from '@/lib/uploadErrors';
 import { withTimeout } from '@/lib/withTimeout';
 import { invalidatePublicProfile } from '@/store/publicProfiles';
 import type { NewReview, Review, Spot, SpotImage } from '@/store/useSpotStore';
@@ -155,7 +155,8 @@ export async function createSpot(
 
 /**
  * Appends uploaded photo URLs to a spot through the addSpotImages callable. The server rejects
- * URLs it already has ("Image already added"): after a timeout that still landed, that counts as done.
+ * URLs it already has ("Image already added"): after a timeout that still landed, that counts as done
+ * (a retry of photos already waiting for review returns as pending).
  * Returns how many photos wait for an admin (item 4: other users' photos, and the owner's on an
  * approved spot, are reviewed first).
  */
@@ -164,7 +165,11 @@ export async function attachSpotImages(spotId: string, urls: string[]): Promise<
     const { data } = await addSpotImagesCallable({ spotId, urls });
     return typeof data?.pending === 'number' ? data.pending : 0;
   } catch (error) {
-    if (errorCode(error) === 'functions/resource-exhausted') throw new Error(MAX_SPOT_IMAGES_ERROR);
+    if (errorCode(error) === 'functions/resource-exhausted') {
+      // The server says which limit: the spot's 20 photos, or this user's 5 waiting for review.
+      const message = error instanceof Error ? error.message : '';
+      throw new Error(message.includes(MAX_PENDING_PHOTOS_ERROR) ? MAX_PENDING_PHOTOS_ERROR : MAX_SPOT_IMAGES_ERROR);
+    }
     if (errorCode(error) === 'functions/invalid-argument') {
       const existing = await serverSpot(spotId).catch(() => undefined);
       const stored = Array.isArray(existing?.imageUrls) ? (existing.imageUrls as unknown[]) : [];

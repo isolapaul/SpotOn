@@ -1,8 +1,11 @@
 /**
- * Push notification helpers. Never logs tokens or payloads, only uids and counts.
+ * Push notification helpers. FCM targets each device by its Firebase Installation ID (FID,
+ * users/{uid}.fcmFids, registered by the app); the old registration tokens (fcmTokens) are no
+ * longer sent to (the token API is deprecated): a device moves to its FID the next time the app
+ * opens. Never logs FIDs or payloads, only uids and counts.
  */
 import {FieldValue} from "firebase-admin/firestore";
-import {MulticastMessage} from "firebase-admin/messaging";
+import {FidMulticastMessage} from "firebase-admin/messaging";
 import {defineString} from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import {db, messaging} from "./app";
@@ -49,10 +52,10 @@ export async function sendNotificationToUser(
       }
     }
 
-    // Check if user has FCM tokens
-    const tokens: string[] = userData.fcmTokens || [];
-    if (tokens.length === 0) {
-      logger.info(`No FCM tokens for user ${userId}`);
+    const fids: string[] = Array.isArray(userData.fcmFids) ?
+      userData.fcmFids.filter((f: unknown): f is string => typeof f === "string" && f.length > 0) : [];
+    if (fids.length === 0) {
+      logger.info(`No FCM registrations for user ${userId}`);
       return;
     }
 
@@ -63,8 +66,8 @@ export async function sendNotificationToUser(
 
     // FCM requires an HTTPS link; the emulator value (http://localhost:3000) is omitted.
     const appUrl = APP_URL.value();
-    const message: MulticastMessage = {
-      tokens: tokens,
+    const message: FidMulticastMessage = {
+      fids,
       notification: {
         title: title,
         body: body,
@@ -82,14 +85,14 @@ export async function sendNotificationToUser(
 
     const response = await messaging.sendEachForMulticast(message);
 
-    // Prune only tokens FCM reports as dead.
-    const toPrune = selectTokensToPrune(tokens, response.responses);
+    // Prune only registrations FCM reports as dead.
+    const toPrune = selectTokensToPrune(fids, response.responses);
     if (toPrune.length > 0) {
       await db
         .collection("users")
         .doc(userId)
         .update({
-          fcmTokens: FieldValue.arrayRemove(...toPrune),
+          fcmFids: FieldValue.arrayRemove(...toPrune),
         });
     }
 

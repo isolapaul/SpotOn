@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { SDK_VERSION } from 'firebase/app';
+import { SW_SOURCE } from './swBundle.generated';
 
+// The FCM service worker: the Firebase config (public NEXT_PUBLIC_* values), then the bundled
+// worker (src/sw/firebase-messaging-sw.ts, built by scripts/build-sw.mjs on the modular SDK).
 export async function GET() {
   const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,51 +12,7 @@ export async function GET() {
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   };
-
-  const script = `// Firebase Cloud Messaging Service Worker (Generated dynamically)
-importScripts('https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-messaging-compat.js');
-
-// Initialize Firebase with config from environment variables
-firebase.initializeApp(${JSON.stringify(firebaseConfig)});
-
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-  // A message with a notification payload (what our functions send) is already shown by the
-  // Firebase SDK itself; showing it here as well made every push arrive twice.
-  if (payload.notification) return;
-  const notificationTitle = payload.notification?.title || 'SpotOn Notification';
-  const notificationOptions = {
-    body: payload.notification?.body || 'You have a new notification',
-    icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png',
-    tag: payload.data?.tag || 'spoton-notification',
-    data: payload.data,
-    vibrate: [200, 100, 200],
-    requireInteraction: false,
-  };
-
-  return self.registration.showNotification(notificationTitle, notificationOptions);
-});
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow('/');
-      }
-    })
-  );
-});`;
-
+  const script = `self.FIREBASE_CONFIG = ${JSON.stringify(firebaseConfig)};\n${SW_SOURCE}`;
   return new NextResponse(script, {
     headers: {
       'Content-Type': 'application/javascript',

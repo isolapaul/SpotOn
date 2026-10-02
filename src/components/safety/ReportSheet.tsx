@@ -1,5 +1,6 @@
 'use client';
 
+import { actionErrorKey } from '@/lib/callableErrors';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Loader2 } from 'lucide-react';
@@ -50,7 +51,7 @@ export default function ReportSheet({ target, onClose }: Readonly<{ target: Repo
       onClose();
     } catch (error) {
       console.error('Report failed:', error);
-      showToast(t('genericError'), 'error');
+      showToast(t(actionErrorKey(error)), 'error');
       setBusy(false);
     }
   };

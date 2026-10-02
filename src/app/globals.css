@@ -346,31 +346,6 @@ a:not(.no-min-size),
   transform-origin: 22px 50px;
   transition: opacity 0.2s, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.spot-pin__dot {
-  position: absolute;
-  box-sizing: border-box;
-  left: 15px;
-  top: 43px;
-  width: 14px;
-  height: 14px;
-  border-radius: 9999px;
-  border: 3px solid #fff;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.18);
-  background: #12814f;
-  opacity: 0;
-  transform: scale(0.4);
-  transition: opacity 0.2s, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.spot-pin[data-variant="pending"] .spot-pin__dot {
-  background: #fff;
-  border-color: #b98300;
-}
-.spot-pin[data-variant="rejected"] .spot-pin__dot {
-  background: #5b6068;
-}
-.spot-pin[data-highlighted="true"] .spot-pin__dot {
-  border-color: #f7c948;
-}
 /* The pin whose place card is open (design 1E) grows with a small spring; MapView sets the flag. */
 .spot-pin[data-selected="true"] .spot-pin__svg {
   transform: scale(1.18);
