@@ -34,7 +34,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN node scripts/check-public-env.mjs --production && npx --no-install next build
 
-FROM gcr.io/distroless/nodejs22-debian13:nonroot@sha256:5ef534d3db0ac0c43bee379af4ae49cfbfc0ef38a46c94c52d87c68f32f34d8a AS runtime
+FROM gcr.io/distroless/nodejs22-debian13:nonroot@sha256:ec2313763dd43931543bd03830466e0c409ce73a487e8d46f10db72d3b816c1c AS runtime
 ARG VERSION=dev
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.source="https://github.com/isolapaul/SpotOn" \
