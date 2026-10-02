@@ -32,6 +32,8 @@ import { useRelocateSpot } from '@/hooks/useRelocateSpot';
 import { runViewTransition } from '@/hooks/viewTransition';
 import { useVisibleSpots } from '@/hooks/useVisibleSpots';
 import { useUserLocation } from '@/hooks/useUserLocation';
+import { useSpotLink } from '@/hooks/useSpotLink';
+import { useMemo } from 'react';
 import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 
 // Dynamic import to avoid SSR issues with Leaflet
@@ -75,6 +77,9 @@ export default function Home() {
   // The place card follows the live spot (a deleted or hidden spot closes it).
   const previewedSpot = previewSpotId ? (visibleSpots.find((s) => s.id === previewSpotId) ?? null) : null;
   const approvedCount = visibleSpots.filter((s) => s.status === 'approved').length;
+  // A shared link (/spot/<id>) opens its spot once the app is ready.
+  const visibleIds = useMemo(() => new Set(visibleSpots.map((s) => s.id)), [visibleSpots]);
+  useSpotLink(isAppReady, visibleIds);
 
   // Full-screen panels open and close as sheets; the place card's Details morphs its photo into the hero.
   const openSheet = (p: Parameters<typeof openPanel>[0]) => runViewTransition(() => openPanel(p));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPinHtml, markerVariant, zoomBand } from './mapMarkers';
+import { buildClusterHtml, buildPinHtml, markerVariant } from './mapMarkers';
 import { CATEGORY_GLYPHS, glyphToSvgMarkup, normalizeCategory } from './categoryGlyphs';
 
 describe('markerVariant', () => {
@@ -51,13 +51,12 @@ describe('buildPinHtml', () => {
   });
 });
 
-describe('zoomBand', () => {
-  it('collapses pins to dots at region zoom and below', () => {
-    // Mapbox zooms (Leaflet's 10 is Mapbox's 9).
-    expect(zoomBand(5)).toBe('far');
-    expect(zoomBand(9.9)).toBe('far');
-    expect(zoomBand(10)).toBe('near');
-    expect(zoomBand(17)).toBe('near');
+describe('buildClusterHtml', () => {
+  it('shows the count, 99+ above, and a badge for pending spots inside', () => {
+    expect(buildClusterHtml(7, false)).toContain('>7<');
+    expect(buildClusterHtml(250, false)).toContain('>99+<');
+    expect(buildClusterHtml(3, true)).toContain('spot-cluster__badge');
+    expect(buildClusterHtml(3, false)).not.toContain('spot-cluster__badge');
   });
 });
 

@@ -6,7 +6,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import type { Spot } from '@/store/useSpotStore';
 import { useMapThemeStore } from '@/store/useMapThemeStore';
 import { useCategoryStore } from '@/store/useCategoryStore';
-import { buildPinHtml, markerVariant, PIN_ANCHOR, zoomBand } from '@/lib/mapMarkers';
+import { buildClusterHtml, buildPinHtml, CLUSTER_MAX_ZOOM, CLUSTER_RADIUS, markerVariant, PIN_ANCHOR } from '@/lib/mapMarkers';
+import Supercluster, { type ClusterFeature } from 'supercluster';
 import { styleFor } from '@/lib/mapStyles';
 import { normalizePinIcon } from '@/lib/pinGlyphs';
 import { normalizeCategory } from '@/lib/categoryGlyphs';
@@ -149,12 +150,17 @@ export default function MapView({
   usePointMarker(map, tempMarker, () =>
     new mapboxgl.Marker({ element: htmlElement('draft-pin-marker', DRAFT_PIN_HTML), anchor: 'top-left', offset: PIN_OFFSET }));
 
-  // Spot markers: kept by id; only a changed look rebuilds a pin's markup, only a move re-positions it.
+  // Clusters: nearby pins merge when zoomed out. Highlighted and selected pins always stay pins.
   const nowIso = new Date().toISOString();
+  const view = useMapView(map);
+  const { shownSpots, clusters, index } = useClusters(spots, view, selectedSpotId, nowIso);
+  useClusterMarkers(map, clusters, index);
+
+  // Spot markers: kept by id; only a changed look rebuilds a pin's markup, only a move re-positions it.
   useEffect(() => {
     if (!map) return;
     const seen = new Set<string>();
-    spots.forEach((spot, index) => {
+    shownSpots.forEach((spot, index) => {
       seen.add(spot.id);
       const highlighted = (spot.highlighted || []).some((h) => h.expiresAt > nowIso);
       const look = {
@@ -210,7 +216,7 @@ export default function MapView({
       entry.marker.remove();
       markers.current.delete(id);
     }
-  }, [map, spots, customIcons, selectedSpotId, nowIso]);
+  }, [map, shownSpots, customIcons, selectedSpotId, nowIso]);
 
   // Unmount: drop every marker (the map itself is removed by useMapInstance).
   useEffect(() => {
@@ -234,8 +240,7 @@ type Latest = React.RefObject<{
 
 /**
  * Creates the Mapbox map once (2D like before: no rotation or pitch) and removes it on unmount.
- * Map clicks place a new spot while picking, else close the place card; the zoom is mirrored on
- * the container (data-zoom-band) so CSS collapses pins to dots when zoomed far out.
+ * Map clicks place a new spot while picking, else close the place card.
  */
 function useMapInstance(
   containerRef: React.RefObject<HTMLDivElement | null>,
@@ -264,14 +269,9 @@ function useMapInstance(
     map.touchZoomRotate.disableRotation();
     map.keyboard.disableRotation();
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
-    const applyBand = () => {
-      container.dataset.zoomBand = zoomBand(map.getZoom());
-    };
-    applyBand();
-    map.on('zoomend', applyBand);
     map.on('click', (e) => {
       const target = e.originalEvent.target as Element | null;
-      if (target?.closest?.('.spot-marker')) return;
+      if (target?.closest?.('.spot-marker, .spot-cluster-marker')) return;
       const { isAddingSpot, onLocationSelect, onMapClick } = latest.current;
       if (isAddingSpot && onLocationSelect) onLocationSelect({ lat: e.lngLat.lat, lng: e.lngLat.lng });
       else onMapClick?.();
@@ -348,4 +348,143 @@ function useSpotFocuser(
       map.off('moveend', arrive);
     };
   }, [focus, lat, lng, map, latest]);
+}
+
+interface MapViewState {
+  zoom: number;
+  bbox: [number, number, number, number];
+}
+
+/** The visible area and zoom, updated when a move ends (clusters are recomputed then). */
+function useMapView(map: mapboxgl.Map | null): MapViewState | null {
+  const [view, setView] = useState<MapViewState | null>(null);
+  useEffect(() => {
+    if (!map) return;
+    const update = () => {
+      const b = map.getBounds();
+      if (!b) return;
+      // A margin, so pins just outside the screen are ready when panning.
+      const padLng = (b.getEast() - b.getWest()) * 0.25;
+      const padLat = (b.getNorth() - b.getSouth()) * 0.25;
+      setView({
+        zoom: map.getZoom(),
+        bbox: [b.getWest() - padLng, b.getSouth() - padLat, b.getEast() + padLng, b.getNorth() + padLat],
+      });
+    };
+    update();
+    map.on('moveend', update);
+    map.on('resize', update);
+    return () => {
+      map.off('moveend', update);
+      map.off('resize', update);
+    };
+  }, [map]);
+  return view;
+}
+
+type ClusterProps = { pending: number };
+type PointProps = { spotId: string; pending: number };
+type ClusterIndex = Supercluster<PointProps, ClusterProps>;
+
+/** Splits the spots into single pins and clusters for the current view. */
+function useClusters(spots: Spot[], view: MapViewState | null, selectedSpotId: string | null, nowIso: string) {
+  const index = useMemo(() => {
+    const idx: ClusterIndex = new Supercluster<PointProps, ClusterProps>({
+      radius: CLUSTER_RADIUS,
+      maxZoom: CLUSTER_MAX_ZOOM,
+      // Mapbox zooms with 512 px tiles.
+      extent: 512,
+      map: (p) => ({ pending: p.pending }),
+      reduce: (acc, p) => {
+        acc.pending += p.pending;
+      },
+    });
+    idx.load(
+      spots
+        .filter((s) => !(s.highlighted || []).some((h) => h.expiresAt > nowIso) && s.id !== selectedSpotId)
+        .map((s) => ({
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: [s.location.lng, s.location.lat] },
+          properties: { spotId: s.id, pending: s.status === 'approved' ? 0 : 1 },
+        })),
+    );
+    return idx;
+    // nowIso changes every render; highlights are re-read with the spots.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spots, selectedSpotId]);
+
+  return useMemo(() => {
+    if (!view) return { shownSpots: spots, clusters: [], index };
+    const features = index.getClusters(view.bbox, Math.floor(view.zoom));
+    const single = new Set<string>();
+    const clusters: ClusterFeature<ClusterProps>[] = [];
+    for (const f of features) {
+      if ('cluster' in f.properties && f.properties.cluster) clusters.push(f as ClusterFeature<ClusterProps>);
+      else single.add((f.properties as PointProps).spotId);
+    }
+    const clustered = new Set<string>();
+    for (const c of clusters) {
+      for (const leaf of index.getLeaves(c.properties.cluster_id, Infinity)) clustered.add(leaf.properties.spotId);
+    }
+    // Pins outside the view stay (no flicker at the edges); clustered ones are hidden.
+    return { shownSpots: spots.filter((s) => !clustered.has(s.id)), clusters, index };
+  }, [spots, view, index]);
+}
+
+/** Cluster markers: a tap zooms in until the cluster splits. */
+function useClusterMarkers(map: mapboxgl.Map | null, clusters: ClusterFeature<ClusterProps>[], index: ClusterIndex) {
+  const markers = useRef(new Map<string, { marker: mapboxgl.Marker; key: string }>());
+  const indexRef = useRef(index);
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
+  useEffect(() => {
+    if (!map) return;
+    const seen = new Set<string>();
+    for (const c of clusters) {
+      const [lng, lat] = c.geometry.coordinates;
+      const id = `${c.properties.cluster_id}`;
+      seen.add(id);
+      const count = c.properties.point_count;
+      const key = `${count}|${c.properties.pending > 0 ? 1 : 0}|${lng}|${lat}`;
+      const existing = markers.current.get(id);
+      if (existing?.key === key) continue;
+      existing?.marker.remove();
+      const el = document.createElement('div');
+      el.className = 'spot-cluster-marker';
+      el.setAttribute('role', 'button');
+      el.tabIndex = 0;
+      el.setAttribute('aria-label', `${count}`);
+      el.innerHTML = buildClusterHtml(count, c.properties.pending > 0);
+      const open = (e: Event) => {
+        e.stopPropagation();
+        let zoom = CLUSTER_MAX_ZOOM + 1;
+        try {
+          zoom = Math.min(indexRef.current.getClusterExpansionZoom(c.properties.cluster_id), CLUSTER_MAX_ZOOM + 1);
+        } catch {
+          // The index changed meanwhile: zoom in one step.
+          zoom = map.getZoom() + 2;
+        }
+        map.easeTo({ center: [lng, lat], zoom: Math.max(zoom, map.getZoom() + 1), duration: prefersReducedMotion() ? 0 : 500 });
+      };
+      el.addEventListener('click', open);
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') open(e);
+      });
+      const marker = new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([lng, lat]).addTo(map);
+      markers.current.set(id, { marker, key });
+    }
+    for (const [id, entry] of markers.current) {
+      if (seen.has(id)) continue;
+      entry.marker.remove();
+      markers.current.delete(id);
+    }
+  }, [map, clusters]);
+  useEffect(() => {
+    const all = markers.current;
+    return () => {
+      for (const entry of all.values()) entry.marker.remove();
+      all.clear();
+    };
+  }, []);
 }

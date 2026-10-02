@@ -55,6 +55,8 @@ interface UiStore {
    * its place card opens on arrival (arriveAtSpot). From Explore: the details open over it.
    */
   openSpotFromList: (spotId: string, from: ReturnTarget) => void;
+  /** A shared link (/spot/<id>): the map flies to the spot and its card opens (no way back). */
+  openSpotLink: (spotId: string) => void;
   /** The map reached the focused spot: show its card, unless something else was opened meanwhile. */
   arriveAtSpot: (spotId: string) => void;
   /** Closing the details: back to Explore when opened from there, else the map stays at the spot. */
@@ -135,6 +137,10 @@ export const useUiStore = create<UiStore>((set, get) => ({
     }
     const seq = (get().focusRequest?.seq ?? 0) + 1;
     set({ activePanel: 'none', previewSpotId: null, returnTo: from, focusRequest: { spotId, seq } });
+  },
+  openSpotLink: (spotId) => {
+    const seq = (get().focusRequest?.seq ?? 0) + 1;
+    set({ activePanel: 'none', previewSpotId: null, returnTo: null, focusRequest: { spotId, seq } });
   },
   arriveAtSpot: (spotId) => {
     const { focusRequest, activePanel, returnTo } = get();
