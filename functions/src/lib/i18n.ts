@@ -145,6 +145,26 @@ export const translations = {
     en: (spotName: TParam) => `A photo was added to "${spotName}"`,
     de: (spotName: TParam) => `Ein Foto wurde zu "${spotName}" hinzugefügt`,
   },
+  contentRemoved: {
+    hu: "Eltávolítottunk egy tartalmadat",
+    en: "We removed something you posted",
+    de: "Wir haben einen deiner Beiträge entfernt",
+  },
+  contentRemovedBody: {
+    hu: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+    en: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+    de: (spotName: TParam, reason: TParam) => `"${spotName}": ${reason}`,
+  },
+  newReport: {
+    hu: "Új jelentés",
+    en: "New report",
+    de: "Neue Meldung",
+  },
+  newReportBody: {
+    hu: (what: TParam) => `Jelentették: "${what}"`,
+    en: (what: TParam) => `Reported: "${what}"`,
+    de: (what: TParam) => `Gemeldet: "${what}"`,
+  },
   // Follows (item 8).
   followRequest: {
     hu: "Új követési kérés",

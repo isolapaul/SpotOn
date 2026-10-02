@@ -32,6 +32,9 @@ Together with the Firestore/Storage rules (`firestore.rules`, `storage.rules` in
 | `removeSpot` | Callable | Deletes a spot with a reason: its photo files, pending edit and photo submissions go too; tells the owner | Admins |
 | `reviewSpotEdit` | Callable | Applies an owner's proposed edit of an approved spot (removed photo files are deleted), or rejects it with a reason; tells the owner. The admin names the reviewed version, so a changed proposal is never applied unseen | Admins |
 | `reviewPhotoSubmission` | Callable | Adds a waiting photo to its spot, or rejects it with a reason (the file is deleted); tells the uploader | Admins |
+| `reportContent` | Callable | Reports a spot, photo, review, reply or profile with a reason (once per person and thing); tells the admins | Signed-in users |
+| `resolveReport` | Callable | Dismisses the reports of a thing, or removes it with a reason (the author is told) | Admins |
+| `blockUser` / `unblockUser` | Callable | Blocks a user (ends follows and requests both ways) or lifts the block | Signed-in users |
 | `claimUsername` | Callable | Claims a unique username through `usernames/{name}` in a transaction and frees the old one | Signed-in users (for themselves) |
 | `updateNameStyle` | Callable | Sets the custom name colour/font from an allowlist | Signed-in users at level 5 |
 | `lookupUserByEmail` | Callable | Finds a user by email for the admin management screen | Super admin only |

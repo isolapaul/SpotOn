@@ -9,6 +9,7 @@ import {
   isEmptyProposal, mergeProposal, parsePhotoSubmission, parseSpotEdit,
   type EditProposal, type PhotoSubmission, type SpotEdit,
 } from '@/lib/moderation';
+import { groupReports, parseReport, type ReportGroup, type ReportItem } from '@/lib/reports';
 import { invalidatePublicProfile } from '@/store/publicProfiles';
 import type { Spot } from '@/store/useSpotStore';
 
@@ -17,6 +18,10 @@ const removeSpotCallable = httpsCallable<{ spotId: string; reason: string }, unk
 const reviewSpotEditCallable = httpsCallable<{ spotId: string; approve: boolean; seenAt: number; reason?: string }, unknown>(
   functions,
   'reviewSpotEdit',
+);
+const resolveReportCallable = httpsCallable<{ key: string; action: 'remove' | 'dismiss'; reason?: string }, unknown>(
+  functions,
+  'resolveReport',
 );
 const reviewPhotoCallable = httpsCallable<{ submissionId: string; approve: boolean; reason?: string }, unknown>(
   functions,
@@ -36,6 +41,8 @@ interface ModerationStore {
   editQueue: SpotEdit[];
   /** Admins: photos waiting for review. */
   photoQueue: PhotoSubmission[];
+  /** Admins: reported things, each with its reports. */
+  reportQueue: ReportGroup[];
   sync: (scope: ModerationScope) => void;
 
   /** Owner, approved spot: adds `patch` to the waiting proposal (or starts one); false when nothing changes. */
@@ -50,6 +57,8 @@ interface ModerationStore {
   removeSpot: (spotId: string, ownerId: string, reason: string) => Promise<void>;
   reviewEdit: (edit: Pick<SpotEdit, 'spotId' | 'createdAtMs'>, approve: boolean, reason?: string) => Promise<void>;
   reviewPhoto: (submissionId: string, approve: boolean, reason?: string) => Promise<void>;
+  /** Dismisses the reports of a thing, or removes the thing with a reason. */
+  resolveReport: (key: string, remove: boolean, reason?: string) => Promise<void>;
 }
 
 // Module-level listeners, like the spots scopes (store/spotListeners).
@@ -63,13 +72,14 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
   ownEdits: {},
   editQueue: [],
   photoQueue: [],
+  reportQueue: [],
 
   sync: ({ uid, isAdmin }) => {
     const key = uid ? `${uid}|${isAdmin}` : '';
     if (listeners?.key === key) return;
     listeners?.stop.forEach((stop) => stop());
     listeners = null;
-    set({ ownEdits: {}, editQueue: [], photoQueue: [] });
+    set({ ownEdits: {}, editQueue: [], photoQueue: [], reportQueue: [] });
     if (!uid) return;
     const fail = (what: string) => (error: unknown) => console.error(`Moderation listener (${what}) failed:`, error);
     const stop: Unsubscribe[] = [
@@ -94,6 +104,9 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
               .filter((p): p is PhotoSubmission => p !== null),
           });
         }, fail('photo queue')),
+        onSnapshot(collection(db, 'reports'), (snap) => {
+          set({ reportQueue: groupReports(snap.docs.map((d) => parseReport(d.id, d.data())).filter((r): r is ReportItem => r !== null)) });
+        }, fail('reports')),
       );
     }
     listeners = { key, stop };
@@ -135,6 +148,9 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
   },
   reviewEdit: async ({ spotId, createdAtMs }, approve, reason) => {
     await reviewSpotEditCallable({ spotId, approve, seenAt: createdAtMs, ...(reason ? { reason } : {}) });
+  },
+  resolveReport: async (key, remove, reason) => {
+    await resolveReportCallable({ key, action: remove ? 'remove' : 'dismiss', ...(reason ? { reason } : {}) });
   },
   reviewPhoto: async (submissionId, approve, reason) => {
     await reviewPhotoCallable({ submissionId, approve, ...(reason ? { reason } : {}) });

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { X } from 'lucide-react';
 import { useHorizontalSwipe } from '@/hooks/useHorizontalSwipe';
 import { SWIPE_THRESHOLDS, Z } from '@/lib/constants';
+import ReportButton from '../safety/ReportButton';
 
 interface GalleryProps {
   urls: string[];
@@ -14,16 +15,18 @@ interface GalleryProps {
   onClose: () => void;
   /** Base alt text; each image gets "<alt> - Image N". */
   alt: string;
+  /** Set when the photos can be reported (someone else's approved spot). */
+  spotId?: string;
 }
 
 /** Fullscreen image gallery: swipe, ←/→ and Esc, dots. Renders nothing while closed or without images. */
-export default function Gallery({ urls, open, startIndex, onClose, alt }: Readonly<GalleryProps>) {
+export default function Gallery({ urls, open, startIndex, onClose, alt, spotId }: Readonly<GalleryProps>) {
   if (!open || urls.length === 0) return null;
   // Mounted per opening, so the index starts at startIndex every time.
-  return <GalleryView urls={urls} startIndex={startIndex} onClose={onClose} alt={alt} />;
+  return <GalleryView urls={urls} startIndex={startIndex} onClose={onClose} alt={alt} spotId={spotId} />;
 }
 
-function GalleryView({ urls, startIndex, onClose, alt }: Readonly<Omit<GalleryProps, 'open'>>) {
+function GalleryView({ urls, startIndex, onClose, alt, spotId }: Readonly<Omit<GalleryProps, 'open'>>) {
   const count = urls.length;
   const [current, setCurrent] = useState(startIndex);
   // The URL list is live (it can shrink while open): never index past its end.
@@ -65,6 +68,12 @@ function GalleryView({ urls, startIndex, onClose, alt }: Readonly<Omit<GalleryPr
       >
         <X className="w-6 h-6 text-white" />
       </button>
+
+      {spotId && urls[index]?.startsWith('http') && (
+        <div className="absolute z-20" style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)', right: '5rem' }}>
+          <ReportButton key={urls[index]} variant="overlay" target={{ kind: 'photo', spotId, targetId: urls[index] }} />
+        </div>
+      )}
 
       {count > 1 && (
         <div

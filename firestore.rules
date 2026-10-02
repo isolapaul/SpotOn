@@ -247,6 +247,18 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---------- reports and blocks (Play UGC) ----------
+    // Written only by the callables. Admins read the reports; the reported user never does.
+    match /reports/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    // A block is read only by its blocker (the blocked user is not told).
+    match /blocks/{id} {
+      allow get, list: if signedIn() && resource.data.blocker == request.auth.uid;
+      allow write: if false;
+    }
+
     // ---------- categories (item 7) ----------
     function isSuperAdmin() {
       return isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.get('role', '') == 'super';

@@ -7,6 +7,7 @@ import LevelBadge from './ui/LevelBadge';
 import StarRating from './ui/StarRating';
 import ProfileSpotCard from './profile/ProfileSpotCard';
 import FollowButton from './profile/FollowButton';
+import ProfileMenu from './profile/ProfileMenu';
 import { useT } from '@/hooks/useT';
 import { useCategoryLabel } from '@/hooks/useCategory';
 import { useSpotStore, type Spot } from '@/store/useSpotStore';
@@ -98,6 +99,9 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
     <PanelShell onClose={onClose} backdropLabel="Close user profile" variant="surface">
       <div className="flex-1 overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
         <div className="flex justify-end px-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}>
+          {profile && view && me && me !== uid && (
+            <ProfileMenu uid={uid} name={profile.username ?? ''} blocked={view.blocked === true} onChanged={() => setVersion((v) => v + 1)} />
+          )}
           <button type="button" onClick={onClose} aria-label={t('close')} className="no-min-size w-11 h-11 grid place-items-center rounded-full">
             <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
               <X className="w-4 h-4 text-label-secondary" strokeWidth={2.5} />
@@ -117,7 +121,9 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
             <Header profile={profile} level={level} />
             <Stats spots={view?.spotIds?.length ?? null} followers={profile.followersCount ?? 0} following={profile.followingCount ?? 0} />
 
-            {view && (
+            {view?.blocked ? (
+              <p className="mt-6 text-center text-label-secondary text-sm">{t('youBlockedThem')}</p>
+            ) : view && (
               <div className="mt-4 flex flex-col items-center gap-2">
                 <FollowButton
                   relation={view.relation}
@@ -137,7 +143,7 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
               </div>
             )}
 
-            {view && !view.canView ? (
+            {view?.blocked ? null : view && !view.canView ? (
               <div className="mt-8 rounded-[18px] bg-surface-1 p-6 text-center motion-safe:animate-item-in">
                 <span className="mx-auto mb-3 w-12 h-12 rounded-full grid place-items-center bg-white/[.06]">
                   <Lock className="w-5 h-5 text-label-secondary" aria-hidden="true" />

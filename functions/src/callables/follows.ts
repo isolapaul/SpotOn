@@ -7,6 +7,9 @@
  * - respondFollowRequest: the target accepts or declines a request.
  * - removeFollower: the caller removes someone who follows them.
  * - searchUsers: username prefix search (signed in, 2+ characters, 10 results, 20 calls a minute).
+ * - blockUser / unblockUser: a block ends the follows and requests both ways; neither can follow or
+ *   open the other's profile, and they do not find each other in the search. The blocked user is
+ *   not told (to them the profile looks unavailable).
  * Follows and requests are written only here; the counts on publicProfiles change in the same
  * transaction. Logs only uids and outcomes.
  */
@@ -43,6 +46,14 @@ const followRef = (follower: string, target: string) =>
 const requestRef = (requester: string, target: string) =>
   db.collection("followRequests").doc(followId(requester, target));
 const profileRef = (uid: string) => db.collection("publicProfiles").doc(uid);
+const blockRef = (blocker: string, blocked: string) =>
+  db.collection("blocks").doc(followId(blocker, blocked));
+
+/** Whether either of the two blocked the other. */
+async function blockedEitherWay(a: string, b: string): Promise<{byA: boolean; byB: boolean}> {
+  const [ab, ba] = await db.getAll(blockRef(a, b), blockRef(b, a));
+  return {byA: ab.exists, byB: ba.exists};
+}
 
 /** Adds `delta` to a public profile counter (merge, so a missing profile is created lazily). */
 type Counter = "followersCount" | "followingCount";
@@ -92,6 +103,11 @@ export const getProfile = onCall(async (request) => {
   if (!isUid(target)) throw new HttpsError("invalid-argument", "Invalid uid");
   return logged("getProfile", caller, target, async () => {
     const isSelf = caller === target;
+    if (caller && !isSelf) {
+      const blocks = await blockedEitherWay(caller, target);
+      if (blocks.byB) throw new HttpsError("not-found", "Profile not found");
+      if (blocks.byA) return {canView: false, relation: "none", followsYou: false, blocked: true};
+    }
     const refs: DocumentReference[] = [db.collection("users").doc(target)];
     if (caller && !isSelf) {
       refs.push(followRef(caller, target), requestRef(caller, target), followRef(target, caller));
@@ -120,6 +136,9 @@ export const followUser = onCall(async (request) => {
   const uid = requireUid(request);
   const target = requireTarget(request, uid);
   return logged("followUser", uid, target, async () => {
+    const blocks = await blockedEitherWay(uid, target);
+    if (blocks.byB) throw new HttpsError("not-found", "Profile not found");
+    if (blocks.byA) throw new HttpsError("failed-precondition", "UNBLOCK_FIRST");
     const limitRef = db.collection("rateLimits").doc(uid);
     const state = await db.runTransaction(async (tx): Promise<FollowState | "sent" | "sentQuiet"> => {
       const [targetUser, follow, pending, limits] = await Promise.all([
@@ -174,13 +193,14 @@ export const respondFollowRequest = onCall(async (request) => {
   const requester = requireTarget(request, uid);
   const accept = request.data?.accept === true;
   return logged("respondFollowRequest", uid, requester, async () => {
+    const blocks = await blockedEitherWay(uid, requester);
     const accepted = await db.runTransaction(async (tx) => {
       const [pending, follow] = await Promise.all([
         tx.get(requestRef(requester, uid)), tx.get(followRef(requester, uid)),
       ]);
       if (!pending.exists) throw new HttpsError("not-found", "Request not found");
       tx.delete(pending.ref);
-      if (!accept || follow.exists) return false;
+      if (!accept || follow.exists || blocks.byA || blocks.byB) return false;
       createFollow(tx, requester, uid);
       return true;
     });
@@ -218,7 +238,12 @@ export const searchUsers = onCall(async (request) => {
     });
     const names = await db.collection("usernames").orderBy(FieldPath.documentId())
       .startAt(q).endAt(q + "\uf8ff").limit(SEARCH_LIMIT).get();
-    const uids = names.docs.map((d) => d.get("uid")).filter(isUid);
+    const found = names.docs.map((d) => d.get("uid")).filter(isUid).filter((u) => u !== uid);
+    const blocked = new Set((await Promise.all(found.map(async (u) => {
+      const b = await blockedEitherWay(uid, u);
+      return b.byA || b.byB ? u : null;
+    }))).filter((u): u is string => u !== null));
+    const uids = found.filter((u) => !blocked.has(u));
     if (!uids.length) return {results: []};
     const profiles = await db.getAll(...uids.map(profileRef));
     return {
@@ -231,5 +256,47 @@ export const searchUsers = onCall(async (request) => {
         isPrivate: p.get("isPrivate") === true,
       })),
     };
+  });
+});
+
+/** Deletes a follow edge with its counters, if it still exists. */
+function dropFollow(
+  tx: Transaction,
+  follow: FirebaseFirestore.DocumentSnapshot,
+  follower: string,
+  target: string,
+) {
+  if (follow.exists) deleteFollow(tx, follower, target);
+}
+
+export const blockUser = onCall(async (request) => {
+  const uid = requireUid(request);
+  const target = requireTarget(request, uid);
+  return logged("blockUser", uid, target, async () => {
+    await db.runTransaction(async (tx) => {
+      const [ab, ba, reqAb, reqBa, block] = await Promise.all([
+        tx.get(followRef(uid, target)), tx.get(followRef(target, uid)),
+        tx.get(requestRef(uid, target)), tx.get(requestRef(target, uid)),
+        tx.get(blockRef(uid, target)),
+      ]);
+      dropFollow(tx, ab, uid, target);
+      dropFollow(tx, ba, target, uid);
+      if (reqAb.exists) tx.delete(reqAb.ref);
+      if (reqBa.exists) tx.delete(reqBa.ref);
+      if (!block.exists) {
+        const createdAt = FieldValue.serverTimestamp();
+        tx.create(blockRef(uid, target), {blocker: uid, blocked: target, createdAt});
+      }
+    });
+    return {blocked: true};
+  });
+});
+
+export const unblockUser = onCall(async (request) => {
+  const uid = requireUid(request);
+  const target = requireTarget(request, uid);
+  return logged("unblockUser", uid, target, async () => {
+    await blockRef(uid, target).delete();
+    return {blocked: false};
   });
 });

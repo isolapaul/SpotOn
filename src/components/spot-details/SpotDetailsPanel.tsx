@@ -13,6 +13,7 @@ import PanelShell from '../ui/PanelShell';
 import SpotHero from './SpotHero';
 import type { SpotBack } from '@/components/ui/BackButton';
 import CompactBar from './CompactBar';
+import ReportButton from '../safety/ReportButton';
 import Gallery from './Gallery';
 import { AdminStatusCard, DeleteSpotButton } from './AdminActions';
 import OwnerStatusCard from './OwnerStatusCard';
@@ -94,7 +95,7 @@ export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<Spo
       backdropLabel="Close spot details"
       variant="slate"
       overlays={
-        <Gallery urls={allGalleryImages} open={galleryOpen} startIndex={0} onClose={closeGallery} alt={spot.name} />
+        <Gallery urls={allGalleryImages} open={galleryOpen} startIndex={0} onClose={closeGallery} alt={spot.name} spotId={spot.status === 'approved' && !isOwner ? spot.id : undefined} />
       }
     >
       <CompactBar title={spot.name} shown={compact} onClose={onClose} back={back} />
@@ -151,6 +152,11 @@ export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<Spo
           <ReviewsSection spot={spot} />
 
           {isAdmin && <DeleteSpotButton spot={spot} onClose={closeThisSpot} />}
+          {!isOwner && spot.status === 'approved' && (
+            <div className="flex justify-center pt-2">
+              <ReportButton target={{ kind: 'spot', spotId: spot.id, targetId: spot.id }} />
+            </div>
+          )}
         </div>
       </div>
     </PanelShell>

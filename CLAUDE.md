@@ -103,6 +103,7 @@ docs/play-store.md               Play listing texts, Data safety and content rat
 - `spotEdits/{spotId}` (item 4): the owner's proposed edit of an approved spot, at most one per spot: spotId, spotName, ownerId, status ('pending'|'rejected'), proposed{name?, description?, category?, location?, removeImageUrls?, primaryImageUrl?}, rejection{reason,at}, createdAt. Reviewed with `reviewSpotEdit`.
 - `photoSubmissions/{id}` (item 4): a photo waiting for an admin: spotId, spotName, spotOwner, uploader, url, status, createdAt. Written only by `addSpotImages`, resolved by `reviewPhotoSubmission`.
 - `users/{uid}/inbox/{id}` (item 4): moderation decisions for the user (type, spotId, spotName, reason?, read, createdAt), written only by Cloud Functions; the notification centre shows them.
+- `reports/{reporter}_{key}` (one per person and thing, `key` = hash of kind/spot/target): written by `reportContent`, read by admins, resolved by `resolveReport`. `blocks/{blocker}_{blocked}`: written by `blockUser`/`unblockUser`, read by the blocker.
 - Storage: `spot-images/{uid}/…` (new uploads; legacy flat `spot-images/…` stays readable),
   `spot-images/deleted-user/…` (kept photos of deleted accounts), `profile-pictures/{uid}/…`, `profile-banners/{uid}/…`.
 

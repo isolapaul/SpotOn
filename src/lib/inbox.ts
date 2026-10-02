@@ -10,6 +10,7 @@ export type InboxType =
   | 'edit_rejected'
   | 'photo_approved'
   | 'photo_rejected'
+  | 'content_removed'
   | 'follow_request'
   | 'follow_accepted'
   | 'followed_spot';
@@ -37,6 +38,7 @@ export const INBOX_TEXT: Readonly<Record<InboxType, { title: TranslationKey; bod
   edit_rejected: { title: 'inboxEditRejected', body: 'inboxReasonBody' },
   photo_approved: { title: 'inboxPhotoApproved', body: 'inboxPhotoApprovedBody' },
   photo_rejected: { title: 'inboxPhotoRejected', body: 'inboxReasonBody' },
+  content_removed: { title: 'inboxContentRemoved', body: 'inboxContentRemovedBody' },
   follow_request: { title: 'inboxFollowRequest', body: 'inboxFollowRequestBody' },
   follow_accepted: { title: 'inboxFollowAccepted', body: 'inboxFollowAcceptedBody' },
   followed_spot: { title: 'inboxFollowedSpot', body: 'inboxFollowedSpotBody' },

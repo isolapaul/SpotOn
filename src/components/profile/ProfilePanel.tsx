@@ -28,7 +28,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<P
   const user = useUserStore((s) => s.user);
   const spots = useSpotStore((s) => s.spots);
   // Edits and photos waiting for review count toward the admin's badge too (item 4).
-  const queuedCount = useModerationStore((s) => s.editQueue.length + s.photoQueue.length);
+  const queuedCount = useModerationStore((s) => s.editQueue.length + s.photoQueue.length + s.reportQueue.length);
   const [activeTab, setActiveTab] = useState<ProfileTab>('my-spots');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showLevelInfo, setShowLevelInfo] = useState(false);
