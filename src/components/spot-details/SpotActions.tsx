@@ -1,7 +1,9 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Heart, Navigation, Share2, Sparkles } from 'lucide-react';
+import { Heart, ListPlus, Navigation, Share2, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import ListPicker from '../lists/ListPicker';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useT } from '@/hooks/useT';
@@ -42,6 +44,7 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
   const isOwner = !!user && spot.createdBy === user.uid;
 
   const shareSpot = useShareSpot();
+  const [picking, setPicking] = useState(false);
 
   return (
     <div className="flex gap-2">
@@ -63,6 +66,11 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
           />
         </Tile>
       )}
+      {user && spot.status === 'approved' && (
+        <Tile label={t('lists')} ariaLabel={t('saveToList')} onClick={() => setPicking(true)}>
+          <ListPlus className="w-5 h-5" aria-hidden="true" />
+        </Tile>
+      )}
       {isOwner && (
         <Tile
           label={t('highlightShort')}
@@ -79,6 +87,7 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
         <Share2 className="w-5 h-5" aria-hidden="true" />
       </Tile>
       )}
+      {picking && <ListPicker spotId={spot.id} onClose={() => setPicking(false)} />}
     </div>
   );
 }

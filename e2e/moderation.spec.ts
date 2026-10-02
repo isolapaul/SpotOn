@@ -101,7 +101,7 @@ test('the owner of an approved spot proposes a new name; the spot keeps its name
   await openOwnSpotDetails(page, APPROVED.name);
   await page.getByRole('button', { name: 'Edit Spot' }).click();
   await page.locator('input[type="text"]').first().fill(RENAMED);
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expectNotification(page, 'Changes sent for review');
   await expect(page.getByText('Your changes are waiting for review')).toBeVisible();
 

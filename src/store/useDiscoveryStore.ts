@@ -12,11 +12,14 @@ export type DiscoverySort = 'nearest' | 'best-rated';
 interface DiscoveryStore {
   sortBy: DiscoverySort;
   filterCategory: CategoryId | null;
+  /** Only spots that appeared in the last 7 days ("new this week"); combines with the category. */
+  onlyNew: boolean;
   visibleCount: number;
   scrollTop: number;
   /** A new order or filter starts at the top with the first batch. */
   setSort: (sortBy: DiscoverySort) => void;
   setCategory: (category: CategoryId | null) => void;
+  setOnlyNew: (onlyNew: boolean) => void;
   showMore: () => void;
   rememberScroll: (scrollTop: number) => void;
   /** Item 8: the search (null = not searching), kept like the list, so back from a result returns to it. */
@@ -27,10 +30,12 @@ interface DiscoveryStore {
 export const useDiscoveryStore = create<DiscoveryStore>((set) => ({
   sortBy: 'best-rated',
   filterCategory: null,
+  onlyNew: false,
   visibleCount: DISCOVERY_BATCH_SIZE,
   scrollTop: 0,
   setSort: (sortBy) => set({ sortBy, visibleCount: DISCOVERY_BATCH_SIZE, scrollTop: 0 }),
   setCategory: (filterCategory) => set({ filterCategory, visibleCount: DISCOVERY_BATCH_SIZE, scrollTop: 0 }),
+  setOnlyNew: (onlyNew) => set({ onlyNew, visibleCount: DISCOVERY_BATCH_SIZE, scrollTop: 0 }),
   showMore: () => set((s) => ({ visibleCount: s.visibleCount + DISCOVERY_BATCH_SIZE })),
   rememberScroll: (scrollTop) => set({ scrollTop }),
   search: null,

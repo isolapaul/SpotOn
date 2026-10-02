@@ -116,6 +116,8 @@ async function seed(): Promise<void> {
     createdByName: E2E.user.username,
     status: 'approved',
     createdAt: t,
+    // Approved "now": the only fixture Explore's "New this week" shows (lists.spec.ts).
+    approvedAt: Timestamp.now(),
     imageUrls: ['/icon-192x192.png'],
     primaryImageIndex: 0,
     spotImages: [

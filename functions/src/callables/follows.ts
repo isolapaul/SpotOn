@@ -97,6 +97,21 @@ async function logged<T>(
   }
 }
 
+const MAX_SHARED_LISTS = 30;
+
+interface SharedList {
+  id: string;
+  name: string;
+  spotIds: string[];
+}
+
+function sharedList(id: string, d: FirebaseFirestore.DocumentData): SharedList | null {
+  if (typeof d.name !== "string" || !d.name.trim()) return null;
+  const spotIds = Array.isArray(d.spotIds) ?
+    d.spotIds.filter((x: unknown): x is string => typeof x === "string") : [];
+  return {id, name: d.name.trim(), spotIds};
+}
+
 export const getProfile = onCall(async (request) => {
   const caller = request.auth?.uid ?? null;
   const target: unknown = request.data?.uid;
@@ -128,7 +143,17 @@ export const getProfile = onCall(async (request) => {
       (Array.isArray(userSnap.get("savedSpots")) ? userSnap.get("savedSpots") : [])
         .filter((id: unknown): id is string => typeof id === "string") :
       null;
-    return {...base, spotIds: spots.docs.map((d) => d.id), ...(saved ? {savedSpotIds: saved} : {})};
+    // The owner's lists marked "show on my profile" (the owner reads all of them directly).
+    const lists = isSelf ? [] : (await db.collection("users").doc(target).collection("lists")
+      .where("shared", "==", true).limit(MAX_SHARED_LISTS).get()).docs
+      .map((d) => sharedList(d.id, d.data()))
+      .filter((l): l is SharedList => l !== null);
+    return {
+      ...base,
+      spotIds: spots.docs.map((d) => d.id),
+      ...(saved ? {savedSpotIds: saved} : {}),
+      ...(lists.length ? {lists} : {}),
+    };
   });
 });
 

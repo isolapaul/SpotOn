@@ -10,7 +10,7 @@
  * Every decision is read, checked and written in one transaction. The owner or uploader hears about
  * it (inbox + push). Logs only ids and outcomes.
  */
-import {DocumentData, Timestamp} from "firebase-admin/firestore";
+import {DocumentData, FieldValue, Timestamp} from "firebase-admin/firestore";
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {getAdminRole} from "../lib/admin";
@@ -84,7 +84,11 @@ export const approveSpot = onCall(async (request) => {
   return logged("approveSpot", uid, spotId, async () => {
     await db.runTransaction(async (tx) => {
       await pendingSpot(tx, spotId);
-      tx.update(db.collection("spots").doc(spotId), {status: "approved"});
+      tx.update(db.collection("spots").doc(spotId), {
+        status: "approved",
+        // Explore's "new this week" and the following feed order by it.
+        approvedAt: FieldValue.serverTimestamp(),
+      });
     });
     return {approved: true};
   });

@@ -104,6 +104,7 @@ docs/play-store.md               Play listing texts, Data safety and content rat
 - `photoSubmissions/{id}` (item 4): a photo waiting for an admin: spotId, spotName, spotOwner, uploader, url, status, createdAt. Written only by `addSpotImages`, resolved by `reviewPhotoSubmission`.
 - `users/{uid}/inbox/{id}` (item 4): moderation decisions for the user (type, spotId, spotName, reason?, read, createdAt), written only by Cloud Functions; the notification centre shows them.
 - `spots/{id}/replies/{id}`: reviewId, userId, text (≤500), createdAt, editedAt? — replies and questions under reviews; author-written (rules), admins remove through reports. Reviews may carry `editedAt` (the `editReview` callable).
+- `users/{uid}/lists/{id}`: name (≤50), spotIds (≤200), shared, createdAt, updatedAt — the user's spot lists, owner-only (rules; at most 30 in the UI). `getProfile` returns the shared ones to visitors who may view the profile; `deleteAccount` removes them. Spots carry `approvedAt` (set by `approveSpot`; older spots fall back to `createdAt` for Explore's "New this week").
 - `reports/{reporter}_{key}` (one per person and thing, `key` = hash of kind/spot/target): written by `reportContent`, read by admins, resolved by `resolveReport`. `blocks/{blocker}_{blocked}`: written by `blockUser`/`unblockUser`, read by the blocker.
 - Storage: `spot-images/{uid}/…` (new uploads; legacy flat `spot-images/…` stays readable),
   `spot-images/deleted-user/…` (kept photos of deleted accounts), `profile-pictures/{uid}/…`, `profile-banners/{uid}/…`.

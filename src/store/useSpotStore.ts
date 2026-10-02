@@ -69,6 +69,8 @@ export interface Spot {
   rejection?: { reason: string; at: Timestamp };
   /** A Timestamp; null while a local create waits for its serverTimestamp. */
   createdAt: DateInput;
+  /** Set by the approveSpot callable (spots approved before v2.2 have none). */
+  approvedAt?: DateInput;
   reviews?: Review[];
   averageRating?: number;
   /** The owner's special pin icon (item 6), server-written; normalise before use. */
