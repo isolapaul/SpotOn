@@ -22,6 +22,7 @@ export type InboxType =
   | "photo_approved"
   | "photo_rejected"
   | "content_removed"
+  | "review_reply"
   | "follow_request"
   | "follow_accepted"
   | "followed_spot";
@@ -36,12 +37,15 @@ const PUSH: Record<InboxType, {title: TKey; body: TKey}> = {
   photo_approved: {title: "photoApproved", body: "photoApprovedBody"},
   photo_rejected: {title: "photoRejected", body: "photoRejectedBody"},
   content_removed: {title: "contentRemoved", body: "contentRemovedBody"},
+  review_reply: {title: "reviewReply", body: "reviewReplyBody"},
   follow_request: {title: "followRequest", body: "followRequestBody"},
   follow_accepted: {title: "followAccepted", body: "followAcceptedBody"},
   followed_spot: {title: "followedSpot", body: "followedSpotBody"},
 };
 
 const FOLLOW_TYPES: readonly InboxType[] = ["follow_request", "follow_accepted", "followed_spot"];
+/** Kinds whose push names the other user first, then the spot. */
+const ACTOR_SPOT_TYPES: readonly InboxType[] = ["followed_spot", "review_reply"];
 
 /** Moderation decisions follow the "spot status" setting; follow news "follows" (item 8). */
 function settingsKeyOf(type: InboxType): NotificationSettingsKey {
@@ -50,9 +54,8 @@ function settingsKeyOf(type: InboxType): NotificationSettingsKey {
 
 /** Push body parameters: follow news name the other user first (then the spot). */
 function pushParams(n: InboxNotice): string[] {
-  if (FOLLOW_TYPES.includes(n.type)) {
-    return n.type === "followed_spot" ? [n.actorName ?? "", n.spotName] : [n.actorName ?? ""];
-  }
+  if (ACTOR_SPOT_TYPES.includes(n.type)) return [n.actorName ?? "", n.spotName];
+  if (FOLLOW_TYPES.includes(n.type)) return [n.actorName ?? ""];
   return n.reason ? [n.spotName, n.reason] : [n.spotName];
 }
 

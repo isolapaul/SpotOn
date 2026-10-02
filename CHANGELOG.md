@@ -47,6 +47,10 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - Every approved spot has a link (spoton.isolapaul.hu/spot/…) with a preview (photo, name, rating) in chat apps. Opening it flies the map to the spot and opens its card. Share from the place card or the details (the phone's share sheet, else the link is copied).
 - Zoomed out, nearby pins merge into a green circle with the count (a clock when a spot under review is inside); a tap zooms in until it splits. Highlighted pins never merge.
 
+### Added (reviews)
+- Edit or delete your own review (deleting removes its replies too).
+- Reply under any review, also to ask a question; the review's author and the spot's owner are notified. Replies can be edited, deleted and reported.
+
 ### Changed (legal)
 - The Privacy Policy and the Terms of Use describe the new features (bio, follows, private profiles, search, XP levels, moderation with reasons, the map provider) and say that removals are announced in the app with the reason. Everyone is asked to accept the new version once.
 - Both documents are also available in English (/privacy/en, /terms/en); the English and German app link there. The Hungarian version is authoritative.

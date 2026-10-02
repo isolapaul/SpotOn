@@ -165,6 +165,16 @@ export const translations = {
     en: (what: TParam) => `Reported: "${what}"`,
     de: (what: TParam) => `Gemeldet: "${what}"`,
   },
+  reviewReply: {
+    hu: "Új válasz",
+    en: "New reply",
+    de: "Neue Antwort",
+  },
+  reviewReplyBody: {
+    hu: (user: TParam, spotName: TParam) => `${user} válaszolt itt: "${spotName}"`,
+    en: (user: TParam, spotName: TParam) => `${user} replied on "${spotName}"`,
+    de: (user: TParam, spotName: TParam) => `${user} hat bei "${spotName}" geantwortet`,
+  },
   // Follows (item 8).
   followRequest: {
     hu: "Új követési kérés",

@@ -35,6 +35,8 @@ Together with the Firestore/Storage rules (`firestore.rules`, `storage.rules` in
 | `reportContent` | Callable | Reports a spot, photo, review, reply or profile with a reason (once per person and thing); tells the admins | Signed-in users |
 | `resolveReport` | Callable | Dismisses the reports of a thing, or removes it with a reason (the author is told) | Admins |
 | `blockUser` / `unblockUser` | Callable | Blocks a user (ends follows and requests both ways) or lifts the block | Signed-in users |
+| `editReview` / `deleteReview` | Callable | The author changes the rating and comment of their review, or deletes it with its replies | Signed-in users (own review) |
+| `onReplyCreated` | Firestore trigger (`spots/{id}/replies/{id}` created) | Tells the review's author and the spot's owner about a reply (not the replier, not someone who blocked them) | Nobody (Firestore event) |
 | `claimUsername` | Callable | Claims a unique username through `usernames/{name}` in a transaction and frees the old one | Signed-in users (for themselves) |
 | `updateNameStyle` | Callable | Sets the custom name colour/font from an allowlist | Signed-in users at level 5 |
 | `lookupUserByEmail` | Callable | Finds a user by email for the admin management screen | Super admin only |

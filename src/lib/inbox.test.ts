@@ -26,7 +26,7 @@ describe('INBOX_TEXT', () => {
   });
   it('the positive look: the three approvals and follow news (item 8)', () => {
     expect(Object.keys(INBOX_TEXT).filter((type) => isApproval(type as never))).toEqual([
-      'spot_approved', 'edit_approved', 'photo_approved', 'follow_request', 'follow_accepted', 'followed_spot',
+      'spot_approved', 'edit_approved', 'photo_approved', 'review_reply', 'follow_request', 'follow_accepted', 'followed_spot',
     ]);
   });
 });

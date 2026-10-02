@@ -15,3 +15,5 @@ export {
 } from "./callables/follows";
 export {approveSpot, rejectSpot, removeSpot, reviewSpotEdit, reviewPhotoSubmission} from "./callables/moderation";
 export {reportContent, resolveReport} from "./callables/reports";
+export {editReview, deleteReview} from "./callables/reviews";
+export {onReplyCreated} from "./triggers/replies";

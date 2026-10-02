@@ -11,6 +11,7 @@ export type InboxType =
   | 'photo_approved'
   | 'photo_rejected'
   | 'content_removed'
+  | 'review_reply'
   | 'follow_request'
   | 'follow_accepted'
   | 'followed_spot';
@@ -39,6 +40,7 @@ export const INBOX_TEXT: Readonly<Record<InboxType, { title: TranslationKey; bod
   photo_approved: { title: 'inboxPhotoApproved', body: 'inboxPhotoApprovedBody' },
   photo_rejected: { title: 'inboxPhotoRejected', body: 'inboxReasonBody' },
   content_removed: { title: 'inboxContentRemoved', body: 'inboxContentRemovedBody' },
+  review_reply: { title: 'inboxReviewReply', body: 'inboxReviewReplyBody' },
   follow_request: { title: 'inboxFollowRequest', body: 'inboxFollowRequestBody' },
   follow_accepted: { title: 'inboxFollowAccepted', body: 'inboxFollowAcceptedBody' },
   followed_spot: { title: 'inboxFollowedSpot', body: 'inboxFollowedSpotBody' },
@@ -47,7 +49,7 @@ export const INBOX_TEXT: Readonly<Record<InboxType, { title: TranslationKey; bod
 /** Decisions in the user's favour (a positive look in the notification centre). */
 export function isApproval(type: InboxType): boolean {
   return type === 'spot_approved' || type === 'edit_approved' || type === 'photo_approved'
-    || type === 'follow_request' || type === 'follow_accepted' || type === 'followed_spot';
+    || type === 'follow_request' || type === 'follow_accepted' || type === 'followed_spot' || type === 'review_reply';
 }
 
 function isInboxType(x: unknown): x is InboxType {

@@ -195,12 +195,13 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
     db.collection("rateLimits").doc(uid).delete(),
   ]);
 
-  // 4c. Blocks either way and reports the user filed (reports about them stay for the admins
+  // 4c. Blocks either way, reports the user filed and their replies (reports about them stay for
   // until resolved; their author field no longer resolves to anyone).
   const safety = await Promise.all([
     db.collection("blocks").where("blocker", "==", uid).get(),
     db.collection("blocks").where("blocked", "==", uid).get(),
     db.collection("reports").where("reporter", "==", uid).get(),
+    db.collectionGroup("replies").where("userId", "==", uid).get(),
   ]);
   await Promise.all(safety.flatMap((q) => q.docs.map((d) => d.ref.delete())));
 
