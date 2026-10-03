@@ -31,7 +31,7 @@ This is a personal project. The code is public so that it can be read; it is not
 | Layer | Technology |
 |---|---|
 | App | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, installable PWA |
-| Map | Leaflet with OpenStreetMap, CARTO and Esri tiles |
+| Map | Mapbox GL JS |
 | State | Zustand |
 | Backend | Firebase: Authentication, Firestore, Storage, Cloud Messaging, and Cloud Functions v2 (`europe-west3`) |
 | Hosting | Hardened Docker container on a home server, reached through a Cloudflare Tunnel |
@@ -46,7 +46,7 @@ flowchart LR
   FB -->|triggers| FN
   FN -->|push| U
   APP -->|feedback e-mail| MAIL[SMTP]
-  U -->|map tiles| T[OSM · CARTO · Esri]
+  U -->|map styles and tiles| T[Mapbox]
 ```
 
 **Security and privacy by design.**

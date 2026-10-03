@@ -27,8 +27,9 @@ describe('constants', () => {
     expect(FEEDBACK_MAX_FILES).toBe(3);
     expect(SWIPE_THRESHOLDS).toEqual({ panel: 150, spotDetails: 100, gallery: 50 });
     expect(DEFAULT_MAP_CENTER).toEqual([47.4979, 19.0402]);
-    expect(DEFAULT_MAP_ZOOM).toBe(6);
-    expect(LOCATE_ZOOM).toBe(13);
+    // Mapbox zooms: one less than the Leaflet zooms of the same scale (6 and 13 before).
+    expect(DEFAULT_MAP_ZOOM).toBe(5);
+    expect(LOCATE_ZOOM).toBe(12);
     expect(LOCATION_CACHE_MAX_AGE_MS).toBe(10 * 60 * 1000);
     expect(GEOLOCATION_TIMEOUT_MS).toBe(10000);
     expect(DISCOVERY_BATCH_SIZE).toBe(20);

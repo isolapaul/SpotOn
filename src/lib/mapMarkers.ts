@@ -1,6 +1,6 @@
-// Map pins (design 1D). Pure string building: MapView wraps the markup in an L.divIcon and caches
-// the icons. Every value interpolated below is a constant or a normalised category / pin icon id;
-// nothing read from Firestore reaches the markup (Leaflet inserts divIcon html with innerHTML).
+// Map pins (design 1D). Pure string building: MapView puts the markup into a Mapbox GL marker
+// element. Every value interpolated below is a constant or a normalised category / pin icon id;
+// nothing read from Firestore reaches the markup (MapView sets it with innerHTML).
 import { CATEGORY_GLYPHS, glyphToSvgMarkup, normalizeCategory } from './categoryGlyphs';
 import { normalizePinIcon, PIN_GLYPHS } from './pinGlyphs';
 import { CATEGORY_ICON_GLYPHS, normalizeCategoryIcon } from './categoryIcons';
@@ -90,7 +90,7 @@ export function buildPinHtml(o: {
   );
 }
 
-/** Zoom band for the pin CSS: 'far' (country/region view: pins collapse to dots) or 'near'. */
+/** Zoom band for the pin CSS: 'far' (country/region view: pins collapse to dots) or 'near'. Mapbox zoom. */
 export function zoomBand(zoom: number): 'far' | 'near' {
-  return zoom <= 10 ? 'far' : 'near';
+  return zoom < 10 ? 'far' : 'near';
 }

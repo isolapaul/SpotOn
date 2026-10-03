@@ -21,7 +21,6 @@ Open work, as of v2.0.2 (2026-09-30). Nothing here is started. Each item becomes
 | Orphaned Storage files | Removing a spot, rejecting a photo and an approved photo removal delete their files (item 4). Photos an admin deletes directly in the image manager still leave their files. |
 | Legacy user fields | `questProgress` / `questRewards` from the 2026 Valentine event are still on some `users` docs; nothing reads them. |
 | T23 characterisation oracles | `src/lib/__oracles__/legacy.ts` pins the pre-refactor behaviour for a few helpers. They could be replaced by plain unit tests. |
-| CARTO raster tiles | CARTO now needs an API key and is moving users to vector tiles; the Light/Dark/Silver styles may need a new source later. |
 
 ## Operations
 

@@ -16,7 +16,7 @@ test('app loads past overlays', async ({ page }) => {
 
 test('approved markers only', async ({ page }) => {
   await openApp(page);
-  await expect(page.locator('.leaflet-marker-icon .spot-pin[data-variant="approved"]')).toHaveCount(EXPECTED_APPROVED_MARKERS);
+  await expect(page.locator('.spot-marker .spot-pin[data-variant="approved"]')).toHaveCount(EXPECTED_APPROVED_MARKERS);
   await expect(spotMarker(page, E2E.legacySpot.category)).toHaveCount(1);
   await expect(spotMarker(page, E2E.modernSpot.category)).toHaveCount(1);
   await expect(spotMarker(page, E2E.pendingSpot.category)).toHaveCount(0);

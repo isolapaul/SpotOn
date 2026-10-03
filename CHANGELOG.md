@@ -43,6 +43,9 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - The Privacy Policy and the Terms of Use describe the new features (bio, follows, private profiles, search, XP levels, moderation with reasons, the map provider) and say that removals are announced in the app with the reason. Everyone is asked to accept the new version once.
 - Both documents are also available in English (/privacy/en, /terms/en); the English and German app link there. The Hungarian version is authoritative.
 
+### Changed (map)
+- The map runs on Mapbox GL JS: sharper vector maps on every screen, smooth zooming, the same five styles (Standard, Light, Silver, Dark, Satellite), the same pins, place card, fly-to and picking. Rotation and tilt stay off, as before.
+
 ### Changed
 - The browser and system bars use the app's dark background colour.
 

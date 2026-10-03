@@ -75,8 +75,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.leaflet-container {
+.mapboxgl-map {
   background: var(--map-bg);
+  font: inherit;
+}
+/* The Mapbox logo and attribution (required) sit just above the launcher, clear of the controls. */
+.mapboxgl-map .mapboxgl-ctrl-bottom-left,
+.mapboxgl-map .mapboxgl-ctrl-bottom-right {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+}
+.spot-marker {
+  cursor: pointer;
+}
+.spot-marker:focus-visible {
+  outline: 2px solid #0a84ff;
+  outline-offset: 2px;
+  border-radius: 12px;
 }
 
 html {
@@ -314,7 +328,7 @@ a:not(.no-min-size),
 }
 
 /* ---------------------------------------------------------------------------------------------
-   Map pins (design 1D). The markup is an HTML string from src/lib/mapMarkers.ts (Leaflet divIcon),
+   Map pins (design 1D). The markup is an HTML string from src/lib/mapMarkers.ts (a Mapbox marker),
    so these are plain classes. One pin size at every zoom; zoomed far out (data-zoom-band="far" on
    the map container) pins collapse to a 14px status dot centred on the spot. No endless animation.
    --------------------------------------------------------------------------------------------- */

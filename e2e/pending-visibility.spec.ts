@@ -11,7 +11,7 @@ import { test, blockMapTiles, expectNotification, openApp, signInWithEmail, skip
 
 const NEW_SPOT_PREFIX = 'E2E PendingVis ';
 const newSpotName = `${NEW_SPOT_PREFIX}${Date.now().toString(36)}`;
-const PENDING_MARKERS = '.leaflet-marker-icon .spot-pin[data-variant="pending"]';
+const PENDING_MARKERS = '.spot-marker .spot-pin[data-variant="pending"]';
 
 async function deleteCreatedSpots() {
   const created = await adminDb().collection('spots').where('createdBy', '==', E2E.user.uid).get();
@@ -74,7 +74,7 @@ test('owner: a new spot appears in the profile at once, as pending', async ({ pa
   await signInWithEmail(page, E2E.user.email, E2E.password);
 
   await page.getByRole('button', { name: 'Add', exact: true }).click();
-  await page.locator('.leaflet-container').click({ position: { x: 300, y: 450 } });
+  await page.locator('.mapboxgl-map').click({ position: { x: 300, y: 450 } });
   await page.locator('#spot-name').fill(newSpotName);
   await page.getByRole('button', { name: 'Submit Spot' }).click();
   await expectNotification(page, 'Spot uploaded! Waiting for approval.');

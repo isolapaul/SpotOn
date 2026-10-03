@@ -52,7 +52,7 @@ These are **variables, not secrets**: they are public client config that gets co
 - `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
 - `NEXT_PUBLIC_CONTROLLER_NAME` = the data controller's full name, shown on `/privacy` and `/terms` (A1)
 - `NEXT_PUBLIC_CONTACT_EMAIL` = the contact e-mail shown there (public; use an address you are happy to publish)
-- `NEXT_PUBLIC_CARTO_API_KEY` = the free CARTO basemaps key (<https://carto.com/basemaps/apikey>), used by the Light, Dark and Silver map styles. Optional, but since 2026-09 CARTO stamps keyless tiles with an "API KEY REQUIRED" watermark. It is public by nature: every tile request carries it.
+- `NEXT_PUBLIC_MAPBOX_TOKEN` = the Mapbox **public** access token (starts with `pk.`), restricted in the Mapbox account to the URL `https://spoton.isolapaul.hu`. Required for releases (the build refuses to start without it); without it the map is a blank background. It is public by nature: every map request carries it. The old `NEXT_PUBLIC_CARTO_API_KEY` variable is no longer used and can be deleted.
 
 The container build refuses to run without the last two (`scripts/check-public-env.mjs --production`).
 

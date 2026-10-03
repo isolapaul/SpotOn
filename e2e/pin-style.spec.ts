@@ -38,7 +38,7 @@ test('a level-5 user puts a crown on all their pins, then goes back to the categ
   }, { timeout: 20_000 }).toBe(20);
 
   // The map shows it on the owner's pins (their pending ones too).
-  await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+  await page.goBack();
   await expect.poll(() => crowned.count(), { timeout: 20_000 }).toBeGreaterThan(0);
 
   await page.getByRole('button', { name: 'Profile' }).click();
