@@ -39,6 +39,10 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - Search in Explore: spots by name, and people by username.
 - Notifications for follow requests, accepted requests and new spots from people you follow (with their own switch).
 
+### Added (safety)
+- Report a spot, a photo, a review or a profile with a reason; admins see reports in a fourth review tab and dismiss them or remove the content with a reason the author receives.
+- Block a user from their profile: follows end both ways, you no longer see each other's profiles or appear in each other's search, and their reviews are hidden for you. Unblock in Settings → Privacy.
+
 ### Changed (legal)
 - The Privacy Policy and the Terms of Use describe the new features (bio, follows, private profiles, search, XP levels, moderation with reasons, the map provider) and say that removals are announced in the app with the reason. Everyone is asked to accept the new version once.
 - Both documents are also available in English (/privacy/en, /terms/en); the English and German app link there. The Hungarian version is authoritative.

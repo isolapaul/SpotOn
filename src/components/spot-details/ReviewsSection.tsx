@@ -27,7 +27,7 @@ export default function ReviewsSection({ spot }: Readonly<ReviewsSectionProps>) 
 
       <AddPhotosCard spot={spot} />
 
-      <ReviewList reviews={spot.reviews} />
+      <ReviewList reviews={spot.reviews} spotId={spot.id} reportable={spot.status === 'approved'} />
     </div>
   );
 }

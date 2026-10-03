@@ -6,6 +6,8 @@ import { useUserStore, type User } from '@/store/useUserStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useT } from '@/hooks/useT';
 import type { TranslationKey } from '@/lib/translations';
+import { useSafetyStore } from '@/store/useSafetyStore';
+import { usePublicProfile } from '@/hooks/usePublicProfile';
 
 type Field = 'profilePrivate' | 'showSaved';
 
@@ -63,6 +65,53 @@ export default function PrivacySection({ user }: Readonly<{ user: User }>) {
           );
         })}
       </div>
+      <BlockedList />
+    </div>
+  );
+}
+
+/** The users the signed-in user blocked, each with Unblock. */
+function BlockedList() {
+  const t = useT();
+  const blocked = useSafetyStore((s) => s.blocked);
+  if (!blocked.size) return null;
+  return (
+    <div className="mt-4 pt-4 border-t border-white/[.06]">
+      <p className="text-label text-[15px] font-medium mb-2">{t('blockedUsers')}</p>
+      <div className="space-y-1">
+        {[...blocked].map((uid) => <BlockedRow key={uid} uid={uid} />)}
+      </div>
+    </div>
+  );
+}
+
+function BlockedRow({ uid }: Readonly<{ uid: string }>) {
+  const t = useT();
+  const profile = usePublicProfile(uid);
+  const unblock = useSafetyStore((s) => s.unblock);
+  const showToast = useToastStore((s) => s.showToast);
+  const [busy, setBusy] = useState(false);
+  const name = profile?.username ?? '…';
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5">
+      <span className="text-label-secondary text-[15px] truncate">{name}</span>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            await unblock(uid);
+            showToast(t('userUnblocked', { name }), 'success');
+          } catch {
+            showToast(t('genericError'), 'error');
+            setBusy(false);
+          }
+        }}
+        className="no-min-size px-3 h-8 rounded-full bg-white/[.08] text-label text-[13px] font-semibold disabled:opacity-50"
+      >
+        {t('unblock')}
+      </button>
     </div>
   );
 }

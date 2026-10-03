@@ -6,6 +6,7 @@ import { useInboxStore } from '@/store/useInboxStore';
 import { useMyLevelStore } from '@/store/useMyLevelStore';
 import { useCategoryStore } from '@/store/useCategoryStore';
 import { useFollowStore } from '@/store/useFollowStore';
+import { useSafetyStore } from '@/store/useSafetyStore';
 import { DELAYS } from '@/lib/constants';
 
 /**
@@ -27,6 +28,7 @@ function syncScopes(scope: SpotScope) {
   useInboxStore.getState().sync(scope.uid);
   useMyLevelStore.getState().sync(scope.uid);
   useFollowStore.getState().sync(scope.uid);
+  useSafetyStore.getState().sync(scope.uid);
 }
 
 /**

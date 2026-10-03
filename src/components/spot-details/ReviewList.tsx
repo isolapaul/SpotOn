@@ -8,16 +8,26 @@ import { usePublicProfiles } from '@/hooks/usePublicProfile';
 import { dateLocale } from '@/lib/dates';
 import StarRating from '../ui/StarRating';
 import ReviewerBadge from './ReviewerBadge';
+import ReportButton from '../safety/ReportButton';
+import { useUserStore } from '@/store/useUserStore';
+import { useIsBlocked } from '@/store/useSafetyStore';
 
 interface ReviewListProps {
   reviews: Review[] | undefined;
+  /** The spot (for reports); reviews can be reported on approved spots only. */
+  spotId: string;
+  reportable: boolean;
 }
 
 /** The spot's reviews (reviewer name/level/admin badge from public profiles), or the empty state. */
-export default function ReviewList({ reviews }: Readonly<ReviewListProps>) {
+export default function ReviewList({ reviews: all, spotId, reportable }: Readonly<ReviewListProps>) {
   const t = useT();
   // Date locale: English while no language is chosen yet (unchanged pre-T24 behaviour).
   const language = useLanguage({ fallback: 'en' });
+  const me = useUserStore((s) => s.user?.uid);
+  const isBlocked = useIsBlocked();
+  // Reviews by people the user blocked are hidden.
+  const reviews = all?.filter((r) => !isBlocked(r.userId));
   const reviewerProfiles = usePublicProfiles(reviews?.map((r) => r.userId) ?? []);
 
   return (
@@ -46,7 +56,12 @@ export default function ReviewList({ reviews }: Readonly<ReviewListProps>) {
                       : ''}
                   </span>
                 </div>
-                <StarRating rating={review.rating} size="sm" emptyTone="dim" />
+                <div className="flex items-center justify-between">
+                  <StarRating rating={review.rating} size="sm" emptyTone="dim" />
+                  {reportable && review.userId !== me && (
+                    <ReportButton variant="icon" target={{ kind: 'review', spotId, targetId: review.id }} className="-mr-2" />
+                  )}
+                </div>
                 {review.comment && <p className="text-white/80 text-sm mt-2">{review.comment}</p>}
               </div>
             </div>

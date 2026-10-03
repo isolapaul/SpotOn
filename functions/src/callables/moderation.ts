@@ -20,6 +20,7 @@ import {notifyInbox} from "../lib/inbox";
 import {BUILT_IN_CATEGORIES, planEditApply, readProposal, validReason} from "../lib/moderation";
 import {currentImages, planAddImages, uniqueIdFactory} from "../lib/spotImages";
 import {deleteSpotImageFiles, PhotoFile} from "../lib/storageFiles";
+import {removeSpotWithReason, spotPhotoFiles} from "../lib/removal";
 
 async function requireAdmin(request: CallableRequest): Promise<string> {
   const uid = request.auth?.uid;
@@ -41,18 +42,6 @@ function requireReason(x: unknown): string {
 
 function outcomeOf(error: unknown): string {
   return error instanceof HttpsError ? error.code : "error";
-}
-
-/** Every photo of a spot with who may own its file (its uploader, else the spot's creator). */
-function spotPhotoFiles(spot: DocumentData): PhotoFile[] {
-  const creator = typeof spot.createdBy === "string" ? spot.createdBy : "";
-  const images: DocumentData[] = Array.isArray(spot.spotImages) ? spot.spotImages : [];
-  const addedBy = new Map(images.map((i) => [i?.url, typeof i?.addedBy === "string" ? i.addedBy : ""]));
-  const urls = new Set<string>([
-    ...(Array.isArray(spot.imageUrls) ? spot.imageUrls : []),
-    ...images.map((i) => i?.url),
-  ].filter((u): u is string => typeof u === "string"));
-  return [...urls].map((url) => ({url, owners: [addedBy.get(url) ?? "", creator]}));
 }
 
 /** A proposed category that is not built in and could be a categories/{id} doc id, else null. */
@@ -124,27 +113,7 @@ export const removeSpot = onCall(async (request) => {
   const spotId = requireId(request.data?.spotId, "spotId");
   const reason = requireReason(request.data?.reason);
   return logged("removeSpot", uid, spotId, async () => {
-    const spotRef = db.collection("spots").doc(spotId);
-    const submissionsQuery = db.collection("photoSubmissions").where("spotId", "==", spotId);
-    const {spot, submissions} = await db.runTransaction(async (tx) => {
-      const snap = await tx.get(spotRef);
-      if (!snap.exists) throw new HttpsError("not-found", "Spot not found");
-      const subs = await tx.get(submissionsQuery);
-      tx.delete(spotRef);
-      tx.delete(db.collection("spotEdits").doc(spotId));
-      subs.docs.forEach((doc) => tx.delete(doc.ref));
-      return {spot: snap.data() as DocumentData, submissions: subs.docs.map((d) => d.data())};
-    });
-
-    await deleteSpotImageFiles([
-      ...spotPhotoFiles(spot),
-      ...submissions
-        .filter((s) => typeof s.url === "string")
-        .map((s) => ({url: s.url as string, owners: [String(s.uploader ?? "")]})),
-    ]);
-    if (spot.createdBy !== uid) {
-      await notifyInbox({uid: spot.createdBy, type: "spot_removed", spotId, spotName: spot.name, reason});
-    }
+    await removeSpotWithReason(uid, spotId, reason);
     return {removed: true};
   });
 });

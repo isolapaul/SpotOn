@@ -12,6 +12,8 @@ export interface ProfileView {
   canView: boolean;
   relation: FollowState;
   followsYou: boolean;
+  /** The signed-in user blocked this profile. */
+  blocked?: boolean;
   spotIds?: string[];
   savedSpotIds?: string[];
 }

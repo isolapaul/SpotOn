@@ -21,6 +21,7 @@ export type InboxType =
   | "edit_rejected"
   | "photo_approved"
   | "photo_rejected"
+  | "content_removed"
   | "follow_request"
   | "follow_accepted"
   | "followed_spot";
@@ -34,6 +35,7 @@ const PUSH: Record<InboxType, {title: TKey; body: TKey}> = {
   edit_rejected: {title: "editRejected", body: "editRejectedBody"},
   photo_approved: {title: "photoApproved", body: "photoApprovedBody"},
   photo_rejected: {title: "photoRejected", body: "photoRejectedBody"},
+  content_removed: {title: "contentRemoved", body: "contentRemovedBody"},
   follow_request: {title: "followRequest", body: "followRequestBody"},
   follow_accepted: {title: "followAccepted", body: "followAcceptedBody"},
   followed_spot: {title: "followedSpot", body: "followedSpotBody"},
