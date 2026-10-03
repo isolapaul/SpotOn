@@ -8,6 +8,8 @@ import { useT } from '@/hooks/useT';
 import { isSameLocalDay } from '@/lib/notificationText';
 import ModalShell from '../ui/ModalShell';
 import NotificationItem from './NotificationItem';
+import FollowRequests from './FollowRequests';
+import { useFollowStore } from '@/store/useFollowStore';
 
 /** Exit animation length (Tailwind `animate-sheet-out`). */
 const CLOSE_MS = 180;
@@ -24,6 +26,7 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
   // "Now" for grouping and relative times, fixed when the sheet opens (render stays pure).
   const [now] = useState(() => Date.now());
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const hasRequests = useFollowStore((s) => s.requests.length > 0);
 
   const close = () => {
     if (closing) return;
@@ -101,8 +104,10 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
       )}
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-3">
-        {notifications.length === 0 ? (
+      <div className="flex-1 overflow-y-auto custom-scrollbar pb-3">
+        <FollowRequests onOpenProfile={onClose} />
+        <div className="px-3">
+        {notifications.length === 0 && hasRequests ? null : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-14 px-6 motion-safe:animate-item-in">
             <div className="w-16 h-16 rounded-full bg-white/[0.06] flex items-center justify-center mb-4">
               <Bell className="w-7 h-7 text-white/40" strokeWidth={1.8} />
@@ -130,6 +135,7 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
             </section>
           ))
         )}
+        </div>
       </div>
     </ModalShell>
   );

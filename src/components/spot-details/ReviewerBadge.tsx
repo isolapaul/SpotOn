@@ -4,6 +4,7 @@ import LevelBadge from '@/components/ui/LevelBadge';
 import { Shield } from 'lucide-react';
 import type { Review } from '@/store/useSpotStore';
 import type { PublicProfileResult } from '@/hooks/usePublicProfile';
+import { useOpenProfile } from '@/hooks/useOpenProfile';
 import { getLevelInfo, getUserNameColor, profileLevel } from '@/lib/levelUtils';
 import { resolveNameFontClass } from '@/lib/nameStyle';
 
@@ -20,14 +21,18 @@ export default function ReviewerBadge({ profile, review }: Readonly<ReviewerBadg
   const levelInfo = getLevelInfo(level);
   const nameColor = getUserNameColor(level, profile?.customNameColor ?? undefined);
   const fontClass = resolveNameFontClass(profile?.customNameFont);
+  const openProfile = useOpenProfile();
   return (
     <div className="flex items-center gap-2">
-      <p
-        className={`font-medium ${fontClass}`}
+      <button
+        type="button"
+        onClick={() => openProfile(review.userId)}
+        disabled={!profile}
+        className={`no-min-size font-medium text-left ${fontClass} disabled:cursor-default`}
         style={{ color: nameColor }}
       >
         {profile?.username || review.userName}
-      </p>
+      </button>
       <span className={`inline-flex items-center gap-1 text-xs pl-0.5 pr-2 py-0.5 rounded-full border ${levelInfo.bgColor} ${levelInfo.borderColor} ${levelInfo.textColor} font-semibold`}>
             <LevelBadge level={levelInfo.level} size={16} />
             {levelInfo.level}

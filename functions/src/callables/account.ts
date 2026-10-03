@@ -172,6 +172,29 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
   await userRef.delete();
   await db.collection("publicProfiles").doc(uid).delete();
 
+  // 4b. Follows (item 8), after the users doc is gone (so no new edge can appear): both
+  // directions (the other side's count drops, only for an edge that still exists), requests,
+  // rate limits.
+  const [following, followers, sent, received] = await Promise.all([
+    db.collection("follows").where("follower", "==", uid).get(),
+    db.collection("follows").where("target", "==", uid).get(),
+    db.collection("followRequests").where("requester", "==", uid).get(),
+    db.collection("followRequests").where("target", "==", uid).get(),
+  ]);
+  const counters = db.collection("publicProfiles");
+  const dropEdge = (ref: FirebaseFirestore.DocumentReference, other: string, field: string) =>
+    db.runTransaction(async (tx) => {
+      if (!(await tx.get(ref)).exists) return;
+      tx.delete(ref);
+      tx.set(counters.doc(other), {[field]: FieldValue.increment(-1)}, {merge: true});
+    });
+  await Promise.all([
+    ...following.docs.map((d) => dropEdge(d.ref, String(d.get("target")), "followersCount")),
+    ...followers.docs.map((d) => dropEdge(d.ref, String(d.get("follower")), "followingCount")),
+    ...[...sent.docs, ...received.docs].map((d) => d.ref.delete()),
+    db.collection("rateLimits").doc(uid).delete(),
+  ]);
+
   // 5. The Auth user, last.
   try {
     await auth.deleteUser(uid);

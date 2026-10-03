@@ -129,10 +129,11 @@ service cloud.firestore {
     function userClientKeys() {
       return ['uid', 'email', 'photoURL', 'profilePictureURL', 'profileBannerURL', 'savedSpots', 'fcmTokens',
               'language', 'notificationsEnabled', 'notificationSettings', 'lastTokenUpdate', 'lastLoginAt', 'createdAt',
-              'termsVersion', 'termsAcceptedAt'];
+              'termsVersion', 'termsAcceptedAt', 'bio', 'profilePrivate', 'showSaved'];
     }
     function validNotifSettings(s) {
-      return s is map && s.keys().hasOnly(['spotApproved', 'spotReviewed', 'newPendingSpot'])
+      return s is map && s.keys().hasOnly(['spotApproved', 'spotReviewed', 'newPendingSpot', 'follows'])
+        && (!('follows' in s) || s.follows is bool)
         && (!('spotApproved' in s) || s.spotApproved is bool)
         && (!('spotReviewed' in s) || s.spotReviewed is bool)
         && (!('newPendingSpot' in s) || s.newPendingSpot is bool);
@@ -158,7 +159,11 @@ service cloud.firestore {
         && (!ak.hasAny(['createdAt']) || d.createdAt == request.time)
         // Terms acceptance (A1): the version string and the server time of the acceptance.
         && (!ak.hasAny(['termsVersion']) || isStr(d.termsVersion, 1, 32))
-        && (!ak.hasAny(['termsAcceptedAt']) || d.termsAcceptedAt == request.time);
+        && (!ak.hasAny(['termsAcceptedAt']) || d.termsAcceptedAt == request.time)
+        // Item 8: the bio, a private profile, saved spots shown on the profile.
+        && (!ak.hasAny(['bio']) || isStr(d.bio, 0, 150))
+        && (!ak.hasAny(['profilePrivate']) || d.profilePrivate is bool)
+        && (!ak.hasAny(['showSaved']) || d.showSaved is bool);
     }
     match /users/{userId} {
       allow get: if isSelf(userId);
@@ -220,6 +225,8 @@ service cloud.firestore {
 
     // ---------- server-maintained ----------
     // get only: the client never lists these, and a public list would enumerate admins (isAdmin) and all usernames.
+    // The searchUsers callable (item 8) is the controlled exception: signed in, 2+ character prefix, 10 results
+    // (username, picture, level, isPrivate), 20 searches a minute per user.
     match /publicProfiles/{uid} { allow get: if true; allow list, write: if false; }
     match /usernames/{name}     { allow get: if true; allow list, write: if false; }
     match /admins/{adminId} {
@@ -227,6 +234,19 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow write: if false;
     }
+    // ---------- follows (item 8) ----------
+    // Written only by the follow callables; each side reads its own (the lists are never shown).
+    match /follows/{id} {
+      allow get, list: if signedIn()
+        && (resource.data.follower == request.auth.uid || resource.data.target == request.auth.uid);
+      allow write: if false;
+    }
+    match /followRequests/{id} {
+      allow get, list: if signedIn()
+        && (resource.data.requester == request.auth.uid || resource.data.target == request.auth.uid);
+      allow write: if false;
+    }
+
     // ---------- categories (item 7) ----------
     function isSuperAdmin() {
       return isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.get('role', '') == 'super';

@@ -4,6 +4,7 @@ export interface NotificationSettings {
   spotApproved: boolean; // Get notified when spot is approved
   spotReviewed: boolean; // Get notified when spot receives reviews or likes
   newPendingSpot: boolean; // Get notified for new pending spots (admins only)
+  follows: boolean; // Follow requests, accepted requests, new spots from followed users (item 8)
 }
 
 export interface User {
@@ -21,6 +22,9 @@ export interface User {
   notificationSettings?: NotificationSettings;
   spotsCount?: number; // Server-maintained (T09), all statuses (D8)
   termsVersion?: string; // The accepted Terms / Privacy Policy version (A1, lib/terms)
+  bio?: string; // Item 8: up to BIO_MAX characters
+  profilePrivate?: boolean; // Item 8: only accepted followers see the profile's lists
+  showSaved?: boolean; // Item 8: saved spots shown on the profile (default hidden)
 }
 
 export interface AuthInfo {
@@ -45,6 +49,7 @@ function mapNotificationSettings(value: unknown): NotificationSettings | undefin
     spotApproved: flag('spotApproved'),
     spotReviewed: flag('spotReviewed'),
     newPendingSpot: flag('newPendingSpot'),
+    follows: flag('follows'),
   };
 }
 
@@ -68,6 +73,9 @@ export function mapUserDoc(uid: string, authInfo: AuthInfo, data: Record<string,
   if (notificationSettings) user.notificationSettings = notificationSettings;
 
   if (typeof data.termsVersion === 'string') user.termsVersion = data.termsVersion;
+  if (typeof data.bio === 'string' && data.bio) user.bio = data.bio;
+  if (data.profilePrivate === true) user.profilePrivate = true;
+  if (data.showSaved === true) user.showSaved = true;
 
   const spotsCount = data.spotsCount;
   if (typeof spotsCount === 'number' && Number.isInteger(spotsCount) && spotsCount >= 0) {

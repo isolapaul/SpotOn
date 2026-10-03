@@ -114,6 +114,8 @@ describe("buildPublicProfile", () => {
       customNameColor: "text-cyan-300",
       customNameFont: "font-serif italic",
       isAdmin: true,
+      bio: null,
+      isPrivate: false,
       spotsCount: 4,
     });
   });
@@ -163,6 +165,8 @@ describe("buildPublicProfile", () => {
       customNameColor: null,
       customNameFont: null,
       isAdmin: false,
+      bio: null,
+      isPrivate: false,
     });
   });
 

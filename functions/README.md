@@ -37,6 +37,13 @@ Together with the Firestore/Storage rules (`firestore.rules`, `storage.rules` in
 | `lookupUserByEmail` | Callable | Finds a user by email for the admin management screen | Super admin only |
 | `addAdmin` | Callable | Creates `admins/{uid}` with `role: 'admin'` for a user found by email | Super admin only |
 | `removeAdmin` | Callable | Deletes an `admins/{uid}` document (a super admin cannot be removed) | Super admin only |
+| `deleteCategory` | Callable | Deletes a category only while no spot and no waiting edit uses it | Super admin only |
+| `getProfile` | Callable | What a visitor may see of a profile: approved spot ids, saved spot ids if shared; private profiles only for accepted followers; the caller's follow state | Anyone |
+| `followUser` | Callable | Follows a public profile, or sends a follow request to a private one (inbox + push) | Signed-in users |
+| `unfollowUser` | Callable | Unfollows, or cancels the caller's request | Signed-in users |
+| `respondFollowRequest` | Callable | Accepts or declines a request to the caller (accept: inbox + push to the requester) | Signed-in users |
+| `removeFollower` | Callable | Removes someone who follows the caller | Signed-in users |
+| `searchUsers` | Callable | Username prefix search: 2+ characters, 10 results, 20 calls a minute per user | Signed-in users |
 | `deleteAccount` | Callable | Deletes the caller's account: reviews, photos on others' spots, likes, highlights, profile files, the inbox, edit proposals and photo submissions, username, user doc and Auth user; own spots stay under the `deleted-user` placeholder owner, with their photos moved out of the user's folder | Signed-in users, not admins (the typed confirmation must match) |
 
 The super admin is the `admins/{uid}` document with `role: 'super'`. It exists already; to recreate it (for example on a new project), promote an existing Auth user with

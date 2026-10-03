@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { useInboxStore } from '@/store/useInboxStore';
+import { useFollowStore } from '@/store/useFollowStore';
 
 function unreadOf(notifications: ReadonlyArray<{ read: boolean }>): number {
   return notifications.filter((n) => !n.read).length;
@@ -13,6 +14,8 @@ function unreadOf(notifications: ReadonlyArray<{ read: boolean }>): number {
 export function useNotificationBadge(): { unreadCount: number; ringKey: number } {
   const localUnread = useNotificationStore((s) => unreadOf(s.notifications));
   const inboxUnread = useInboxStore((s) => unreadOf(s.items));
+  // Follow requests waiting for an answer count too (item 8).
+  const requests = useFollowStore((s) => s.requests.length);
   const [ringKey, setRingKey] = useState(0);
 
   useEffect(() => {
@@ -23,11 +26,15 @@ export function useNotificationBadge(): { unreadCount: number; ringKey: number }
     const stopInbox = useInboxStore.subscribe((state, prev) => {
       if (unreadOf(state.items) > unreadOf(prev.items)) ring();
     });
+    const stopRequests = useFollowStore.subscribe((state, prev) => {
+      if (state.requests.length > prev.requests.length) ring();
+    });
     return () => {
       stopLocal();
       stopInbox();
+      stopRequests();
     };
   }, []);
 
-  return { unreadCount: localUnread + inboxUnread, ringKey };
+  return { unreadCount: localUnread + inboxUnread + requests, ringKey };
 }

@@ -6,7 +6,7 @@ export type DiscoverySort = 'nearest' | 'best-rated';
 
 /**
  * Explore's list view: the order, the category filter, how many rows are shown and where the list was
- * scrolled. Kept while the panel is closed, so closing a spot opened from Explore returns to the same
+ * scrolled, and the search. Kept while the panel is closed, so closing a spot opened from Explore returns to the same
  * list. Not persisted: a reload starts fresh.
  */
 interface DiscoveryStore {
@@ -19,6 +19,9 @@ interface DiscoveryStore {
   setCategory: (category: CategoryId | null) => void;
   showMore: () => void;
   rememberScroll: (scrollTop: number) => void;
+  /** Item 8: the search (null = not searching), kept like the list, so back from a result returns to it. */
+  search: { query: string; mode: 'spots' | 'people' } | null;
+  setSearch: (search: { query: string; mode: 'spots' | 'people' } | null) => void;
 }
 
 export const useDiscoveryStore = create<DiscoveryStore>((set) => ({
@@ -30,4 +33,6 @@ export const useDiscoveryStore = create<DiscoveryStore>((set) => ({
   setCategory: (filterCategory) => set({ filterCategory, visibleCount: DISCOVERY_BATCH_SIZE, scrollTop: 0 }),
   showMore: () => set((s) => ({ visibleCount: s.visibleCount + DISCOVERY_BATCH_SIZE })),
   rememberScroll: (scrollTop) => set({ scrollTop }),
+  search: null,
+  setSearch: (search) => set({ search }),
 }));

@@ -2,7 +2,7 @@
 
 import { useMemo, useCallback, useLayoutEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { X, Navigation, Star } from 'lucide-react';
+import { X, Navigation, Search, Star } from 'lucide-react';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
 import { useCategoryOptions, useCategoryText } from '@/hooks/useCategory';
@@ -15,6 +15,7 @@ import GlyphIcon from '@/components/ui/GlyphIcon';
 import PanelShell from './ui/PanelShell';
 import FeaturedSpot from './discovery/FeaturedSpot';
 import SpotRow from './discovery/SpotRow';
+import SearchView from './discovery/SearchView';
 
 interface DiscoveryPanelProps {
   isOpen: boolean;
@@ -39,6 +40,9 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
       ({ sortBy, filterCategory, visibleCount, setSort, setCategory, showMore, rememberScroll })),
   );
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Item 8: spots and people search, behind the icon in the header.
+  const searching = useDiscoveryStore((s) => s.search !== null);
+  const setSearch = useDiscoveryStore((s) => s.setSearch);
   // Back at the scroll position the list was left at (before paint, so it never jumps).
   useLayoutEffect(() => {
     if (isOpen && scrollRef.current) scrollRef.current.scrollTop = useDiscoveryStore.getState().scrollTop;
@@ -91,6 +95,10 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
         className="flex-1 overflow-y-auto overscroll-contain"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}
       >
+        {searching ? (
+          <SearchView spots={spots} rowProps={props} onCancel={() => setSearch(null)} />
+        ) : (
+        <>
         {/* Large title */}
         <header className="px-5 flex items-end justify-between gap-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.75rem)' }}>
           <div className="min-w-0">
@@ -99,16 +107,28 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
               {t(approvedCount === 1 ? 'spotCountOne' : 'spotCountMany', { count: approvedCount })}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t('close')}
-            className="no-min-size mb-1.5 w-11 h-11 -mr-1.5 grid place-items-center rounded-full touch-manipulation"
-          >
-            <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
-              <X className="w-4 h-4 text-label-secondary" strokeWidth={2.5} />
-            </span>
-          </button>
+          <div className="flex items-center mb-1.5 -mr-1.5">
+            <button
+              type="button"
+              onClick={() => setSearch({ query: '', mode: 'spots' })}
+              aria-label={t('search')}
+              className="no-min-size w-11 h-11 grid place-items-center rounded-full touch-manipulation"
+            >
+              <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
+                <Search className="w-4 h-4 text-label-secondary" strokeWidth={2.5} />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t('close')}
+              className="no-min-size w-11 h-11 grid place-items-center rounded-full touch-manipulation"
+            >
+              <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
+                <X className="w-4 h-4 text-label-secondary" strokeWidth={2.5} />
+              </span>
+            </button>
+          </div>
         </header>
 
         {/* Segmented sort */}
@@ -183,6 +203,8 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
               <p className="text-center text-label-tertiary text-[13px] py-3">{t('noMoreSpots')}</p>
             )}
           </div>
+        )}
+        </>
         )}
       </div>
     </PanelShell>

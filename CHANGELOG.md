@@ -32,6 +32,13 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 ### Added (categories)
 - The super admin can add categories (Hungarian name, optional English and German names that fall back to Hungarian) with one of sixteen hand-drawn icons, rename them, change their icon and delete one no spot uses. They show up for everyone when adding or editing a spot, in Explore and on the map pins.
 
+### Added (profiles)
+- Every user has a profile page: tap a spot's creator, a reviewer or a search result. It shows the picture, name, level, bio, the number of spots, followers and following, and their approved spots.
+- Follow anyone with a public profile. A private profile shows its spots only to followers it accepts; follow requests appear at the top of the notification centre. You can cancel a request and remove a follower. Your spots always stay on the map.
+- A bio of up to 150 characters, a private profile switch and an option to show your saved spots on your profile (Settings → Privacy).
+- Search in Explore: spots by name, and people by username.
+- Notifications for follow requests, accepted requests and new spots from people you follow (with their own switch).
+
 ### Changed
 - The browser and system bars use the app's dark background colour.
 

@@ -49,5 +49,5 @@ Open work, as of v2.0.2 (2026-09-30). Nothing here is started. Each item becomes
 - Legacy or non-allowlisted custom name colours fall back to the level colour.
 - A pending spot that someone else favourited disappears from their favourites until it is approved.
 - The release job uploads the image and SBOM as a workflow artifact that any signed-in GitHub user can download for 1 day (public code and public config only).
-- `publicProfiles` and `usernames` allow public `get` only, never `list`, so usernames and admins cannot be enumerated.
+- `publicProfiles` and `usernames` allow public `get` only, never `list`, so usernames and admins cannot be enumerated. The people search (item 8) is the one controlled exception: signed in only, a username prefix of 2+ characters, 10 results, 20 searches a minute per user, so enumerating everyone is slow and visible in the logs.
 - The level count includes pending spots.

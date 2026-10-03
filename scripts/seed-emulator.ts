@@ -45,6 +45,8 @@ async function seed(): Promise<void> {
   for (const account of [E2E.user, E2E.admin, E2E.superAdmin, E2E.level5, E2E.rename]) {
     await auth.createUser({ uid: account.uid, email: account.email, password: E2E.password });
     await db.doc(`users/${account.uid}`).set(userDoc(account.uid, account.username, account.email));
+    // The username registry (claimUsername's), which the people search reads (item 8).
+    await db.doc(`usernames/${account.username}`).set({ uid: account.uid });
   }
   // Item 5: level5 keeps level 5 from the old spot-count rule (its floor; it has little XP). Set
   // before its spots exist, so the syncXp trigger (when the functions emulator runs) never freezes

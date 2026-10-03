@@ -14,6 +14,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
 import AccountSection from './settings/AccountSection';
+import PrivacySection from './settings/PrivacySection';
 import { deletionConfirmWord } from '@/lib/accountDeletion';
 
 interface SettingsPanelProps {
@@ -264,6 +265,9 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
               ))}
             </div>
           </div>
+
+          {/* Profile visibility (item 8) */}
+          <PrivacySection user={user} />
 
           {/* Notifications */}
           <div className="rounded-[18px] bg-surface-1 p-5">

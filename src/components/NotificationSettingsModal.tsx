@@ -20,6 +20,7 @@ interface NotificationSettingsState {
   spotApproved: boolean;
   spotReviewed: boolean;
   newPendingSpot: boolean;
+  follows: boolean;
 }
 
 interface ToggleCardProps {
@@ -90,6 +91,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
     spotApproved: true,
     spotReviewed: true,
     newPendingSpot: true,
+    follows: true,
   };
 
   const [settings, setSettings] = useState<NotificationSettingsState>(user?.notificationSettings || defaultSettings);
@@ -230,6 +232,14 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
             isEnabled={settings.spotReviewed}
             disabled={!isEnabled}
             onToggle={() => handleToggle('spotReviewed')}
+          />
+
+          <ToggleCard
+            title={t('notifyFollows')}
+            description={t('notifyFollowsDesc')}
+            isEnabled={settings.follows}
+            disabled={!isEnabled}
+            onToggle={() => handleToggle('follows')}
           />
 
           {isAdmin && (

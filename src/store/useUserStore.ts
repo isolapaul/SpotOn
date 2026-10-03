@@ -64,6 +64,8 @@ interface UserStore {
   acceptTerms: () => Promise<void>;
   unhighlightSpot: (spotId: string) => Promise<void>;
   updateCustomNameColor: (color: string) => Promise<void>;
+  /** Item 8: the bio, a private profile, saved spots shown on the profile. */
+  updateProfileFields: (fields: Partial<Pick<User, 'bio' | 'profilePrivate' | 'showSaved'>>) => Promise<void>;
   /** Level 4+: the special icon on all own spots' pins, or null for the category icons (item 6). */
   updatePinIcon: (icon: string | null) => Promise<void>;
   updateCustomNameFont: (font: string) => Promise<void>;
@@ -818,6 +820,15 @@ export const useUserStore = create<UserStore>()(
 
         await updateNameStyleCallable({ font });
         set({ user: { ...user, customNameFont: font } });
+      },
+
+      // Profile fields (item 8; validated by the users rules)
+      updateProfileFields: async (fields) => {
+        const { user, setUser } = get();
+        if (!user) throw new Error('NOT_AUTHENTICATED');
+        const patch = { ...fields, ...(fields.bio !== undefined ? { bio: fields.bio.trim() } : {}) };
+        await updateDoc(doc(db, 'users', user.uid), patch);
+        setUser({ ...user, ...patch });
       },
 
       // Pin icon (level 4+; enforced by the callable, which also updates the spots)

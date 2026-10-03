@@ -6,6 +6,7 @@ import AuthModal from '@/components/AuthModal';
 import AddSpotModal from '@/components/AddSpotModal';
 import SpotDetailsPanel from '@/components/SpotDetailsPanel';
 import ProfilePanel from '@/components/ProfilePanel';
+import UserProfilePanel from '@/components/UserProfilePanel';
 import DiscoveryPanel from '@/components/DiscoveryPanel';
 import LoadingScreen from '@/components/LoadingScreen';
 import NotificationPrompt from '@/components/NotificationPrompt';
@@ -19,7 +20,7 @@ import MovedBanner from '@/components/MovedBanner';
 import { useShallow } from 'zustand/react/shallow';
 import { useUserStore } from '@/store/useUserStore';
 import { useMapThemeStore } from '@/store/useMapThemeStore';
-import { hasBackStep, isSpotPanel, useUiStore, type ReturnTarget } from '@/store/useUiStore';
+import { hasBackStep, isSpotPanel, isUserPanel, useUiStore, type ReturnTarget } from '@/store/useUiStore';
 import { useT } from '@/hooks/useT';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 import { useIsClient } from '@/hooks/useIsClient';
@@ -85,11 +86,13 @@ export default function Home() {
   // The way back to the list a spot was opened from (the details, and the place card for the profile).
   const backToList = returnTo
     ? {
-        label: t(returnTo === 'profile' ? 'profile' : 'explore'),
-        ariaLabel: t(returnTo === 'profile' ? 'backToProfile' : 'backToExplore'),
+        label: t(returnTo === 'discovery' ? 'explore' : 'profile'),
+        ariaLabel: t(returnTo === 'discovery' ? 'backToExplore' : 'backToProfile'),
         onBack: back,
       }
     : undefined;
+  // The card keeps the way back to a profile (own or someone's); Explore opens the details instead.
+  const cardBack = returnTo && returnTo !== 'discovery' ? backToList : undefined;
 
   // A tap on the map while picking: a new spot's place, or the edited spot's new location (item 4).
   const handleLocationSelect = (location: { lat: number; lng: number }) => {
@@ -148,6 +151,12 @@ export default function Home() {
       <AddSpotModal isOpen={activePanel === 'addSpot'} onClose={closeAddSpot} selectedLocation={pendingLocation} />
       {/* Spot Details Panel */}
       <SpotDetailsPanel spotId={spotId} onClose={() => runViewTransition(closeSpot)} back={backToList} />
+      {/* Someone's profile page (item 8) */}
+      <UserProfilePanel
+        uid={isUserPanel(activePanel) ? activePanel.uid : null}
+        onClose={back}
+        onOpenSpot={(id) => isUserPanel(activePanel) && openFromList(id, activePanel)}
+      />
       {/* Profile Panel */}
       <ProfilePanel isOpen={activePanel === 'profile'} onClose={closeSheet} onOpenSpot={(id) => openFromList(id, 'profile')} />
       {/* Full-screen map background */}
@@ -184,7 +193,7 @@ export default function Home() {
         userLocation={userLocation}
         onClose={() => previewSpot(null)}
         onDetails={(spot) => runViewTransition(() => openPanel({ type: 'spot', spotId: spot.id }), 'morph')}
-        back={returnTo === 'profile' ? backToList : undefined}
+        back={cardBack}
       />
       {/* Launcher (design 1C) */}
       <BottomNavigation

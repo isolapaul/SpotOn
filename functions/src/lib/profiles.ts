@@ -5,6 +5,7 @@
  * name-style allowlists.
  */
 import {NAME_COLORS, NAME_FONTS, validLevel} from "./levels";
+import {BIO_MAX} from "./follows";
 
 /** Lowercase a-z, 0-9 and _; 3–20 characters. */
 export const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
@@ -72,6 +73,9 @@ export interface PublicProfile {
   spotsCount?: number;
   xp?: number;
   level?: number;
+  /** Item 8: the user's bio (up to BIO_MAX characters) and whether the profile is private. */
+  bio: string | null;
+  isPrivate: boolean;
 }
 
 function nonEmptyString(x: unknown): string | null {
@@ -97,6 +101,8 @@ export function buildPublicProfile(
     customNameColor: allowlisted(user.customNameColor, NAME_COLORS),
     customNameFont: allowlisted(user.customNameFont, NAME_FONTS),
     isAdmin,
+    bio: typeof user.bio === "string" && user.bio.trim() ? user.bio.trim().slice(0, BIO_MAX) : null,
+    isPrivate: user.profilePrivate === true,
   };
   const count = user.spotsCount;
   if (typeof count === "number" && Number.isInteger(count) && count >= 0) {
