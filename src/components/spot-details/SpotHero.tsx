@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { X, Images } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
+import BackButton, { type SpotBack } from '@/components/ui/BackButton';
 import CategoryIcon from '@/components/ui/CategoryIcon';
 import { isImageUnoptimized } from '@/lib/spotImages';
 import { DELAYS } from '@/lib/constants';
@@ -18,6 +19,8 @@ interface SpotHeroProps {
   imageCount: number;
   onOpenGallery: () => void;
   onClose: () => void;
+  /** Opened from a list: a back capsule to it replaces Close (a pull down still closes). */
+  back?: SpotBack;
   /** The compact bar's Close is in charge (the hero scrolled away): this one leaves the a11y tree. */
   closeHidden?: boolean;
 }
@@ -26,7 +29,7 @@ interface SpotHeroProps {
  * Hero image (design phase 3): full-bleed, opens the gallery; close on the top left and the photo
  * count at the bottom right. The actions (directions, save, highlight, share) moved to SpotActions.
  */
-export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount, onOpenGallery, onClose, closeHidden }: Readonly<SpotHeroProps>) {
+export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount, onOpenGallery, onClose, back, closeHidden }: Readonly<SpotHeroProps>) {
   const t = useT();
   // A few stored images do not load (owner report): try the spot's other images, then show the
   // category glyph instead of the browser's broken-image icon.
@@ -51,6 +54,10 @@ export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount,
   const handleClose = (e: MouseEvent) => {
     e.stopPropagation();
     onClose();
+  };
+  const handleBack = (e: MouseEvent) => {
+    e.stopPropagation();
+    back?.onBack();
   };
 
   return (
@@ -83,6 +90,17 @@ export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount,
       <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/40 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-surface-0/80 to-transparent" />
 
+      {back ? (
+        <BackButton
+          label={back.label}
+          ariaLabel={back.ariaLabel}
+          onClick={handleBack}
+          tone="overlay"
+          hidden={closeHidden}
+          className="absolute left-3"
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 10px)' }}
+        />
+      ) : (
       <button
         onClick={handleClose}
         className="no-min-size absolute left-3 w-11 h-11 grid place-items-center rounded-full touch-manipulation active:scale-90 transition-transform"
@@ -95,6 +113,7 @@ export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount,
           <X className="w-[18px] h-[18px] text-white" strokeWidth={2.5} />
         </span>
       </button>
+      )}
 
       {imageCount > 1 && (
         <div

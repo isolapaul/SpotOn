@@ -9,9 +9,10 @@ import ProfileSpotCard from '../ProfileSpotCard';
 
 interface FavoritesTabProps {
   spots: Spot[];
+  onOpenSpot: (spotId: string) => void;
 }
 
-export default function FavoritesTab({ spots }: Readonly<FavoritesTabProps>) {
+export default function FavoritesTab({ spots, onOpenSpot }: Readonly<FavoritesTabProps>) {
   const t = useT();
   return (
     <div className="space-y-3">
@@ -28,8 +29,8 @@ export default function FavoritesTab({ spots }: Readonly<FavoritesTabProps>) {
           const avgRating = averageRating(spot.reviews);
           const reviewCount = spot.reviews?.length || 0;
           return (
-            <ProfileSpotCard key={spot.id} spot={spot}>
-              <div className="flex items-center gap-1 mt-2">
+            <ProfileSpotCard key={spot.id} spot={spot} onOpen={() => onOpenSpot(spot.id)}>
+              <span className="flex items-center gap-1 mt-2">
                 {avgRating > 0 ? (
                   <>
                     <StarRating rating={Math.round(avgRating)} size="xs" emptyTone="faint" />
@@ -40,7 +41,7 @@ export default function FavoritesTab({ spots }: Readonly<FavoritesTabProps>) {
                 ) : (
                   <span className="text-white/40 text-xs">{t('noReviews')}</span>
                 )}
-              </div>
+              </span>
             </ProfileSpotCard>
           );
         })

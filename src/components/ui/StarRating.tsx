@@ -33,5 +33,6 @@ export default function StarRating({ rating, size, emptyTone, gap = 'gap-0.5', w
     ),
   );
   if (!wrapper) return <>{stars}</>;
-  return <div className={WRAPPER[gap]}>{stars}</div>;
+  // A span (display: flex), so the row may sit inside buttons such as the profile spot cards.
+  return <span className={WRAPPER[gap]}>{stars}</span>;
 }

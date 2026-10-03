@@ -9,6 +9,11 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - A public page for deleting your account without the app (`/account-deletion`): what is deleted and what stays, how to do it in the app, and sign-in and deletion right on the page.
 - Preparation for the Android app on Google Play: an adaptive (maskable) app icon, screenshots in the web manifest, and the Android app link file.
 
+### Added (navigation)
+- Tap a spot in your profile (My Spots, Favorites, and Pending for admins): the profile slides away, the map flies to the spot and its place card opens, with a "Profile" button that takes you back. Swiping the card down leaves you on the map at the spot.
+- A spot opened from Explore goes back to Explore when you close it, with the same order, category and scroll position.
+- The Android back gesture and the browser's Back button step back inside the app (spot to profile or Explore, a panel to the map) instead of leaving it.
+
 ### Changed
 - The browser and system bars use the app's dark background colour.
 

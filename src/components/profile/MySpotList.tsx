@@ -8,10 +8,11 @@ import ProfileSpotCard from './ProfileSpotCard';
 
 interface MySpotListProps {
   spots: Spot[];
+  onOpenSpot: (spotId: string) => void;
 }
 
 /** All of the user's spots with their status badge, or the empty state. */
-export default function MySpotList({ spots }: Readonly<MySpotListProps>) {
+export default function MySpotList({ spots, onOpenSpot }: Readonly<MySpotListProps>) {
   const t = useT();
   return (
     <div className="space-y-3">
@@ -25,12 +26,12 @@ export default function MySpotList({ spots }: Readonly<MySpotListProps>) {
         </div>
       ) : (
         spots.map((spot) => (
-          <ProfileSpotCard key={spot.id} spot={spot}>
-            <div className="flex items-center gap-2 mt-2">
+          <ProfileSpotCard key={spot.id} spot={spot} onOpen={() => onOpenSpot(spot.id)}>
+            <span className="flex items-center gap-2 mt-2">
               <span className={`text-xs px-2 py-1 rounded-full ${statusClass(spot.status)}`}>
                 {t(statusLabelKey(spot.status))}
               </span>
-            </div>
+            </span>
           </ProfileSpotCard>
         ))
       )}
