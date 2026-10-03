@@ -73,17 +73,18 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
       }
       onClose();
       resetForm();
-    } catch (err: any) {
+    } catch (err) {
       // Firebase error handling
-      if (err.code === 'auth/invalid-email') {
+      const code = (err as { code?: string }).code;
+      if (code === 'auth/invalid-email') {
         setError(t('authErrInvalidEmail'));
-      } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      } else if (code === 'auth/user-not-found' || code === 'auth/wrong-password') {
         setError(t('authErrWrongPassword'));
-      } else if (err.code === 'auth/email-already-in-use') {
+      } else if (code === 'auth/email-already-in-use') {
         setError(t('authErrEmailInUse'));
-      } else if (err.code === 'auth/weak-password') {
+      } else if (code === 'auth/weak-password') {
         setError(t('authErrWeakPassword'));
-      } else if (err.code === 'auth/invalid-credential') {
+      } else if (code === 'auth/invalid-credential') {
         setError(t('authErrInvalidCredential'));
       } else {
         setError(mode === 'signin' ? t('authErrSignInFailed') : t('authErrSignUpFailed'));

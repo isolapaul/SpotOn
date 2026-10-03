@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Bell } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
@@ -95,12 +95,13 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
   const [settings, setSettings] = useState<NotificationSettingsState>(user?.notificationSettings || defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Update local state when user data changes
-  useEffect(() => {
-    if (user?.notificationSettings) {
-      setSettings(user.notificationSettings);
-    }
-  }, [user]);
+  // Update local state when user data changes (adjusted during render, React's pattern for
+  // resetting state on a prop change, instead of a setState in an effect)
+  const [syncedUser, setSyncedUser] = useState(user);
+  if (user !== syncedUser) {
+    setSyncedUser(user);
+    if (user?.notificationSettings) setSettings(user.notificationSettings);
+  }
 
   if (!isOpen || !user) return null;
 

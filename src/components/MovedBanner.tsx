@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
+import { useIsClient } from '@/hooks/useIsClient';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useT } from '@/hooks/useT';
 import { useUiStore } from '@/store/useUiStore';
@@ -15,30 +16,31 @@ const MOVED_TO = getMovedTo();
 // even when localStorage is blocked.
 let hiddenThisView = false;
 
+function readDismissFlag(): string | null {
+  try {
+    return globalThis.localStorage.getItem(MOVED_BANNER_DISMISS_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Same test InstallGate uses for an installed PWA. */
+function isStandalone(): boolean {
+  return globalThis.matchMedia('(display-mode: standalone)').matches
+    || (globalThis.navigator as Navigator & { standalone?: boolean }).standalone === true;
+}
+
 /** Slim, non-modal notice on the old domain. One tap on Hide hides it for good on this device. */
 export default function MovedBanner() {
   const t = useT();
   const hasSelectedLanguage = useLanguageStore((s) => s.hasSelectedLanguage);
   const setMovedBannerVisible = useUiStore((s) => s.setMovedBannerVisible);
-  const [mounted, setMounted] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-  const [standalone, setStandalone] = useState(false);
-
-  useEffect(() => {
-    let stored: string | null = null;
-    try {
-      stored = globalThis.localStorage.getItem(MOVED_BANNER_DISMISS_KEY);
-    } catch {
-      stored = null;
-    }
-    setDismissed(hiddenThisView || isBannerDismissed(stored));
-    // Same test InstallGate uses for an installed PWA.
-    setStandalone(
-      globalThis.matchMedia('(display-mode: standalone)').matches
-        || (globalThis.navigator as Navigator & { standalone?: boolean }).standalone === true,
-    );
-    setMounted(true);
-  }, []);
+  const mounted = useIsClient();
+  const [dismissedNow, setDismissedNow] = useState(false);
+  // Read once per mount, after hydration (browser storage and display mode).
+  const dismissedBefore = useMemo(() => mounted && (hiddenThisView || isBannerDismissed(readDismissFlag())), [mounted]);
+  const standalone = useMemo(() => mounted && isStandalone(), [mounted]);
+  const dismissed = dismissedBefore || dismissedNow;
 
   const visible = MOVED_TO !== null && hasSelectedLanguage && mounted && !dismissed;
 
@@ -54,7 +56,7 @@ export default function MovedBanner() {
     } catch {
       // Storage unavailable: hidden for this page view only.
     }
-    setDismissed(true);
+    setDismissedNow(true);
   };
 
   if (!visible || !MOVED_TO) return null;
