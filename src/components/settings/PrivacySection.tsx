@@ -41,7 +41,7 @@ export default function PrivacySection({ user }: Readonly<{ user: User }>) {
         <Lock className="w-5 h-5" />
         {t('privacyHeader')}
       </h3>
-      <div className="divide-y divide-white/[.06]">
+      <div className="divide-y divide-white/6">
         {ROWS.map(({ field, title, desc }) => {
           const on = user[field] === true;
           return (
@@ -57,9 +57,9 @@ export default function PrivacySection({ user }: Readonly<{ user: User }>) {
                 aria-label={t(title)}
                 disabled={saving !== null}
                 onClick={() => toggle(field)}
-                className={`no-min-size relative w-[51px] h-[31px] rounded-full flex-shrink-0 transition-colors duration-200 disabled:opacity-60 ${on ? 'bg-brand-600' : 'bg-white/15'}`}
+                className={`no-min-size relative w-[51px] h-[31px] rounded-full shrink-0 transition-colors duration-200 disabled:opacity-60 ${on ? 'bg-brand-600' : 'bg-white/15'}`}
               >
-                <span className={`absolute top-[2px] left-[2px] w-[27px] h-[27px] rounded-full bg-white shadow transition-transform duration-200 ease-ios ${on ? 'translate-x-5' : ''}`} />
+                <span className={`absolute top-[2px] left-[2px] w-[27px] h-[27px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-ios ${on ? 'translate-x-5' : ''}`} />
               </button>
             </div>
           );
@@ -76,7 +76,7 @@ function BlockedList() {
   const blocked = useSafetyStore((s) => s.blocked);
   if (!blocked.size) return null;
   return (
-    <div className="mt-4 pt-4 border-t border-white/[.06]">
+    <div className="mt-4 pt-4 border-t border-white/6">
       <p className="text-label text-[15px] font-medium mb-2">{t('blockedUsers')}</p>
       <div className="space-y-1">
         {[...blocked].map((uid) => <BlockedRow key={uid} uid={uid} />)}
@@ -108,7 +108,7 @@ function BlockedRow({ uid }: Readonly<{ uid: string }>) {
             setBusy(false);
           }
         }}
-        className="no-min-size px-3 h-8 rounded-full bg-white/[.08] text-label text-[13px] font-semibold disabled:opacity-50"
+        className="no-min-size px-3 h-8 rounded-full bg-white/8 text-label text-[13px] font-semibold disabled:opacity-50"
       >
         {t('unblock')}
       </button>

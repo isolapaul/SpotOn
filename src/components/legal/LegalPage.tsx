@@ -22,8 +22,10 @@ function Block({ block }: Readonly<{ block: LegalBlock }>) {
   );
 }
 
-/** A legal document page (privacy policy, terms). The body is fixed for the map, so this scrolls itself. */
-/** `other`: the same document in the other language (Hungarian is authoritative, item 9). */
+/**
+ * A legal document page (privacy policy, terms). The body is fixed for the map, so this scrolls
+ * itself. `other`: the same document in the other language (Hungarian is authoritative, item 9).
+ */
 export default function LegalPage({ doc, other }: Readonly<{ doc: LegalDocument; other?: { href: string; label: string } }>) {
   return (
     <div className="fixed inset-0 overflow-y-auto bg-slate-950 text-white/80">

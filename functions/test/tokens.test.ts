@@ -2,6 +2,7 @@ import {describe, expect, it} from "vitest";
 import {
   PRUNABLE_TOKEN_ERROR_CODES,
   isPrunableTokenError,
+  registrationList,
   selectTokensToPrune,
 } from "../src/lib/tokens";
 
@@ -12,6 +13,7 @@ describe("isPrunableTokenError", () => {
   it.each([
     "messaging/registration-token-not-registered",
     "messaging/invalid-registration-token",
+    "messaging/installation-id-not-registered",
   ])("prunes %s", (code) => {
     expect(isPrunableTokenError(code)).toBe(true);
     expect(PRUNABLE_TOKEN_ERROR_CODES.has(code)).toBe(true);
@@ -80,5 +82,17 @@ describe("selectTokensToPrune", () => {
         {success: true, error: {code: "messaging/registration-token-not-registered"}},
       ]),
     ).toEqual([]);
+  });
+});
+
+describe("registrationList", () => {
+  it("keeps the non-empty strings of a stored list", () => {
+    expect(registrationList(["fid1", "", 7, null, "fid2"])).toEqual(["fid1", "fid2"]);
+  });
+
+  it("is empty for a missing or malformed field (accounts without legacy tokens)", () => {
+    expect(registrationList(undefined)).toEqual([]);
+    expect(registrationList("fid1")).toEqual([]);
+    expect(registrationList({0: "fid1"})).toEqual([]);
   });
 });

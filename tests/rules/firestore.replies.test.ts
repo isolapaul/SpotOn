@@ -23,14 +23,17 @@ describe('replies', () => {
     await assertSucceeds(getDocs(collection(dbAs(env, null), 'spots', SPOT_APPROVED, 'replies')));
     await assertFails(getDocs(collection(dbAs(env, BOB), 'spots', SPOT_PENDING, 'replies')));
   });
-  it('a signed-in user replies as themself, 1-500 characters, on approved spots only', async () => {
+  it('clients never create replies (the addReply callable does)', async () => {
     const db = dbAs(env, ALICE);
-    await assertSucceeds(addDoc(collection(db, 'spots', SPOT_APPROVED, 'replies'), reply(ALICE)));
-    await assertFails(addDoc(collection(db, 'spots', SPOT_APPROVED, 'replies'), reply(BOB)));
-    await assertFails(addDoc(collection(db, 'spots', SPOT_APPROVED, 'replies'), reply(ALICE, { text: '  ' })));
-    await assertFails(addDoc(collection(db, 'spots', SPOT_APPROVED, 'replies'), reply(ALICE, { text: 'x'.repeat(501) })));
+    await assertFails(addDoc(collection(db, 'spots', SPOT_APPROVED, 'replies'), reply(ALICE)));
     await assertFails(addDoc(collection(db, 'spots', SPOT_PENDING, 'replies'), reply(ALICE)));
     await assertFails(addDoc(collection(dbAs(env, null), 'spots', SPOT_APPROVED, 'replies'), reply(ALICE)));
+  });
+  it('an edit keeps the stored text 1-500 characters (no padding with whitespace)', async () => {
+    const ref = doc(dbAs(env, BOB), 'spots', SPOT_APPROVED, 'replies', 'r1');
+    await assertFails(updateDoc(ref, { text: '  ', editedAt: serverTimestamp() }));
+    await assertFails(updateDoc(ref, { text: 'hi' + ' '.repeat(600), editedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(ref, { text: 'hi', editedAt: serverTimestamp() }));
   });
   it('only the author edits the text or deletes', async () => {
     const ref = (uid: string) => doc(dbAs(env, uid), 'spots', SPOT_APPROVED, 'replies', 'r1');

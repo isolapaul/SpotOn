@@ -79,7 +79,7 @@ flowchart LR
 
 This is for the owner and invited contributors. Running the app for real needs its own Firebase project; everything below runs against the local Firebase emulators with the demo project `demo-spoton` instead.
 
-Requirements: Node 22 (`.nvmrc`) and Java 21 (for the emulators).
+Requirements: Node 24 (`.nvmrc`) and Java 21 (for the emulators).
 
 ```bash
 npm ci && npm --prefix functions ci

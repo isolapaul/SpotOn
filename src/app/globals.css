@@ -1,80 +1,613 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-/* Full screen (design 1A). The page is painted in the map's base colour, never black, so no edge
+/* Chrome over the dark and satellite map styles (design 1B): `chrome-dark:text-brand-400`. */
+@custom-variant chrome-dark {
+  html[data-map-theme="dark"] &,
+  html[data-map-theme="satellite"] & {
+    @slot;
+  }
+}
+
+@theme {
+  /* Tailwind v3's default sans stack: v4.3 defaults to -apple-system/BlinkMacSystemFont first,
+     which renders a different face where system-ui is not the same font (e.g. Linux). */
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
+
+  --color-primary-50: #ecfbf3;
+  --color-primary-100: #d1f5e2;
+  --color-primary-200: #a3eac6;
+  --color-primary-300: #69d9a5;
+  --color-primary-400: #3ccb8c;
+  --color-primary-500: #16a064;
+  --color-primary-600: #12814f;
+  --color-primary-700: #0d6a40;
+  --color-primary-800: #0a5534;
+  --color-primary-900: #083f27;
+
+  --color-brand-50: #ecfbf3;
+  --color-brand-100: #d1f5e2;
+  --color-brand-200: #a3eac6;
+  --color-brand-300: #69d9a5;
+  --color-brand-400: #3ccb8c;
+  --color-brand-500: #16a064;
+  --color-brand-600: #12814f;
+  --color-brand-700: #0d6a40;
+  --color-brand-800: #0a5534;
+  --color-brand-900: #083f27;
+
+  --color-surface-0: #0e1013;
+  --color-surface-1: #16181c;
+  --color-surface-2: #1e2126;
+  --color-surface-3: #2a2d33;
+  --color-surface-4: #363a41;
+
+  --color-label: #f4f5f7;
+  --color-label-secondary: rgb(235 238 245 / 0.68);
+  --color-label-tertiary: rgb(235 238 245 / 0.45);
+
+  --color-separator: rgb(255 255 255 / 0.09);
+
+  --color-warn-500: #f5b301;
+  --color-warn-600: #b98300;
+  --color-warn-ink: #3b2a00;
+
+  --color-gold: #f7c948;
+
+  --color-danger-400: #ff6b61;
+  --color-danger-500: #ff453a;
+
+  --color-locate: #0a84ff;
+
+  --color-ink: #111418;
+  --color-ink-secondary: #5a6069;
+
+  --backdrop-blur-glass: 20px;
+
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  --shadow-glass-lg: 0 20px 48px 0 rgba(31, 38, 135, 0.2);
+  --shadow-float: 0 1px 2px rgb(0 0 0 / 0.08), 0 6px 20px rgb(0 0 0 / 0.14);
+  --shadow-card:
+    inset 0 1px 0 rgb(255 255 255 / 0.04), 0 8px 24px rgb(0 0 0 / 0.25);
+  --shadow-sheet:
+    inset 0 1px 0 rgb(255 255 255 / 0.06), 0 12px 40px rgb(0 0 0 / 0.35);
+
+  --radius-r1: 8px;
+  --radius-r2: 14px;
+  --radius-r3: 20px;
+  --radius-r4: 28px;
+  --radius-r5: 40px;
+
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-ios-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  --transition-duration-250: 250ms;
+  --transition-duration-350: 350ms;
+  --transition-duration-450: 450ms;
+
+  --animate-slide-up: slideUp 0.3s ease-out;
+  --animate-slide-down: slideDown 0.3s ease-out;
+  --animate-fade-in: fadeIn 0.2s ease-out;
+  --animate-float-1: float1 6s ease-in-out infinite;
+  --animate-float-2: float2 8s ease-in-out infinite;
+  --animate-float-3: float3 7s ease-in-out infinite;
+  --animate-sheet-in: sheetIn 0.45s cubic-bezier(0.32, 0.72, 0, 1) both;
+  --animate-hint-bob: hintBob 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  --animate-card-in: cardIn 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
+  --animate-ring-ping: ringPing 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-level-pop: levelPop 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-rise-in: riseIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-rays-spin: raysSpin 14s linear infinite;
+  --animate-toast-in: toastIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-locate-spin: locateSpin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-splash-breathe: splashBreathe 1.6s cubic-bezier(0.45, 0, 0.55, 1)
+    0.6s infinite;
+  --animate-card-out: cardOut 0.28s cubic-bezier(0.4, 0, 1, 1) both;
+  --animate-sheet-out: sheetOut 0.18s ease-in both;
+  --animate-backdrop-in: fadeIn 0.25s ease-out both;
+  --animate-backdrop-out: fadeOut 0.18s ease-in both;
+  --animate-item-in: itemIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-badge-pop: badgePop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-bell-ring: bellRing 0.9s ease-in-out both;
+  --animate-prompt-in: promptIn 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
+
+  @keyframes slideUp {
+    0% {
+      transform: translateY(100%);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+  @keyframes slideDown {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes fadeOut {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes levelPop {
+    0% {
+      opacity: 0;
+      transform: scale(0.2) rotate(-25deg);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.12) rotate(4deg);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) rotate(0);
+    }
+  }
+  @keyframes riseIn {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes splashBreathe {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.06);
+    }
+  }
+  @keyframes toastIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-120%);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes locateSpin {
+    0% {
+      transform: rotate(0deg) scale(1);
+    }
+    50% {
+      transform: rotate(90deg) scale(0.8);
+    }
+    100% {
+      transform: rotate(180deg) scale(1);
+    }
+  }
+  @keyframes raysSpin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes ringPing {
+    0% {
+      opacity: 0.9;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.45);
+    }
+  }
+  @keyframes cardIn {
+    0% {
+      transform: translateY(calc(100% + 16px));
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+  @keyframes cardOut {
+    0% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(calc(100% + 16px));
+      opacity: 0.6;
+    }
+  }
+  @keyframes hintBob {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+  @keyframes sheetIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-12px) scale(0.94);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  @keyframes sheetOut {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.96);
+    }
+  }
+  @keyframes itemIn {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes badgePop {
+    0% {
+      transform: scale(0.3);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  @keyframes bellRing {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    15% {
+      transform: rotate(14deg);
+    }
+    30% {
+      transform: rotate(-12deg);
+    }
+    45% {
+      transform: rotate(8deg);
+    }
+    60% {
+      transform: rotate(-5deg);
+    }
+    75% {
+      transform: rotate(2deg);
+    }
+  }
+  @keyframes promptIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-24px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  @keyframes float1 {
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+      opacity: 0.3;
+    }
+    25% {
+      transform: translateY(-20px) rotate(5deg);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translateY(-10px) rotate(0deg);
+      opacity: 0.4;
+    }
+    75% {
+      transform: translateY(-30px) rotate(-5deg);
+      opacity: 0.7;
+    }
+  }
+  @keyframes float2 {
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+      opacity: 0.4;
+    }
+    33% {
+      transform: translateY(-25px) rotate(10deg);
+      opacity: 0.5;
+    }
+    66% {
+      transform: translateY(-15px) rotate(-10deg);
+      opacity: 0.6;
+    }
+  }
+  @keyframes float3 {
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+      opacity: 0.5;
+    }
+    50% {
+      transform: translateY(-35px) rotate(15deg);
+      opacity: 0.8;
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+  /* Tailwind v3's preflight, kept so nothing changes: pointer buttons, grey placeholders. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+}
+
+@utility glass {
+  @apply bg-surface-3 border border-transparent;
+}
+
+@utility glass-dark {
+  @apply bg-black/20 border border-white/10;
+}
+
+@utility glass-card {
+  @apply bg-surface-1 rounded-[18px];
+}
+
+@utility glass-button {
+  @apply bg-white/10 active:bg-white/15 active:scale-95 transition-all duration-200;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+@utility glass-nav {
+  @apply bg-surface-2/90 backdrop-blur-xl border border-white/10;
+}
+
+@utility touch-manipulation {
+  /* Touch responsiveness utilities */
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  position: relative;
+  /* Prevent accidental text selection */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+@utility clickable {
+  /* Clickable utility class */
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@utility select-none {
+  /* Disable text selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+@layer utilities {
+  /* Full screen (design 1A). The page is painted in the map's base colour, never black, so no edge
    of the screen can show as a black band. The installed iPhone app gets its screen height from
    hooks/useStandaloneFullHeight. */
-:root {
-  --map-bg: #f2efe9;
-  /* Gap under the launcher (design 1C): 24pt above the home indicator's edge, 12pt without one. */
-  --bar-bottom: max(12px, calc(env(safe-area-inset-bottom) - 10px));
-}
-html[data-map-theme="light"] { --map-bg: #fafaf8; }
-html[data-map-theme="silver"] { --map-bg: #f3f1ec; }
-html[data-map-theme="dark"] { --map-bg: #1b1c1e; }
-html[data-map-theme="satellite"] { --map-bg: #1f2a1d; }
+  :root {
+    --map-bg: #f2efe9;
+    /* Gap under the launcher (design 1C): 24pt above the home indicator's edge, 12pt without one. */
+    --bar-bottom: max(12px, calc(env(safe-area-inset-bottom) - 10px));
+  }
+  html[data-map-theme='light'] {
+    --map-bg: #fafaf8;
+  }
+  html[data-map-theme='silver'] {
+    --map-bg: #f3f1ec;
+  }
+  html[data-map-theme='dark'] {
+    --map-bg: #1b1c1e;
+  }
+  html[data-map-theme='satellite'] {
+    --map-bg: #1f2a1d;
+  }
 
-/* Chrome material (design 1B): controls floating on the map. Light over light map styles, dark over
+  /* Chrome material (design 1B): controls floating on the map. Light over light map styles, dark over
    the dark and satellite styles, so they always contrast with the tiles behind them. */
-:root {
-  --chrome-rgb: 255 255 255;
-  --chrome-ink: 17 20 24;
-  --chrome-ink-2: 90 96 105;
-  --chrome-edge: 0 0 0 / 0.06;
-}
-html[data-map-theme="dark"],
-html[data-map-theme="satellite"] {
-  --chrome-rgb: 30 32 36;
-  --chrome-ink: 244 245 247;
-  --chrome-ink-2: 190 194 202;
-  --chrome-edge: 255 255 255 / 0.1;
-}
-.material-chrome {
-  /* Frosted and see-through (owner: the solid white stack stood out too much); the map shows
+  :root {
+    --chrome-rgb: 255 255 255;
+    --chrome-ink: 17 20 24;
+    --chrome-ink-2: 90 96 105;
+    --chrome-edge: 0 0 0 / 0.06;
+  }
+  html[data-map-theme='dark'],
+  html[data-map-theme='satellite'] {
+    --chrome-rgb: 30 32 36;
+    --chrome-ink: 244 245 247;
+    --chrome-ink-2: 190 194 202;
+    --chrome-edge: 255 255 255 / 0.1;
+  }
+  .material-chrome {
+    /* Frosted and see-through (owner: the solid white stack stood out too much); the map shows
      through, softened by blur and saturation. */
-  background-color: rgb(var(--chrome-rgb) / 0.52);
-  color: rgb(var(--chrome-ink));
-  -webkit-backdrop-filter: blur(20px) saturate(190%);
-  backdrop-filter: blur(20px) saturate(190%);
-  box-shadow: 0 0 0 0.5px rgb(var(--chrome-edge)), 0 4px 14px rgb(0 0 0 / 0.1);
-}
-/* Denser chrome for menus with text (map style popover): readable over any map. */
-.material-chrome-dense {
-  background-color: rgb(var(--chrome-rgb) / 0.86);
-}
-/* Sheet material (design 1E): the dark place card and sheets over the map. */
-.material-sheet {
-  background-color: rgb(30 33 38 / 0.92);
-  color: #f4f5f7;
-  -webkit-backdrop-filter: blur(30px) saturate(160%);
-  backdrop-filter: blur(30px) saturate(160%);
-  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.08);
-}
-.text-chrome-ink { color: rgb(var(--chrome-ink)); }
-.text-chrome-ink-2 { color: rgb(var(--chrome-ink-2)); }
-.text-chrome-ink-soft { color: rgb(var(--chrome-ink) / 0.8); }
+    background-color: rgb(var(--chrome-rgb) / 0.52);
+    color: rgb(var(--chrome-ink));
+    -webkit-backdrop-filter: blur(20px) saturate(190%);
+    backdrop-filter: blur(20px) saturate(190%);
+    box-shadow:
+      0 0 0 0.5px rgb(var(--chrome-edge)),
+      0 4px 14px rgb(0 0 0 / 0.1);
+  }
+  /* Denser chrome for menus with text (map style popover): readable over any map. */
+  .material-chrome-dense {
+    background-color: rgb(var(--chrome-rgb) / 0.86);
+  }
+  /* Sheet material (design 1E): the dark place card and sheets over the map. */
+  .material-sheet {
+    background-color: rgb(30 33 38 / 0.92);
+    color: #f4f5f7;
+    -webkit-backdrop-filter: blur(30px) saturate(160%);
+    backdrop-filter: blur(30px) saturate(160%);
+    box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.08);
+  }
+  .text-chrome-ink {
+    color: rgb(var(--chrome-ink));
+  }
+  .text-chrome-ink-2 {
+    color: rgb(var(--chrome-ink-2));
+  }
+  .text-chrome-ink-soft {
+    color: rgb(var(--chrome-ink) / 0.8);
+  }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
-  overscroll-behavior-y: none; /* Prevent bounce effect on iOS */
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    overscroll-behavior-y: none; /* Prevent bounce effect on iOS */
+  }
+
+  html {
+    background-color: var(--map-bg);
+  }
+
+  body {
+    background-color: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+
+
+  html {
+    /* Prevent iOS text size adjustment */
+    -webkit-text-size-adjust: 100%;
+    /* Prevent gray highlight on tap */
+    -webkit-tap-highlight-color: transparent;
+    /* Disable text selection globally */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* Enable fast touch response */
+    touch-action: manipulation;
+  }
+
+  /* Force immediate touch response on all interactive elements */
+  button,
+  a,
+  [role='button'],
+  .clickable,
+  input[type='button'],
+  input[type='submit'],
+  label[for] {
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+    cursor: pointer;
+    /* Ensure instant feedback - no delays */
+    -webkit-user-select: none;
+    user-select: none;
+    /* Position relative to respect z-index properly */
+    position: relative;
+    /* Prevent accidental text selection on double tap */
+    -webkit-touch-callout: none;
+  }
+
+  /* Minimum touch target sizes (Apple's recommendation) */
+  button:not(.no-min-size),
+  a:not(.no-min-size),
+  [role='button']:not(.no-min-size) {
+    min-width: 44px;
+    min-height: 44px;
+    /* Center content if button is small */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Ensure floating buttons are always on top */
+  .fixed,
+  [class*='fixed'] {
+    /* Prevent map from stealing touch events */
+    isolation: isolate;
+  }
+
+  /* Floating container optimization - allows clicking through empty space to map
+   * Usage: Apply .floating-container to wrapper divs that contain buttons
+   * but should allow clicks to pass through empty space.
+   * Button children automatically get pointer-events: auto via > * selector.
+   * Example: <div className="floating-container fixed ..."><button>...</button></div>
+   */
+  .floating-container {
+    pointer-events: none;
+  }
+
+  .floating-container > * {
+    pointer-events: auto;
+  }
+
+  /* Safe-area insets are applied per component (bars, sheets), never on body: a body padding shrank
+   the full-screen app and left a strip at the bottom. */
+
+  /* Legacy surface classes, restated in the design phase 3 language (flat dark surfaces, no heavy
+   glass), so every screen shares one look. New code uses the surface/label tokens directly. */
 }
 
-html {
-  background-color: var(--map-bg);
-}
-
-body {
-  background-color: transparent;
-  -webkit-font-smoothing: antialiased;
-}
-
+/* Map overrides stay unlayered: mapbox-gl.css (imported by MapView, unlayered) must not win. */
 .mapboxgl-map {
   background: var(--map-bg);
   font: inherit;
@@ -93,134 +626,6 @@ body {
   border-radius: 12px;
 }
 
-html {
-  /* Prevent iOS text size adjustment */
-  -webkit-text-size-adjust: 100%;
-  /* Prevent gray highlight on tap */
-  -webkit-tap-highlight-color: transparent;
-  /* Disable text selection globally */
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  /* Enable fast touch response */
-  touch-action: manipulation;
-}
-
-/* Force immediate touch response on all interactive elements */
-button,
-a,
-[role="button"],
-.clickable,
-input[type="button"],
-input[type="submit"],
-label[for] {
-  touch-action: manipulation !important;
-  -webkit-tap-highlight-color: transparent !important;
-  cursor: pointer;
-  /* Ensure instant feedback - no delays */
-  -webkit-user-select: none;
-  user-select: none;
-  /* Position relative to respect z-index properly */
-  position: relative;
-  /* Prevent accidental text selection on double tap */
-  -webkit-touch-callout: none;
-}
-
-/* Minimum touch target sizes (Apple's recommendation) */
-button:not(.no-min-size),
-a:not(.no-min-size),
-[role="button"]:not(.no-min-size) {
-  min-width: 44px;
-  min-height: 44px;
-  /* Center content if button is small */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Ensure floating buttons are always on top */
-.fixed,
-[class*="fixed"] {
-  /* Prevent map from stealing touch events */
-  isolation: isolate;
-}
-
-/* Floating container optimization - allows clicking through empty space to map
- * Usage: Apply .floating-container to wrapper divs that contain buttons
- * but should allow clicks to pass through empty space.
- * Button children automatically get pointer-events: auto via > * selector.
- * Example: <div className="floating-container fixed ..."><button>...</button></div>
- */
-.floating-container {
-  pointer-events: none;
-}
-
-.floating-container > * {
-  pointer-events: auto;
-}
-
-/* Safe-area insets are applied per component (bars, sheets), never on body: a body padding shrank
-   the full-screen app and left a strip at the bottom. */
-
-/* Legacy surface classes, restated in the design phase 3 language (flat dark surfaces, no heavy
-   glass), so every screen shares one look. New code uses the surface/label tokens directly. */
-@layer components {
-  .glass {
-    @apply bg-surface-3 border border-transparent;
-  }
-
-  .glass-dark {
-    @apply bg-black/20 border border-white/10;
-  }
-
-  .glass-card {
-    @apply bg-surface-1 rounded-[18px];
-  }
-
-  .glass-button {
-    @apply bg-white/10 active:bg-white/15 active:scale-95 transition-all duration-200;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    position: relative;
-  }
-
-  .glass-nav {
-    @apply bg-surface-2/90 backdrop-blur-xl border border-white/10;
-  }
-
-  /* Touch responsiveness utilities */
-  .touch-manipulation {
-    touch-action: manipulation !important;
-    -webkit-tap-highlight-color: transparent !important;
-    position: relative;
-    /* Prevent accidental text selection */
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-  }
-  
-  /* Clickable utility class */
-  .clickable {
-    cursor: pointer;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    position: relative;
-    min-width: 44px;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  /* Disable text selection */
-  .select-none {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-}
 
 /* Custom scrollbar for panels */
 .custom-scrollbar::-webkit-scrollbar {
@@ -345,31 +750,6 @@ a:not(.no-min-size),
   display: block;
   transform-origin: 22px 50px;
   transition: opacity 0.2s, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.spot-pin__dot {
-  position: absolute;
-  box-sizing: border-box;
-  left: 15px;
-  top: 43px;
-  width: 14px;
-  height: 14px;
-  border-radius: 9999px;
-  border: 3px solid #fff;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.18);
-  background: #12814f;
-  opacity: 0;
-  transform: scale(0.4);
-  transition: opacity 0.2s, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.spot-pin[data-variant="pending"] .spot-pin__dot {
-  background: #fff;
-  border-color: #b98300;
-}
-.spot-pin[data-variant="rejected"] .spot-pin__dot {
-  background: #5b6068;
-}
-.spot-pin[data-highlighted="true"] .spot-pin__dot {
-  border-color: #f7c948;
 }
 /* The pin whose place card is open (design 1E) grows with a small spring; MapView sets the flag. */
 .spot-pin[data-selected="true"] .spot-pin__svg {

@@ -3,7 +3,7 @@
 Versions are the git tags that were released to the server (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and were not tagged; they are listed by date.
 
-## Unreleased (v2.1.0)
+## v2.1.0 — 2026-10-03
 
 ### Added
 - A public page for deleting your account without the app (`/account-deletion`): what is deleted and what stays, how to do it in the app, and sign-in and deletion right on the page.
@@ -54,6 +54,23 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 ### Added (lists and Explore)
 - Your own spot lists ("Sunsets", "For the weekend"): save a spot to one or more lists from its details, open them in Favorites, remove spots or delete a list. A list can be shown on your profile (a private profile shows it only to followers).
 - Explore's "New this week" chip shows only spots approved in the last 7 days, with their number; it combines with the category filter.
+
+### Fixed (review pass)
+- An admin approves the version of a spot they saw: if the owner changed it meanwhile, the app asks to check it again.
+- A user with 5 photos waiting on a spot sees that message (not "the spot is full"), and retrying a photo that is already waiting no longer fails.
+- XP: new accounts start from level 1 (creating many spots at once no longer gives a permanent level), and only photos a spot shows count.
+- Replies go through the server: only under existing reviews, not from someone the review's author blocked, at most 30 an hour. Reports are limited to 20 an hour and follows to 60 an hour; admins hear about an edit proposal at most once an hour per spot.
+- A review from a user the owner blocked no longer notifies them. Removing a profile through a report also removes its picture, banner and username.
+- Deleting an account also removes the replies to the user's reviews and the notices naming them in other people's notification centres; follows can no longer reappear for a deleted account.
+- Removing a spot takes it out of everyone's lists. Reports about content its author already deleted can be resolved.
+- The map: a device without WebGL gets a note instead of a blank app, the map stays flat (no globe), flying to a spot reports arrival at the right time, a rejected Mapbox token falls back to the theme background, and Mapbox performance telemetry is off.
+- Share-link previews use the right photo, and odd links no longer give a server error.
+- Photos submitted for review are limited to 20 an hour per user (each one notifies the admins). A photo earns XP once, for the person who uploaded it. Admins can approve older spots that were saved without a creation time.
+
+### Changed (platform)
+- Push notifications use Firebase Installation IDs (the token API is deprecated); a device moves over the next time the app opens, and keeps getting notifications on its old registration until then. The service worker runs on the modular Firebase SDK.
+- Node.js 24 LTS for the app image, the build and Cloud Functions; dependencies on their latest releases.
+- Tailwind CSS 4 (the screens are pixel-identical to before).
 
 ### Changed (legal)
 - The Privacy Policy and the Terms of Use describe the new features (bio, follows, private profiles, search, XP levels, moderation with reasons, the map provider) and say that removals are announced in the app with the reason. Everyone is asked to accept the new version once.

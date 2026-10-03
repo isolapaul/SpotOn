@@ -43,7 +43,7 @@ export default function TermsPrompt({ ready }: Readonly<{ ready: boolean }>) {
     <ModalShell variant="glass" z="usernameSetup" panelClassName="max-w-md w-full p-7">
       <div role="dialog" aria-modal="true" aria-labelledby="terms-prompt-title">
         <div className="flex justify-center mb-5">
-          <div className="w-[64px] h-[64px] rounded-[20px] grid place-items-center bg-brand-500/15">
+          <div className="w-[64px] h-[64px] rounded-r3 grid place-items-center bg-brand-500/15">
             <FileText className="w-8 h-8 text-brand-400" strokeWidth={1.75} />
           </div>
         </div>

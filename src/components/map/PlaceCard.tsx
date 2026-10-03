@@ -70,7 +70,7 @@ export default function PlaceCard({ spot, userLocation, onClose, onDetails, back
       <section
         aria-label={shown.name}
         {...drag.handlers}
-        className={`material-sheet relative rounded-[28px] shadow-sheet px-4 pt-3 touch-pan-x ${
+        className={`material-sheet relative rounded-r4 shadow-sheet px-4 pt-3 touch-pan-x ${
           drag.dragging ? '' : 'transition-transform duration-350 ease-ios'
         }`}
         style={{

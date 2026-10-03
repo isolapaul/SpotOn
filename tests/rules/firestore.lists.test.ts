@@ -32,6 +32,7 @@ describe('lists', () => {
     await assertFails(addDoc(col(BOB), list()));
     await assertFails(addDoc(col(ALICE), list({ name: '   ' })));
     await assertFails(addDoc(col(ALICE), list({ name: 'x'.repeat(51) })));
+    await assertFails(addDoc(col(ALICE), list({ name: 'x' + ' '.repeat(60) })));
     await assertFails(addDoc(col(ALICE), list({ spotIds: Array.from({ length: 201 }, (_, i) => `s${i}`) })));
     await assertFails(addDoc(col(ALICE), list({ shared: 'yes' })));
     await assertFails(addDoc(col(ALICE), list({ extra: 1 })));

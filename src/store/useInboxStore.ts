@@ -21,8 +21,8 @@ let listening: { uid: string; unsubscribe: Unsubscribe } | null = null;
 const itemRef = (uid: string, id: string) => doc(db, 'users', uid, 'inbox', id);
 
 /**
- * The in-app inbox (item 4): moderation decisions written by Cloud Functions, kept on the server so
- * a reason stays readable after the push and on every device. The notification centre shows it
+ * The in-app inbox: notices written by Cloud Functions (moderation decisions and removals, follow
+ * news, replies), kept on the server so a reason stays readable after the push and on every device. The notification centre shows it
  * next to the local notifications (hooks/useNotificationFeed).
  */
 export const useInboxStore = create<InboxStore>((set, get) => ({

@@ -1,6 +1,7 @@
 // Computes everyone's XP and level from all spots at once (item 5), with the same pure rules the
 // syncXp trigger uses (functions/src/lib/xp.ts). Shared by scripts/migrate-xp.ts and the emulator
-// seed. Only differences are planned; applying writes them in batches.
+// seed. Only differences are planned; applying writes them in batches. The level floor (the old
+// spot-count level) is set here only: run it once, right after the functions deploy.
 import { FieldValue, type Firestore, type WriteBatch } from 'firebase-admin/firestore';
 import { sameContributors, spotContributors, spotXp, userLevelFields } from '../../functions/src/lib/xp';
 

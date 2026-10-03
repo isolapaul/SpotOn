@@ -48,7 +48,7 @@ export default function AddPhotosCard({ spot }: Readonly<AddPhotosCardProps>) {
           disabled={isUploading}
           className="px-4 py-2 rounded-xl font-medium text-sm bg-white/10 text-white border border-white/20 hover:bg-white/20 active:scale-98 transition-all disabled:opacity-50 flex items-center gap-2"
         >
-          <ImagePlus className="w-4 h-4 flex-shrink-0" />
+          <ImagePlus className="w-4 h-4 shrink-0" />
           {isUploading ? t('uploadingPhotos') : t('addPhotos')}
         </button>
       </div>

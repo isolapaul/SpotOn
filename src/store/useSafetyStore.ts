@@ -20,7 +20,7 @@ const blockCallable = httpsCallable<{ uid: string }, unknown>(functions, 'blockU
 const unblockCallable = httpsCallable<{ uid: string }, unknown>(functions, 'unblockUser');
 
 interface SafetyStore {
-  /** The users the signed-in user blocked: their reviews, replies and photos are hidden. */
+  /** The users the signed-in user blocked: their reviews and replies are hidden from them. */
   blocked: Set<string>;
   sync: (uid: string | null) => void;
   report: (target: ReportTarget, reason: ReportReason, text: string) => Promise<void>;

@@ -57,7 +57,7 @@ export default function DeleteAccountModal({ confirmWord, onClose, onDeleted }: 
       panelClassName="w-[90%] max-w-md p-6"
     >
       <div className="flex items-start gap-3 mb-4">
-        <div className="flex-shrink-0 w-11 h-11 rounded-full bg-red-500/15 flex items-center justify-center">
+        <div className="shrink-0 w-11 h-11 rounded-full bg-red-500/15 flex items-center justify-center">
           <TriangleAlert className="w-5 h-5 text-red-400" strokeWidth={2.2} />
         </div>
         <h3 className="text-white text-lg font-semibold leading-snug pt-2">{t('deleteAccountTitle')}</h3>
@@ -76,7 +76,7 @@ export default function DeleteAccountModal({ confirmWord, onClose, onDeleted }: 
         autoCapitalize="none"
         spellCheck={false}
         disabled={isDeleting}
-        className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500"
+        className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-hidden focus:ring-2 focus:ring-red-500"
       />
       {uploadsPending && <p className="text-amber-300 text-sm mt-3">{t('deleteAccountUploadsPending')}</p>}
       {error && <p className="text-red-300 text-sm mt-3">{error}</p>}

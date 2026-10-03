@@ -17,7 +17,9 @@ interface SpotActionsProps {
   highlight: SpotHighlight;
 }
 
-const TILE = `no-min-size flex-1 min-w-0 h-14 rounded-[14px] flex flex-col items-center justify-center gap-1 text-[12px] font-semibold
+// Equal tiles while every label fits; a longer label (owners see five tiles) widens its own tile
+// instead of being cut, and on the narrowest screens the row wraps.
+const TILE = `no-min-size flex-1 min-w-fit px-1 h-14 rounded-r2 flex flex-col items-center justify-center gap-1 text-[12px] font-semibold
   touch-manipulation active:scale-[.97] transition-transform duration-150 disabled:opacity-40`;
 
 function Tile({ label, ariaLabel, onClick, children, pressed, disabled }: Readonly<{
@@ -29,9 +31,9 @@ function Tile({ label, ariaLabel, onClick, children, pressed, disabled }: Readon
   disabled?: boolean;
 }>) {
   return (
-    <button type="button" onClick={onClick} aria-label={ariaLabel} aria-pressed={pressed} disabled={disabled} className={`${TILE} bg-white/[.08] text-label`}>
+    <button type="button" onClick={onClick} aria-label={ariaLabel} aria-pressed={pressed} disabled={disabled} className={`${TILE} bg-white/8 text-label`}>
       {children}
-      <span className="truncate max-w-full px-1">{label}</span>
+      <span className="truncate max-w-full">{label}</span>
     </button>
   );
 }
@@ -47,10 +49,10 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
   const [picking, setPicking] = useState(false);
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       <a href={navigationUrl} target="_blank" rel="noopener noreferrer" className={`${TILE} bg-brand-600 text-white`}>
         <Navigation className="w-5 h-5" aria-hidden="true" />
-        <span className="truncate max-w-full px-1">{t('directions')}</span>
+        <span className="truncate max-w-full">{t('directions')}</span>
       </a>
       {favorite.canToggle && (
         <Tile

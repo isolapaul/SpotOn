@@ -54,7 +54,7 @@ These are **variables, not secrets**: they are public client config that gets co
 - `NEXT_PUBLIC_CONTACT_EMAIL` = the contact e-mail shown there (public; use an address you are happy to publish)
 - `NEXT_PUBLIC_MAPBOX_TOKEN` = the Mapbox **public** access token (starts with `pk.`), restricted in the Mapbox account to the URL `https://spoton.isolapaul.hu`. Required for releases (the build refuses to start without it); without it the map is a blank background. It is public by nature: every map request carries it. The old `NEXT_PUBLIC_CARTO_API_KEY` variable is no longer used and can be deleted.
 
-The container build refuses to run without the last two (`scripts/check-public-env.mjs --production`).
+The container build refuses to run without the last three (`scripts/check-public-env.mjs --production`).
 
 Any change to these requires a new tag and release (`NEXT_PUBLIC_*` values are compiled into the bundle). Setting them in the server's `.env` does nothing.
 
@@ -160,7 +160,7 @@ The copied `docker-compose.yml` still contains the placeholder `v0.0.0@sha256:00
 
 ```bash
 cd /srv/docker/spoton
-./update.sh v2.0.2                           # tag from the release / Dependabot PR
+./update.sh v2.1.0                           # tag from the release / Dependabot PR
 ```
 
 A release starts when a `vX.Y.Z` tag is pushed on the commit to release; the release workflow then builds, scans, signs and publishes the image.
@@ -330,6 +330,35 @@ Order, when a release needs several of them:
 4. Never rename or drop an exported function: the old name is deleted on deploy and clients that still call it break.
 
 Keep a copy of the rules currently in production (Console → Firestore → Rules) before replacing them, so a bad deploy can be reverted by pasting them back.
+
+### 16.1 Release v2.1.0 (one time, in this order)
+
+v2.1.0 needs a new build variable, new indexes, new and removed functions, a one-time data migration and new rules.
+Do the steps one after another, without a long pause between 4 and 7: until the migration runs, levels are not stored, and until the rules are deployed, the new app cannot save push registrations, bios or lists.
+
+1. **Before tagging:** create the repository variable `NEXT_PUBLIC_MAPBOX_TOKEN` (§3). The release build refuses to start without it.
+2. **Terms (A1):** the new terms version (`TERMS_VERSION` 2026-09-30) asks everyone to accept again. Terms §8 promises an e-mail announcement 15 days before changes take effect: send it before the release.
+3. Push the tag `v2.1.0` and wait for the release workflow (§7).
+4. Indexes, then functions, from a checkout of the tag (§16):
+   ```bash
+   npx firebase deploy --only firestore:indexes --project <PROJECT_ID>   # wait until all show "Enabled"
+   npx firebase deploy --only functions --project <PROJECT_ID>
+   ```
+   The CLI asks whether to delete `onSpotApproved` and `onReviewAdded`: answer **yes**. They are merged into `onSpotUpdated`; left running, they would send every approval and review notification twice.
+5. XP migration (item 5), right after the functions deploy. It needs Application Default Credentials for the project (`gcloud auth application-default login`). Dry run first, read the plan (look for users whose level floor is unexpectedly high), then apply:
+   ```bash
+   npm ci
+   npx tsx scripts/migrate-xp.ts --project <PROJECT_ID>            # dry run: prints the plan
+   npx tsx scripts/migrate-xp.ts --project <PROJECT_ID> --apply    # writes it
+   ```
+   Running it again later only fixes differences.
+6. Server: `./update.sh v2.1.0` (§7).
+7. Rules, right after the client is live (they allow less for the old client):
+   ```bash
+   npx firebase deploy --only firestore:rules --project <PROJECT_ID>
+   ```
+   `storage.rules` did not change in this release.
+8. Post-deploy checks (§13). In addition: the map shows the Mapbox styles in all five themes; an admin approves a test spot (the owner gets the inbox note and one push); a follow, a reply and a list save work.
 
 
 ## 17. Android app (Trusted Web Activity)

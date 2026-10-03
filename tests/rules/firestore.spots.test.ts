@@ -3,7 +3,7 @@
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
 import {
   addDoc, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp,
-  Timestamp, updateDoc, where, type Firestore,
+  setDoc, Timestamp, updateDoc, where, type Firestore,
 } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 import {
@@ -119,6 +119,9 @@ describe('create (addSpot)', () => {
     await assertSucceeds(create(db, newSpot(ALICE, { category: 'c1' }))); // item 7: a custom category
     await assertFails(create(db, newSpot(ALICE, { category: 'c-missing' })));
     await assertFails(create(db, newSpot(ALICE, { primaryImageIndex: 1 })));
+    // Item 5: a new spot's photos are the creator's and shown (no XP for hidden or credited photos).
+    await assertFails(create(db, newSpot(ALICE, { spotImages: [spotImage('9_x', IMG1, BOB)] })));
+    await assertFails(create(db, newSpot(ALICE, { spotImages: [spotImage('9_x', IMG1, ALICE), spotImage('9_y', 'https://hidden.test/y.jpg', ALICE)] })));
     await assertFails(create(db, newSpot(ALICE, { primaryImageIndex: -1 })));
     await assertFails(create(db, newSpot(ALICE, { category: 'nightclub' })));
     await assertFails(create(db, newSpot(ALICE, { location: { lat: 91, lng: 0 } })));
@@ -128,6 +131,11 @@ describe('create (addSpot)', () => {
     await assertFails(create(db, newSpot(ALICE, { name: 'x'.repeat(101) })));
     await assertFails(create(db, newSpot(ALICE, { description: 'x'.repeat(2001) })));
     await assertFails(create(dbAs(env, null), newSpot(ALICE)));
+  });
+  it('denies spot ids the moderation callables cannot address (over 200 characters)', async () => {
+    const db = dbAs(env, ALICE);
+    await assertSucceeds(setDoc(doc(db, 'spots', 'a'.repeat(200)), newSpot(ALICE)));
+    await assertFails(setDoc(doc(db, 'spots', 'a'.repeat(201)), newSpot(ALICE)));
   });
 });
 

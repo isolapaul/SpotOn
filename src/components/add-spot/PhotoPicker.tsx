@@ -61,7 +61,7 @@ export default function PhotoPicker({ previews, primaryIndex, onPick, onRemove, 
               {/* A local data: URL preview: nothing to optimise */}
               <Image src={preview} alt={`Preview ${index + 1}`} fill unoptimized sizes="33vw" className="object-cover" />
               {index === primaryIndex && (
-                <div className="absolute top-1 left-1 bg-primary-500 text-white text-xs px-2 py-1 rounded">
+                <div className="absolute top-1 left-1 bg-primary-500 text-white text-xs px-2 py-1 rounded-sm">
                   {t('primaryBadge')}
                 </div>
               )}
@@ -76,7 +76,7 @@ export default function PhotoPicker({ previews, primaryIndex, onPick, onRemove, 
                 <button
                   type="button"
                   onClick={() => onMakePrimary(index)}
-                  className="absolute bottom-1 left-1 right-1 bg-black/60 hover:bg-black/80 text-white text-xs py-1 rounded transition-colors"
+                  className="absolute bottom-1 left-1 right-1 bg-black/60 hover:bg-black/80 text-white text-xs py-1 rounded-sm transition-colors"
                 >
                   {t('makePrimary')}
                 </button>

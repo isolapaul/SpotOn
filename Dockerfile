@@ -1,13 +1,13 @@
-# SpotOn production image (T16): Next.js standalone on distroless Node 22, non-root, read-only rootfs.
+# SpotOn production image (T16): Next.js standalone on distroless Node 24, non-root, read-only rootfs.
 # Base images (D17): Debian 13 in both stages, pinned by digest (Dependabot updates the FROM lines).
 # NEXT_PUBLIC_* are build args (D16); no secrets or SMTP_* here — those are runtime env only.
 
-FROM node:22-trixie-slim@sha256:b26b04c123d9ff8ab646ceb18b9d75a1173acf64b9a401094b906d27b29338d4 AS deps
+FROM node:24-trixie-slim@sha256:8ec5d7557396cfe32d21c3f9c13072355ceab22b584578ca4bb28af31120cffe AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
 
-FROM node:22-trixie-slim@sha256:b26b04c123d9ff8ab646ceb18b9d75a1173acf64b9a401094b906d27b29338d4 AS builder
+FROM node:24-trixie-slim@sha256:8ec5d7557396cfe32d21c3f9c13072355ceab22b584578ca4bb28af31120cffe AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_FIREBASE_API_KEY
@@ -32,9 +32,9 @@ ENV NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY \
     NEXT_PUBLIC_MAPBOX_TOKEN=$NEXT_PUBLIC_MAPBOX_TOKEN
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN node scripts/check-public-env.mjs --production && npx --no-install next build
+RUN node scripts/check-public-env.mjs --production && npm run build
 
-FROM gcr.io/distroless/nodejs22-debian13:nonroot@sha256:ec2313763dd43931543bd03830466e0c409ce73a487e8d46f10db72d3b816c1c AS runtime
+FROM gcr.io/distroless/nodejs24-debian13:nonroot@sha256:9eeb7f5887d0e239e78264b06f7f11d2e14be534050481803a9e4728fcdd278e AS runtime
 ARG VERSION=dev
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.source="https://github.com/isolapaul/SpotOn" \

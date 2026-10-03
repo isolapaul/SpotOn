@@ -24,7 +24,7 @@ describe('buildPinHtml', () => {
     const html = buildPinHtml({ category: 'park', variant: 'approved', highlighted: false });
     expect(html).toContain('data-variant="approved" data-category="park" data-highlighted="false"');
     expect(html).toContain(glyphToSvgMarkup(CATEGORY_GLYPHS.park, '#FFFFFF'));
-    expect(html).toContain('class="spot-pin__dot"');
+    expect(html).not.toContain('spot-pin__dot');
   });
 
   it('pending: white pin, dashed ring, clock badge; highlighted: gold ring and star, no dash', () => {

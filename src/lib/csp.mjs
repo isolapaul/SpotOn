@@ -29,6 +29,8 @@ export function buildCsp({ nonce, isDev, useEmulators }) {
     'connect-src': ["'self'", 'https://api.mapbox.com', 'https://*.tiles.mapbox.com', 'https://events.mapbox.com', 'https://*.googleapis.com', 'https://*.cloudfunctions.net', 'https://apis.google.com', ...local, ...(useEmulators ? ['ws://127.0.0.1:*', 'ws://localhost:*'] : [])],
     'frame-src': ["'self'", 'https://*.firebaseapp.com', 'https://apis.google.com', 'https://accounts.google.com', ...local],
     'worker-src': ["'self'", 'blob:'],
+    // Safari before 15.5 ignores worker-src and falls back to child-src (Mapbox's blob worker).
+    'child-src': ["'self'", 'blob:'],
     'manifest-src': ["'self'"],
     'object-src': ["'none'"],
     'base-uri': ["'self'"],

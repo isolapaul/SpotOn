@@ -48,13 +48,13 @@ function RequestRow({ uid, onOpenProfile }: Readonly<{ uid: string; onOpenProfil
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white/[0.06] p-3 motion-safe:animate-item-in">
+    <div className="flex items-center gap-3 rounded-2xl bg-white/6 p-3 motion-safe:animate-item-in">
       <button
         type="button"
         onClick={() => { onOpenProfile(); openProfile(uid); }}
         className="no-min-size flex-1 min-w-0 flex items-center gap-3 text-left"
       >
-        <span aria-hidden="true" className="w-10 h-10 rounded-full overflow-hidden grid place-items-center bg-brand-600 text-white font-semibold flex-shrink-0">
+        <span aria-hidden="true" className="w-10 h-10 rounded-full overflow-hidden grid place-items-center bg-brand-600 text-white font-semibold shrink-0">
           {profile?.profilePictureURL ? (
             // eslint-disable-next-line @next/next/no-img-element -- user-hosted avatar URLs (any origin)
             <img src={profile.profilePictureURL} alt="" className="w-full h-full object-cover" />

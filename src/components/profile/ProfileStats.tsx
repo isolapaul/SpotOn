@@ -19,7 +19,7 @@ export default function ProfileStats({ spotsCount, favoritesCount, followers, fo
     </div>
   );
   return (
-    <div className="w-full max-w-md flex rounded-[18px] bg-surface-1 divide-x divide-white/[.06]">
+    <div className="w-full max-w-md flex rounded-[18px] bg-surface-1 divide-x divide-white/6">
       {stat(spotsCount, t('spots'))}
       {stat(favoritesCount, t('favorites'))}
       {stat(followers, t('followers'))}

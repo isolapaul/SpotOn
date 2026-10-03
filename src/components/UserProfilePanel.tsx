@@ -1,5 +1,6 @@
 'use client';
 
+import { actionErrorKey } from '@/lib/callableErrors';
 import { ListCards, ListView } from './lists/ListsRow';
 import type { SpotList as SpotListType } from '@/lib/lists';
 import { useEffect, useMemo, useState } from 'react';
@@ -92,7 +93,7 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
       setVersion((v) => v + 1);
     } catch (error) {
       console.error('Follow action failed:', error);
-      showToast(t('genericError'), 'error');
+      showToast(t(actionErrorKey(error)), 'error');
     } finally {
       setBusy(false);
     }
@@ -117,8 +118,8 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
 
         {profile === undefined ? (
           <div className="px-5 pt-6 flex flex-col items-center gap-3" aria-busy="true">
-            <div className="w-24 h-24 rounded-full bg-white/[.06] motion-safe:animate-pulse" />
-            <div className="w-40 h-6 rounded-lg bg-white/[.06] motion-safe:animate-pulse" />
+            <div className="w-24 h-24 rounded-full bg-white/6 motion-safe:animate-pulse" />
+            <div className="w-40 h-6 rounded-lg bg-white/6 motion-safe:animate-pulse" />
           </div>
         ) : profile === null ? (
           <p className="px-5 pt-10 text-center text-label-secondary">{t('profileNotFound')}</p>
@@ -151,7 +152,7 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
 
             {view?.blocked ? null : view && !view.canView ? (
               <div className="mt-8 rounded-[18px] bg-surface-1 p-6 text-center motion-safe:animate-item-in">
-                <span className="mx-auto mb-3 w-12 h-12 rounded-full grid place-items-center bg-white/[.06]">
+                <span className="mx-auto mb-3 w-12 h-12 rounded-full grid place-items-center bg-white/6">
                   <Lock className="w-5 h-5 text-label-secondary" aria-hidden="true" />
                 </span>
                 <p className="text-label font-semibold">{t('profilePrivate')}</p>
@@ -160,7 +161,7 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
             ) : view ? (
               <div className="mt-6">
                 {tabs.length > 1 && (
-                  <div role="tablist" className={`mb-3 grid ${tabs.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} rounded-xl bg-white/[.06] p-1`}>
+                  <div role="tablist" className={`mb-3 grid ${tabs.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} rounded-xl bg-white/6 p-1`}>
                     {tabs.map((k) => (
                       <button
                         key={k}
@@ -200,7 +201,7 @@ function Header({ profile, level }: Readonly<{ profile: PublicProfile; level: nu
   const picture = !failed ? profile.profilePictureURL : null;
   return (
     <div className="flex flex-col items-center text-center">
-      <span className="w-24 h-24 rounded-full overflow-hidden grid place-items-center bg-brand-600 text-white text-[36px] font-semibold ring-4 ring-white/[.06]">
+      <span className="w-24 h-24 rounded-full overflow-hidden grid place-items-center bg-brand-600 text-white text-[36px] font-semibold ring-4 ring-white/6">
         {picture ? (
           // eslint-disable-next-line @next/next/no-img-element -- user-hosted avatar URLs (any origin)
           <img src={picture} alt="" className="w-full h-full object-cover" onError={() => setFailed(true)} />
@@ -218,7 +219,7 @@ function Header({ profile, level }: Readonly<{ profile: PublicProfile; level: nu
         <LevelBadge level={level} size={18} />
         <LevelName level={level} />
       </span>
-      {profile.bio && <p className="mt-3 max-w-sm text-[15px] text-label-secondary whitespace-pre-line break-words">{profile.bio}</p>}
+      {profile.bio && <p className="mt-3 max-w-sm text-[15px] text-label-secondary whitespace-pre-line wrap-break-word">{profile.bio}</p>}
     </div>
   );
 }
@@ -237,7 +238,7 @@ function Stats({ spots, followers, following }: Readonly<{ spots: number | null;
     </div>
   );
   return (
-    <div className="mt-5 w-full flex rounded-[18px] bg-surface-1 divide-x divide-white/[.06]">
+    <div className="mt-5 w-full flex rounded-[18px] bg-surface-1 divide-x divide-white/6">
       {stat(spots, t('spots'))}
       {stat(followers, t('followers'))}
       {stat(following, t('followingCount'))}

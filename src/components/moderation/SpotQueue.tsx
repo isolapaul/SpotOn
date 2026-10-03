@@ -39,7 +39,7 @@ export default function SpotQueue({ spots, onOpenSpot }: Readonly<SpotQueueProps
             aria-label={spot.name}
             className="no-min-size w-full text-left flex gap-4 touch-manipulation transition-transform duration-150 active:scale-[.98]"
           >
-            <span className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-surface-3">
+            <span className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-surface-3">
               <Image src={getThumbnailUrl(spot)} alt="" fill sizes="80px" className="object-cover" unoptimized={isImageUnoptimized(spot)} />
             </span>
             <span className="flex-1 min-w-0">
@@ -53,7 +53,7 @@ export default function SpotQueue({ spots, onOpenSpot }: Readonly<SpotQueueProps
                 <span className="text-label-tertiary text-xs truncate">{spot.createdByName}</span>
               </span>
             </span>
-            <ChevronRight className="w-5 h-5 flex-shrink-0 self-center text-label-tertiary" aria-hidden="true" />
+            <ChevronRight className="w-5 h-5 shrink-0 self-center text-label-tertiary" aria-hidden="true" />
           </button>
         </QueueCard>
       ))}

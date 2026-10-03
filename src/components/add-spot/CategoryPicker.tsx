@@ -30,9 +30,9 @@ export default function CategoryPicker({ value, onChange }: Readonly<CategoryPic
               role="radio"
               aria-checked={selected}
               onClick={() => onChange(c.id)}
-              className={`no-min-size h-[72px] rounded-[14px] flex flex-col items-center justify-center gap-1.5 px-1 text-[12px] font-semibold
+              className={`no-min-size h-[72px] rounded-r2 flex flex-col items-center justify-center gap-1.5 px-1 text-[12px] font-semibold
                 touch-manipulation transition-colors duration-200 active:scale-95 ${
-                  selected ? 'bg-brand-600 text-white' : 'bg-white/[.06] text-label-secondary'
+                  selected ? 'bg-brand-600 text-white' : 'bg-white/6 text-label-secondary'
                 }`}
             >
               <GlyphIcon glyph={c.glyph} className={`w-6 h-6 ${selected ? 'motion-safe:animate-badge-pop' : ''}`} />

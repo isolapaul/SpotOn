@@ -19,7 +19,7 @@ Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only 
 | Layer | Tech |
 |---|---|
 | Framework | Next.js 16 App Router (`src/app`, `src/proxy.ts`), TypeScript strict |
-| UI | React 19, Tailwind CSS 3 (design tokens in `tailwind.config.ts`; materials, pins and view transitions in `src/app/globals.css`), lucide-react |
+| UI | React 19, Tailwind CSS 4 (CSS-first: design tokens in the `@theme` block, the `chrome-dark` variant and `@utility` classes in `src/app/globals.css`, with materials, pins and view transitions; no `tailwind.config`), lucide-react |
 | Map | Mapbox GL JS 3 (Mapbox styles per theme; no token = a plain offline background) |
 | State | Zustand 5 (`src/store/*`, several persisted to localStorage) |
 | Backend (BaaS) | Firebase: Auth, Firestore, Storage, Cloud Messaging (web push) |
@@ -53,7 +53,7 @@ src/store/useUserStore.ts        Auth flows, user doc, terms acceptance, admins,
 src/store/useUploadStore.ts      Background uploads of new spots, photos and reviews (G4)
 src/store/useLocationStore.ts    Location status + sessionStorage cache; the only geolocation caller
 src/store/useDiscoveryStore.ts   Explore's sort, filter, batch and scroll, kept while it is closed
-src/store/use*Store.ts           language (selected language only), map theme (+ tile configs), notifications, push prompt, toast (forwards to notifications), ui
+src/store/use*Store.ts           language (selected language only), map theme, notifications, push prompt, toast (forwards to notifications), ui
 src/hooks/useAppBootstrap.ts     Loading orchestration: auth + spots listeners, map ready, app-ready delays
 src/hooks/useSheetDrag.ts, useCardDrag.ts  Vertical sheet / place-card gestures (thresholds in lib/sheetGesture)
 src/hooks/useStandaloneFullHeight.ts  iOS standalone full-height fix (lib/appViewport)
@@ -67,12 +67,14 @@ src/lib/firebase.ts              Firebase client init (auth, db, storage, functi
 src/lib/translations.ts          hu/en/de dictionaries (TranslationKey type)
 src/lib/i18n.ts                  Pure translate()/interpolate()/splitBold()/splitSlots() and the Language type
 src/lib/csp.mjs                  CSP builder shared by src/proxy.ts (pages) and next.config.mjs (/api/*)
-src/lib/levelUtils.ts, levelTheme.ts  Level thresholds 3/10/15/20 spots, perks, badge colours, level-up rule
-src/lib/categories.ts, spotUtils.ts  The nine categories and their label keys; navigation URLs
+src/lib/levelUtils.ts, levelTheme.ts  XP level thresholds and rewards (parity with functions/src/lib/levels.ts), perks, badge colours, level-up rule
+src/lib/categories.ts, spotUtils.ts  Built-in categories (+ the super admin's from useCategoryStore) and their label keys; navigation URLs
 src/lib/terms.ts                 TERMS_VERSION and the acceptance check (A1)
 src/lib/mapStyles.ts             Mapbox style per theme, offline fallback without a token
-functions/src/index.ts           Exports only: triggers (functions/src/triggers: notifications, publicProfiles/spotsCount/admin-flag sync)
-                                 and callables (functions/src/callables: highlights, spot images/likes, admins, username/name style, account deletion)
+functions/src/index.ts           Exports only: triggers (functions/src/triggers: spot notifications, edit proposals, replies, XP sync,
+                                 publicProfiles/spotsCount/admin-flag sync) and callables (functions/src/callables: moderation, reports,
+                                 reviews and replies, follows/blocks/profiles/search, categories, highlights, spot images/likes, admins,
+                                 username/name style/pin icon, account deletion); functions/README.md lists every function
 firestore.rules, storage.rules   Security rules; tests in tests/rules/ (`npm run test:rules`)
 firestore.indexes.json           Composite indexes
 firebase.json                    Firestore rules/indexes, Storage rules, Functions config, emulator ports
@@ -86,25 +88,28 @@ docs/play-store.md               Play listing texts, Data safety and content rat
 ### Firestore data model (current)
 - `spots/{id}`: name, category, description, location{lat,lng}, createdBy, createdByName, createdByPhoto,
   status ('pending'|'approved'|'rejected'), rejection{reason,at} (rejected only), createdAt, imageUrls[], spotImages[{id,url,addedBy,addedAt,likes,likedBy[]}],
-  primaryImageIndex, **reviews[] embedded array**, highlighted[], isHighlighted.
+  primaryImageIndex, **reviews[] embedded array**, highlighted[], isHighlighted, updatedAt (owner edits and photo additions; approveSpot's
+  version check), approvedAt (set by approveSpot), contributors[] (server: reviewers and photo adders other than the creator, for XP),
+  ownerPin (server: the owner's pin icon from level 4).
   Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
   Spots of deleted accounts have `createdBy: "deleted-user"` and no createdByName/createdByPhoto.
   Status changes and deletes go only through the moderation callables (`approveSpot`, `rejectSpot`, `removeSpot`); admins may still edit fields and photos directly.
 - `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmTokens[], language,
   notificationsEnabled, notificationSettings, spotsCount (server-maintained, all statuses),
+  xp, level, levelFloor (server: XP levels, the floor set once by scripts/migrate-xp.ts), pinIcon,
   termsVersion + termsAcceptedAt (accepted Terms/Privacy version, A1; lib/terms),
   questProgress/questRewards (legacy Valentine event; unused).
 - `publicProfiles/{uid}`: server-maintained public mirror of a user (username, profilePictureURL,
-  customNameColor/Font, isAdmin, spotsCount); public `get`, no client writes.
+  customNameColor/Font, isAdmin, spotsCount, xp, level, bio, isPrivate, followersCount, followingCount); public `get`, no client writes.
 - `usernames/{name}`: `{uid}` registry, written only by the `claimUsername` callable (the `searchUsers` callable reads it by prefix).
-- Item 8: `users/{uid}.bio` (≤150), `.profilePrivate`, `.showSaved` (client-written); `publicProfiles` mirrors `bio`, `isPrivate` and holds `followersCount`/`followingCount`. `follows/{follower}_{target}` and `followRequests/{requester}_{target}` are written only by the follow callables and read by their two sides; `rateLimits/{uid}` is server-only (people search). A private profile hides only the lists on the profile page (`getProfile`), never the spots on the map.
+- Item 8: `users/{uid}.bio` (≤150), `.profilePrivate`, `.showSaved` (client-written); `publicProfiles` mirrors `bio`, `isPrivate` and holds `followersCount`/`followingCount`. `follows/{follower}_{target}` and `followRequests/{requester}_{target}` are written only by the follow callables and read by their two sides; `rateLimits/{uid}` is server-only (per-action windows: search, follow, report, reply, photo; `functions/src/lib/rateLimit.ts`), and so is `followNotices/{requester}_{target}` (a private user hears about one requester at most once a day). `adminNotices/edit_{spotId}` (server-only) limits admin pings for edit proposals to one an hour. A private profile hides only the lists on the profile page (`getProfile`), never the spots on the map.
 - `admins/{uid}`: email, username, photoURL, addedAt, addedBy, role ('super' | 'admin').
 - `categories/{id}` (item 7): name (Hungarian), nameEn?, nameDe? (fall back to name), icon (one of `src/lib/categoryIcons.ts`; legacy docs may hold an emoji), createdAt, updatedAt. Written by the super admin (rules); deleted only by the `deleteCategory` callable while unused. A spot's `category` is a built-in id or such a doc id (rules `validCategory`); unknown ids show as 'other'.
 - `spotEdits/{spotId}` (item 4): the owner's proposed edit of an approved spot, at most one per spot: spotId, spotName, ownerId, status ('pending'|'rejected'), proposed{name?, description?, category?, location?, removeImageUrls?, primaryImageUrl?}, rejection{reason,at}, createdAt. Reviewed with `reviewSpotEdit`.
-- `photoSubmissions/{id}` (item 4): a photo waiting for an admin: spotId, spotName, spotOwner, uploader, url, status, createdAt. Written only by `addSpotImages`, resolved by `reviewPhotoSubmission`.
-- `users/{uid}/inbox/{id}` (item 4): moderation decisions for the user (type, spotId, spotName, reason?, read, createdAt), written only by Cloud Functions; the notification centre shows them.
-- `spots/{id}/replies/{id}`: reviewId, userId, text (≤500), createdAt, editedAt? — replies and questions under reviews; author-written (rules), admins remove through reports. Reviews may carry `editedAt` (the `editReview` callable).
-- `users/{uid}/lists/{id}`: name (≤50), spotIds (≤200), shared, createdAt, updatedAt — the user's spot lists, owner-only (rules; at most 30 in the UI). `getProfile` returns the shared ones to visitors who may view the profile; `deleteAccount` removes them. Spots carry `approvedAt` (set by `approveSpot`; older spots fall back to `createdAt` for Explore's "New this week").
+- `photoSubmissions/{id}` (item 4): a photo waiting for an admin: spotId, spotName, uploader, url, status, createdAt. Written only by `addSpotImages`, resolved by `reviewPhotoSubmission`.
+- `users/{uid}/inbox/{id}`: notices for the user (type, spotId, spotName, reason?, actorUid?/actorName? for follow news and replies, read, createdAt): moderation decisions and removals, follow requests/accepts, followed users' new spots, replies. Written only by Cloud Functions (at most 50 kept), the notification centre shows them; each type's push follows its own setting (`settingsKeyOf`). `deleteAccount` removes the notices that name the deleted user.
+- `spots/{id}/replies/{id}`: reviewId, userId, text (≤500), createdAt, editedAt? — replies and questions under reviews; created by the `addReply` callable (the review must exist, no block, rate limit), edited and deleted by the author (rules), admins remove through reports. Reviews may carry `editedAt` (the `editReview` callable).
+- `users/{uid}/lists/{id}`: name (≤50), spotIds (≤200), shared, createdAt, updatedAt — the user's spot lists, owner-only (rules; at most 30 in the UI). `getProfile` returns the shared ones to visitors who may view the profile; `deleteAccount` removes them, and removing a spot takes its id out of every list. Spots carry `approvedAt` (set by `approveSpot`; older spots fall back to `createdAt` for Explore's "New this week").
 - `reports/{reporter}_{key}` (one per person and thing, `key` = hash of kind/spot/target): written by `reportContent`, read by admins, resolved by `resolveReport`. `blocks/{blocker}_{blocked}`: written by `blockUser`/`unblockUser`, read by the blocker.
 - Storage: `spot-images/{uid}/…` (new uploads; legacy flat `spot-images/…` stays readable),
   `spot-images/deleted-user/…` (kept photos of deleted accounts), `profile-pictures/{uid}/…`, `profile-banners/{uid}/…`.
@@ -162,13 +167,13 @@ Never commit `.env*` files — sole exception: `functions/.env.demo-spoton` (emu
 - One way to translate: `useT()` (React) or `translate()` from `lib/i18n` (non-React code). No hardcoded user-visible strings — add keys to all three languages in `lib/translations.ts`. No emoji in interface text.
 - Shared primitives (`components/ui/`): `PanelShell`, `ModalShell`, `Button`/`CloseButton`, `StarRating`, `CategoryIcon`, `LevelBadge`; sheet gestures via `useSheetDrag` / `useCardDrag`. Don't hand-roll new overlays.
 - Constants (limits, thresholds, categories, z-index) live in `lib/` — no magic numbers in JSX.
-- Tailwind classes must be static strings (JIT cannot see `replace()`-built class names). Buttons with custom layouts need `no-min-size` (the global button rule centres content and sets a minimum size).
+- Tailwind classes must be static strings (the scanner cannot see `replace()`-built class names). The app's plain CSS in globals.css lives in `@layer utilities` (as it came after the utilities under v3); the `.mapboxgl-*` overrides stay unlayered, because mapbox-gl.css is unlayered and would win over any layer. Children of `space-y-*` should not carry their own vertical margins (v4 puts the space as margin-bottom); use `flex flex-col gap-*` there. Buttons with custom layouts need `no-min-size` (the global button rule centres content and sets a minimum size).
 - Types: shared domain types live next to their store (`Spot`, `Review`, `SpotImage` in `useSpotStore.ts`) until a `src/domain/` module is introduced; no `any` in new code.
 - No `innerHTML`/`dangerouslySetInnerHTML`.
 
 ## 7. Deployment target (summary — full runbook: `docs/deploy.md`)
 
 - Image: `ghcr.io/isolapaul/spoton` (private), built by `.github/workflows/release.yml` on `vX.Y.Z` tags; Trivy-gated, SBOM, cosign-signed.
-- Runtime: distroless Node 22 nonroot, `output: 'standalone'`, read-only rootfs, `cap_drop: ALL`, no published ports, only on network `edge`.
+- Runtime: distroless Node 24 nonroot, `output: 'standalone'`, read-only rootfs, `cap_drop: ALL`, no published ports, only on network `edge`.
 - Server dir: `/srv/docker/spoton/` (`docker-compose.yml`, `.env` chmod 600). Pinned by digest; **not** Watchtower-managed; updated with `./update.sh vX.Y.Z`.
 - Cloudflare Tunnel public hostname `spoton.isolapaul.hu` → `http://spoton:3000`.

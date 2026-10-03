@@ -58,7 +58,7 @@ export default function InstallGate() {
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-surface-0 flex flex-col items-center justify-center p-6 text-center text-white">
+    <div className="fixed inset-0 z-9999 bg-surface-0 flex flex-col items-center justify-center p-6 text-center text-white">
       {/* Close button */}
       <button
         onClick={handleDismiss}
@@ -101,11 +101,11 @@ export default function InstallGate() {
               </div>
               <ol className="text-left space-y-3 text-white/80">
                 <li className="flex items-start gap-2">
-                  <span className="font-bold text-brand-400 flex-shrink-0">1.</span>
+                  <span className="font-bold text-brand-400 shrink-0">1.</span>
                   <span><RichText text={t('installIosStep1')} /></span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="font-bold text-brand-400 flex-shrink-0">2.</span>
+                  <span className="font-bold text-brand-400 shrink-0">2.</span>
                   <span><RichText text={t('installIosStep2')} /></span>
                 </li>
               </ol>
@@ -121,11 +121,11 @@ export default function InstallGate() {
               </div>
               <ol className="text-left space-y-3 text-white/80">
                 <li className="flex items-start gap-2">
-                  <span className="font-bold text-brand-400 flex-shrink-0">1.</span>
+                  <span className="font-bold text-brand-400 shrink-0">1.</span>
                   <span><RichText text={t('installAndroidStep1')} /></span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="font-bold text-brand-400 flex-shrink-0">2.</span>
+                  <span className="font-bold text-brand-400 shrink-0">2.</span>
                   <span><RichText text={t('installAndroidStep2')} /></span>
                 </li>
               </ol>
@@ -151,7 +151,7 @@ export default function InstallGate() {
             type="checkbox"
             checked={dontShowAgain}
             onChange={(e) => setDontShowAgain(e.target.checked)}
-            className="w-4 h-4 rounded border-white/30 bg-white/10 text-brand-600 focus:ring-brand-500 focus:ring-offset-0 cursor-pointer"
+            className="w-4 h-4 rounded-sm border-white/30 bg-white/10 text-brand-600 focus:ring-brand-500 focus:ring-offset-0 cursor-pointer"
           />
           <span className="text-sm text-white/60">{t('installDontShowAgain')}</span>
         </label>

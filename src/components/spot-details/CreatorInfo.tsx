@@ -29,7 +29,7 @@ export default function CreatorInfo({ spot }: Readonly<CreatorInfoProps>) {
   return (
     <>
       <div className="flex items-center gap-3.5 px-4 py-3">
-        <Calendar className="w-5 h-5 text-label-secondary flex-shrink-0" aria-hidden="true" />
+        <Calendar className="w-5 h-5 text-label-secondary shrink-0" aria-hidden="true" />
         <span className="min-w-0 flex-1">
           <span className="block text-[13px] text-label-secondary">{t('addedOn')}</span>
           <span className="block text-[15px] text-label">{formatLongDate(spot.createdAt, language, t('unknownDate'))}</span>
@@ -40,9 +40,9 @@ export default function CreatorInfo({ spot }: Readonly<CreatorInfoProps>) {
         onClick={() => openProfile(spot.createdBy)}
         disabled={!creatorProfile}
         aria-label={t('openProfileOf', { name: creatorDisplayName })}
-        className="no-min-size w-full text-left flex items-center gap-3.5 px-4 py-3 transition-colors active:bg-white/[.04] disabled:cursor-default"
+        className="no-min-size w-full text-left flex items-center gap-3.5 px-4 py-3 transition-colors active:bg-white/4 disabled:cursor-default"
       >
-        <User className="w-5 h-5 text-label-secondary flex-shrink-0" aria-hidden="true" />
+        <User className="w-5 h-5 text-label-secondary shrink-0" aria-hidden="true" />
         <span className="min-w-0 flex-1">
           <span className="block text-[13px] text-label-secondary">{t('by')}</span>
           <span className="flex items-center gap-2">
@@ -53,7 +53,7 @@ export default function CreatorInfo({ spot }: Readonly<CreatorInfoProps>) {
             </span>
           </span>
         </span>
-        {creatorProfile && <ChevronRight className="w-4 h-4 text-label-tertiary flex-shrink-0" aria-hidden="true" />}
+        {creatorProfile && <ChevronRight className="w-4 h-4 text-label-tertiary shrink-0" aria-hidden="true" />}
       </button>
     </>
   );

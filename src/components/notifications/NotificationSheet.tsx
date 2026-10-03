@@ -54,7 +54,7 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
         paddingTop: 'calc(env(safe-area-inset-top) + 8px)',
         paddingRight: 'max(12px, calc(env(safe-area-inset-right) + 8px))',
       }}
-      backdropClassName={`absolute inset-0 bg-black/40 backdrop-blur-sm touch-manipulation ${
+      backdropClassName={`absolute inset-0 bg-black/40 backdrop-blur-xs touch-manipulation ${
         closing ? 'motion-safe:animate-backdrop-out' : 'motion-safe:animate-backdrop-in'
       }`}
       panelClassName={`w-full max-w-[400px] max-h-[75vh] origin-top-right ${
@@ -71,7 +71,7 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
         </div>
         <button
           onClick={close}
-          className="flex-shrink-0 w-11 h-11 -mr-1.5 rounded-full flex items-center justify-center
+          className="shrink-0 w-11 h-11 -mr-1.5 rounded-full flex items-center justify-center
             hover:bg-white/10 active:scale-90 transition touch-manipulation"
           aria-label="Close"
         >
@@ -109,7 +109,7 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
         <div className="px-3">
         {notifications.length === 0 && hasRequests ? null : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-14 px-6 motion-safe:animate-item-in">
-            <div className="w-16 h-16 rounded-full bg-white/[0.06] flex items-center justify-center mb-4">
+            <div className="w-16 h-16 rounded-full bg-white/6 flex items-center justify-center mb-4">
               <Bell className="w-7 h-7 text-white/40" strokeWidth={1.8} />
             </div>
             <p className="text-white font-semibold text-center mb-1">{t('noNotifications')}</p>

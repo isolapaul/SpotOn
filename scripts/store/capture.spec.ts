@@ -4,7 +4,12 @@ import { featureGraphic, squareIcon } from './brand';
 import { DEMO_PASSWORD, DEMO_USERS } from './demo-data';
 
 // Store graphics and phone screenshots for Google Play and the web manifest (docs/play-store.md).
-// Run with `npm run store:assets` (emulators + demo seed). Real map tiles are loaded on purpose.
+// Run with `npm run store:assets` (emulators + demo seed). Real map tiles are loaded on purpose:
+// export NEXT_PUBLIC_MAPBOX_TOKEN first (a public token allowed for http://127.0.0.1:3100; the
+// production one is restricted to the site), else the map would be a plain background.
+if (!process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
+  throw new Error('Set NEXT_PUBLIC_MAPBOX_TOKEN for the store screenshots (see docs/play-store.md §3).');
+}
 
 const SCREENSHOTS = 'public/screenshots';
 const STORE = 'docs/play-store';

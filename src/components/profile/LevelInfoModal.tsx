@@ -33,15 +33,15 @@ export default function LevelInfoModal({ levelInfo, xp, onClose }: Readonly<Leve
   const progress = getLevelProgress(xp, levelInfo);
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/80 backdrop-blur-xs"
         onClick={onClose}
         aria-label="Close level info"
       />
 
-      <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-surface-2 ring-1 ring-white/10 shadow-sheet p-6 rounded-[28px] animate-scale-in">
+      <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-surface-2 ring-1 ring-white/10 shadow-sheet p-6 rounded-r4 animate-scale-in">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -59,7 +59,7 @@ export default function LevelInfoModal({ levelInfo, xp, onClose }: Readonly<Leve
         {/* Current Level */}
         <div className={`p-6 rounded-xl ${levelInfo.bgColor} border-2 ${levelInfo.borderColor} mb-6`}>
           <div className="flex items-center gap-4 mb-4">
-            <LevelBadge level={levelInfo.level} size={64} className="flex-shrink-0 drop-shadow-lg" />
+            <LevelBadge level={levelInfo.level} size={64} className="shrink-0 drop-shadow-lg" />
             <div className="flex-1">
               <h3 className={`text-2xl font-bold ${levelInfo.textColor}`}>{t(levelInfo.nameKey)}</h3>
               <p className="text-white/80 text-sm">{t('currentLevel')}</p>
@@ -114,7 +114,7 @@ export default function LevelInfoModal({ levelInfo, xp, onClose }: Readonly<Leve
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  <LevelBadge level={level} size={48} className={`flex-shrink-0 ${isUnlocked ? '' : 'grayscale opacity-70'}`} />
+                  <LevelBadge level={level} size={48} className={`shrink-0 ${isUnlocked ? '' : 'grayscale opacity-70'}`} />
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h4 className={`text-xl font-bold ${isUnlocked ? info.textColor : 'text-white/60'}`}>
@@ -142,7 +142,7 @@ export default function LevelInfoModal({ levelInfo, xp, onClose }: Readonly<Leve
                             <li key={perk.keys.join(' ')} className="text-white/50 italic">{text}</li>
                           ) : (
                             <li key={perk.keys.join(' ')} className="flex items-center gap-2">
-                              {perk.icon && <PerkIcon icon={perk.icon} className={`w-4 h-4 flex-shrink-0 ${info.textColor}`} />}
+                              {perk.icon && <PerkIcon icon={perk.icon} className={`w-4 h-4 shrink-0 ${info.textColor}`} />}
                               {text}
                             </li>
                           );

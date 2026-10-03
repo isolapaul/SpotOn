@@ -1,5 +1,6 @@
 'use client';
 
+import { SPOT_CHANGED_ERROR } from '@/store/useSpotStore';
 import { useState } from 'react';
 import Image from 'next/image';
 import { CheckCircle2, Heart, Navigation, Share, X } from 'lucide-react';
@@ -39,13 +40,13 @@ function Thumb({ spot, morphSource }: Readonly<{ spot: Spot; morphSource: boolea
   );
   if (!url) {
     return (
-      <span {...vt} className="w-[88px] h-[88px] flex-shrink-0 rounded-[18px] grid place-items-center bg-brand-500/15 text-brand-400">
+      <span {...vt} className="w-[88px] h-[88px] shrink-0 rounded-[18px] grid place-items-center bg-brand-500/15 text-brand-400">
         <CategoryIcon category={spot.category} className="w-9 h-9" />
       </span>
     );
   }
   return (
-    <span {...vt} className="relative w-[88px] h-[88px] flex-shrink-0 rounded-[18px] overflow-hidden bg-surface-3">
+    <span {...vt} className="relative w-[88px] h-[88px] shrink-0 rounded-[18px] overflow-hidden bg-surface-3">
       <Image key={url} src={url} alt="" fill sizes="88px" className="object-cover" unoptimized={isImageUnoptimized(spot)} onError={() => setFailed((f) => [...f, url])} />
     </span>
   );
@@ -79,7 +80,7 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
       onClose();
     } catch (error) {
       console.error('Failed to approve spot:', error);
-      showToast(t('approveError'), 'error');
+      showToast(t(error instanceof Error && error.message === SPOT_CHANGED_ERROR ? 'spotChangedReview' : 'approveError'), 'error');
     } finally {
       setApproving(false);
     }
@@ -88,7 +89,7 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
   return (
     <div className="animate-fade-in">
       <div className="flex gap-3.5">
-        <button type="button" onClick={onDetails} tabIndex={-1} aria-hidden="true" className="no-min-size block flex-shrink-0 touch-manipulation active:opacity-80">
+        <button type="button" onClick={onDetails} tabIndex={-1} aria-hidden="true" className="no-min-size block shrink-0 touch-manipulation active:opacity-80">
           <Thumb spot={spot} morphSource={morphSource} />
         </button>
         <div className="min-w-0 flex-1 pt-0.5">
@@ -96,7 +97,7 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
             <h2 className="text-[17px] font-semibold leading-snug text-label line-clamp-2">{spot.name}</h2>
           </button>
           <p className="mt-0.5 flex items-center gap-1.5 text-[15px] text-label-secondary min-w-0 motion-safe:animate-rise-in" style={{ animationDelay: '60ms' }}>
-            <CategoryIcon category={spot.category} className="w-4 h-4 flex-shrink-0 text-brand-400" />
+            <CategoryIcon category={spot.category} className="w-4 h-4 shrink-0 text-brand-400" />
             <span className="truncate">
               {categoryLabel(spot.category)}
               {distance && <span className="tabular-nums"> · {distance}</span>}
@@ -124,7 +125,7 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
             type="button"
             onClick={() => void shareSpot(spot)}
             aria-label={t('share')}
-            className="-mt-1 w-11 h-11 flex-shrink-0 grid place-items-center rounded-full touch-manipulation"
+            className="-mt-1 w-11 h-11 shrink-0 grid place-items-center rounded-full touch-manipulation"
           >
             <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
               <Share className="w-4 h-4 text-label-secondary" strokeWidth={2.4} />
@@ -135,7 +136,7 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
           type="button"
           onClick={onClose}
           aria-label={t('close')}
-          className="-mr-1.5 -mt-1 w-11 h-11 flex-shrink-0 grid place-items-center rounded-full touch-manipulation"
+          className="-mr-1.5 -mt-1 w-11 h-11 shrink-0 grid place-items-center rounded-full touch-manipulation"
         >
           <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
             <X className="w-4 h-4 text-label-secondary" strokeWidth={2.5} />
@@ -182,7 +183,7 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
             onClick={toggle}
             aria-label={isFavorite ? t('removeFromFavorites') : t('addToFavorites')}
             aria-pressed={isFavorite}
-            className="w-[58px] h-[50px] flex-shrink-0 rounded-full grid place-items-center bg-white/10
+            className="w-[58px] h-[50px] shrink-0 rounded-full grid place-items-center bg-white/10
               touch-manipulation active:scale-90 transition-transform"
           >
             <Heart

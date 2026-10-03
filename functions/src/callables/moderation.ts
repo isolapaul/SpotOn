@@ -1,6 +1,8 @@
 /**
  * Moderation callables (item 4), admins only; every "no" needs a reason (1–500 characters):
- * - approveSpot: a pending spot becomes approved (onSpotApproved then tells the owner).
+ * - approveSpot: a pending spot becomes approved (onSpotUpdated then tells the owner); the admin
+ *   passes the version they saw (seenAt: the spot's updatedAt or createdAt), so an owner's edit
+ *   made meanwhile is never approved unseen.
  * - rejectSpot: a pending spot becomes rejected, with the reason on it (owner and admins read it).
  * - removeSpot: deletes a spot with its photos, pending edit and photo submissions.
  * - reviewSpotEdit: applies or rejects an owner's proposed edit of an approved spot; the admin
@@ -10,7 +12,7 @@
  * Every decision is read, checked and written in one transaction. The owner or uploader hears about
  * it (inbox + push). Logs only ids and outcomes.
  */
-import {DocumentData, FieldValue, Timestamp} from "firebase-admin/firestore";
+import {DocumentData, FieldValue, Timestamp, Transaction} from "firebase-admin/firestore";
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {getAdminRole} from "../lib/admin";
@@ -68,7 +70,7 @@ async function logged<T>(
 
 /** Reads a spot in a transaction and requires it to be pending. */
 async function pendingSpot(
-  tx: FirebaseFirestore.Transaction,
+  tx: Transaction,
   spotId: string,
 ): Promise<DocumentData> {
   const snap = await tx.get(db.collection("spots").doc(spotId));
@@ -78,15 +80,30 @@ async function pendingSpot(
   return data;
 }
 
+/** A spot's version: its last owner edit or photo addition (updatedAt), else its creation. */
+function spotVersion(data: DocumentData): number | null {
+  const at = (data.updatedAt ?? data.createdAt) as Timestamp | undefined;
+  return at && typeof at.toMillis === "function" ? Math.floor(at.toMillis()) : null;
+}
+
 export const approveSpot = onCall(async (request) => {
   const uid = await requireAdmin(request);
   const spotId = requireId(request.data?.spotId, "spotId");
+  // null: the spot had no version to see (a legacy spot without a Timestamp createdAt).
+  const seenAt = request.data?.seenAt === null ? null : requireSeenAt(request.data?.seenAt);
   return logged("approveSpot", uid, spotId, async () => {
     await db.runTransaction(async (tx) => {
-      await pendingSpot(tx, spotId);
+      const data = await pendingSpot(tx, spotId);
+      // The owner may still edit a spot under review: approve only the version the admin saw.
+      // A legacy spot without a version is approved as it is (any owner edit stamps updatedAt,
+      // so from then on it has one).
+      const version = spotVersion(data);
+      if (version !== null && version !== seenAt) {
+        throw new HttpsError("failed-precondition", "SPOT_CHANGED");
+      }
       tx.update(db.collection("spots").doc(spotId), {
         status: "approved",
-        // Explore's "new this week" and the following feed order by it.
+        // Explore's "New this week" counts from it.
         approvedAt: FieldValue.serverTimestamp(),
       });
     });

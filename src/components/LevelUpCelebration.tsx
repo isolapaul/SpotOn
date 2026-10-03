@@ -133,10 +133,10 @@ function Celebration({
               {perks.map((perk, i) => (
                 <li
                   key={perk.keys.join(' ')}
-                  className="flex items-center gap-3 rounded-2xl bg-white/[.08] ring-1 ring-white/10 px-3.5 py-2.5 text-left text-[15px] text-white motion-safe:animate-item-in"
+                  className="flex items-center gap-3 rounded-2xl bg-white/8 ring-1 ring-white/10 px-3.5 py-2.5 text-left text-[15px] text-white motion-safe:animate-item-in"
                   style={{ animationDelay: `${560 + i * 80}ms` }}
                 >
-                  {perk.icon && <PerkIcon icon={perk.icon} className={`w-5 h-5 flex-shrink-0 ${info.textColor}`} />}
+                  {perk.icon && <PerkIcon icon={perk.icon} className={`w-5 h-5 shrink-0 ${info.textColor}`} />}
                   {perk.keys.map((k) => t(k)).join(' ')}
                 </li>
               ))}

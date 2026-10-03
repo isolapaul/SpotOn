@@ -37,7 +37,7 @@ function AvatarFace() {
 
   if (!user) {
     return (
-      <span className="w-10 h-10 rounded-full grid place-items-center bg-black/[.06] chrome-dark:bg-white/10">
+      <span className="w-10 h-10 rounded-full grid place-items-center bg-black/6 chrome-dark:bg-white/10">
         <UserRound className="w-[22px] h-[22px] text-chrome-ink-2" strokeWidth={2} />
       </span>
     );
@@ -67,7 +67,7 @@ function Avatar() {
         key={mine.info.level}
         level={mine.info.level}
         size={20}
-        className="absolute -right-1 -bottom-1 drop-shadow motion-safe:animate-badge-pop"
+        className="absolute -right-1 -bottom-1 drop-shadow-sm motion-safe:animate-badge-pop"
       />
     </LevelRing>
   );
@@ -114,9 +114,9 @@ export default function BottomNavigation({
             tabIndex={picking ? -1 : 0}
             aria-label={t('explore')}
             className="no-min-size group h-14 flex-1 min-w-0 flex items-center gap-3 pl-3 pr-2 rounded-full text-left
-              touch-manipulation active:bg-black/[.05]"
+              touch-manipulation active:bg-black/5"
           >
-            <Compass className="w-6 h-6 flex-shrink-0 text-brand-600 chrome-dark:text-brand-400" strokeWidth={2} />
+            <Compass className="w-6 h-6 shrink-0 text-brand-600 chrome-dark:text-brand-400" strokeWidth={2} />
             <span className="min-w-0 flex flex-col transition-transform duration-150 group-active:scale-[.97]">
               <span className="text-[17px] font-semibold leading-tight text-chrome-ink truncate">{t('explore')}</span>
               {spotCount > 0 && (
@@ -131,7 +131,7 @@ export default function BottomNavigation({
             onClick={onProfile}
             tabIndex={picking ? -1 : 0}
             aria-label={t('profile')}
-            className="w-12 h-12 flex-shrink-0 grid place-items-center rounded-full touch-manipulation
+            className="w-12 h-12 shrink-0 grid place-items-center rounded-full touch-manipulation
               transition-transform duration-150 active:scale-90"
           >
             <Avatar />
@@ -147,7 +147,7 @@ export default function BottomNavigation({
         >
           {picking && (
             <>
-              <MapPin className="w-5 h-5 flex-shrink-0 text-brand-600 chrome-dark:text-brand-400 motion-safe:animate-hint-bob" strokeWidth={2.2} />
+              <MapPin className="w-5 h-5 shrink-0 text-brand-600 chrome-dark:text-brand-400 motion-safe:animate-hint-bob" strokeWidth={2.2} />
               <span className="text-[15px] font-medium text-chrome-ink truncate">{t(pickingHint)}</span>
             </>
           )}
@@ -159,7 +159,7 @@ export default function BottomNavigation({
         type="button"
         onClick={picking ? onCancelPicking : onAdd}
         aria-label={picking ? t('cancel') : t('add')}
-        className={`relative h-14 w-14 flex-shrink-0 grid place-items-center rounded-full shadow-float touch-manipulation
+        className={`relative h-14 w-14 shrink-0 grid place-items-center rounded-full shadow-float touch-manipulation
           transition-[background-color,color,transform] duration-250 active:scale-90 ${
             picking ? 'material-chrome text-chrome-ink' : 'bg-brand-600 text-white'
           }`}

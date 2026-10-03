@@ -15,6 +15,7 @@ import {getAdminRole} from "../lib/admin";
 import {db} from "../lib/app";
 import {isValidSpotId} from "../lib/ids";
 import {notifyAdminsToReview} from "../lib/inbox";
+import {checkRate} from "../lib/rateLimit";
 import {
   currentImages,
   imageAccess,
@@ -162,12 +163,16 @@ export const addSpotImages = onCall(async (request) => {
       const waiting = direct ? [] : (await tx.get(db.collection("photoSubmissions")
         .where("spotId", "==", rawSpotId).where("uploader", "==", uid)))
         .docs.map((doc) => doc.get("url") as string);
+      // The submissions are created all or none: one of them waiting means a retry of a call
+      // that landed (after a client timeout), which counts as done.
       if (urls.some((url) => waiting.includes(url))) {
-        throw new HttpsError("invalid-argument", "Image already waiting");
+        return {direct: false, retry: true, spotName: "", owner: ""};
       }
       if (waiting.length + urls.length > MAX_PENDING_PER_UPLOADER && !direct) {
         throw new HttpsError("resource-exhausted", "MAX_PENDING_PHOTOS");
       }
+      // Each submission pings the admins: at most RATE_LIMITS.photo calls an hour per user.
+      const countSubmission = direct ? null : await checkRate(tx, uid, "photo");
       let plan;
       try {
         const ids = uniqueIdFactory(used);
@@ -179,28 +184,34 @@ export const addSpotImages = onCall(async (request) => {
         throw error;
       }
       if (direct) {
-        tx.update(spotRef, {...plan});
-        return {direct: true, spotName: String(spot.name ?? ""), owner: String(spot.createdBy ?? "")};
+        // updatedAt: the version approveSpot checks (a photo added while under review).
+        tx.update(spotRef, {...plan, updatedAt: now});
+        return {
+          direct: true, retry: false, spotName: String(spot.name ?? ""), owner: String(spot.createdBy ?? ""),
+        };
       }
+      countSubmission?.();
       for (const url of urls) {
         tx.create(db.collection("photoSubmissions").doc(), {
           spotId: rawSpotId,
           spotName: String(spot.name ?? ""),
-          spotOwner: String(spot.createdBy ?? ""),
           uploader: uid,
           url,
           status: "pending",
           createdAt: now,
         });
       }
-      return {direct: false, spotName: String(spot.name ?? ""), owner: String(spot.createdBy ?? "")};
+      return {
+        direct: false, retry: false, spotName: String(spot.name ?? ""), owner: String(spot.createdBy ?? ""),
+      };
     });
 
-    if (!result.direct) {
+    if (!result.direct && !result.retry) {
       await notifyAdminsToReview("photoSubmitted", "photoSubmittedBody", [result.spotName],
         {type: "photo_submitted", spotId: rawSpotId});
     }
-    logger.info("addSpotImages", {uid, spotId, outcome: result.direct ? "added" : "submitted"});
+    const outcome = result.retry ? "already-waiting" : result.direct ? "added" : "submitted";
+    logger.info("addSpotImages", {uid, spotId, outcome});
     return result.direct ? {added: urls.length, pending: 0} : {added: 0, pending: urls.length};
   } catch (error) {
     logger.info("addSpotImages", {uid, spotId, outcome: outcomeOf(error)});

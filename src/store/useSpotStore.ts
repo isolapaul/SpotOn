@@ -3,8 +3,10 @@ import {
   doc,
   updateDoc,
   runTransaction,
+  serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
+import { toMillis } from '@/lib/newSpots';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '@/lib/firebase';
 import type { DateInput } from '@/lib/dates';
@@ -71,6 +73,8 @@ export interface Spot {
   createdAt: DateInput;
   /** Set by the approveSpot callable (spots approved before v2.2 have none). */
   approvedAt?: DateInput;
+  /** The last owner edit or photo addition (approveSpot's version check); absent until then. */
+  updatedAt?: DateInput;
   reviews?: Review[];
   averageRating?: number;
   /** The owner's special pin icon (item 6), server-written; normalise before use. */
@@ -105,7 +109,10 @@ interface SpotStore {
 
 // Callables (T10, region europe-west3 via `functions`)
 const toggleImageLikeCallable = httpsCallable<{ spotId: string; imageId: string }, unknown>(functions, 'toggleImageLike');
-const approveSpotCallable = httpsCallable<{ spotId: string }, unknown>(functions, 'approveSpot');
+/** approveSpot refused: the owner changed the spot after the admin saw it (shown as its own message). */
+export const SPOT_CHANGED_ERROR = 'SPOT_CHANGED';
+
+const approveSpotCallable = httpsCallable<{ spotId: string; seenAt: number | null }, unknown>(functions, 'approveSpot');
 
 function updateSpotInState(
   set: (fn: (state: { spots: Spot[] }) => { spots: Spot[] }) => void,
@@ -117,7 +124,7 @@ function updateSpotInState(
   }));
 }
 
-export const useSpotStore = create<SpotStore>((set) => ({
+export const useSpotStore = create<SpotStore>((set, get) => ({
   spots: [],
   isLoading: false,
   error: null,
@@ -134,7 +141,15 @@ export const useSpotStore = create<SpotStore>((set) => ({
 
   approveSpot: async (spotId) => {
     try {
-      await approveSpotCallable({ spotId });
+      // The version the admin saw: the server refuses if the owner changed the spot since.
+      const spot = get().spots.find((s) => s.id === spotId);
+      const seenAt = spot ? toMillis(spot.updatedAt) ?? toMillis(spot.createdAt) : null;
+      try {
+        await approveSpotCallable({ spotId, seenAt });
+      } catch (error) {
+        if (error instanceof Error && error.message === SPOT_CHANGED_ERROR) throw new Error(SPOT_CHANGED_ERROR);
+        throw error;
+      }
       updateSpotInState(set, spotId, (spot) => ({ ...spot, status: 'approved' as const }));
     } catch (error) {
       console.error('Error approving spot:', error);
@@ -144,7 +159,8 @@ export const useSpotStore = create<SpotStore>((set) => ({
 
   updateSpotFields: async (spotId, fields) => {
     try {
-      await updateDoc(doc(db, 'spots', spotId), { ...fields });
+      // updatedAt: the version approveSpot checks (rules require it on owner edits under review).
+      await updateDoc(doc(db, 'spots', spotId), { ...fields, updatedAt: serverTimestamp() });
       updateSpotInState(set, spotId, (spot) => ({ ...spot, ...fields }));
     } catch (error) {
       console.error('Error updating spot:', error);
@@ -165,6 +181,7 @@ export const useSpotStore = create<SpotStore>((set) => ({
           imageUrls: next.imageUrls,
           spotImages: next.spotImages,
           primaryImageIndex: next.primaryImageIndex,
+          updatedAt: serverTimestamp(),
         });
         return next;
       });
@@ -178,7 +195,7 @@ export const useSpotStore = create<SpotStore>((set) => ({
 
   setPrimaryImage: async (spotId, imageIndex) => {
     try {
-      await updateDoc(doc(db, 'spots', spotId), { primaryImageIndex: imageIndex });
+      await updateDoc(doc(db, 'spots', spotId), { primaryImageIndex: imageIndex, updatedAt: serverTimestamp() });
       updateSpotInState(set, spotId, (spot) => ({ ...spot, primaryImageIndex: imageIndex }));
     } catch (error) {
       console.error('Error setting primary image:', error);

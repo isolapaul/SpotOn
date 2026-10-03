@@ -30,7 +30,9 @@ beforeEach(async () => {
 });
 afterAll(async () => { await env.cleanup(); });
 
-const upd = (db: Firestore, id: string, data: Record<string, unknown>) => updateDoc(doc(db, 'spots', id), data);
+// Owner edits stamp updatedAt (approveSpot's version check); `raw` leaves it out.
+const upd = (db: Firestore, id: string, data: Record<string, unknown>) => updateDoc(doc(db, 'spots', id), { ...data, updatedAt: serverTimestamp() });
+const raw = (db: Firestore, id: string, data: Record<string, unknown>) => updateDoc(doc(db, 'spots', id), data);
 
 describe('owner edits of spots under review or rejected', () => {
   it('allows name, description, category, location, primary photo and photo removal', async () => {
@@ -40,6 +42,11 @@ describe('owner edits of spots under review or rejected', () => {
       await assertSucceeds(upd(db, id, { location: { lat: 47.2, lng: 19.3 }, primaryImageIndex: 1 }));
       await assertSucceeds(upd(db, id, { imageUrls: [IMG2], spotImages: [spotImage('2_b', IMG2, ALICE)], primaryImageIndex: 0 }));
     }
+  });
+  it('requires updatedAt = now on every owner edit', async () => {
+    const db = dbAs(env, ALICE);
+    await assertFails(raw(db, SPOT_PENDING, { name: 'No version' }));
+    await assertFails(raw(db, SPOT_PENDING, { name: 'Old version', updatedAt: T0 }));
   });
   it('resubmits a rejected spot: pending, with the rejection removed together', async () => {
     const db = dbAs(env, ALICE);
@@ -83,6 +90,8 @@ describe('edit proposals (spotEdits)', () => {
     await assertSucceeds(getDoc(edit(db)));
     await assertSucceeds(getDocs(query(collection(db, 'spotEdits'), where('ownerId', '==', ALICE))));
     await assertSucceeds(deleteDoc(edit(db)));
+    // spotName is the spot's current name (admins see it in the queue and the push).
+    await assertFails(setDoc(edit(db), proposal({ spotName: 'Something else' })));
   });
   it('a new proposal replaces a rejected one', async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {

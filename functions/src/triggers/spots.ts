@@ -1,90 +1,75 @@
 /**
- * Firestore triggers on spots/{spotId}: approval, new review, new pending spot, resubmission.
+ * Firestore triggers on spots/{spotId}: one update trigger (approval, new review, resubmission:
+ * one function run per spot write instead of three) and the new pending spot alert.
  */
 import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firestore";
+import {DocumentData} from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
-import "../lib/app";
+import {db} from "../lib/app";
+import {followId} from "../lib/follows";
 import {sendNotificationToAdmins, sendNotificationToUser} from "../lib/notify";
 import {notifyAdminsToReview, notifyInbox} from "../lib/inbox";
 import {notifyFollowersOfSpot} from "../lib/followNews";
 
-// ========================================
-// TRIGGER 1: Spot Approved
-// ========================================
-export const onSpotApproved = onDocumentUpdated(
-  "spots/{spotId}",
-  async (event) => {
-    const before = event.data?.before.data();
-    const after = event.data?.after.data();
+/** pending → approved: the owner (inbox + push) and their followers hear about it. */
+async function onApproved(spotId: string, after: DocumentData): Promise<void> {
+  const creatorId = after.createdBy;
+  const spotName = String(after.name ?? "");
+  logger.info(`Spot ${spotId} approved, notifying user ${creatorId}`);
+  await notifyInbox({uid: creatorId, type: "spot_approved", spotId, spotName});
+  await notifyFollowersOfSpot(creatorId, spotId, spotName);
+}
 
-    if (!before || !after) return;
+/** A review appended: its owner hears about it (not their own, not from someone they blocked). */
+async function onReviewAdded(spotId: string, after: DocumentData): Promise<void> {
+  const reviews = (after.reviews ?? []) as DocumentData[];
+  const newReview = reviews[reviews.length - 1];
+  const creatorId = String(after.createdBy ?? "");
+  const reviewer = String(newReview?.userId ?? "");
+  if (!newReview || !creatorId || reviewer === creatorId) return;
+  if ((await db.collection("blocks").doc(followId(creatorId, reviewer)).get()).exists) {
+    logger.info(`Review on spot ${spotId} by a user its owner blocked, no notification`);
+    return;
+  }
+  const spotName = after.name;
+  logger.info(`New review on spot ${spotId}, notifying owner ${creatorId}`);
+  await sendNotificationToUser(
+    creatorId,
+    "newReview",
+    "newReviewBody",
+    [spotName, newReview.rating],
+    {
+      type: "new_review",
+      spotId: spotId,
+      spotName: spotName,
+      rating: String(newReview.rating),
+      reviewerName: newReview.userName,
+    },
+    "spotReviewed",
+  );
+}
 
-    // Check if status changed from pending to approved
-    if (before.status === "pending" && after.status === "approved") {
-      const spotId = event.params.spotId;
-      const creatorId = after.createdBy;
-      const spotName = after.name;
+/** rejected → pending (item 4): the admins review it again. */
+async function onResubmitted(spotId: string, after: DocumentData): Promise<void> {
+  logger.info(`Spot ${spotId} resubmitted, notifying admins`);
+  await notifyAdminsToReview("spotResubmitted", "spotResubmittedBody",
+    [String(after.name ?? ""), String(after.createdByName ?? "Anonymous")],
+    {type: "new_pending_spot", spotId});
+}
 
-      logger.info(`Spot ${spotId} approved, notifying user ${creatorId}`);
+export const onSpotUpdated = onDocumentUpdated("spots/{spotId}", async (event) => {
+  const before = event.data?.before.data();
+  const after = event.data?.after.data();
+  if (!before || !after) return;
+  const spotId = event.params.spotId;
+  if (before.status === "pending" && after.status === "approved") await onApproved(spotId, after);
+  if (before.status === "rejected" && after.status === "pending") await onResubmitted(spotId, after);
+  if ((after.reviews ?? []).length > (before.reviews ?? []).length) {
+    await onReviewAdded(spotId, after);
+  }
+});
 
-      // Inbox + push (item 4): the approval stays readable in the notification centre.
-      await notifyInbox({uid: creatorId, type: "spot_approved", spotId, spotName});
-      // Followers hear about it (item 8).
-      await notifyFollowersOfSpot(creatorId, spotId, String(spotName ?? ""));
-    }
-  },
-);
-
-// ========================================
-// TRIGGER 2: New Review Added
-// ========================================
-export const onReviewAdded = onDocumentUpdated(
-  "spots/{spotId}",
-  async (event) => {
-    const before = event.data?.before.data();
-    const after = event.data?.after.data();
-
-    if (!before || !after) return;
-
-    const beforeReviews = before.reviews || [];
-    const afterReviews = after.reviews || [];
-
-    // Check if a new review was added
-    if (afterReviews.length > beforeReviews.length) {
-      const spotId = event.params.spotId;
-      const creatorId = after.createdBy;
-      const spotName = after.name;
-      const newReview = afterReviews[afterReviews.length - 1];
-
-      // Don't notify if user reviewed their own spot
-      if (newReview.userId === creatorId) {
-        logger.info(`User ${creatorId} reviewed their own spot, skipping notification`);
-        return;
-      }
-
-      logger.info(`New review on spot ${spotId}, notifying owner ${creatorId}`);
-
-      await sendNotificationToUser(
-        creatorId,
-        "newReview",
-        "newReviewBody",
-        [spotName, newReview.rating],
-        {
-          type: "new_review",
-          spotId: spotId,
-          spotName: spotName,
-          rating: String(newReview.rating),
-          reviewerName: newReview.userName,
-        },
-        "spotReviewed",
-      );
-    }
-  },
-);
-
-// ========================================
-// TRIGGER 4: New Pending Spot (Admin Alert)
-// ========================================
+// New spot: a pending one alerts the admins, an admin's (approved) one its followers.
 export const onNewPendingSpot = onDocumentCreated(
   "spots/{spotId}",
   async (event) => {
@@ -119,22 +104,5 @@ export const onNewPendingSpot = onDocumentCreated(
         "newPendingSpot",
       );
     }
-  },
-);
-
-// ========================================
-// TRIGGER 5: Rejected spot resubmitted (item 4)
-// ========================================
-export const onSpotResubmitted = onDocumentUpdated(
-  "spots/{spotId}",
-  async (event) => {
-    const before = event.data?.before.data();
-    const after = event.data?.after.data();
-    if (before?.status !== "rejected" || after?.status !== "pending") return;
-    const spotId = event.params.spotId;
-    logger.info(`Spot ${spotId} resubmitted, notifying admins`);
-    await notifyAdminsToReview("spotResubmitted", "spotResubmittedBody",
-      [String(after.name ?? ""), String(after.createdByName ?? "Anonymous")],
-      {type: "new_pending_spot", spotId});
   },
 );

@@ -23,9 +23,9 @@ export default function ProfileTabs({ active, onChange, isAdmin, isSuperAdmin, p
       type="button"
       onClick={() => onChange(id)}
       aria-pressed={active === id}
-      className={`no-min-size relative flex-1 min-w-0 h-9 px-2 rounded-[8px] flex items-center justify-center gap-1.5 text-[13px] font-semibold
+      className={`no-min-size relative flex-1 min-w-0 h-9 px-2 rounded-r1 flex items-center justify-center gap-1.5 text-[13px] font-semibold
         whitespace-nowrap touch-manipulation transition-colors duration-200 ${
-          active === id ? 'bg-white/[.16] text-label shadow-sm' : 'text-label-secondary'
+          active === id ? 'bg-white/16 text-label shadow-xs' : 'text-label-secondary'
         }`}
     >
       {icon}
@@ -34,8 +34,8 @@ export default function ProfileTabs({ active, onChange, isAdmin, isSuperAdmin, p
   );
 
   return (
-    <div className="flex-shrink-0 px-5 mb-4">
-      <div className="flex gap-0.5 p-0.5 rounded-[10px] bg-white/[.08] overflow-x-auto [scrollbar-width:none]">
+    <div className="shrink-0 px-5 mb-4">
+      <div className="flex gap-0.5 p-0.5 rounded-[10px] bg-white/8 overflow-x-auto scrollbar-none">
         {tab('my-spots', <MapPin className="w-3.5 h-3.5" aria-hidden="true" />, t('mySpots'))}
         {tab('favorites', <Heart className="w-3.5 h-3.5" aria-hidden="true" />, t('favorites'))}
         {isAdmin &&

@@ -11,7 +11,10 @@ import {PLACEHOLDER_URL} from "./spotImages";
 
 export const MAX_REASON_LENGTH = 500;
 
-/** The nine built-in categories (the same list as firestore.rules validSpotCreate). */
+/**
+ * The built-in categories (the same list as firestore.rules builtInCategory()); the super admin's
+ * own ones are categories/{id} docs.
+ */
 export const BUILT_IN_CATEGORIES: readonly string[] = [
   "scenic", "smoke-spot", "viewpoint", "other", "hiking", "random", "date-spot", "park", "part",
 ];

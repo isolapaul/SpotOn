@@ -48,7 +48,7 @@ const ToggleCard = ({
             {title}
           </h3>
           {adminBadge && (
-            <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-[10px] font-bold rounded">
+            <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-[10px] font-bold rounded-sm">
               ADMIN
             </span>
           )}
@@ -59,7 +59,7 @@ const ToggleCard = ({
       </div>
       <button
         onClick={onToggle}
-        className={`flex-shrink-0 w-12 h-6 rounded-full transition-all ${
+        className={`shrink-0 w-12 h-6 rounded-full transition-all ${
           isEnabled ? 'bg-green-500' : 'bg-white/20'
         }`}
       >
@@ -165,8 +165,8 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
   const statusCardClass = isEnabled ? 'border border-green-500/30' : 'border border-red-500/30';
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="relative w-full max-w-md bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
+    <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+      <div className="relative w-full max-w-md bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
         {/* Header */}
         <div className="relative p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
@@ -198,7 +198,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
               <button
                 onClick={handleToggleNotifications}
                 disabled={isLoading}
-                className={`flex-shrink-0 px-3 py-2 rounded-lg border font-medium text-xs transition-all disabled:opacity-50 ${
+                className={`shrink-0 px-3 py-2 rounded-lg border font-medium text-xs transition-all disabled:opacity-50 ${
                   isEnabled
                     ? 'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30'
                     : 'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30'
@@ -211,7 +211,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
           {!isEnabled && (
             <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <Bell className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <Bell className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
               <p className="text-amber-200/80 text-xs">
                 {t('notificationSettingsEnableHint')}
               </p>
@@ -255,7 +255,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
           {/* Info Banner */}
           <div className="flex items-start gap-3 p-4 bg-brand-500/10 border border-brand-500/20 rounded-lg">
-            <Bell className="w-5 h-5 text-brand-400 flex-shrink-0 mt-0.5" />
+            <Bell className="w-5 h-5 text-brand-400 shrink-0 mt-0.5" />
             <p className="text-label-secondary text-xs">
               {t('notificationSettingsInfo')}
             </p>

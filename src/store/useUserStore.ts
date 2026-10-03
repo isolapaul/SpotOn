@@ -13,8 +13,7 @@ import {
 import { doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp, collection, onSnapshot } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
-import { getMessaging, getToken, deleteToken, isSupported } from 'firebase/messaging';
-import { app, auth, db, functions, googleProvider, storage } from '@/lib/firebase';
+import { auth, db, functions, googleProvider, storage } from '@/lib/firebase';
 import { mapUserDoc, type NotificationSettings, type User } from '@/lib/mapUserDoc';
 import { generateUsername, normalizeUsername } from '@/lib/username';
 import { extForMime } from '@/lib/spotImages';
@@ -22,6 +21,7 @@ import type { TranslationKey } from '@/lib/translations';
 import { compressImage } from '@/lib/imageCompression';
 import { mapAdminDoc, type AdminUser } from '@/lib/mapAdminDoc';
 import { TERMS_VERSION } from '@/lib/terms';
+import { forgetDevice } from './pushDevice';
 
 export type { User } from '@/lib/mapUserDoc';
 
@@ -70,7 +70,6 @@ interface UserStore {
   updatePinIcon: (icon: string | null) => Promise<void>;
   updateCustomNameFont: (font: string) => Promise<void>;
   updateNotificationSettings: (settings: NotificationSettings) => Promise<void>;
-  rememberFcmToken: (token: string) => void;
   getIdToken: () => Promise<string | null>;
 }
 
@@ -303,48 +302,6 @@ function endNewUserSetup(set: SetState, getUser: () => User | null, recover = tr
   }
 }
 
-// This device's FCM token, remembered so sign-out can remove it (SEC-14).
-const FCM_TOKEN_KEY = 'spoton-fcm-token';
-let rememberedFcmToken: string | null = null;
-
-function readRememberedFcmToken(): string | null {
-  if (rememberedFcmToken) return rememberedFcmToken;
-  try {
-    return globalThis.localStorage?.getItem(FCM_TOKEN_KEY) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function clearRememberedFcmToken() {
-  rememberedFcmToken = null;
-  try {
-    globalThis.localStorage?.removeItem(FCM_TOKEN_KEY);
-  } catch {
-    // storage unavailable
-  }
-}
-
-/** Deletes this device's FCM registration. Never prompts for permission. */
-async function deleteDeviceFcmToken() {
-  try {
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-    if (!(await isSupported())) return;
-    if (!('serviceWorker' in navigator)) return;
-    // The FCM service worker is registered with scope '/' by usePushNotifications.
-    const registration = await navigator.serviceWorker.getRegistration('/');
-    if (!registration) return;
-    const messaging = getMessaging(app);
-    await getToken(messaging, {
-      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-      serviceWorkerRegistration: registration,
-    });
-    await deleteToken(messaging);
-  } catch (error) {
-    console.error('Failed to delete FCM token:', error);
-  }
-}
-
 export const useUserStore = create<UserStore>()(
   persist(
     (set, get) => ({
@@ -494,10 +451,8 @@ export const useUserStore = create<UserStore>()(
       
       deleteAccount: async (confirmUsername: string) => {
         await deleteAccountCallable({ confirmUsername });
-        if (readRememberedFcmToken()) {
-          await deleteDeviceFcmToken().catch((error) => console.error('Failed to delete the FCM token:', error));
-        }
-        clearRememberedFcmToken();
+        // The users doc is gone already: only the device is unregistered.
+        await forgetDevice(null);
         stopAdminListeners(set);
         await firebaseSignOut(auth);
         set({ user: null, loading: false });
@@ -515,20 +470,8 @@ export const useUserStore = create<UserStore>()(
 
       signOut: async () => {
         const { user } = get();
-        const token = readRememberedFcmToken();
-
-        // Remove this device's push token from the user doc (primary cleanup, SEC-14)
-        if (token && user) {
-          try {
-            await updateDoc(doc(db, 'users', user.uid), { fcmTokens: arrayRemove(token) });
-          } catch (error) {
-            console.error('Failed to remove FCM token:', error);
-          }
-        }
-        if (token) {
-          await deleteDeviceFcmToken();
-        }
-        clearRememberedFcmToken();
+        // This device's push registration leaves the user doc and FCM (SEC-14).
+        await forgetDevice(user?.uid ?? null);
 
         stopAdminListeners(set);
 
@@ -850,16 +793,6 @@ export const useUserStore = create<UserStore>()(
 
         await updateDoc(doc(db, 'users', user.uid), { notificationSettings: settings });
         setUser({ ...user, notificationSettings: settings });
-      },
-
-      // Remember this device's FCM token so signOut can remove it
-      rememberFcmToken: (token: string) => {
-        rememberedFcmToken = token;
-        try {
-          globalThis.localStorage?.setItem(FCM_TOKEN_KEY, token);
-        } catch {
-          // storage unavailable: the in-memory copy still works this session
-        }
       },
 
       getIdToken: async () => (auth.currentUser ? auth.currentUser.getIdToken() : null),

@@ -53,7 +53,7 @@ export default function MapStylePopover({ onClose }: Readonly<{ onClose: () => v
       <div
         role="group"
         aria-label={t('mapTheme')}
-        className={`material-chrome material-chrome-dense absolute w-[240px] rounded-[20px] p-1.5 origin-top-right ${
+        className={`material-chrome material-chrome-dense absolute w-[240px] rounded-r3 p-1.5 origin-top-right ${
           closing ? 'motion-safe:animate-sheet-out' : 'motion-safe:animate-sheet-in'
         }`}
         style={{
@@ -69,7 +69,7 @@ export default function MapStylePopover({ onClose }: Readonly<{ onClose: () => v
             aria-pressed={theme === s.id}
             onClick={() => pick(s.id)}
             className="no-min-size w-full h-[52px] flex items-center gap-3 px-2 rounded-xl text-left touch-manipulation
-              active:bg-black/[.06] chrome-dark:active:bg-white/10"
+              active:bg-black/6 chrome-dark:active:bg-white/10"
           >
             <MapStyleThumb theme={s.id} />
             <span className="flex-1 text-[17px] text-chrome-ink">{t(s.name)}</span>

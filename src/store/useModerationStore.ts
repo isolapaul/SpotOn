@@ -135,7 +135,7 @@ export const useModerationStore = create<ModerationStore>((set, get) => ({
     await deleteDoc(doc(db, 'spotEdits', spotId));
   },
   resubmitSpot: async (spotId) => {
-    await updateDoc(doc(db, 'spots', spotId), { status: 'pending', rejection: deleteField() });
+    await updateDoc(doc(db, 'spots', spotId), { status: 'pending', rejection: deleteField(), updatedAt: serverTimestamp() });
   },
 
   rejectSpot: async (spotId, reason) => {

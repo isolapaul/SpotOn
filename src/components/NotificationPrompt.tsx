@@ -45,7 +45,7 @@ export default function NotificationPrompt() {
         style={{ animationDelay: '350ms' }}
       >
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-11 h-11 rounded-full bg-brand-500/15 flex items-center justify-center">
+          <div className="shrink-0 w-11 h-11 rounded-full bg-brand-500/15 flex items-center justify-center">
             <BellRing
               className="w-5 h-5 text-brand-400 motion-safe:animate-bell-ring"
               style={{ animationDelay: '800ms' }}

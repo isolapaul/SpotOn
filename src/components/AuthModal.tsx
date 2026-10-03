@@ -55,7 +55,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
     }
   };
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -172,7 +172,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                     onChange={(e) => setUsername(e.target.value.toLowerCase().replaceAll(/[^a-z0-9_]/g, ''))}
                     placeholder={t('authUsernamePlaceholder')}
                     className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-3 border border-transparent
-                      text-white placeholder-white/40 focus:outline-none focus:ring-2 
+                      text-white placeholder-white/40 focus:outline-hidden focus:ring-2 
                       focus:ring-brand-500 focus:border-transparent transition-all"
                     required={mode === 'signup'}
                     minLength={3}
@@ -198,7 +198,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t('authEmailPlaceholder')}
                   className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-3 border border-transparent
-                    text-white placeholder-white/40 focus:outline-none focus:ring-2 
+                    text-white placeholder-white/40 focus:outline-hidden focus:ring-2 
                     focus:ring-brand-500 focus:border-transparent transition-all"
                   required
                 />
@@ -220,7 +220,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t('authPasswordPlaceholder')}
                   className="w-full pl-12 pr-4 py-3 rounded-xl bg-surface-3 border border-transparent
-                    text-white placeholder-white/40 focus:outline-none focus:ring-2 
+                    text-white placeholder-white/40 focus:outline-hidden focus:ring-2 
                     focus:ring-brand-500 focus:border-transparent transition-all"
                   required
                   minLength={6}
@@ -277,7 +277,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
           </form>
         ) : (
           // Initial view - Choose authentication method
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             {/* Google Sign In Button */}
             <button
               onClick={handleGoogleSignIn}
@@ -320,7 +320,7 @@ export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>)
             </button>
 
             {/* Divider */}
-            <div className="flex items-center gap-3 my-5" aria-hidden="true">
+            <div className="flex items-center gap-3" aria-hidden="true">
               <span className="flex-1 h-px bg-white/10" />
               <span className="text-[13px] text-label-tertiary">{t('authOr')}</span>
               <span className="flex-1 h-px bg-white/10" />

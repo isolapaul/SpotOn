@@ -32,16 +32,16 @@ export default function SpotRow({ spot, rating, reviewCount, distanceKm, index, 
       type="button"
       onClick={onSelect}
       className="no-min-size w-full flex items-center gap-3.5 px-3 py-3 text-left touch-manipulation
-        active:bg-white/[.06] transition-colors motion-safe:animate-item-in"
+        active:bg-white/6 transition-colors motion-safe:animate-item-in"
       style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}
     >
-      <span className="relative w-[68px] h-[68px] flex-shrink-0 rounded-[14px] overflow-hidden bg-surface-3">
+      <span className="relative w-[68px] h-[68px] shrink-0 rounded-r2 overflow-hidden bg-surface-3">
         <Image src={getThumbnailUrl(spot)} alt="" fill className="object-cover" sizes="68px" unoptimized={isImageUnoptimized(spot)} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[17px] font-semibold leading-snug text-label truncate">{spot.name}</span>
         <span className="mt-0.5 flex items-center gap-1.5 text-[14px] text-label-secondary min-w-0">
-          <CategoryIcon category={spot.category} className="w-4 h-4 flex-shrink-0 text-brand-400" />
+          <CategoryIcon category={spot.category} className="w-4 h-4 shrink-0 text-brand-400" />
           <span className="truncate">
             {categoryLabel(spot.category)}
             {distanceKm !== null && <span className="tabular-nums"> · {formatDistance(distanceKm, language)}</span>}
@@ -59,7 +59,7 @@ export default function SpotRow({ spot, rating, reviewCount, distanceKm, index, 
           )}
         </span>
       </span>
-      <ChevronRight className="w-5 h-5 flex-shrink-0 text-label-tertiary" aria-hidden="true" />
+      <ChevronRight className="w-5 h-5 shrink-0 text-label-tertiary" aria-hidden="true" />
     </button>
   );
 }

@@ -34,7 +34,7 @@ export default function BioEditor({ bio }: Readonly<{ bio?: string }>) {
       <button
         type="button"
         onClick={() => setDraft(bio ?? '')}
-        className={`no-min-size max-w-sm mb-3 text-[15px] whitespace-pre-line break-words text-center ${bio ? 'text-label-secondary' : 'text-brand-400 font-medium'}`}
+        className={`no-min-size max-w-sm mb-3 text-[15px] whitespace-pre-line wrap-break-word text-center ${bio ? 'text-label-secondary' : 'text-brand-400 font-medium'}`}
       >
         {bio || t('addBio')}
       </button>
@@ -50,11 +50,11 @@ export default function BioEditor({ bio }: Readonly<{ bio?: string }>) {
         autoFocus
         onChange={(e) => setDraft(e.target.value)}
         placeholder={t('bioPlaceholder')}
-        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 resize-none"
+        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/40 focus:outline-hidden focus:border-white/30 resize-none"
       />
       <div className="mt-2 flex items-center gap-2">
         <span className="flex-1 text-xs text-label-tertiary tabular-nums">{draft.length} / {BIO_MAX}</span>
-        <button type="button" onClick={() => setDraft(null)} className="px-4 py-2 rounded-lg bg-white/[.06] text-white text-sm">
+        <button type="button" onClick={() => setDraft(null)} className="px-4 py-2 rounded-lg bg-white/6 text-white text-sm">
           {t('cancel')}
         </button>
         <button type="button" onClick={save} disabled={saving} className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-semibold disabled:opacity-60">

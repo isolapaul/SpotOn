@@ -55,6 +55,9 @@ describe('users: own document (T11a paths)', () => {
     await assertSucceeds(upd(db, ALICE, { notificationsEnabled: false }));
     await assertSucceeds(upd(db, ALICE, { notificationSettings: { ...SETTINGS, newPendingSpot: false } }));
     await assertSucceeds(upd(db, ALICE, { fcmTokens: arrayRemove('tok1') }));
+    // v2.1.0: push registrations are Firebase Installation IDs
+    await assertSucceeds(upd(db, ALICE, { fcmFids: arrayUnion('fid1'), fcmTokens: arrayRemove('tok2') }));
+    await assertSucceeds(upd(db, ALICE, { fcmFids: arrayRemove('fid1') }));
     // A1: an existing user accepts the current terms (TermsPrompt)
     await assertSucceeds(upd(db, ALICE, { termsVersion: '2026-09-29', termsAcceptedAt: serverTimestamp() }));
   });
@@ -95,6 +98,8 @@ describe('users: own document (T11a paths)', () => {
     await assertFails(upd(db, ALICE, { lastLoginAt: Timestamp.fromDate(new Date('2020-01-01T00:00:00Z')) }));
     await assertFails(upd(db, ALICE, { lastTokenUpdate: 'x'.repeat(65) }));
     await assertFails(upd(db, ALICE, { fcmTokens: Array.from({ length: 101 }, (_, i) => `t${i}`) }));
+    await assertFails(upd(db, ALICE, { fcmFids: Array.from({ length: 101 }, (_, i) => `f${i}`) }));
+    await assertFails(upd(db, ALICE, { fcmFids: 'fid' }));
     await assertFails(upd(db, ALICE, { savedSpots: Array.from({ length: 1001 }, (_, i) => `s${i}`) }));
     await assertFails(upd(db, ALICE, { photoURL: 'x'.repeat(2049) }));
     // A1: the acceptance time is the server's, the version a short string

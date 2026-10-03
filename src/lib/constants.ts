@@ -22,8 +22,8 @@ export const SWIPE_THRESHOLDS = { panel: 150, spotDetails: 100, gallery: 50 } as
  */
 export const DEFAULT_MAP_CENTER: [number, number] = [47.4979, 19.0402];
 export const DEFAULT_MAP_ZOOM = 5;
-/** The closest zoom (Leaflet's 18 on screen). */
-export const MAX_MAP_ZOOM = 18;
+/** The closest zoom: Mapbox 17 is the scale of Leaflet's 18, the closest the map went before. */
+export const MAX_MAP_ZOOM = 17;
 /** Zoom used when panning to the user's location. */
 export const LOCATE_ZOOM = 12;
 /**
@@ -70,13 +70,13 @@ export const DELAYS = {
  * and are therefore not comparable with the rest:
  * - `mapInner` sits inside the map container's `mapBase` (`z-0`) context.
  * - `panelInnerBackdrop` / `panelInnerSheet` (SettingsPanel) are rendered inside ProfilePanel's
- *   `panel` (`z-[60]`) root, so they stack above the profile content although 40/50 < 60 (BUG-22).
+ *   `panel` (`z-60`) root, so they stack above the profile content although 40/50 < 60 (BUG-22).
  */
 export const Z = {
-  mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-[1000]', dock: 'z-50', prompt: 'z-50', placeCard: 'z-[55]',
-  panel: 'z-[60]', panelInnerBackdrop: 'z-40', panelInnerSheet: 'z-50', panelModal: 'z-[70]',
-  gallery: 'z-[100]', floatingButton: 'z-[1500]', modal: 'z-[2000]', usernameSetup: 'z-[3500]',
-  blocking: 'z-[9999]',
+  mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-1000', dock: 'z-50', prompt: 'z-50', placeCard: 'z-55',
+  panel: 'z-60', panelInnerBackdrop: 'z-40', panelInnerSheet: 'z-50', panelModal: 'z-70',
+  gallery: 'z-100', floatingButton: 'z-1500', modal: 'z-2000', usernameSetup: 'z-3500',
+  blocking: 'z-9999',
 } as const;
 
 /** Z keys that live inside another layer's stacking context (see Z). */

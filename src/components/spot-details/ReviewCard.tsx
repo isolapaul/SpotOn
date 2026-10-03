@@ -1,5 +1,6 @@
 'use client';
 
+import { actionErrorKey } from '@/lib/callableErrors';
 import { useState } from 'react';
 import Image from 'next/image';
 import { MessageCircle, Pencil, Trash2 } from 'lucide-react';
@@ -56,7 +57,7 @@ export default function ReviewCard({ review, profile, spotId, open, replies }: R
       after();
     } catch (error) {
       console.error('Review action failed:', error);
-      showToast(t('genericError'), 'error');
+      showToast(t(actionErrorKey(error)), 'error');
     } finally {
       setBusy(false);
     }
@@ -66,14 +67,14 @@ export default function ReviewCard({ review, profile, spotId, open, replies }: R
     <article className="rounded-[18px] bg-surface-1 p-4 motion-safe:animate-item-in">
       <div className="flex items-start gap-3">
         {review.userPhoto && (
-          <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+          <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0">
             <Image src={review.userPhoto} alt={review.userName} fill sizes="40px" className="object-cover" />
           </div>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1 gap-2">
             <ReviewerBadge profile={profile} review={review} />
-            <span className="text-white/40 text-xs flex-shrink-0">
+            <span className="text-white/40 text-xs shrink-0">
               {created ? shortDate(created, language) : ''}
               {review.editedAt ? ` · ${t('edited')}` : ''}
             </span>
@@ -88,10 +89,10 @@ export default function ReviewCard({ review, profile, spotId, open, replies }: R
                 maxLength={MAX_COMMENT}
                 rows={3}
                 onChange={(e) => setComment(e.target.value)}
-                className="w-full rounded-xl bg-white/[.06] border border-white/10 focus:border-white/30 focus:outline-none px-3 py-2 text-label text-sm resize-none"
+                className="w-full rounded-xl bg-white/6 border border-white/10 focus:border-white/30 focus:outline-hidden px-3 py-2 text-label text-sm resize-none"
               />
               <div className="flex gap-2 justify-end">
-                <button type="button" onClick={() => setEditing(false)} className="px-4 h-9 rounded-lg bg-white/[.08] text-label text-sm">{t('cancel')}</button>
+                <button type="button" onClick={() => setEditing(false)} className="px-4 h-9 rounded-lg bg-white/8 text-label text-sm">{t('cancel')}</button>
                 <button
                   type="button"
                   disabled={busy}
@@ -105,7 +106,7 @@ export default function ReviewCard({ review, profile, spotId, open, replies }: R
           ) : (
             <>
               <StarRating rating={review.rating} size="sm" emptyTone="dim" />
-              {review.comment && <p className="text-white/80 text-sm mt-2 whitespace-pre-line break-words">{review.comment}</p>}
+              {review.comment && <p className="text-white/80 text-sm mt-2 whitespace-pre-line wrap-break-word">{review.comment}</p>}
             </>
           )}
 
@@ -134,10 +135,10 @@ export default function ReviewCard({ review, profile, spotId, open, replies }: R
           )}
 
           {confirmDelete && (
-            <div className="mt-3 rounded-xl bg-white/[.04] p-3 motion-safe:animate-fade-in">
+            <div className="mt-3 rounded-xl bg-white/4 p-3 motion-safe:animate-fade-in">
               <p className="text-label text-sm">{t('deleteReviewConfirm')}</p>
               <div className="flex gap-2 justify-end mt-2">
-                <button type="button" onClick={() => setConfirmDelete(false)} className="px-4 h-9 rounded-lg bg-white/[.08] text-label text-sm">{t('cancel')}</button>
+                <button type="button" onClick={() => setConfirmDelete(false)} className="px-4 h-9 rounded-lg bg-white/8 text-label text-sm">{t('cancel')}</button>
                 <button
                   type="button"
                   disabled={busy}
@@ -166,12 +167,12 @@ export default function ReviewCard({ review, profile, spotId, open, replies }: R
                 rows={2}
                 autoFocus
                 onChange={(e) => setReplyText(e.target.value)}
-                className="flex-1 rounded-xl bg-white/[.06] border border-white/10 focus:border-white/30 focus:outline-none px-3 py-2 text-label text-sm resize-none"
+                className="flex-1 rounded-xl bg-white/6 border border-white/10 focus:border-white/30 focus:outline-hidden px-3 py-2 text-label text-sm resize-none"
               />
               <button
                 type="button"
                 disabled={busy || !replyText.trim() || !me}
-                onClick={() => me && run(() => addReply(spotId, review.id, me, replyText), t('replySent'), () => { setReplyText(''); setReplying(false); })}
+                onClick={() => me && run(() => addReply(spotId, review.id, replyText), t('replySent'), () => { setReplyText(''); setReplying(false); })}
                 className="px-4 h-10 rounded-xl bg-brand-600 text-white text-sm font-semibold disabled:opacity-50"
               >
                 {t('send')}
@@ -235,7 +236,7 @@ function ReplyRow({ reply, spotId, open }: Readonly<{ reply: Reply; spotId: stri
             maxLength={MAX_REPLY_LENGTH}
             rows={2}
             onChange={(e) => setText(e.target.value)}
-            className="flex-1 rounded-xl bg-white/[.06] border border-white/10 px-3 py-2 text-label text-sm resize-none focus:outline-none"
+            className="flex-1 rounded-xl bg-white/6 border border-white/10 px-3 py-2 text-label text-sm resize-none focus:outline-hidden"
           />
           <button type="button" disabled={!text.trim()} onClick={() => act(() => editReply(spotId, reply.id, text), () => setEditing(false))}
             className="px-3 h-9 rounded-lg bg-brand-600 text-white text-sm font-semibold disabled:opacity-50">
@@ -243,7 +244,7 @@ function ReplyRow({ reply, spotId, open }: Readonly<{ reply: Reply; spotId: stri
           </button>
         </div>
       ) : (
-        <p className="text-white/75 whitespace-pre-line break-words">{reply.text}</p>
+        <p className="text-white/75 whitespace-pre-line wrap-break-word">{reply.text}</p>
       )}
     </li>
   );

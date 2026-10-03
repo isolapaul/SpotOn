@@ -68,7 +68,7 @@ export default function ReasonSheet({ title, confirmLabel, onConfirm, onClose }:
           autoFocus
           disabled={busy}
           placeholder={t('reasonPlaceholder')}
-          className="w-full rounded-[14px] bg-white/[.06] border border-white/10 focus:border-white/30 focus:outline-none
+          className="w-full rounded-r2 bg-white/6 border border-white/10 focus:border-white/30 focus:outline-hidden
             px-4 py-3 text-label placeholder-white/35 resize-none"
         />
         <div className="flex justify-between mt-1.5 text-[12px]">

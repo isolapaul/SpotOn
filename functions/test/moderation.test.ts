@@ -110,9 +110,13 @@ describe("ownedSpotImagePaths", () => {
     expect(ownedSpotImagePaths([file("spot-images/u/1.jpg", "u"), file("spot-images/u/1.jpg", "u")], ctx))
       .toEqual([{url: url("spot-images/u/1.jpg"), path: "spot-images/u/1.jpg"}]);
   });
-  it("keeps files in the deleted-user folder", () => {
-    expect(ownedSpotImagePaths([file("spot-images/deleted-user/s_1.jpg", "u")], ctx).map((f) => f.path))
-      .toEqual(["spot-images/deleted-user/s_1.jpg"]);
+  it("keeps files in the deleted-user folder of a deleted account's spot", () => {
+    expect(ownedSpotImagePaths([file("spot-images/deleted-user/s_1.jpg", "", "deleted-user")], ctx)
+      .map((f) => f.path)).toEqual(["spot-images/deleted-user/s_1.jpg"]);
+  });
+  it("never deletes a deleted account's kept photo listed on another spot", () => {
+    expect(ownedSpotImagePaths([file("spot-images/deleted-user/s_1.jpg", "attacker", "attacker")], ctx))
+      .toEqual([]);
   });
   it("never deletes someone else's file listed on a spot", () => {
     expect(ownedSpotImagePaths([

@@ -90,7 +90,7 @@ Limits: name 30 characters, short description 80, full description 4000.
 | Feature graphic | 1024 × 500 PNG | `docs/play-store/feature-graphic.png` |
 | Phone screenshots (English) | 1080 × 1920 JPEG, 9:16 | `public/screenshots/01-map.jpg` … `05-profile.jpg` |
 
-The same screenshots are in the web manifest. Regenerate everything after a UI change with `npm run store:assets`: it seeds the emulators with the demo content in `scripts/store/demo-data.ts` (free Pexels photos, downloaded at run time) and runs `scripts/store/capture.spec.ts` with real map tiles. Use the same English screenshots for the Hungarian and German listings, or leave those empty (Play then shows the default-language ones).
+The same screenshots are in the web manifest. Regenerate everything after a UI change with `npm run store:assets`: it seeds the emulators with the demo content in `scripts/store/demo-data.ts` (free Pexels photos, downloaded at run time) and runs `scripts/store/capture.spec.ts` with real map tiles. Export `NEXT_PUBLIC_MAPBOX_TOKEN` first: a Mapbox public token that allows `http://127.0.0.1:3100` (make a second token for this, or add that URL to the production token's allowed URLs while capturing); the capture refuses to run without one. Use the same English screenshots for the Hungarian and German listings, or leave those empty (Play then shows the default-language ones).
 
 ## 4. Data safety (draft)
 

@@ -95,7 +95,7 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
     if (people.q !== q || people.results === null) return <Empty text={t('searching')} />;
     if (!people.results.length) return <Empty text={t('noPeopleFound')} />;
     return (
-      <div className="rounded-[18px] bg-surface-1 overflow-hidden divide-y divide-white/[.06]">
+      <div className="rounded-[18px] bg-surface-1 overflow-hidden divide-y divide-white/6">
         {people.results.map((p, i) => <PersonRow key={p.uid} person={p} index={i} onOpen={() => openProfile(p.uid)} />)}
       </div>
     );
@@ -104,8 +104,8 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
   return (
     <div className="motion-safe:animate-fade-in">
       <div className="px-5 flex items-center gap-2" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}>
-        <label className="flex-1 h-10 px-3 rounded-[12px] bg-white/[.08] flex items-center gap-2">
-          <Search className="w-4 h-4 text-label-tertiary flex-shrink-0" aria-hidden="true" />
+        <label className="flex-1 h-10 px-3 rounded-[12px] bg-white/8 flex items-center gap-2">
+          <Search className="w-4 h-4 text-label-tertiary shrink-0" aria-hidden="true" />
           <input
             type="search"
             autoFocus
@@ -113,7 +113,7 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
             onChange={(e) => setQuery(e.target.value)}
             aria-label={t('search')}
             placeholder={mode === 'spots' ? t('searchSpotsPlaceholder') : t('searchPeoplePlaceholder')}
-            className="flex-1 min-w-0 bg-transparent text-label placeholder:text-label-tertiary focus:outline-none text-[16px]"
+            className="flex-1 min-w-0 bg-transparent text-label placeholder:text-label-tertiary focus:outline-hidden text-[16px]"
           />
         </label>
         <button type="button" onClick={onCancel} className="no-min-size h-10 px-1 text-brand-400 font-semibold text-[15px]">
@@ -122,10 +122,10 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
       </div>
 
       <div className="px-5 mt-3">
-        <div role="radiogroup" aria-label={t('search')} className="relative grid grid-cols-2 p-0.5 rounded-[10px] bg-white/[.08]">
+        <div role="radiogroup" aria-label={t('search')} className="relative grid grid-cols-2 p-0.5 rounded-[10px] bg-white/8">
           <span
             aria-hidden="true"
-            className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-[8px] bg-white/[.16] shadow-sm transition-transform duration-350 ease-ios"
+            className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-r1 bg-white/16 shadow-xs transition-transform duration-350 ease-ios"
             style={{ transform: mode === 'spots' ? 'translateX(0)' : 'translateX(100%)' }}
           />
           {segment('spots', t('spots'), MapPin)}
@@ -137,7 +137,7 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
         {mode === 'people' ? peopleBody() : !ready ? (
           <Empty text={t('searchMinChars', { count: MIN_SEARCH_LENGTH })} />
         ) : spotResults.length ? (
-          <div className="rounded-[18px] bg-surface-1 overflow-hidden divide-y divide-white/[.06]">
+          <div className="rounded-[18px] bg-surface-1 overflow-hidden divide-y divide-white/6">
             {spotResults.map((spot, i) => <SpotRow key={spot.id} {...rowProps(spot)} index={i} />)}
           </div>
         ) : (
@@ -165,10 +165,10 @@ function PersonRow({ person, index, onOpen }: Readonly<{ person: PersonResult; i
     <button
       type="button"
       onClick={onOpen}
-      className="no-min-size w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/[.04] motion-safe:animate-item-in"
+      className="no-min-size w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/4 motion-safe:animate-item-in"
       style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
     >
-      <span aria-hidden="true" className="w-11 h-11 rounded-full overflow-hidden grid place-items-center bg-brand-600 text-white font-semibold flex-shrink-0">
+      <span aria-hidden="true" className="w-11 h-11 rounded-full overflow-hidden grid place-items-center bg-brand-600 text-white font-semibold shrink-0">
         {person.profilePictureURL && !failed ? (
           // eslint-disable-next-line @next/next/no-img-element -- user-hosted avatar URLs (any origin)
           <img src={person.profilePictureURL} alt="" className="w-full h-full object-cover" onError={() => setFailed(true)} />
@@ -179,7 +179,7 @@ function PersonRow({ person, index, onOpen }: Readonly<{ person: PersonResult; i
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-1.5 text-label font-semibold text-[16px]">
           <span className="truncate">{person.username}</span>
-          {person.isPrivate && <Lock className="w-3.5 h-3.5 text-label-tertiary flex-shrink-0" aria-label={t('privateProfile')} />}
+          {person.isPrivate && <Lock className="w-3.5 h-3.5 text-label-tertiary shrink-0" aria-label={t('privateProfile')} />}
         </span>
         <span className="flex items-center gap-1 text-[13px] text-label-secondary">
           <LevelBadge level={level} size={14} />

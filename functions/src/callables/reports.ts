@@ -4,8 +4,8 @@
  * a reason the author receives). One report per person and thing (the doc id). The reported user
  * never learns who reported. Logs only uids, ids and outcomes.
  */
-import {createHash} from "node:crypto";
 import {DocumentData, FieldValue} from "firebase-admin/firestore";
+import {getStorage} from "firebase-admin/storage";
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {getAdminRole} from "../lib/admin";
@@ -14,7 +14,9 @@ import {isUid} from "../lib/follows";
 import {isValidSpotId} from "../lib/ids";
 import {notifyAdminsToReview, notifyInbox} from "../lib/inbox";
 import {validReason} from "../lib/moderation";
+import {checkRate} from "../lib/rateLimit";
 import {removePhotoWithReason, removeReview, removeSpotWithReason} from "../lib/removal";
+import {reportKey} from "../lib/reportKey";
 
 export const REPORT_KINDS = ["spot", "photo", "review", "reply", "profile"] as const;
 export type ReportKind = (typeof REPORT_KINDS)[number];
@@ -58,7 +60,7 @@ function readTarget(data: DocumentData | undefined): Target {
 
 /** Stable per thing: reports of the same thing are grouped, and one person reports it once. */
 export function targetKey(t: Target): string {
-  return createHash("sha256").update(`${t.kind}|${t.spotId}|${t.targetId}`).digest("hex").slice(0, 32);
+  return reportKey(t.kind, t.spotId, t.targetId);
 }
 
 /** The reported thing's author and a short preview for the admin, or not-found. */
@@ -102,6 +104,9 @@ export const reportContent = onCall(async (request) => {
     const ref = db.collection("reports").doc(`${uid}_${key}`);
     const created = await db.runTransaction(async (tx) => {
       if ((await tx.get(ref)).exists) return false;
+      // At most RATE_LIMITS.report new reports an hour per user (each one pings the admins).
+      const count = await checkRate(tx, uid, "report");
+      count();
       tx.create(ref, {
         ...target, key, reporter: uid, author: info.author, reason, text,
         spotName: info.spotName, preview: info.preview.slice(0, 500),
@@ -139,11 +144,16 @@ export const resolveReport = onCall(async (request) => {
     if (group.empty) throw new HttpsError("not-found", "Report not found");
     const t = readTarget(group.docs[0].data());
     if (remove && reason) {
-      if (t.kind === "spot") await removeSpotWithReason(uid, t.spotId, reason);
-      else if (t.kind === "photo") await removePhotoWithReason(t.spotId, t.targetId, reason);
-      else if (t.kind === "review") await removeReview(t.spotId, t.targetId, {uid, isAdmin: true}, reason);
-      else if (t.kind === "reply") await removeReplyAsAdmin(t.spotId, t.targetId, reason);
-      else await clearBio(t.targetId, reason);
+      try {
+        if (t.kind === "spot") await removeSpotWithReason(uid, t.spotId, reason);
+        else if (t.kind === "photo") await removePhotoWithReason(t.spotId, t.targetId, reason);
+        else if (t.kind === "review") await removeReview(t.spotId, t.targetId, {uid, isAdmin: true}, reason);
+        else if (t.kind === "reply") await removeReplyAsAdmin(t.spotId, t.targetId, reason);
+        else await clearProfile(t.targetId, reason);
+      } catch (error) {
+        // Already gone (its author deleted it): the reports are resolved all the same.
+        if (!(error instanceof HttpsError && error.code === "not-found")) throw error;
+      }
     }
     const left = await reportsOf(key);
     await Promise.all(left.docs.map((d) => d.ref.delete()));
@@ -164,10 +174,32 @@ async function removeReplyAsAdmin(spotId: string, replyId: string, reason: strin
     spotName: String(spot.get("name") ?? ""), reason});
 }
 
-/** A reported profile: the bio is what users wrote there (the username is checked at claim). */
-async function clearBio(target: string, reason: string) {
+/**
+ * A reported profile: everything its owner put there goes, the bio, the profile picture and
+ * banner (with their files), and the username (freed; the app gives a generated one and asks
+ * for a new one on the next start). syncPublicProfile mirrors it to publicProfiles.
+ */
+async function clearProfile(target: string, reason: string) {
   const user = db.collection("users").doc(target);
-  if (!(await user.get()).exists) throw new HttpsError("not-found", "Profile not found");
-  await user.update({bio: FieldValue.delete()});
-  await notifyInbox({uid: target, type: "content_removed", spotId: "", spotName: "Bio", reason});
+  const snap = await user.get();
+  if (!snap.exists) throw new HttpsError("not-found", "Profile not found");
+  const username = snap.get("username");
+  if (typeof username === "string" && username) {
+    const name = db.collection("usernames").doc(username.toLowerCase());
+    await db.runTransaction(async (tx) => {
+      const owned = await tx.get(name);
+      if (owned.get("uid") === target) tx.delete(name);
+    });
+  }
+  await user.update({
+    bio: FieldValue.delete(),
+    username: FieldValue.delete(),
+    profilePictureURL: FieldValue.delete(),
+    profileBannerURL: FieldValue.delete(),
+    photoURL: FieldValue.delete(),
+  });
+  const bucket = getStorage().bucket();
+  await Promise.all([`profile-pictures/${target}/`, `profile-banners/${target}/`]
+    .map((prefix) => bucket.deleteFiles({prefix})));
+  await notifyInbox({uid: target, type: "content_removed", spotId: "", spotName: "Profile", reason});
 }
