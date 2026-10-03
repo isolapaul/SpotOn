@@ -1,28 +1,36 @@
 'use client';
 
-import { TrendingUp, X } from 'lucide-react';
+import { Check, TrendingUp, X } from 'lucide-react';
 import { useT } from '@/hooks/useT';
-import { getLevelInfo, getLevelProgress, getLevelThreshold, type LevelInfo } from '@/lib/levelUtils';
+import { getLevelInfo, getLevelProgress, XP_REWARDS, type LevelInfo } from '@/lib/levelUtils';
+import type { TranslationKey } from '@/lib/translations';
 import { LEVEL_PERKS, type LevelNumber } from '@/lib/levelTheme';
 import LevelBadge from '@/components/ui/LevelBadge';
 import PerkIcon from '@/components/ui/PerkIcon';
 
 const LEVELS: readonly LevelNumber[] = [1, 2, 3, 4, 5];
 
-/** Each level's info, computed from the spots it requires (the per-level table). */
-const LEVEL_TABLE = LEVELS.map((level) => ({ level, info: getLevelInfo(getLevelThreshold(level)) }));
+/** Each level's info (the per-level table). */
+const LEVEL_TABLE = LEVELS.map((level) => ({ level, info: getLevelInfo(level) }));
+
+/** How XP is earned (item 5). */
+const XP_WAYS: readonly { key: TranslationKey; xp: number }[] = [
+  { key: 'xpForApprovedSpot', xp: XP_REWARDS.approvedSpot },
+  { key: 'xpForApprovedPhoto', xp: XP_REWARDS.approvedPhoto },
+  { key: 'xpForReview', xp: XP_REWARDS.review },
+];
 
 interface LevelInfoModalProps {
   /** The user's current level (computed once in ProfilePanel). */
   levelInfo: LevelInfo;
-  spotsCount: number;
+  xp: number;
   onClose: () => void;
 }
 
 /** The level system: current level with progress, all levels with their benefits. */
-export default function LevelInfoModal({ levelInfo, spotsCount, onClose }: Readonly<LevelInfoModalProps>) {
+export default function LevelInfoModal({ levelInfo, xp, onClose }: Readonly<LevelInfoModalProps>) {
   const t = useT();
-  const progress = getLevelProgress(spotsCount);
+  const progress = getLevelProgress(xp, levelInfo);
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
@@ -67,12 +75,26 @@ export default function LevelInfoModal({ levelInfo, spotsCount, onClose }: Reado
 
           <div className="flex items-center justify-between text-sm">
             <span className="text-white/80">
-              {spotsCount} / {levelInfo.spotsForNext || levelInfo.spotsRequired} {t('spots')}
+              {xp} / {levelInfo.xpForNext ?? levelInfo.xpRequired} XP
             </span>
             <span className={`font-bold ${levelInfo.textColor}`}>
               {progress.toFixed(0)}%
             </span>
           </div>
+        </div>
+
+        {/* How XP is earned */}
+        <div className="mb-6 rounded-xl bg-white/5 border border-white/10 p-5">
+          <h3 className="text-lg font-bold text-white mb-3">{t('howToEarnXp')}</h3>
+          <ul className="divide-y divide-white/10">
+            {XP_WAYS.map(({ key, xp: points }) => (
+              <li key={key} className="flex items-center justify-between py-2 text-sm">
+                <span className="text-white/80">{t(key)}</span>
+                <span className="font-semibold text-white tabular-nums">+{points} XP</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-white/50 text-xs">{t('xpRulesNote')}</p>
         </div>
 
         {/* All Levels */}
@@ -99,14 +121,15 @@ export default function LevelInfoModal({ levelInfo, spotsCount, onClose }: Reado
                         {level}. {t(info.nameKey)}
                       </h4>
                       {isUnlocked && (
-                        <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 font-medium">
-                          {t('unlocked')} ✓
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 font-medium">
+                          {t('unlocked')}
+                          <Check className="w-3 h-3" aria-hidden="true" />
                         </span>
                       )}
                     </div>
 
                     <p className="text-white/70 text-sm mb-3">
-                      {t('requiredSpots')}: <span className="font-bold">{info.spotsRequired}</span>
+                      {t('requiredXp')}: <span className="font-bold">{info.xpRequired} XP</span>
                     </p>
 
                     {/* Perks */}

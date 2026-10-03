@@ -12,6 +12,7 @@ import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {db} from "../lib/app";
 import {isValidSpotId} from "../lib/ids";
+import {levelOf} from "../lib/userLevel";
 import {
   CandidateSpot,
   computeAllowance,
@@ -48,9 +49,8 @@ export const highlightSpot = onCall(async (request: CallableRequest) => {
     spotId = requireSpotId(request);
     const targetId = spotId;
 
-    // Live count, all statuses (D8); outside the transaction.
-    const spotsCount = (await db.collection("spots").where("createdBy", "==", uid).count().get())
-      .data().count;
+    // The stored level (item 5); outside the transaction.
+    const level = await levelOf(uid);
 
     const userRef = db.collection("users").doc(uid);
     const spotRef = db.collection("spots").doc(targetId);
@@ -82,7 +82,7 @@ export const highlightSpot = onCall(async (request: CallableRequest) => {
         spotId: targetId,
         spot,
         candidateSpots,
-        allowance: computeAllowance(spotsCount),
+        allowance: computeAllowance(level),
         now: new Date(),
       });
       if ("error" in result) {

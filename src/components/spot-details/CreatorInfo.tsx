@@ -5,7 +5,7 @@ import { Calendar, User } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
 import { useLanguage, useT } from '@/hooks/useT';
 import { usePublicProfile } from '@/hooks/usePublicProfile';
-import { getLevelInfo, getUserNameColor } from '@/lib/levelUtils';
+import { getLevelInfo, getUserNameColor, profileLevel } from '@/lib/levelUtils';
 import { formatLongDate } from '@/lib/dates';
 
 interface CreatorInfoProps {
@@ -19,10 +19,10 @@ export default function CreatorInfo({ spot }: Readonly<CreatorInfoProps>) {
   const language = useLanguage({ fallback: 'en' });
   const creatorProfile = usePublicProfile(spot.createdBy);
 
-  const creatorSpotsCount = creatorProfile?.spotsCount ?? 0;
+  const creatorLevel = profileLevel(creatorProfile);
   const creatorDisplayName = creatorProfile?.username || spot.createdByName || t('anonymous');
-  const creatorNameColor = getUserNameColor(creatorSpotsCount, creatorProfile?.customNameColor ?? undefined);
-  const creatorLevelInfo = getLevelInfo(creatorSpotsCount);
+  const creatorNameColor = getUserNameColor(creatorLevel, creatorProfile?.customNameColor ?? undefined);
+  const creatorLevelInfo = getLevelInfo(creatorLevel);
 
   return (
     <>

@@ -5,6 +5,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { E2E } from '../e2e/fixtures';
 import { TERMS_VERSION } from '../src/lib/terms';
+import { applyXp, planXp } from './lib/xpPlan';
 
 const PROJECT_ID = 'demo-spoton';
 
@@ -45,6 +46,10 @@ async function seed(): Promise<void> {
     await auth.createUser({ uid: account.uid, email: account.email, password: E2E.password });
     await db.doc(`users/${account.uid}`).set(userDoc(account.uid, account.username, account.email));
   }
+  // Item 5: level5 keeps level 5 from the old spot-count rule (its floor; it has little XP). Set
+  // before its spots exist, so the syncXp trigger (when the functions emulator runs) never freezes
+  // a lower floor meanwhile.
+  await db.doc(`users/${E2E.level5.uid}`).update({ levelFloor: 5 });
   // T28: spot-details.spec.ts starts with detailsSpot saved (favourite sync, BUG-09).
   await db.doc(`users/${E2E.user.uid}`).update({ savedSpots: [E2E.detailsSpot.id] });
 
@@ -179,7 +184,7 @@ async function seed(): Promise<void> {
 
   // Level-5 owner (T09): 20 spots, category `random` (unused by other fixtures). Only spot-01 is
   // approved (near the map centre, apart from the other fixtures); spots 02-20 are pending and
-  // sit ~2.5 km away. spotsCount is not seeded (the functions/backfill compute it).
+  // sit ~2.5 km away. spotsCount is not seeded (the functions/backfill compute it); XP is (below).
   for (let i = 1; i <= 20; i++) {
     const nn = String(i).padStart(2, '0');
     const id = `e2e-level5-spot-${nn}`;
@@ -199,6 +204,10 @@ async function seed(): Promise<void> {
       reviews: [],
     });
   }
+
+  // XP, level and contributors as the migration computes them (item 5), so the level UI works
+  // without the functions emulator too.
+  await applyXp(db, await planXp(db));
 
   console.log(`Seeded emulator project ${PROJECT_ID}`);
 }

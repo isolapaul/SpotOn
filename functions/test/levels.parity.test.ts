@@ -4,36 +4,39 @@ import {
   CUSTOM_NAME_COLORS,
   CUSTOM_NAME_FONTS,
   LEVEL_THRESHOLDS as CLIENT_LEVEL_THRESHOLDS,
-  calculateLevel as clientCalculateLevel,
+  XP_REWARDS as CLIENT_XP_REWARDS,
   getLevelInfo,
+  levelForSpotCount as clientLevelForSpotCount,
+  levelForXp as clientLevelForXp,
 } from "../../src/lib/levelUtils";
 import {
-  calculateLevel,
   LEVEL_THRESHOLDS,
-  maxHighlightsForCount,
+  levelForSpotCount,
+  levelForXp,
+  maxHighlightsForLevel,
   NAME_COLORS,
   NAME_FONTS,
   NAME_STYLE_MIN_LEVEL,
+  XP_REWARDS,
 } from "../src/lib/levels";
 
 describe("levels parity with src/lib/levelUtils.ts", () => {
-  it("calculateLevel and maxHighlights match for 0..30 spots", () => {
-    for (let n = 0; n <= 30; n++) {
-      expect(calculateLevel(n), `level n=${n}`).toBe(clientCalculateLevel(n));
-      expect(maxHighlightsForCount(n), `maxHighlights n=${n}`)
-        .toBe(getLevelInfo(n).maxHighlights);
-    }
+  it("levelForXp matches for 0..300 XP, levelForSpotCount for 0..30 spots", () => {
+    for (let xp = 0; xp <= 300; xp++) expect(levelForXp(xp), `xp=${xp}`).toBe(clientLevelForXp(xp));
+    for (let n = 0; n <= 30; n++) expect(levelForSpotCount(n), `n=${n}`).toBe(clientLevelForSpotCount(n));
   });
 
-  it("level table matches", () => {
+  it("level table and XP rewards match", () => {
     expect(LEVEL_THRESHOLDS).toEqual(
-      CLIENT_LEVEL_THRESHOLDS.map(({level, spotsRequired}) => ({level, spotsRequired})),
+      CLIENT_LEVEL_THRESHOLDS.map(({level, xpRequired}) => ({level, xpRequired})),
     );
+    expect(XP_REWARDS).toEqual(CLIENT_XP_REWARDS);
   });
 
-  it("name-style gate matches canCustomizeName", () => {
-    for (let n = 0; n <= 30; n++) {
-      expect(calculateLevel(n) >= NAME_STYLE_MIN_LEVEL).toBe(getLevelInfo(n).canCustomizeName);
+  it("highlights and the name-style gate match per level", () => {
+    for (const level of [1, 2, 3, 4, 5]) {
+      expect(maxHighlightsForLevel(level)).toBe(getLevelInfo(level).maxHighlights);
+      expect(level >= NAME_STYLE_MIN_LEVEL).toBe(getLevelInfo(level).canCustomizeName);
     }
   });
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useT } from '@/hooks/useT';
 import { useLevelUpCelebration } from '@/hooks/useLevelUpCelebration';
-import { getLevelThreshold, getLevelInfo } from '@/lib/levelUtils';
+import { getLevelInfo } from '@/lib/levelUtils';
 import { LEVEL_PERKS, levelTheme, type LevelNumber } from '@/lib/levelTheme';
 import { Z } from '@/lib/constants';
 import LevelBadge from '@/components/ui/LevelBadge';
@@ -63,7 +63,7 @@ function Celebration({
 }: Readonly<{ level: LevelNumber; closing: boolean; onClose: () => void; buttonRef: React.RefObject<HTMLButtonElement | null> }>) {
   const t = useT();
   const theme = levelTheme(level);
-  const info = getLevelInfo(getLevelThreshold(level));
+  const info = getLevelInfo(level);
   const perks = LEVEL_PERKS[level].filter((p) => !p.muted && p.icon);
   const colours = [...theme.stops, '#FFFFFF', '#FFD60A'];
 

@@ -157,9 +157,3 @@ export const settingsBannerOptions = {
 
 /** FeedbackPanel attachment options (T14 set useWebWorker: false). */
 export const feedbackOptions = { maxSizeMB: 1, maxWidthOrHeight: 1600, useWebWorker: false };
-
-// ---------------------------------------------------------------------------------------------
-// Magic numbers
-// ---------------------------------------------------------------------------------------------
-/** ProfilePanel "All levels" list: `[0, 0, 3, 10, 15, 20][level]`. */
-export const profileLevelSpots = [0, 0, 3, 10, 15, 20];

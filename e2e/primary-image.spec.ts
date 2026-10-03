@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
-import { getApps, initializeApp } from 'firebase-admin/app';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
+import { adminDb } from './adminDb';
 import { E2E } from './fixtures';
 import { test, blockMapTiles, expectNotification, openApp, signInWithEmail, skipFirstRunOverlays, spotMarker } from './helpers';
 
@@ -14,18 +14,6 @@ import { test, blockMapTiles, expectNotification, openApp, signInWithEmail, skip
 const spot = E2E.primaryImageSpot;
 const [, urlA, urlB] = spot.imageUrls;
 const fileName = (url: string) => url.slice(url.lastIndexOf('/') + 1);
-
-function adminDb() {
-  // Same guard convention as scripts/seed-emulator.ts: never talk to a real Firestore.
-  if (!process.env.FIRESTORE_EMULATOR_HOST) {
-    throw new Error('refusing to run: FIRESTORE_EMULATOR_HOST not set (run via firebase emulators:exec)');
-  }
-  if (process.env.GCLOUD_PROJECT && process.env.GCLOUD_PROJECT !== 'demo-spoton') {
-    throw new Error('refusing to run: unexpected GCLOUD_PROJECT');
-  }
-  if (!getApps().length) initializeApp({ projectId: 'demo-spoton' });
-  return getFirestore();
-}
 
 async function resetFixture() {
   // The seeded fixture is legacy-shaped: no spotImages (a delete writes spotImages: []).

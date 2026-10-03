@@ -2,7 +2,8 @@ rules_version = '2';
 
 // SpotOn Firestore rules (T12). The real authorization boundary: UI checks are UX only.
 // Server-only data (publicProfiles, usernames, admins, users.{username, customName*, highlightedSpots,
-// quest*, spotsCount}, spots.{highlighted, isHighlighted, spotImages likes/additions}) is written by
+// quest*, spotsCount, xp, level, levelFloor}, spots.{highlighted, isHighlighted, contributors,
+// spotImages likes/additions}) is written by
 // Cloud Functions through the Admin SDK, which bypasses these rules.
 // Rules do not filter queries: every client query must be provably allowed (T30 spots), or it fails
 // for everyone.
@@ -103,7 +104,7 @@ service cloud.firestore {
         && (!ak.hasAny(['rejection']) || (d.status == 'pending' && !('rejection' in d)));
     }
     function isAdminEdit() {
-      return isAdmin() && !changed().hasAny(['status', 'rejection', 'createdBy']);
+      return isAdmin() && !changed().hasAny(['status', 'rejection', 'createdBy', 'contributors']);
     }
     match /spots/{spotId} {
       // T30: pending spots only for their owner and admins. Rules are not filters: the client queries

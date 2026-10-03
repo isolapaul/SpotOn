@@ -1,5 +1,6 @@
 export {onSpotApproved, onReviewAdded, onNewPendingSpot, onSpotResubmitted} from "./triggers/spots";
 export {onSpotEditProposed} from "./triggers/moderation";
+export {syncXp} from "./triggers/xp";
 export {onSpotFavorited} from "./triggers/users";
 export {highlightSpot, unhighlightSpot} from "./callables/highlightSpot";
 export {toggleImageLike, addSpotImages} from "./callables/spotImages";

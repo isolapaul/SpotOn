@@ -60,13 +60,8 @@ describe("isActiveEntry", () => {
 });
 
 describe("computeAllowance", () => {
-  it("level slots per spot count", () => {
-    expect(computeAllowance(0)).toBe(0);
-    expect(computeAllowance(9)).toBe(0);
-    expect(computeAllowance(10)).toBe(1);
-    expect(computeAllowance(14)).toBe(1);
-    expect(computeAllowance(15)).toBe(2);
-    expect(computeAllowance(20)).toBe(2);
+  it("level slots per level", () => {
+    expect([1, 2, 3, 4, 5].map(computeAllowance)).toEqual([0, 0, 1, 2, 2]);
   });
 });
 

@@ -4,7 +4,7 @@ import LevelBadge from '@/components/ui/LevelBadge';
 import { Shield } from 'lucide-react';
 import type { Review } from '@/store/useSpotStore';
 import type { PublicProfileResult } from '@/hooks/usePublicProfile';
-import { getLevelInfo, getUserNameColor } from '@/lib/levelUtils';
+import { getLevelInfo, getUserNameColor, profileLevel } from '@/lib/levelUtils';
 import { resolveNameFontClass } from '@/lib/nameStyle';
 
 interface ReviewerBadgeProps {
@@ -16,9 +16,9 @@ interface ReviewerBadgeProps {
 // style/level fields are spoofable and never read (SEC-05).
 // `profile` is undefined while loading and null without a profile document.
 export default function ReviewerBadge({ profile, review }: Readonly<ReviewerBadgeProps>) {
-  const spotsCount = profile?.spotsCount ?? 0;
-  const levelInfo = getLevelInfo(spotsCount);
-  const nameColor = getUserNameColor(spotsCount, profile?.customNameColor ?? undefined);
+  const level = profileLevel(profile);
+  const levelInfo = getLevelInfo(level);
+  const nameColor = getUserNameColor(level, profile?.customNameColor ?? undefined);
   const fontClass = resolveNameFontClass(profile?.customNameFont);
   return (
     <div className="flex items-center gap-2">

@@ -10,7 +10,8 @@ import {FieldValue} from "firebase-admin/firestore";
 import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {db} from "../lib/app";
-import {calculateLevel, NAME_STYLE_MIN_LEVEL} from "../lib/levels";
+import {NAME_STYLE_MIN_LEVEL} from "../lib/levels";
+import {levelOf} from "../lib/userLevel";
 import {
   NameStyleValidationError,
   normalizeUsername,
@@ -97,10 +98,8 @@ export const updateNameStyle = onCall(async (request) => {
       throw error;
     }
 
-    // Live count, all statuses (D8).
-    const n = (await db.collection("spots").where("createdBy", "==", uid).count().get())
-      .data().count;
-    if (calculateLevel(n) < NAME_STYLE_MIN_LEVEL) {
+    // The stored level (item 5).
+    if ((await levelOf(uid)) < NAME_STYLE_MIN_LEVEL) {
       throw new HttpsError("permission-denied", "Level 5 required");
     }
 

@@ -15,7 +15,7 @@ function loadProfile(uid: string): Promise<PublicProfileResult> {
 /**
  * One user's public profile (cached, de-duplicated, one-shot; see store/publicProfiles).
  * For the signed-in user, username, name colour/font and picture are overlaid from the store,
- * so their own changes show immediately; spotsCount always comes from the profile.
+ * so their own changes show immediately; spotsCount, xp and level always come from the profile.
  */
 export function usePublicProfile(uid?: string): PublicProfileResult {
   const [loaded, setLoaded] = useState<{ uid?: string; value: PublicProfileResult }>(() => ({

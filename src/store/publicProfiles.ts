@@ -12,6 +12,9 @@ export interface PublicProfile {
   customNameColor: string | null;
   customNameFont: string | null;
   spotsCount?: number;
+  /** Server-computed (item 5); missing until the server has computed them. */
+  xp?: number;
+  level?: number;
   isAdmin?: boolean;
 }
 
@@ -38,6 +41,8 @@ async function readPublicProfile(uid: string): Promise<PublicProfile | null> {
     customNameFont: strOrNull(data.customNameFont),
   };
   if (typeof data.spotsCount === 'number') profile.spotsCount = data.spotsCount;
+  if (typeof data.xp === 'number') profile.xp = data.xp;
+  if (typeof data.level === 'number') profile.level = data.level;
   if (typeof data.isAdmin === 'boolean') profile.isAdmin = data.isAdmin;
   return profile;
 }
@@ -87,7 +92,7 @@ export function peekPublicProfile(uid: string): PublicProfile | null | undefined
   return freshEntry(uid)?.value;
 }
 
-/** Drops a uid's cached profile (e.g. after its spotsCount changed), so the next read hits Firestore. */
+/** Drops a uid's cached profile (e.g. after its spotsCount or XP changed), so the next read hits Firestore. */
 export function invalidatePublicProfile(uid: string): void {
   cache.delete(uid);
   inFlight.delete(uid);

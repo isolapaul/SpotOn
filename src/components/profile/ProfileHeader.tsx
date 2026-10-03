@@ -11,6 +11,7 @@ import ProfileStats from './ProfileStats';
 interface ProfileHeaderProps {
   user: User;
   levelInfo: LevelInfo;
+  xp: number;
   spotsCount: number;
   favoritesCount: number;
   isAdmin: boolean;
@@ -23,6 +24,7 @@ interface ProfileHeaderProps {
 export default function ProfileHeader({
   user,
   levelInfo,
+  xp,
   spotsCount,
   favoritesCount,
   isAdmin,
@@ -44,7 +46,7 @@ export default function ProfileHeader({
 
           <ProfileBadges isAdmin={isAdmin} levelInfo={levelInfo} onOpenLevelInfo={onOpenLevelInfo} />
 
-          <LevelProgressCard levelInfo={levelInfo} spotsCount={spotsCount} />
+          <LevelProgressCard levelInfo={levelInfo} xp={xp} />
 
           <ProfileStats spotsCount={spotsCount} favoritesCount={favoritesCount} />
         </div>
