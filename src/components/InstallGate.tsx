@@ -1,8 +1,9 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Share, MoreVertical, X, Monitor } from 'lucide-react';
+import { useIsClient } from '@/hooks/useIsClient';
 import { useT } from '@/hooks/useT';
 import { splitBold } from '@/lib/i18n';
 import { getMovedTo } from '@/lib/movedTo';
@@ -18,46 +19,37 @@ function RichText({ text }: Readonly<{ text: string }>) {
   );
 }
 
+/** Whether this browser should see the install prompt; client only (reads storage and the display mode). */
+function shouldPromptInstall(): boolean {
+  // Old (Vercel) domain: installing it would install the wrong origin (T19)
+  if (getMovedTo()) return false;
+  // Previously dismissed with "don't show again"
+  if (localStorage.getItem(DISMISS_KEY) === 'true') return false;
+  // Already running installed (standalone PWA)
+  const isStandalone = globalThis.matchMedia('(display-mode: standalone)').matches
+    || (globalThis.navigator as Navigator & { standalone?: boolean }).standalone
+    || document.referrer.includes('android-app://');
+  // Everyone else (mobile & desktop) sees it
+  return !isStandalone;
+}
+
 export default function InstallGate() {
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const isClient = useIsClient();
+  const [dismissed, setDismissed] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const t = useT();
   // The legal pages must stay readable without installing (A1).
   const isLegalPage = ['/privacy', '/terms'].includes(usePathname() ?? '');
-
-  useEffect(() => {
-    // Old (Vercel) domain: installing it would install the wrong origin (T19)
-    if (getMovedTo()) { setShowPrompt(false); return; }
-
-    // Check if user previously dismissed with "don't show again"
-    const dismissed = localStorage.getItem(DISMISS_KEY);
-    if (dismissed === 'true') {
-      setShowPrompt(false);
-      return;
-    }
-
-    // Detect if app is running in standalone mode (installed as PWA)
-    const isStandalone = globalThis.matchMedia('(display-mode: standalone)').matches
-      || (globalThis.navigator as any).standalone
-      || document.referrer.includes('android-app://');
-
-    // Don't show if already installed as PWA
-    if (isStandalone) {
-      setShowPrompt(false);
-      return;
-    }
-
-    // Show the prompt for everyone (mobile & desktop) who hasn't dismissed it
-    setShowPrompt(true);
-    setIsIOS(/iPhone|iPad|iPod/i.test(navigator.userAgent));
-  }, []);
+  // Decided once after hydration (the server render and the first client render show nothing).
+  const shouldPrompt = useMemo(() => isClient && shouldPromptInstall(), [isClient]);
+  const isIOS = useMemo(() => isClient && /iPhone|iPad|iPod/i.test(navigator.userAgent), [isClient]);
+  const showPrompt = shouldPrompt && !dismissed;
 
   const handleDismiss = () => {
     if (dontShowAgain) {
       localStorage.setItem(DISMISS_KEY, 'true');
     }
-    setShowPrompt(false);
+    setDismissed(true);
   };
 
   if (!showPrompt || isLegalPage) {

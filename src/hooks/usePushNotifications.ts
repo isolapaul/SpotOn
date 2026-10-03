@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage, isSupported, type Messaging } from 'firebase/messaging';
 import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db, app } from '@/lib/firebase';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { useNotificationStore } from '@/store/useNotificationStore';
+import { useNotificationStore, type Notification as AppNotification } from '@/store/useNotificationStore';
 import { translate } from '@/lib/i18n';
 import { useT } from '@/hooks/useT';
 
@@ -18,8 +18,13 @@ let listenerSetup = false;
 // Uid whose FCM token was silently refreshed this page session (once per sign-in).
 let silentRefreshUid: string | null = null;
 
+const isNotificationSupported = () => 'Notification' in globalThis;
+
 export const usePushNotifications = () => {
-  const [isPermissionGranted, setIsPermissionGranted] = useState(false);
+  // Read on the first render (the consumers render client-side only; the server has no Notification).
+  const [isPermissionGranted, setIsPermissionGranted] = useState(
+    () => isNotificationSupported() && globalThis.Notification.permission === 'granted',
+  );
   const [isLoading, setIsLoading] = useState(false);
   const { user, loading: authLoading } = useUserStore();
   const { language } = useLanguageStore();
@@ -27,14 +32,6 @@ export const usePushNotifications = () => {
   // Memoized per language by useT (same stability as the former useCallback on language)
   const t = useT();
 
-  const isNotificationSupported = () => 'Notification' in globalThis;
-
-  // Check if notifications are supported and permission status
-  useEffect(() => {
-    if (isNotificationSupported()) {
-      setIsPermissionGranted(globalThis.Notification.permission === 'granted');
-    }
-  }, []);
 
   const getMessagingToken = async () => {
     if (!('serviceWorker' in navigator)) {
@@ -187,7 +184,7 @@ export const usePushNotifications = () => {
   };
 
   // Setup foreground message listener (when app is open) - SINGLETON
-  const setupForegroundListener = (messaging: any) => {
+  const setupForegroundListener = (messaging: Messaging) => {
     // Prevent duplicate listeners
     if (listenerSetup) return;
     
@@ -204,7 +201,8 @@ export const usePushNotifications = () => {
       useNotificationStore.getState().addNotification({
         title,
         body,
-        type: notificationType as any,
+        // The server sends only known kinds; the value is passed through unchecked, as before.
+        type: notificationType as AppNotification['type'],
       });
       
       // Do NOT show a native browser Notification here to avoid duplicates

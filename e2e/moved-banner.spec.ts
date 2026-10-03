@@ -12,9 +12,9 @@ const MOVED_TO = process.env.NEXT_PUBLIC_MOVED_TO ?? '';
 const DISMISS_KEY = 'spoton-moved-banner-dismissed';
 
 type Lang = 'hu' | 'en';
-const TEXT: Record<Lang, { hide: string; installGate: string }> = {
-  hu: { hide: 'Elrejtés', installGate: 'SpotOn Élmény' },
-  en: { hide: 'Hide', installGate: 'SpotOn Experience' },
+const TEXT: Record<Lang, { hide: string; installGate: string; mapControls: string }> = {
+  hu: { hide: 'Elrejtés', installGate: 'SpotOn Élmény', mapControls: 'Térképvezérlők' },
+  en: { hide: 'Hide', installGate: 'SpotOn Experience', mapControls: 'Map controls' },
 };
 
 test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
@@ -49,11 +49,12 @@ for (const lang of ['hu', 'en'] as const) {
     await expect(page.getByText(TEXT[lang].installGate)).toHaveCount(0);
 
     // In the top-left slot, never overlapping the control stack on the right (design 1C).
-    const stackBox = await page.getByRole('toolbar', { name: 'Map controls' }).boundingBox();
+    // The toolbar's accessible name is translated (t('mapControls')).
+    const stackBox = await page.getByRole('toolbar', { name: TEXT[lang].mapControls }).boundingBox();
     const bannerBox = await banner(page).boundingBox();
     expect(stackBox && bannerBox && bannerBox.x + bannerBox.width <= stackBox.x).toBeTruthy();
 
-    await page.screenshot({ path: `docs/screenshots/moved-banner-${lang}.png`, fullPage: true });
+    await page.screenshot({ path: test.info().outputPath(`moved-banner-${lang}.png`), fullPage: true });
   });
 }
 

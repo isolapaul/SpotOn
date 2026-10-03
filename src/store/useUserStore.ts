@@ -361,12 +361,13 @@ export const useUserStore = create<UserStore>()(
           // Try popup first, fallback to redirect for mobile browsers
           try {
             result = await signInWithPopup(auth, googleProvider);
-          } catch (popupError: any) {
+          } catch (popupError) {
             // If popup blocked or fails on mobile, try redirect
-            if (popupError.code === 'auth/popup-blocked' || 
-                popupError.code === 'auth/popup-closed-by-user' ||
-                popupError.code === 'auth/cancelled-popup-request' ||
-                popupError.code === 'auth/operation-not-supported-in-this-environment') {
+            const code = (popupError as { code?: string }).code;
+            if (code === 'auth/popup-blocked' ||
+                code === 'auth/popup-closed-by-user' ||
+                code === 'auth/cancelled-popup-request' ||
+                code === 'auth/operation-not-supported-in-this-environment') {
               // Redirect flow - user will be redirected back and handled by initAuth
               await signInWithRedirect(auth, googleProvider);
               return;

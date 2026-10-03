@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '@/lib/firebase';
+import type { DateInput } from '@/lib/dates';
 import { removeImage, type RemovableImageFields } from '@/lib/spotImages';
 import { invalidatePublicProfile } from '@/store/publicProfiles';
 import { startApprovedScope, stopAllScopes, syncScopes, type SpotScope } from '@/store/spotListeners';
@@ -64,7 +65,8 @@ export interface Spot {
   createdByName?: string;
   createdByPhoto?: string;
   status: 'pending' | 'approved' | 'rejected';
-  createdAt: any;
+  /** A Timestamp; null while a local create waits for its serverTimestamp. */
+  createdAt: DateInput;
   reviews?: Review[];
   averageRating?: number;
   highlighted?: {
@@ -128,7 +130,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
     try {
       await updateDoc(doc(db, 'spots', spotId), { status: 'approved' });
       updateSpotInState(set, spotId, (spot) => ({ ...spot, status: 'approved' as const }));
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error approving spot:', error);
       throw error;
     }
@@ -140,7 +142,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       await deleteDoc(doc(db, 'spots', spotId));
       if (createdBy) invalidatePublicProfile(createdBy);
       set((state) => ({ spots: state.spots.filter((spot) => spot.id !== spotId) }));
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting spot:', error);
       throw error;
     }
@@ -150,7 +152,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
     try {
       await updateDoc(doc(db, 'spots', spotId), { description });
       updateSpotInState(set, spotId, (spot) => ({ ...spot, description }));
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating spot description:', error);
       throw error;
     }
@@ -160,7 +162,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
     try {
       await updateDoc(doc(db, 'spots', spotId), { name });
       updateSpotInState(set, spotId, (spot) => ({ ...spot, name }));
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating spot name:', error);
       throw error;
     }
@@ -184,7 +186,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       });
 
       updateSpotInState(set, spotId, (spot) => ({ ...spot, ...updated }));
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting spot image:', error);
       throw error;
     }
@@ -194,7 +196,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
     try {
       await updateDoc(doc(db, 'spots', spotId), { primaryImageIndex: imageIndex });
       updateSpotInState(set, spotId, (spot) => ({ ...spot, primaryImageIndex: imageIndex }));
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error setting primary image:', error);
       throw error;
     }
