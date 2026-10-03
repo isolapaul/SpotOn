@@ -242,6 +242,7 @@ The app is stateless: all data is in Firebase. Back up only `/srv/docker/spoton/
 - [ ] Add a spot with an image (as a test user); the image shows.
 - [ ] Push: enable notifications and trigger one (e.g. approve a test spot); the notification arrives, and clicking it opens the app.
 - [ ] Feedback: send one with an image; the email arrives with subject `SpotOn_feedback`.
+- [ ] `/account-deletion` opens without the install screen; `/.well-known/assetlinks.json` returns JSON (§17.3).
 - [ ] DevTools console: no CSP errors on the flows above.
 - [ ] `docker inspect spoton --format '{{json .HostConfig.PortBindings}}'` → `{}` (no published ports).
 
@@ -330,3 +331,85 @@ Order, when a release needs several of them:
 
 Keep a copy of the rules currently in production (Console → Firestore → Rules) before replacing them, so a bad deploy can be reverted by pasting them back.
 
+
+## 17. Android app (Trusted Web Activity)
+
+The Play app is a Trusted Web Activity: a thin Android shell that opens https://spoton.isolapaul.hu full screen in Chrome. It is built with [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) on the laptop from the live web manifest; the web app itself is unchanged. Listing, Data safety and content rating: [`play-store.md`](play-store.md).
+
+Package name: **`hu.isolapaul.spoton`** (permanent; Play never allows it to change).
+
+**Order:** the release with the Play changes (manifest `id`, maskable icons, `/.well-known/assetlinks.json`, `/account-deletion`) must be live before `bubblewrap init`, because Bubblewrap reads the live manifest.
+
+### 17.1 One-time setup (💻 laptop, Git Bash)
+
+```bash
+npm i -g @bubblewrap/cli                 # changes the laptop: installs the CLI (never with sudo)
+mkdir -p ~/spoton-android && cd ~/spoton-android
+bubblewrap init --manifest=https://spoton.isolapaul.hu/manifest.json
+```
+
+The first run offers to download a JDK and the Android command-line tools: answer yes (they go into `~/.bubblewrap`). Then answer the questions:
+
+| Question | Answer |
+|---|---|
+| Domain | `spoton.isolapaul.hu` |
+| URL path | `/` |
+| Application name | `SpotOn` |
+| Short name (launcher) | `SpotOn` |
+| Application ID | `hu.isolapaul.spoton` |
+| Starting version code | `1` |
+| Display mode | `standalone` |
+| Orientation | `portrait` |
+| Status bar colour | `#0E1013` |
+| Splash screen colour | `#0E1013` |
+| Icon URL | `https://spoton.isolapaul.hu/icon-512x512.png` |
+| Maskable icon URL | `https://spoton.isolapaul.hu/icon-maskable-512x512.png` |
+| Monochrome icon URL | leave empty |
+| Shortcuts | No |
+| Play Billing | No |
+| Geolocation delegation | No (Chrome asks for the location permission itself, as on the web) |
+| Key store location | the default (`./android.keystore`) |
+| Key name | `android` |
+| Create a new key | Yes: your name, organisational unit and organisation (`SpotOn` for both is fine), country `HU`, then two passwords |
+
+The **upload key** (`android.keystore` and its two passwords) signs every build you upload. Keep it outside the repository, back it up (for example in your password manager), and never commit it. If it is lost, the upload key can be reset through Play support, because Google keeps the real app signing key (Play App Signing).
+
+### 17.2 Build and upload (💻 laptop)
+
+```bash
+cd ~/spoton-android
+bubblewrap build        # changes local files: asks for the two key passwords, writes app-release-bundle.aab and app-release-signed.apk
+```
+
+Upload `app-release-bundle.aab` in Play Console → Test and release → Testing → Internal testing (or Closed testing) → Create new release. Accept **Play App Signing** when asked.
+
+For every later version: `bubblewrap update` (raises the version code; add `--appVersionName=2.1.1` to set the visible version), then `bubblewrap build` and upload the new `.aab`. A web-only release needs no new Android build: the app always shows the live site.
+
+### 17.3 Digital Asset Links (🌐 Play Console, then 🖥️ server)
+
+Without asset links the app still opens, but as a Custom Tab with a URL bar. The server publishes them from the runtime setting `ANDROID_CERT_SHA256`, so no new image is needed.
+
+1. 🌐 Play Console → your app → Test and release → App integrity → App signing: copy the **SHA-256 certificate fingerprint** of the *App signing key certificate* (`AB:CD:…`, 32 pairs). To also allow the APK you sideload from `bubblewrap build`, copy the *Upload key certificate* fingerprint as well.
+2. 🖥️ Add it to `/srv/docker/spoton/.env` (changes the server config; comma-separated when there are two):
+
+   ```bash
+   cd /srv/docker/spoton
+   nano .env                     # add: ANDROID_CERT_SHA256=AB:CD:...:EF   (or two, separated by a comma)
+   docker compose up -d --wait   # recreates the container with the new setting; same image
+   ```
+3. Check (only reads):
+
+   ```bash
+   curl -s https://spoton.isolapaul.hu/.well-known/assetlinks.json
+   ```
+
+   It must show `hu.isolapaul.spoton` and your fingerprint(s). An empty `[]` means the setting is missing or malformed. Google's own check: 🌐 `https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://spoton.isolapaul.hu&relation=delegate_permission/common.handle_all_urls`.
+
+### 17.4 Check on a phone (📱 Android, after installing from the internal or closed test)
+
+- [ ] The app opens full screen, without a URL bar (asset links work).
+- [ ] Google sign-in works (through the `/__/auth` proxy) and you return to the app signed in; e-mail sign-in works.
+- [ ] Turn on notifications in Settings; approve a test spot from another account: the push arrives, and tapping it opens the app.
+- [ ] Location: "my location" asks for the permission once and centres the map.
+- [ ] The Android back gesture behaves as expected.
+- [ ] https://spoton.isolapaul.hu/account-deletion opens in a normal browser without the install screen.

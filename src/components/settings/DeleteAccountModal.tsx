@@ -15,10 +15,12 @@ import ModalShell from '../ui/ModalShell';
 interface DeleteAccountModalProps {
   confirmWord: string;
   onClose: () => void;
+  /** Called after the account is gone (the user is signed out by then). */
+  onDeleted?: () => void;
 }
 
 /** Permanent account deletion (A2): what goes, what stays, typed username confirmation. */
-export default function DeleteAccountModal({ confirmWord, onClose }: Readonly<DeleteAccountModalProps>) {
+export default function DeleteAccountModal({ confirmWord, onClose, onDeleted }: Readonly<DeleteAccountModalProps>) {
   const deleteAccount = useUserStore((s) => s.deleteAccount);
   const showToast = useToastStore((s) => s.showToast);
   const t = useT();
@@ -38,6 +40,7 @@ export default function DeleteAccountModal({ confirmWord, onClose }: Readonly<De
       // The local history belonged to the deleted account.
       useNotificationStore.getState().clearAll();
       showToast(translate(useLanguageStore.getState().language ?? 'hu', 'accountDeleted'), 'success');
+      onDeleted?.();
     } catch (err) {
       console.error('Account deletion failed:', err);
       setError(t(deleteAccountErrorKey(err)));

@@ -21,7 +21,8 @@ export function proxy(request: NextRequest) {
 }
 
 // Pages only. Excluded: /api/* (static policy from next.config.mjs headers(), the FCM worker needs it),
-// Next's static assets, the exact public/ files (a CSP on non-documents has no effect), and the proxied
+// Next's static assets, the exact public/ files and folders (a CSP on non-documents has no effect), the
+// JSON under /.well-known/ (Android asset links), and the proxied
 // Firebase auth paths that headers() also excludes (/__/auth/*, /__/firebase/init.json: their handler
 // pages carry their own inline scripts and must never get our policy). Everything else, including 404
 // pages for unknown paths, gets the nonce policy. Router prefetches (next-router-prefetch) skip it; a
@@ -29,7 +30,7 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     {
-      source: '/((?!api/|_next/static/|_next/image$|__/auth(?:/|$)|__/firebase/init\\.json$|manifest\\.json$|icon-(?:192x192|512x512)\\.png$|placeholder-spot\\.jpg$|patch-notes\\.md$).*)',
+      source: '/((?!api/|_next/static/|_next/image$|__/auth(?:/|$)|__/firebase/init\\.json$|manifest\\.json$|icon-(?:maskable-)?(?:192x192|512x512)\\.png$|screenshots/|\\.well-known/|placeholder-spot\\.jpg$|patch-notes\\.md$).*)',
       missing: [{ type: 'header', key: 'next-router-prefetch' }],
     },
   ],

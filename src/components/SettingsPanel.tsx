@@ -14,6 +14,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
 import AccountSection from './settings/AccountSection';
+import { deletionConfirmWord } from '@/lib/accountDeletion';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -334,7 +335,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
           </div>
 
           {/* Account: legal documents and deletion (A1, A2) */}
-          <AccountSection confirmWord={user.username || user.email || 'delete'} />
+          <AccountSection confirmWord={deletionConfirmWord(user)} />
 
           {/* Sign Out */}
           <button

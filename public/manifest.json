@@ -1,26 +1,27 @@
 {
+  "id": "/",
   "name": "SpotOn",
   "short_name": "SpotOn",
   "description": "Discover and share hidden gems, viewpoints and scenic places near you",
+  "lang": "en",
   "start_url": "/",
-  "display": "standalone",
-  "background_color": "#0E1013",
-  "theme_color": "#0f172a",
-  "orientation": "portrait",
   "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E1013",
+  "theme_color": "#0E1013",
   "icons": [
-    {
-      "src": "/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-maskable-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "/screenshots/01-map.jpg", "sizes": "1080x1920", "type": "image/jpeg", "form_factor": "narrow", "label": "Spots on the map" },
+    { "src": "/screenshots/02-place-card.jpg", "sizes": "1080x1920", "type": "image/jpeg", "form_factor": "narrow", "label": "A spot's place card" },
+    { "src": "/screenshots/03-spot-details.jpg", "sizes": "1080x1920", "type": "image/jpeg", "form_factor": "narrow", "label": "Spot details with photos and reviews" },
+    { "src": "/screenshots/04-explore.jpg", "sizes": "1080x1920", "type": "image/jpeg", "form_factor": "narrow", "label": "Explore nearby and top-rated spots" },
+    { "src": "/screenshots/05-profile.jpg", "sizes": "1080x1920", "type": "image/jpeg", "form_factor": "narrow", "label": "Your profile and level" }
   ],
   "categories": ["travel", "navigation", "lifestyle"]
 }

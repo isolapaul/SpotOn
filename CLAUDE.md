@@ -32,6 +32,8 @@ Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only 
 src/app/page.tsx                 Orchestrator: wires useUiStore (activePanel, location selection), useAppBootstrap, useVisibleSpots and useUserLocation to the panels and the map
 src/app/layout.tsx               Metadata, viewport, <InstallGate/> overlay
 src/app/privacy, src/app/terms   Legal pages (A1), rendered by components/legal/LegalPage from src/content/legal/*.hu.ts
+src/app/account-deletion         Public account deletion page for Google Play (components/legal/AccountDeletionPage)
+src/app/.well-known/assetlinks.json  Digital Asset Links for the Android app (runtime ANDROID_CERT_SHA256, lib/assetLinks)
 src/app/api/feedback/route.ts    Feedback email endpoint (SMTP)
 src/app/api/firebase-messaging-sw/route.ts  FCM service worker (generated from NEXT_PUBLIC_* config)
 src/app/api/health/route.ts      Liveness endpoint for the container healthcheck (docker/healthcheck.mjs)
@@ -71,8 +73,10 @@ firestore.rules, storage.rules   Security rules; tests in tests/rules/ (`npm run
 firestore.indexes.json           Composite indexes
 firebase.json                    Firestore rules/indexes, Storage rules, Functions config, emulator ports
 scripts/                         seed-emulator.ts (e2e fixtures), check-public-env.mjs (build guard), bootstrap-super-admin.ts (recovery only)
+scripts/store/                   Store graphics and screenshots (`npm run store:assets`, emulator demo data; docs/play-store.md)
 deploy/, Dockerfile, docker/     Server compose file, update script, image and healthcheck
-docs/deploy.md, docs/BACKLOG.md  Release and server runbook; open work
+docs/deploy.md, docs/BACKLOG.md  Release and server runbook (Android app: §17); open work
+docs/play-store.md               Play listing texts, Data safety and content rating answers
 ```
 
 ### Firestore data model (current)
@@ -118,6 +122,7 @@ In the Claude Code sandbox, the functions emulator cannot register Firestore tri
 | `NEXT_PUBLIC_CONTROLLER_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` | build time (required by the container build) | legal pages `/privacy`, `/terms` (A1) |
 | `NEXT_PUBLIC_CARTO_API_KEY` | build time, optional (CARTO watermarks keyless tiles) | `store/useMapThemeStore.ts` via `lib/mapTiles` |
 | `SMTP_HOST/PORT/USER/PASS`, `FEEDBACK_RECIPIENT` | runtime (container `.env`) | `/api/feedback` |
+| `ANDROID_CERT_SHA256` | runtime (container `.env`), optional | `/.well-known/assetlinks.json` (docs/deploy.md §17.3) |
 
 Build-time values live as GitHub repository variables (release builds) and in Vercel's settings; changing one needs a new release.
 Never commit `.env*` files — sole exception: `functions/.env.demo-spoton` (emulator-only, non-secret params such as `APP_URL`, whitelisted in `.gitignore`). Never hardcode personal emails, keys or tokens.
