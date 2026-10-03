@@ -161,7 +161,7 @@ export default function MapView({
   const nowIso = useMinuteClock();
   const view = useMapView(map);
   const { shownSpots, clusters, index } = useClusters(spots, view, selectedSpotId, nowIso);
-  useClusterMarkers(map, clusters, index);
+  useClusterMarkers(map, clusters, index, (count) => t('clusterLabel', { count }));
 
   // Spot markers: kept by id; only a changed look rebuilds a pin's markup, only a move re-positions it.
   useEffect(() => {
@@ -493,13 +493,20 @@ function useClusters(spots: Spot[], view: MapViewState | null, selectedSpotId: s
   }, [spots, view, index]);
 }
 
-/** Cluster markers: a tap zooms in until the cluster splits. */
-function useClusterMarkers(map: mapboxgl.Map | null, clusters: ClusterFeature<ClusterProps>[], index: ClusterIndex) {
+/** Cluster markers: a tap zooms in until the cluster splits. `label` names one for screen readers. */
+function useClusterMarkers(
+  map: mapboxgl.Map | null,
+  clusters: ClusterFeature<ClusterProps>[],
+  index: ClusterIndex,
+  label: (count: number) => string,
+) {
   const markers = useRef(new Map<string, { marker: mapboxgl.Marker; key: string }>());
   const indexRef = useRef(index);
+  const labelRef = useRef(label);
   useEffect(() => {
     indexRef.current = index;
-  }, [index]);
+    labelRef.current = label;
+  });
   useEffect(() => {
     if (!map) return;
     const seen = new Set<string>();
@@ -516,7 +523,7 @@ function useClusterMarkers(map: mapboxgl.Map | null, clusters: ClusterFeature<Cl
       el.className = 'spot-cluster-marker';
       el.setAttribute('role', 'button');
       el.tabIndex = 0;
-      el.setAttribute('aria-label', `${count}`);
+      el.setAttribute('aria-label', labelRef.current(count));
       el.innerHTML = buildClusterHtml(count, c.properties.pending > 0);
       const open = (e: Event) => {
         e.stopPropagation();
