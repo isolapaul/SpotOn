@@ -17,7 +17,7 @@ import { db, functions, storage } from '@/lib/firebase';
 import { UPLOAD_TIMEOUT_MS } from '@/lib/constants';
 import { PLACEHOLDER_URL, extForMime } from '@/lib/spotImages';
 import { compressImage } from '@/lib/imageCompression';
-import { MAX_PENDING_PHOTOS_ERROR, MAX_SPOT_IMAGES_ERROR } from '@/lib/uploadErrors';
+import { MAX_PENDING_PHOTOS_ERROR, MAX_SPOT_IMAGES_ERROR, PHOTO_RATE_LIMIT_ERROR } from '@/lib/uploadErrors';
 import { withTimeout } from '@/lib/withTimeout';
 import { invalidatePublicProfile } from '@/store/publicProfiles';
 import type { NewReview, Review, Spot, SpotImage } from '@/store/useSpotStore';
@@ -166,8 +166,10 @@ export async function attachSpotImages(spotId: string, urls: string[]): Promise<
     return typeof data?.pending === 'number' ? data.pending : 0;
   } catch (error) {
     if (errorCode(error) === 'functions/resource-exhausted') {
-      // The server says which limit: the spot's 20 photos, or this user's 5 waiting for review.
+      // The server says which limit: the spot's 20 photos, this user's 5 waiting for review, or
+      // this user's submissions this hour.
       const message = error instanceof Error ? error.message : '';
+      if (message.includes(PHOTO_RATE_LIMIT_ERROR)) throw new Error(PHOTO_RATE_LIMIT_ERROR);
       throw new Error(message.includes(MAX_PENDING_PHOTOS_ERROR) ? MAX_PENDING_PHOTOS_ERROR : MAX_SPOT_IMAGES_ERROR);
     }
     if (errorCode(error) === 'functions/invalid-argument') {

@@ -15,6 +15,7 @@ import {getAdminRole} from "../lib/admin";
 import {db} from "../lib/app";
 import {isValidSpotId} from "../lib/ids";
 import {notifyAdminsToReview} from "../lib/inbox";
+import {checkRate} from "../lib/rateLimit";
 import {
   currentImages,
   imageAccess,
@@ -170,6 +171,8 @@ export const addSpotImages = onCall(async (request) => {
       if (waiting.length + urls.length > MAX_PENDING_PER_UPLOADER && !direct) {
         throw new HttpsError("resource-exhausted", "MAX_PENDING_PHOTOS");
       }
+      // Each submission pings the admins: at most RATE_LIMITS.photo calls an hour per user.
+      const countSubmission = direct ? null : await checkRate(tx, uid, "photo");
       let plan;
       try {
         const ids = uniqueIdFactory(used);
@@ -187,6 +190,7 @@ export const addSpotImages = onCall(async (request) => {
           direct: true, retry: false, spotName: String(spot.name ?? ""), owner: String(spot.createdBy ?? ""),
         };
       }
+      countSubmission?.();
       for (const url of urls) {
         tx.create(db.collection("photoSubmissions").doc(), {
           spotId: rawSpotId,

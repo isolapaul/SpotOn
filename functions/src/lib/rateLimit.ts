@@ -12,6 +12,8 @@ export const RATE_LIMITS = {
   follow: {windowMs: 60 * 60_000, max: 60},
   report: {windowMs: 60 * 60_000, max: 20},
   reply: {windowMs: 60 * 60_000, max: 30},
+  // Photo submissions for review: each call pings the admins.
+  photo: {windowMs: 60 * 60_000, max: 20},
 } as const;
 
 export type RateAction = keyof typeof RATE_LIMITS;

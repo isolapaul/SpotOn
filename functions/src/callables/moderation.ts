@@ -89,12 +89,16 @@ function spotVersion(data: DocumentData): number | null {
 export const approveSpot = onCall(async (request) => {
   const uid = await requireAdmin(request);
   const spotId = requireId(request.data?.spotId, "spotId");
-  const seenAt = requireSeenAt(request.data?.seenAt);
+  // null: the spot had no version to see (a legacy spot without a Timestamp createdAt).
+  const seenAt = request.data?.seenAt === null ? null : requireSeenAt(request.data?.seenAt);
   return logged("approveSpot", uid, spotId, async () => {
     await db.runTransaction(async (tx) => {
       const data = await pendingSpot(tx, spotId);
       // The owner may still edit a spot under review: approve only the version the admin saw.
-      if (spotVersion(data) !== seenAt) {
+      // A legacy spot without a version is approved as it is (any owner edit stamps updatedAt,
+      // so from then on it has one).
+      const version = spotVersion(data);
+      if (version !== null && version !== seenAt) {
         throw new HttpsError("failed-precondition", "SPOT_CHANGED");
       }
       tx.update(db.collection("spots").doc(spotId), {

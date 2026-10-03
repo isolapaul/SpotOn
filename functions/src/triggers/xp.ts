@@ -19,10 +19,18 @@ export const syncXp = onDocumentWritten("spots/{spotId}", async (event) => {
   const owner = after?.createdBy;
   const realOwner = typeof owner === "string" && owner.length > 0 && owner !== DELETED_OWNER;
   if (after) {
+    // The stored fields come from the spot as it is now: events may arrive out of order, and an
+    // older snapshot must not overwrite newer contributors.
+    const current = (await event.data!.after.ref.get()).data();
+    const currentOwner = current?.createdBy;
+    const currentReal = typeof currentOwner === "string" && currentOwner.length > 0 &&
+      currentOwner !== DELETED_OWNER;
     const patch: Record<string, unknown> = {};
-    const contributors = spotContributors(after);
-    if (!sameContributors(after.contributors, contributors)) patch.contributors = contributors;
-    if (!realOwner && after.ownerPin !== undefined) patch.ownerPin = FieldValue.delete();
+    if (current) {
+      const contributors = spotContributors(current);
+      if (!sameContributors(current.contributors, contributors)) patch.contributors = contributors;
+      if (!currentReal && current.ownerPin !== undefined) patch.ownerPin = FieldValue.delete();
+    }
     if (Object.keys(patch).length) {
       try {
         await event.data!.after.ref.update(patch);

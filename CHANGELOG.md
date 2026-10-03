@@ -65,6 +65,7 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - Removing a spot takes it out of everyone's lists. Reports about content its author already deleted can be resolved.
 - The map: a device without WebGL gets a note instead of a blank app, the map stays flat (no globe), flying to a spot reports arrival at the right time, a rejected Mapbox token falls back to the theme background, and Mapbox performance telemetry is off.
 - Share-link previews use the right photo, and odd links no longer give a server error.
+- Photos submitted for review are limited to 20 an hour per user (each one notifies the admins). A photo earns XP once, for the person who uploaded it. Admins can approve older spots that were saved without a creation time.
 
 ### Changed (platform)
 - Push notifications use Firebase Installation IDs (the token API is deprecated); a device moves over the next time the app opens, and keeps getting notifications on its old registration until then. The service worker runs on the modular Firebase SDK.

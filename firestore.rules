@@ -152,7 +152,10 @@ service cloud.firestore {
       allow read: if resource.data.status == 'approved'
                   || (request.auth != null && resource.data.createdBy == request.auth.uid)
                   || isAdmin();
-      allow create: if validSpotCreate();
+      // An id the moderation callables accept (isValidSpotId: up to 200 characters; Firestore
+      // itself refuses reserved __…__ ids): a spot no callable can address could never be
+      // approved or removed.
+      allow create: if spotId.size() <= 200 && validSpotCreate();
       // An owner's change to an approved spot is a proposal (spotEdits) since item 4. Approving,
       // rejecting (with a reason) and removing go through the moderation callables, so admins edit
       // fields and photos here but never the status, and nobody deletes a spot directly.

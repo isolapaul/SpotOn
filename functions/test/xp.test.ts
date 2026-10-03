@@ -6,6 +6,7 @@ import {
   spotContributors,
   spotPhotos,
   spotXp,
+  storagePathOf,
   userLevelFields,
   xpOf,
 } from "../src/lib/xp";
@@ -31,6 +32,32 @@ describe("spotPhotos", () => {
       .toEqual([{url: "a", addedBy: "o"}]);
     expect(spotPhotos({createdBy: "o", imageUrls: ["x"], spotImages: [{url: "x"}]}))
       .toEqual([{url: "x", addedBy: "o"}]);
+  });
+});
+
+describe("spotPhotos: files, not URL strings", () => {
+  const dl = (path: string, query = "alt=media&token=t") =>
+    `https://firebasestorage.googleapis.com/v0/b/b/o/${encodeURIComponent(path)}?${query}`;
+  it("reads the object path of a download URL", () => {
+    expect(storagePathOf(dl("spot-images/u/1.jpg"))).toBe("spot-images/u/1.jpg");
+    expect(storagePathOf("http://127.0.0.1:9199/v0/b/b/o/spot-images%2Fu%2F1.jpg?alt=media"))
+      .toBe("spot-images/u/1.jpg");
+    expect(storagePathOf("a.jpg")).toBeNull();
+    expect(storagePathOf("https://x/v0/b/b/o/%E0%A4%A?alt=media")).toBeNull();
+  });
+  it("counts one file once, whatever query-string variants list it", () => {
+    const urls = [dl("spot-images/o/1.jpg"), dl("spot-images/o/1.jpg", "alt=media&token=t&x=1")];
+    expect(spotPhotos({createdBy: "o", imageUrls: urls, spotImages: urls.map((url) => ({url, addedBy: "o"}))}))
+      .toEqual([{url: urls[0], addedBy: "o"}]);
+  });
+  it("credits no one for a photo in someone else's folder; legacy flat paths still count", () => {
+    const foreign = dl("spot-images/victim/1.jpg");
+    const flat = dl("spot-images/old.jpg");
+    expect(spotPhotos({createdBy: "o", imageUrls: [foreign, flat], spotImages: [{url: foreign, addedBy: "o"}]}))
+      .toEqual([{url: flat, addedBy: "o"}]);
+    const own = dl("spot-images/bob/2.jpg");
+    expect(spotPhotos({createdBy: "o", imageUrls: [own], spotImages: [{url: own, addedBy: "bob"}]}))
+      .toEqual([{url: own, addedBy: "bob"}]);
   });
 });
 

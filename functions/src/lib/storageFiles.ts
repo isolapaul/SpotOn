@@ -1,16 +1,16 @@
 /**
  * Deleting spot photo files that nothing refers to any more (a removed spot, a rejected photo, a
  * photo an approved edit removed). A file is deleted only when
- * - it is under spot-images/{owner}/ of one of the given owners (the spot's creator, the photo's
- *   uploader, or the deleted-user folder), so a spot that lists someone else's URL can never get
- *   that person's file deleted; and
+ * - it is under spot-images/{owner}/ of one of the given owners (the spot's creator or the photo's
+ *   uploader; the deleted-user folder only when one of them is the deleted-user placeholder, as on
+ *   a deleted account's kept spots), so a spot that lists someone else's URL can never get that
+ *   person's file, or a kept photo of a deleted account, deleted; and
  * - no spot and no waiting photo submission refers to it any more.
  * Legacy flat paths and anything else stay. Failures are logged, never thrown.
  */
 import {getStorage} from "firebase-admin/storage";
 import * as logger from "firebase-functions/logger";
 import {db} from "./app";
-import {DELETED_OWNER} from "./accountDeletion";
 import {parseStorageDownloadUrl, PLACEHOLDER_URL} from "./spotImages";
 
 function storageContext(): {bucket: string; emulatorHost?: string} {
@@ -28,7 +28,8 @@ export interface PhotoFile {
 
 /**
  * The spot-images/{owner}/ object path of each file, when it lies in one of its owners' folders
- * (or the deleted-user folder); placeholder, foreign, malformed and other folders are dropped.
+ * (the deleted-user one included when an owner is DELETED_OWNER); placeholder, foreign, malformed
+ * and other folders are dropped.
  */
 export function ownedSpotImagePaths(
   files: readonly PhotoFile[],
@@ -39,7 +40,7 @@ export function ownedSpotImagePaths(
     if (url === PLACEHOLDER_URL) continue;
     const path = parseStorageDownloadUrl(url, ctx)?.path;
     if (!path) continue;
-    const allowed = [...owners, DELETED_OWNER].filter((o) => o.length > 0 && !o.includes("/"));
+    const allowed = owners.filter((o) => o.length > 0 && !o.includes("/"));
     if (allowed.some((owner) => path.startsWith(`spot-images/${owner}/`))) out.set(path, {url, path});
   }
   return [...out.values()];

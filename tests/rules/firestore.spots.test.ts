@@ -3,7 +3,7 @@
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
 import {
   addDoc, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp,
-  Timestamp, updateDoc, where, type Firestore,
+  setDoc, Timestamp, updateDoc, where, type Firestore,
 } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 import {
@@ -131,6 +131,11 @@ describe('create (addSpot)', () => {
     await assertFails(create(db, newSpot(ALICE, { name: 'x'.repeat(101) })));
     await assertFails(create(db, newSpot(ALICE, { description: 'x'.repeat(2001) })));
     await assertFails(create(dbAs(env, null), newSpot(ALICE)));
+  });
+  it('denies spot ids the moderation callables cannot address (over 200 characters)', async () => {
+    const db = dbAs(env, ALICE);
+    await assertSucceeds(setDoc(doc(db, 'spots', 'a'.repeat(200)), newSpot(ALICE)));
+    await assertFails(setDoc(doc(db, 'spots', 'a'.repeat(201)), newSpot(ALICE)));
   });
 });
 

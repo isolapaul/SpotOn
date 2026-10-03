@@ -3,7 +3,8 @@
  * - its creator: XP_REWARDS.approvedSpot;
  * - everyone else with at least one review on it: XP_REWARDS.review (once per spot);
  * - each real photo: XP_REWARDS.approvedPhoto for whoever added it (legacy photos without
- *   `addedBy` belong to the creator; the placeholder is not a photo).
+ *   `addedBy` belong to the creator; the placeholder is not a photo; one file once, and only
+ *   from its uploader's own folder).
  * A user's XP is the sum over all spots, so deleting a spot, review or photo takes its XP back.
  * `spots.contributors` (reviewers and photo adders other than the creator) lets the server find
  * the spots a user earns XP from without scanning every spot.
@@ -22,7 +23,31 @@ function records(x: unknown): Data[] {
   return Array.isArray(x) ? x.filter((v): v is Data => typeof v === "object" && v !== null) : [];
 }
 
-/** Each real photo of a spot once, with the uid it counts for. */
+/**
+ * The object path of a Firebase Storage download URL (`…/v0/b/{bucket}/o/{path}?…`), else null.
+ * Only the path matters here: query-string variants of one URL are the same file.
+ */
+export function storagePathOf(url: string): string | null {
+  const match = /\/v0\/b\/[^/]+\/o\/([^?#]+)/.exec(url);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
+}
+
+/** False for a file in another user's spot-images/{uid}/ folder (it is not this uid's photo). */
+function inOwnFolder(path: string | null, uid: string): boolean {
+  const folder = path?.startsWith("spot-images/") ? path.split("/") : null;
+  return !folder || folder.length < 3 || folder[1] === uid;
+}
+
+/**
+ * Each real photo of a spot once, with the uid it counts for. A file counts once however many
+ * URL variants list it, and only for the user whose upload folder holds it (a spot listing
+ * someone else's photo earns nothing for it); legacy flat paths count for their uploader.
+ */
 export function spotPhotos(spot: Data): {url: string; addedBy: string}[] {
   const creator = typeof spot.createdBy === "string" ? spot.createdBy : "";
   // Only photos the spot shows count (imageUrls): a spotImages entry without its URL there is
@@ -37,7 +62,14 @@ export function spotPhotos(spot: Data): {url: string; addedBy: string}[] {
   for (const url of shown) {
     if (!byUrl.has(url)) byUrl.set(url, creator);
   }
-  return [...byUrl].map(([url, addedBy]) => ({url, addedBy}));
+  const byFile = new Map<string, {url: string; addedBy: string}>();
+  for (const [url, addedBy] of byUrl) {
+    const path = storagePathOf(url);
+    if (!inOwnFolder(path, addedBy)) continue;
+    const key = path ?? url;
+    if (!byFile.has(key)) byFile.set(key, {url, addedBy});
+  }
+  return [...byFile.values()];
 }
 
 function reviewerIds(spot: Data): Set<string> {
