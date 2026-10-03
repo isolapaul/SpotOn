@@ -2,8 +2,9 @@ import type { LegalDocument } from './types';
 
 // Felhasználási feltételek (ÁSZF) egy ingyenes, nem kereskedelmi hobbiszolgáltatáshoz.
 export const TERMS_HU: LegalDocument = {
+  lang: 'hu',
   title: 'Felhasználási feltételek (ÁSZF)',
-  updated: 'Utolsó módosítás: 2026. szeptember 29.',
+  updated: 'Utolsó módosítás: 2026. szeptember 30.',
   intro: [
     'Ezek a feltételek a SpotOn (https://spoton.isolapaul.hu) használatára vonatkoznak. A személyes adataid kezeléséről az Adatvédelmi tájékoztató szól.',
     'A feltételeket a regisztráció előtt megismerheted: a bejelentkezési ablakból ez az oldal és az Adatvédelmi tájékoztató is elérhető. A regisztrációval vagy bejelentkezéssel fogadod el őket; a korábban regisztrált felhasználók az alkalmazásban, az Elfogadom gombbal fogadják el. Az elfogadás időpontját és a feltételek akkori változatát rögzítjük.',
@@ -20,7 +21,8 @@ export const TERMS_HU: LegalDocument = {
     {
       heading: '2. A szolgáltatás',
       blocks: [
-        'A SpotOnban térképen fedezhetsz fel és oszthatsz meg helyeket (spotokat), fotókat tölthetsz fel, értékelhetsz, kedvenceket menthetsz és szinteket érhetsz el. A beküldött helyek egy admin jóváhagyása után jelennek meg mindenkinek. A szolgáltatás tartalma és funkciói változhatnak.',
+        'A SpotOnban térképen fedezhetsz fel és oszthatsz meg helyeket (spotokat), fotókat tölthetsz fel, értékelhetsz, kedvenceket menthetsz, más felhasználókat követhetsz és kereshetsz, és a hozzájárulásaidért tapasztalati pontokat (XP) és szinteket kapsz. A beküldött helyek, a jóváhagyott helyek módosításai és a mások helyeihez feltöltött fotók egy admin jóváhagyása után jelennek meg mindenkinek. A szolgáltatás tartalma és funkciói változhatnak.',
+        'Profil. Minden felhasználónak van profiloldala (felhasználónév, profilkép, szint, bemutatkozás, a követők és követettek száma, a jóváhagyott helyek). A profilodat privátra állíthatod: ekkor a helyeid listáját a profilodon csak az általad elfogadott követők látják, a helyeid a térképen továbbra is mindenkinek láthatók. A követőidet bármikor eltávolíthatod.',
       ],
     },
     {
@@ -37,7 +39,7 @@ export const TERMS_HU: LegalDocument = {
     {
       heading: '4. Az általad feltöltött tartalom',
       blocks: [
-        'A feltöltött helyekért, leírásokért, fotókért és értékelésekért te felelsz. Csak olyat tölts fel, amihez jogod van: saját fotót, vagy olyat, amelynek a felhasználására engedélyt kaptál.',
+        'A feltöltött helyekért, leírásokért, fotókért, értékelésekért és a bemutatkozásodért te felelsz. Csak olyat tölts fel, amihez jogod van: saját fotót, vagy olyat, amelynek a felhasználására engedélyt kaptál.',
         'Tilos feltölteni:',
         [
           'jogszabálysértő, sértő, gyűlöletkeltő, erőszakos vagy szexuális tartalmat;',
@@ -54,7 +56,7 @@ export const TERMS_HU: LegalDocument = {
     {
       heading: '5. Moderálás',
       blocks: [
-        'A szolgáltató és az adminok a beküldött helyeket jóváhagyhatják vagy elutasíthatják, és a feltételeket sértő tartalmat előzetes értesítés nélkül törölhetik. Ismételt vagy súlyos szabálysértés esetén a fiókot felfüggeszthetjük vagy törölhetjük. A tartalom eltávolításáról vagy a fiók felfüggesztéséről – ha nem jogszabály tiltja – e-mailben, indokolással értesítünk. A döntés ellen a(z) {email} címen kifogást tehetsz, amelyet emberi felülvizsgálattal 30 napon belül elbírálunk. Ha jogsértő tartalmat látsz, jelezd a visszajelzés funkcióval vagy e-mailben.',
+        'A szolgáltató és az adminok a beküldött helyeket, a módosításokat és a fotókat jóváhagyhatják vagy indoklással elutasíthatják, és a feltételeket sértő tartalmat előzetes értesítés nélkül, indoklással törölhetik. Egy elutasított helyet javíthatsz és újra beküldhetsz. Ismételt vagy súlyos szabálysértés esetén a fiókot felfüggeszthetjük vagy törölhetjük. Az elutasításról, a tartalom eltávolításáról vagy a fiók felfüggesztéséről – ha nem jogszabály tiltja – az indoklással együtt az alkalmazás értesítési központjában és push-értesítésben értesítünk; az értesítés az értesítési központban megmarad, amíg nem törlöd. A döntés ellen a(z) {email} címen kifogást tehetsz, amelyet emberi felülvizsgálattal 30 napon belül elbírálunk. Ha jogsértő tartalmat látsz, jelezd a visszajelzés funkcióval vagy e-mailben.',
       ],
     },
     {
@@ -73,7 +75,7 @@ export const TERMS_HU: LegalDocument = {
     {
       heading: '8. A feltételek módosítása',
       blocks: [
-        'A feltételeket módosíthatjuk. A lényeges módosításról a hatálybalépés előtt legalább 15 nappal az alkalmazásban (és e-mailben) értesítünk. Ha nem értesz egyet, a hatálybalépésig törölheted a fiókodat; ha utána is használod a szolgáltatást, azzal elfogadod a módosítást.',
+        'A feltételeket módosíthatjuk. A lényeges módosításról a hatálybalépés előtt legalább 15 nappal e-mailben (és az alkalmazásban) értesítünk. Ha nem értesz egyet, a hatálybalépésig törölheted a fiókodat; ha utána is használod a szolgáltatást, azzal elfogadod a módosítást.',
       ],
     },
     {

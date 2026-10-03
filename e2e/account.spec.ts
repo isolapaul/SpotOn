@@ -74,6 +74,14 @@ test('legal pages are readable without the install prompt', async ({ page }) => 
   await page.goto('/terms');
   await expect(page.getByRole('heading', { name: 'Felhasználási feltételek (ÁSZF)' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'SpotOn' })).toBeVisible();
+  // Item 9: the English translations, linked both ways, readable without the install prompt too.
+  await page.getByRole('link', { name: 'English' }).click();
+  await expect(page.getByRole('heading', { name: 'Terms of Use' })).toBeVisible();
+  await expect(page.getByText('the Hungarian version is authoritative')).toBeVisible();
+  await page.goto('/privacy/en');
+  await expect(page.getByRole('heading', { name: '4. Deleting your account' })).toBeVisible();
+  await page.getByRole('link', { name: 'Magyar változat' }).click();
+  await expect(page.getByRole('heading', { name: 'Adatvédelmi tájékoztató' })).toBeVisible();
 });
 
 test('the sign-in sheet links the terms and the privacy policy (sign-in-wrap)', async ({ page }) => {
@@ -81,8 +89,8 @@ test('the sign-in sheet links the terms and the privacy policy (sign-in-wrap)', 
   await openApp(page);
   await page.getByRole('button', { name: 'Profile' }).click();
   await expect(page.getByText(/confirm that you are at least 16/)).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Terms of Use' })).toHaveAttribute('href', '/terms');
-  await expect(page.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy');
+  await expect(page.getByRole('link', { name: 'Terms of Use' })).toHaveAttribute('href', '/terms/en');
+  await expect(page.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy/en');
 });
 
 test.describe('terms acceptance of an existing user', () => {
@@ -110,7 +118,7 @@ test.describe('terms acceptance of an existing user', () => {
     await signInWithEmail(page, LEGACY.email, E2E.password);
     const prompt = page.getByRole('dialog', { name: 'Terms' });
     await expect(prompt).toBeVisible();
-    await expect(prompt.getByRole('link', { name: 'Terms of Use' })).toHaveAttribute('href', '/terms');
+    await expect(prompt.getByRole('link', { name: 'Terms of Use' })).toHaveAttribute('href', '/terms/en');
     await prompt.getByRole('button', { name: 'Accept' }).click();
     await expect(prompt).toHaveCount(0);
 
