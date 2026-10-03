@@ -16,9 +16,11 @@ Open work, as of v2.0.2 (2026-09-30). Nothing here is started. Each item becomes
 
 | Item | Notes |
 |---|---|
-| Files over ~300 lines | `AuthModal.tsx` and `SettingsPanel.tsx` break the size convention in `CLAUDE.md`. |
+| Files over ~300 lines | `AuthModal.tsx`, `SettingsPanel.tsx`, `MapView.tsx` (the Mapbox hooks could move to `hooks/`) and `functions/src/callables/follows.ts` break the size convention in `CLAUDE.md`. |
 | Held-back dev tooling | Checked 2026-10-02; nothing in the app or functions code uses a deprecated API (typed `@typescript-eslint/no-deprecated` scan). Held back because no compatible release exists yet: ESLint 9 in the root (`eslint-config-next` 16 bundles `eslint-plugin-react`, which supports up to ESLint 9), TypeScript 6 (typescript-eslint supports <6.1; TypeScript 7 is the native compiler). `npm audit` (dev only, not in the image; `npm audit --omit=dev` is clean): `basic-ftp` and `@opentelemetry/core` via `firebase-tools`, fixed only in majors of its dependencies. The `@grpc/grpc-js` advisory under the Firebase client is fixed by an override in package.json. |
 | Orphaned Storage files | Removing a spot, rejecting a photo and an approved photo removal delete their files (item 4). Photos an admin deletes directly in the image manager still leave their files. |
+| Reports about a deleted account | `deleteAccount` removes the reports the user filed, but reports about the user keep the reported text (`preview`) until an admin resolves them. Decide whether to delete or anonymise them at deletion (privacy policy). |
+| Review appends | The rules let a signed-in user append any number of reviews to an approved spot, their own included (no XP, but the average rating and the owner's notifications). One review per user and spot, server-checked, would need a callable. |
 | Legacy push tokens | `functions/src/lib/notify.ts` still sends to `users.fcmTokens` (the deprecated token API) for devices that have not opened v2.1.0 yet; each device drops its token when it registers its FID. Remove the fallback once the logs show `legacyTokens: 0` for a while, then the field (rules, CLAUDE.md data model). |
 | Legacy user fields | `questProgress` / `questRewards` from the 2026 Valentine event are still on some `users` docs; nothing reads them. |
 | T23 characterisation oracles | `src/lib/__oracles__/legacy.ts` pins the pre-refactor behaviour for a few helpers. They could be replaced by plain unit tests. |

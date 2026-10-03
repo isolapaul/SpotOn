@@ -3,7 +3,7 @@
 Versions are the git tags that were released to the server (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and were not tagged; they are listed by date.
 
-## Unreleased (v2.1.0)
+## v2.1.0 — 2026-10-03
 
 ### Added
 - A public page for deleting your account without the app (`/account-deletion`): what is deleted and what stays, how to do it in the app, and sign-in and deletion right on the page.
