@@ -64,6 +64,8 @@ interface UserStore {
   acceptTerms: () => Promise<void>;
   unhighlightSpot: (spotId: string) => Promise<void>;
   updateCustomNameColor: (color: string) => Promise<void>;
+  /** Level 4+: the special icon on all own spots' pins, or null for the category icons (item 6). */
+  updatePinIcon: (icon: string | null) => Promise<void>;
   updateCustomNameFont: (font: string) => Promise<void>;
   updateNotificationSettings: (settings: NotificationSettings) => Promise<void>;
   rememberFcmToken: (token: string) => void;
@@ -86,6 +88,7 @@ const lookupUserByEmailCallable = httpsCallable<{ email: string }, LookedUpUser>
 const addAdminCallable = httpsCallable<{ email: string }, unknown>(functions, 'addAdmin');
 const removeAdminCallable = httpsCallable<{ uid: string }, unknown>(functions, 'removeAdmin');
 const updateNameStyleCallable = httpsCallable<{ color?: string; font?: string }, unknown>(functions, 'updateNameStyle');
+const updatePinIconCallable = httpsCallable<{ icon: string | null }, unknown>(functions, 'updatePinIcon');
 // T10: highlights are written server-side only.
 const highlightSpotCallable = httpsCallable<{ spotId: string }, unknown>(functions, 'highlightSpot');
 // Deleting touches every spot and several Storage folders: allow more than the default 70 s.
@@ -815,6 +818,18 @@ export const useUserStore = create<UserStore>()(
 
         await updateNameStyleCallable({ font });
         set({ user: { ...user, customNameFont: font } });
+      },
+
+      // Pin icon (level 4+; enforced by the callable, which also updates the spots)
+      updatePinIcon: async (icon) => {
+        const { user } = get();
+        if (!user) throw new Error('NOT_AUTHENTICATED');
+
+        await updatePinIconCallable({ icon });
+        const next = { ...user };
+        if (icon) next.pinIcon = icon;
+        else delete next.pinIcon;
+        set({ user: next });
       },
 
       // Per-type push preferences (users/{uid}.notificationSettings, validated by the users rules)

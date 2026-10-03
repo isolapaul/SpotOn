@@ -17,6 +17,7 @@ export interface User {
   highlightedSpots?: string[]; // Array of spot IDs user highlighted (max based on level)
   customNameColor?: string; // Custom name color for level 5
   customNameFont?: string; // Custom font for level 5
+  pinIcon?: string; // Special pin icon from level 4 (item 6); normalise before use
   notificationSettings?: NotificationSettings;
   spotsCount?: number; // Server-maintained (T09), all statuses (D8)
   termsVersion?: string; // The accepted Terms / Privacy Policy version (A1, lib/terms)
@@ -61,6 +62,7 @@ export function mapUserDoc(uid: string, authInfo: AuthInfo, data: Record<string,
 
   if (typeof data.customNameColor === 'string') user.customNameColor = data.customNameColor;
   if (typeof data.customNameFont === 'string') user.customNameFont = data.customNameFont;
+  if (typeof data.pinIcon === 'string') user.pinIcon = data.pinIcon;
 
   const notificationSettings = mapNotificationSettings(data.notificationSettings);
   if (notificationSettings) user.notificationSettings = notificationSettings;

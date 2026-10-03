@@ -59,3 +59,15 @@ describe('zoomBand', () => {
     expect(zoomBand(18)).toBe('near');
   });
 });
+
+describe('owner pin icon (item 6)', () => {
+  it('replaces the category glyph only for an allowlisted icon', () => {
+    const plain = buildPinHtml({ category: 'park', variant: 'approved', highlighted: false });
+    const crown = buildPinHtml({ category: 'park', variant: 'approved', highlighted: false, pin: 'crown' });
+    expect(crown).toContain('data-pin="crown"');
+    expect(crown).not.toBe(plain);
+    for (const pin of ['"><script>', 'toString', 42, null, undefined]) {
+      expect(buildPinHtml({ category: 'park', variant: 'approved', highlighted: false, pin })).toBe(plain);
+    }
+  });
+});

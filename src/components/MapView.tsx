@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import type { Spot } from '@/store/useSpotStore';
 import { useMapThemeStore, mapThemes } from '@/store/useMapThemeStore';
 import { buildPinHtml, markerVariant, PIN_ANCHOR, PIN_SIZE, zoomBand, type MarkerVariant } from '@/lib/mapMarkers';
+import { normalizePinIcon, type PinIconId } from '@/lib/pinGlyphs';
 import {
   DEFAULT_MAP_CENTER,
   DEFAULT_MAP_ZOOM,
@@ -42,12 +43,12 @@ interface MapViewProps {
 // marker DOM) whenever the reference changes, so zooming never rebuilds markers any more.
 const iconCache = new Map<string, L.DivIcon>();
 
-const getPinIcon = (category: string, variant: MarkerVariant, highlighted: boolean) => {
-  const key = `${category}|${variant}|${highlighted ? 1 : 0}`;
+const getPinIcon = (category: string, variant: MarkerVariant, highlighted: boolean, pin: PinIconId | null) => {
+  const key = `${category}|${variant}|${highlighted ? 1 : 0}|${pin ?? ''}`;
   let icon = iconCache.get(key);
   if (!icon) {
     icon = L.divIcon({
-      html: buildPinHtml({ category, variant, highlighted }),
+      html: buildPinHtml({ category, variant, highlighted, pin }),
       className: 'spot-marker',
       iconSize: [...PIN_SIZE],
       iconAnchor: [...PIN_ANCHOR],
@@ -291,7 +292,7 @@ export default function MapView({
               key={spot.id}
               position={[spot.location.lat, spot.location.lng]}
               title={spot.name}
-              icon={getPinIcon(spot.category, markerVariant(spot.status), isHighlighted)}
+              icon={getPinIcon(spot.category, markerVariant(spot.status), isHighlighted, normalizePinIcon(spot.ownerPin))}
               zIndexOffset={isHighlighted ? 1000 : 0}
               ref={(m) => {
                 if (m) {

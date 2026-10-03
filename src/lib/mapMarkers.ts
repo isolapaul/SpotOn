@@ -1,7 +1,8 @@
 // Map pins (design 1D). Pure string building: MapView wraps the markup in an L.divIcon and caches
-// the icons. Every value interpolated below is a constant or a normalised category id; nothing
-// read from Firestore reaches the markup (Leaflet inserts divIcon html with innerHTML).
+// the icons. Every value interpolated below is a constant or a normalised category / pin icon id;
+// nothing read from Firestore reaches the markup (Leaflet inserts divIcon html with innerHTML).
 import { CATEGORY_GLYPHS, glyphToSvgMarkup, normalizeCategory } from './categoryGlyphs';
+import { normalizePinIcon, PIN_GLYPHS } from './pinGlyphs';
 
 /**
  * approved: public green pin; rejected: grey with a cross (item 4: only its owner and admins see it);
@@ -51,18 +52,20 @@ const VARIANT_LOOK: Readonly<Record<MarkerVariant, { fill: string; ink: string; 
   rejected: { fill: PIN_COLORS.rejected, ink: '#FFFFFF', ring: '#FFFFFF', dashed: false, badge: CROSS_BADGE },
 };
 
-export function buildPinHtml(o: { category: string | undefined; variant: MarkerVariant; highlighted: boolean }): string {
+/** `pin`: the owner's special icon (item 6, spots.ownerPin); it replaces the category glyph. */
+export function buildPinHtml(o: { category: string | undefined; variant: MarkerVariant; highlighted: boolean; pin?: unknown }): string {
   const category = normalizeCategory(o.category);
+  const pin = normalizePinIcon(o.pin);
   const look = VARIANT_LOOK[o.variant];
   const fill = look.fill;
   const ink = look.ink;
   const ring = o.highlighted ? PIN_COLORS.highlight : look.ring;
   const dash = look.dashed && !o.highlighted ? ' stroke-dasharray="4 3"' : '';
   const badge = o.highlighted ? STAR_BADGE : look.badge;
-  const glyph = glyphToSvgMarkup(CATEGORY_GLYPHS[category], ink);
+  const glyph = glyphToSvgMarkup(pin ? PIN_GLYPHS[pin] : CATEGORY_GLYPHS[category], ink);
 
   return (
-    `<div class="spot-pin" data-variant="${o.variant}" data-category="${category}" data-highlighted="${o.highlighted}">` +
+    `<div class="spot-pin" data-variant="${o.variant}" data-category="${category}" data-highlighted="${o.highlighted}"${pin ? ` data-pin="${pin}"` : ''}>` +
     `<svg class="spot-pin__svg" width="44" height="54" viewBox="0 0 44 54" aria-hidden="true" focusable="false">` +
     `<ellipse cx="22" cy="50.6" rx="6" ry="2" fill="#000" opacity=".22"/>` +
     `<path d="${PIN_PATH}" fill="none" stroke="#000" stroke-opacity=".2" stroke-width="5.5"/>` +

@@ -74,7 +74,7 @@ describe('users: own document (T11a paths)', () => {
     const serverOnly: Record<string, unknown> = {
       username: 'taken', customNameColor: 'red', customNameFont: 'font-bold', highlightedSpots: ['x'],
       spotsCount: 999, questRewards: { valentine2026: { highlightBonus: 99 } }, questProgress: { a: 1 },
-      xp: 9999, level: 5, levelFloor: 5,
+      xp: 9999, level: 5, levelFloor: 5, pinIcon: 'crown',
     };
     for (const [k, v] of Object.entries(serverOnly)) {
       await assertFails(setDoc(userRef(dbAs(env, CAROL), CAROL), newUserDoc(CAROL, { [k]: v }), { merge: true }));
