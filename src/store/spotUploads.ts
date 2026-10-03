@@ -22,7 +22,7 @@ import { withTimeout } from '@/lib/withTimeout';
 import { invalidatePublicProfile } from '@/store/publicProfiles';
 import type { NewReview, Review, Spot, SpotImage } from '@/store/useSpotStore';
 
-const addSpotImagesCallable = httpsCallable<{ spotId: string; urls: string[] }, unknown>(
+const addSpotImagesCallable = httpsCallable<{ spotId: string; urls: string[] }, { added?: number; pending?: number }>(
   functions,
   'addSpotImages',
   { timeout: UPLOAD_TIMEOUT_MS },
@@ -156,10 +156,13 @@ export async function createSpot(
 /**
  * Appends uploaded photo URLs to a spot through the addSpotImages callable. The server rejects
  * URLs it already has ("Image already added"): after a timeout that still landed, that counts as done.
+ * Returns how many photos wait for an admin (item 4: other users' photos, and the owner's on an
+ * approved spot, are reviewed first).
  */
-export async function attachSpotImages(spotId: string, urls: string[]): Promise<void> {
+export async function attachSpotImages(spotId: string, urls: string[]): Promise<number> {
   try {
-    await addSpotImagesCallable({ spotId, urls });
+    const { data } = await addSpotImagesCallable({ spotId, urls });
+    return typeof data?.pending === 'number' ? data.pending : 0;
   } catch (error) {
     if (errorCode(error) === 'functions/resource-exhausted') throw new Error(MAX_SPOT_IMAGES_ERROR);
     if (errorCode(error) === 'functions/invalid-argument') {
@@ -167,7 +170,7 @@ export async function attachSpotImages(spotId: string, urls: string[]): Promise<
       const stored = Array.isArray(existing?.imageUrls) ? (existing.imageUrls as unknown[]) : [];
       // The callable adds all URLs or none: any one of them on the spot means this batch landed
       // (one may have been deleted since).
-      if (urls.some((url) => stored.includes(url))) return;
+      if (urls.some((url) => stored.includes(url))) return 0;
     }
     throw error;
   }

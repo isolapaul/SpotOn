@@ -3,8 +3,11 @@
 // read from Firestore reaches the markup (Leaflet inserts divIcon html with innerHTML).
 import { CATEGORY_GLYPHS, glyphToSvgMarkup, normalizeCategory } from './categoryGlyphs';
 
-/** approved: public green pin; pending: any non-approved spot (the owner's or, for admins, anyone's). */
-export type MarkerVariant = 'approved' | 'pending';
+/**
+ * approved: public green pin; rejected: grey with a cross (item 4: only its owner and admins see it);
+ * pending: any other non-approved spot (the owner's or, for admins, anyone's).
+ */
+export type MarkerVariant = 'approved' | 'pending' | 'rejected';
 
 /** Pin box and tip (the spot's coordinate) in CSS px; one size at every zoom (senior UI review M3). */
 export const PIN_SIZE: readonly [number, number] = [44, 54];
@@ -14,6 +17,8 @@ export const PIN_COLORS = {
   approved: '#12814F', // white glyph 4.9:1
   pendingRing: '#B98300', // dashed ring on white
   pendingInk: '#111418',
+  rejected: '#5B6068', // white glyph 6.4:1
+  rejectedBadge: '#FF453A',
   highlight: '#F7C948', // gold: highlighted only, never a status
 } as const;
 
@@ -22,30 +27,38 @@ const PIN_PATH = 'M22 50C20.6 45.5 18 41.8 14.9 36.5A18 18 0 1 1 29.1 36.5C26 41
 const CLOCK_BADGE =
   '<circle cx="36" cy="7" r="7" fill="#111418" stroke="#fff" stroke-width="1.5"/>' +
   '<path d="M36 3.8V7l2.1 1.3" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>';
+const CROSS_BADGE =
+  '<circle cx="36" cy="7" r="7" fill="#FF453A" stroke="#fff" stroke-width="1.5"/>' +
+  '<path d="M33.6 4.6l4.8 4.8M38.4 4.6l-4.8 4.8" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>';
 const STAR_BADGE =
   '<circle cx="36" cy="7" r="7" fill="#F7C948" stroke="#fff" stroke-width="1.5"/>' +
   '<path d="M36.00 3.60 L36.88 5.79 L39.23 5.95 L37.43 7.46 L38.00 9.75 L36.00 8.50 L34.00 9.75 L34.57 7.46 L32.77 5.95 L35.12 5.79Z" fill="#3B2A00"/>';
 
-/** A spot's pin variant: approved, else pending (rejected and unknown statuses included). */
+/** A spot's pin variant: approved, rejected, else pending (unknown statuses included). */
 export function markerVariant(status: string | undefined): MarkerVariant {
-  return status === 'approved' ? 'approved' : 'pending';
+  if (status === 'approved') return 'approved';
+  return status === 'rejected' ? 'rejected' : 'pending';
 }
 
 /**
  * The pin's HTML: an SVG pin (shown from the city zoom in) and a small status dot (shown when the
  * map is zoomed far out, via the `data-zoom-band="far"` rule in globals.css). Status is never
- * colour-only: pending has a dashed ring and a clock, highlighted a gold ring and a star.
+ * colour-only: pending has a dashed ring and a clock, rejected a cross, highlighted a gold ring and a star.
  */
+const VARIANT_LOOK: Readonly<Record<MarkerVariant, { fill: string; ink: string; ring: string; dashed: boolean; badge: string }>> = {
+  approved: { fill: PIN_COLORS.approved, ink: '#FFFFFF', ring: '#FFFFFF', dashed: false, badge: '' },
+  pending: { fill: '#FFFFFF', ink: PIN_COLORS.pendingInk, ring: PIN_COLORS.pendingRing, dashed: true, badge: CLOCK_BADGE },
+  rejected: { fill: PIN_COLORS.rejected, ink: '#FFFFFF', ring: '#FFFFFF', dashed: false, badge: CROSS_BADGE },
+};
+
 export function buildPinHtml(o: { category: string | undefined; variant: MarkerVariant; highlighted: boolean }): string {
   const category = normalizeCategory(o.category);
-  const approved = o.variant === 'approved';
-  const fill = approved ? PIN_COLORS.approved : '#FFFFFF';
-  const ink = approved ? '#FFFFFF' : PIN_COLORS.pendingInk;
-  let ring = approved ? '#FFFFFF' : PIN_COLORS.pendingRing;
-  if (o.highlighted) ring = PIN_COLORS.highlight;
-  const dash = approved || o.highlighted ? '' : ' stroke-dasharray="4 3"';
-  let badge = approved ? '' : CLOCK_BADGE;
-  if (o.highlighted) badge = STAR_BADGE;
+  const look = VARIANT_LOOK[o.variant];
+  const fill = look.fill;
+  const ink = look.ink;
+  const ring = o.highlighted ? PIN_COLORS.highlight : look.ring;
+  const dash = look.dashed && !o.highlighted ? ' stroke-dasharray="4 3"' : '';
+  const badge = o.highlighted ? STAR_BADGE : look.badge;
   const glyph = glyphToSvgMarkup(CATEGORY_GLYPHS[category], ink);
 
   return (

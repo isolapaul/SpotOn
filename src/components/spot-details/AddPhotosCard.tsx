@@ -7,7 +7,8 @@ import { useUserStore } from '@/store/useUserStore';
 import { useToastStore } from '@/store/useToastStore';
 import { isSpotUploadRunning, useUploadStore } from '@/store/useUploadStore';
 import { useT } from '@/hooks/useT';
-import { MAX_SPOT_IMAGES, realImageCount } from '@/lib/spotImages';
+import { photoLimitKey } from '@/lib/spotImages';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 interface AddPhotosCardProps {
   spot: Spot;
@@ -19,6 +20,7 @@ export default function AddPhotosCard({ spot }: Readonly<AddPhotosCardProps>) {
   const submitPhotos = useUploadStore((s) => s.submitPhotos);
   const isUploading = useUploadStore((s) => isSpotUploadRunning(s.jobs, spot.id));
   const showToast = useToastStore((s) => s.showToast);
+  const isAdmin = useIsAdmin();
   const t = useT();
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,8 +29,9 @@ export default function AddPhotosCard({ spot }: Readonly<AddPhotosCardProps>) {
     event.target.value = '';
     if (!files.length) return;
     if (!user) { showToast(t('mustBeLoggedIn'), 'error'); return; }
-    // Same limit the server enforces (resource-exhausted), checked before anything is uploaded.
-    if (realImageCount(spot) + files.length > MAX_SPOT_IMAGES) { showToast(t('maxSpotImages'), 'error'); return; }
+    // Same limits the server enforces (resource-exhausted), checked before anything is uploaded.
+    const limit = photoLimitKey(spot, user.uid, isAdmin, files.length);
+    if (limit) { showToast(t(limit), 'error'); return; }
     submitPhotos({ spotId: spot.id, spotName: spot.name, files, userId: user.uid });
   };
 

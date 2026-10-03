@@ -15,6 +15,7 @@ import type { SpotBack } from '@/components/ui/BackButton';
 import CompactBar from './CompactBar';
 import Gallery from './Gallery';
 import { AdminStatusCard, DeleteSpotButton } from './AdminActions';
+import OwnerStatusCard from './OwnerStatusCard';
 import SpotTitle from './SpotTitle';
 import SpotLocation from './SpotLocation';
 import EditForm from './EditForm';
@@ -81,8 +82,9 @@ export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<Spo
   const allGalleryImages = getGalleryUrls(spot, sortedSpotImages);
   const heroImageUrl = getHeroImageUrl(spot, sortedSpotImages);
 
-  const isOwner = user && spot.createdBy === user.uid;
-  const canEdit = isAdmin || (!!isOwner && spot.status === 'approved');
+  const isOwner = !!user && spot.createdBy === user.uid;
+  // Admins edit directly; owners too while the spot is under review, else they propose (item 4).
+  const canEdit = edit.route !== null;
   const navigationUrl = getNavigationUrl(spot.location.lat, spot.location.lng);
   const avgRating = averageRating(spot.reviews);
 
@@ -115,6 +117,7 @@ export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<Spo
 
         <div className="px-5 pt-4 space-y-5">
           {isAdmin && <AdminStatusCard spot={spot} onClose={closeThisSpot} />}
+          {isOwner && !isAdmin && <OwnerStatusCard spot={spot} onEdit={edit.start} />}
 
           <SpotTitle
             spot={spot}
@@ -128,7 +131,7 @@ export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<Spo
 
           {/* Description / Edit form */}
           {edit.isEditing ? (
-            <EditForm edit={edit} />
+            <EditForm spotId={spot.id} edit={edit} />
           ) : spot.description ? (
             <section>
               <h2 className="text-[20px] font-bold text-label mb-2">{t('description')}</h2>
@@ -143,7 +146,7 @@ export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<Spo
           </div>
 
           {/* Manage images (owner/admin); keyed so its toggle resets for another spot */}
-          {canEdit && <ImageManager key={spot.id} spot={spot} imageCount={allGalleryImages.length} />}
+          {edit.route && <ImageManager key={spot.id} spot={spot} imageCount={allGalleryImages.length} route={edit.route} />}
 
           <ReviewsSection spot={spot} />
 

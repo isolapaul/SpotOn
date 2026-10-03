@@ -19,7 +19,7 @@ Open work, as of v2.0.2 (2026-09-30). Nothing here is started. Each item becomes
 |---|---|
 | Files over ~300 lines | `AuthModal.tsx` and `SettingsPanel.tsx` break the size convention in `CLAUDE.md`. |
 | Deprecated dev tooling | Left because no update fixes them yet: ESLint 9 (`eslint-config-next` 16 bundles `eslint-plugin-react`, which crashes on ESLint 10), and transitive `glob@10`, `json-ptr` and `node-domexception` (from `firebase-tools` and `firebase-admin`; the latest versions still depend on them). `npm audit` reports 3 moderate advisories in `@opentelemetry/core` via `firebase-tools` (dev only, not in the image; `npm audit --omit=dev` is clean). |
-| Orphaned Storage files | Files stay when an admin deletes a spot or a photo; only `deleteAccount` cleans up (its own user's folder). |
+| Orphaned Storage files | Removing a spot, rejecting a photo and an approved photo removal delete their files (item 4). Photos an admin deletes directly in the image manager still leave their files. |
 | Legacy user fields | `questProgress` / `questRewards` from the 2026 Valentine event are still on some `users` docs; nothing reads them. |
 | T23 characterisation oracles | `src/lib/__oracles__/legacy.ts` pins the pre-refactor behaviour for a few helpers. They could be replaced by plain unit tests. |
 | CARTO raster tiles | CARTO now needs an API key and is moving users to vector tiles; the Light/Dark/Silver styles may need a new source later. |

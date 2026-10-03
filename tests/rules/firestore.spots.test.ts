@@ -197,29 +197,16 @@ describe('reviews (addReview append)', () => {
   });
 });
 
-describe('owner edits (approved spot)', () => {
-  it('allows name, description and primaryImageIndex', async () => {
+describe('owner edits (approved spot): none since item 4, the owner proposes (spotEdits)', () => {
+  it('denies every direct owner change: name, description, primary photo, photo removal', async () => {
     const db = dbAs(env, ALICE);
-    await assertSucceeds(upd(db, SPOT_APPROVED, { name: 'Renamed' }));
-    await assertSucceeds(upd(db, SPOT_APPROVED, { description: 'x'.repeat(2000) }));
-    await assertSucceeds(upd(db, SPOT_APPROVED, { primaryImageIndex: 1 }));
-  });
-  it('allows deleteSpotImage: one, then the last (placeholder), and on the legacy spot', async () => {
-    const db = dbAs(env, ALICE);
-    await assertSucceeds(upd(db, SPOT_APPROVED, {
+    await assertFails(upd(db, SPOT_APPROVED, { name: 'Renamed' }));
+    await assertFails(upd(db, SPOT_APPROVED, { description: 'd' }));
+    await assertFails(upd(db, SPOT_APPROVED, { primaryImageIndex: 1 }));
+    await assertFails(upd(db, SPOT_APPROVED, {
       imageUrls: [IMG2], spotImages: [spotImage('2_b', IMG2, ALICE)], primaryImageIndex: 0,
     }));
-    await assertSucceeds(upd(db, SPOT_APPROVED, { imageUrls: [PLACEHOLDER], spotImages: [], primaryImageIndex: 0 }));
-    await assertSucceeds(upd(db, SPOT_LEGACY, { imageUrls: [IMG1], spotImages: [], primaryImageIndex: 0 }));
-  });
-  it('SEC-02: denies invalid values and edits of a pending spot', async () => {
-    const db = dbAs(env, ALICE);
-    await assertFails(upd(db, SPOT_APPROVED, { name: '' }));
-    await assertFails(upd(db, SPOT_APPROVED, { description: 'x'.repeat(2001) }));
-    await assertFails(upd(db, SPOT_APPROVED, { primaryImageIndex: 20 }));
-    await assertFails(upd(db, SPOT_APPROVED, { primaryImageIndex: '1' }));
-    await assertFails(upd(db, SPOT_PENDING, { name: 'Renamed' }));
-    await assertFails(upd(db, SPOT_PENDING, { description: 'd' }));
+    await assertFails(upd(db, SPOT_LEGACY, { imageUrls: [IMG1], spotImages: [], primaryImageIndex: 0 }));
   });
   it('SEC-02/09: denies owner changes to createdBy, status, highlighted, isHighlighted', async () => {
     const db = dbAs(env, ALICE);
@@ -231,15 +218,14 @@ describe('owner edits (approved spot)', () => {
   });
   it('SEC-02/10: denies adding or swapping image URLs and changing likes', async () => {
     const db = dbAs(env, ALICE);
-    await assertFails(upd(db, SPOT_APPROVED, { imageUrls: [IMG1, IMG2, 'https://evil.test/x.jpg'] }));
-    await assertFails(upd(db, SPOT_APPROVED, { imageUrls: [IMG1, 'https://evil.test/x.jpg'] }));
-    await assertFails(upd(db, SPOT_APPROVED, {
+    await assertFails(upd(db, SPOT_PENDING, { imageUrls: [IMG1, IMG2, 'https://evil.test/x.jpg'] }));
+    await assertFails(upd(db, SPOT_PENDING, { imageUrls: [IMG1, 'https://evil.test/x.jpg'] }));
+    await assertFails(upd(db, SPOT_PENDING, {
       spotImages: [spotImage('1_a', IMG1, ALICE, [BOB, ALICE]), spotImage('2_b', IMG2, ALICE)],
     }));
-    await assertFails(upd(db, SPOT_APPROVED, {
+    await assertFails(upd(db, SPOT_PENDING, {
       spotImages: [spotImage('1_a', IMG1, ALICE, []), spotImage('2_b', IMG2, ALICE)],
     }));
-    await assertFails(upd(db, SPOT_LEGACY, { spotImages: [spotImage('1', IMG1, ALICE)] }));
   });
   it('SEC-02/10: denies non-owners editing name or rewriting spotImages', async () => {
     const db = dbAs(env, BOB);
@@ -251,12 +237,18 @@ describe('owner edits (approved spot)', () => {
 });
 
 describe('admin and delete', () => {
-  it('admin approves, edits any field and deletes', async () => {
+  it('admin edits fields and photos directly', async () => {
     const db = dbAs(env, ADMIN);
-    await assertSucceeds(upd(db, SPOT_PENDING, { status: 'approved' }));
     await assertSucceeds(upd(db, SPOT_APPROVED, { name: 'Admin edit', description: 'd', primaryImageIndex: 1 }));
     await assertSucceeds(upd(db, SPOT_LEGACY, { imageUrls: [IMG1], spotImages: [], primaryImageIndex: 0 }));
-    await assertSucceeds(deleteDoc(doc(db, 'spots', SPOT_APPROVED)));
+  });
+  it('item 4: status, rejection, owner and deletes only through the moderation callables', async () => {
+    const db = dbAs(env, ADMIN);
+    await assertFails(upd(db, SPOT_PENDING, { status: 'approved' }));
+    await assertFails(upd(db, SPOT_PENDING, { status: 'rejected' }));
+    await assertFails(upd(db, SPOT_PENDING, { rejection: { reason: 'x', at: serverTimestamp() } }));
+    await assertFails(upd(db, SPOT_APPROVED, { createdBy: BOB }));
+    await assertFails(deleteDoc(doc(db, 'spots', SPOT_APPROVED)));
   });
   it('SEC-02: denies delete by owner, other users and anonymous', async () => {
     await assertFails(deleteDoc(doc(dbAs(env, ALICE), 'spots', SPOT_APPROVED)));

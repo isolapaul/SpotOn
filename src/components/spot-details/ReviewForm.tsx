@@ -8,7 +8,8 @@ import { useToastStore } from '@/store/useToastStore';
 import { hasUnsentReview, isSpotUploadRunning, useUploadStore } from '@/store/useUploadStore';
 import { useT } from '@/hooks/useT';
 import type { User } from '@/lib/mapUserDoc';
-import { MAX_SPOT_IMAGES, realImageCount } from '@/lib/spotImages';
+import { photoLimitKey } from '@/lib/spotImages';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import StarRating from '../ui/StarRating';
 
 interface ReviewFormProps {
@@ -26,6 +27,7 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
   const isUploading = useUploadStore((s) => isSpotUploadRunning(s.jobs, spot.id));
   const reviewPending = useUploadStore((s) => hasUnsentReview(s.jobs, spot.id));
   const showToast = useToastStore((s) => s.showToast);
+  const isAdmin = useIsAdmin();
   const t = useT();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -45,8 +47,9 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
     const picked = Array.from(event.target.files || []);
     event.target.value = '';
     if (!picked.length) return;
-    if (realImageCount(spot) + files.length + picked.length > MAX_SPOT_IMAGES) {
-      showToast(t('maxSpotImages'), 'error');
+    const limit = photoLimitKey(spot, user.uid, isAdmin, files.length + picked.length);
+    if (limit) {
+      showToast(t(limit), 'error');
       return;
     }
     setPhotos((prev) => [...prev, ...picked.map((file) => ({ file, preview: URL.createObjectURL(file) }))]);

@@ -56,6 +56,13 @@ interface UiStore {
   closeSpot: () => void;
   /** Back (the back buttons and the system back): one step up, else close what is open. */
   goBack: () => void;
+
+  /** Picking a new location for this spot (item 4 edit), instead of placing a new spot. */
+  relocatingSpotId: string | null;
+  /** Leaves the spot for the satellite map to pick its new location. */
+  startRelocating: (spotId: string, currentTheme: MapTheme) => void;
+  /** Picking ended (a location was chosen or it was cancelled): back to the spot's details. */
+  finishRelocating: () => void;
 }
 
 /** Restores the remembered map theme, if any, and forgets it. */
@@ -83,7 +90,10 @@ export const useUiStore = create<UiStore>((set, get) => ({
     set({ prevMapTheme: currentTheme, selectingLocation: true, pendingLocation: null, previewSpotId: null, returnTo: null });
     useMapThemeStore.getState().setTheme('satellite');
   },
-  cancelSelectingLocation: () => set({ selectingLocation: false, ...restoreTheme(get().prevMapTheme) }),
+  cancelSelectingLocation: () => {
+    if (get().relocatingSpotId) return get().finishRelocating();
+    set({ selectingLocation: false, ...restoreTheme(get().prevMapTheme) });
+  },
   selectLocation: (loc) => set({ pendingLocation: loc, selectingLocation: false, activePanel: 'addSpot' }),
   closeAddSpot: () =>
     set({ activePanel: 'none', pendingLocation: null, selectingLocation: false, ...restoreTheme(get().prevMapTheme) }),
@@ -117,6 +127,20 @@ export const useUiStore = create<UiStore>((set, get) => ({
   },
   closeSpot: () =>
     set(get().returnTo === 'discovery' ? { activePanel: 'discovery', returnTo: null } : { activePanel: 'none', returnTo: null }),
+  relocatingSpotId: null,
+  startRelocating: (spotId, currentTheme) => {
+    set({ relocatingSpotId: spotId, activePanel: 'none', previewSpotId: null, returnTo: null, prevMapTheme: currentTheme, selectingLocation: true });
+    useMapThemeStore.getState().setTheme('satellite');
+  },
+  finishRelocating: () => {
+    const spotId = get().relocatingSpotId;
+    set({
+      relocatingSpotId: null,
+      selectingLocation: false,
+      ...restoreTheme(get().prevMapTheme),
+      ...(spotId ? { activePanel: { type: 'spot', spotId } as const } : {}),
+    });
+  },
   goBack: () => {
     const s = get();
     if (s.activePanel === 'addSpot') return s.closeAddSpot();

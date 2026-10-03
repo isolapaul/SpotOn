@@ -73,7 +73,7 @@ describe('useUploadStore', () => {
 
   it('review with photos: photos first, then the review; a review failure does not re-send the photos', async () => {
     vi.mocked(steps.uploadSpotImages).mockResolvedValue(uploaded as never);
-    vi.mocked(steps.attachSpotImages).mockResolvedValue();
+    vi.mocked(steps.attachSpotImages).mockResolvedValue(0);
     vi.mocked(steps.appendReview).mockRejectedValueOnce(new Error('denied')).mockResolvedValueOnce();
     const review = { userId: 'u1', userName: 'me', rating: 5, comment: 'nice' };
     store().submitReview({ spotId: 's1', spotName: 'Sunset', review, files: [file('a')], userId: 'u1' });

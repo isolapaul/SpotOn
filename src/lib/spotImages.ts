@@ -55,6 +55,25 @@ export function realImageCount(spot: Pick<Spot, 'imageUrls'>): number {
   return urls?.length ?? 0;
 }
 
+/** Photos one user may have waiting for approval on one spot (the server's MAX_PENDING_PER_UPLOADER). */
+export const MAX_PENDING_PER_UPLOADER = 5;
+
+/**
+ * The message key when adding `count` more photos would break a limit the server enforces, else
+ * null. Admins and the owner of a spot under review add directly (only the 20-photo limit);
+ * everyone else's photos wait for approval, at most MAX_PENDING_PER_UPLOADER at a time.
+ */
+export function photoLimitKey(
+  spot: Pick<Spot, 'imageUrls' | 'createdBy' | 'status'>,
+  uid: string,
+  isAdmin: boolean,
+  count: number,
+): 'maxSpotImages' | 'maxPendingPhotos' | null {
+  if (realImageCount(spot) + count > MAX_SPOT_IMAGES) return 'maxSpotImages';
+  const direct = isAdmin || (spot.createdBy === uid && spot.status !== 'approved');
+  return !direct && count > MAX_PENDING_PER_UPLOADER ? 'maxPendingPhotos' : null;
+}
+
 /** The image fields of a spots/{id} doc that deleting an image rewrites (legacy docs may lack them). */
 export type RemovableImageFields<I extends { url: string } = SpotImage> = {
   imageUrls?: string[];

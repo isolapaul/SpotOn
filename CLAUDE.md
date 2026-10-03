@@ -45,6 +45,8 @@ src/components/discovery/**      Explore list parts (featured spot, rows)
 src/components/map/**            Map chrome: MapControls stack, MapStylePopover, PlaceCard
 src/components/legal/**          LegalPage, the sign-in acceptance notice, the one-time TermsPrompt
 src/components/ui/               Shared primitives: PanelShell, ModalShell, Button/CloseButton, StarRating, CategoryIcon, LevelBadge, LevelRing, PerkIcon
+src/store/useModerationStore.ts  Moderation (item 4): own edit proposals, the admin edit/photo queues, the moderation callables
+src/store/useInboxStore.ts       The server inbox listener (users/{uid}/inbox), merged into the notification centre by hooks/useNotificationFeed
 src/store/useSpotStore.ts        Spot scopes (startSpots / syncSpotScopes / stopSpots) + all spot mutations; admin state lives in useUserStore (isAdmin / isSuperAdmin, from admins/{uid})
 src/store/spotListeners.ts       The approved / own / admin spot listeners behind the scopes (T30), merged by lib/mergeSpots
 src/store/useUserStore.ts        Auth flows, user doc, terms acceptance, admins, username, profile images, highlights, account deletion
@@ -83,10 +85,11 @@ docs/play-store.md               Play listing texts, Data safety and content rat
 
 ### Firestore data model (current)
 - `spots/{id}`: name, category, description, location{lat,lng}, createdBy, createdByName, createdByPhoto,
-  status ('pending'|'approved'), createdAt, imageUrls[], spotImages[{id,url,addedBy,addedAt,likes,likedBy[]}],
+  status ('pending'|'approved'|'rejected'), rejection{reason,at} (rejected only), createdAt, imageUrls[], spotImages[{id,url,addedBy,addedAt,likes,likedBy[]}],
   primaryImageIndex, **reviews[] embedded array**, highlighted[], isHighlighted.
   Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
   Spots of deleted accounts have `createdBy: "deleted-user"` and no createdByName/createdByPhoto.
+  Status changes and deletes go only through the moderation callables (`approveSpot`, `rejectSpot`, `removeSpot`); admins may still edit fields and photos directly.
 - `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmTokens[], language,
   notificationsEnabled, notificationSettings, spotsCount (server-maintained, all statuses),
   termsVersion + termsAcceptedAt (accepted Terms/Privacy version, A1; lib/terms),
@@ -96,6 +99,9 @@ docs/play-store.md               Play listing texts, Data safety and content rat
 - `usernames/{name}`: `{uid}` registry, written only by the `claimUsername` callable.
 - `admins/{uid}`: email, username, photoURL, addedAt, addedBy, role ('super' | 'admin').
 - `categories/{id}`: name, icon (admin-managed; half-finished feature, see docs/BACKLOG.md).
+- `spotEdits/{spotId}` (item 4): the owner's proposed edit of an approved spot, at most one per spot: spotId, spotName, ownerId, status ('pending'|'rejected'), proposed{name?, description?, category?, location?, removeImageUrls?, primaryImageUrl?}, rejection{reason,at}, createdAt. Reviewed with `reviewSpotEdit`.
+- `photoSubmissions/{id}` (item 4): a photo waiting for an admin: spotId, spotName, spotOwner, uploader, url, status, createdAt. Written only by `addSpotImages`, resolved by `reviewPhotoSubmission`.
+- `users/{uid}/inbox/{id}` (item 4): moderation decisions for the user (type, spotId, spotName, reason?, read, createdAt), written only by Cloud Functions; the notification centre shows them.
 - Storage: `spot-images/{uid}/…` (new uploads; legacy flat `spot-images/…` stays readable),
   `spot-images/deleted-user/…` (kept photos of deleted accounts), `profile-pictures/{uid}/…`, `profile-banners/{uid}/…`.
 

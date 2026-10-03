@@ -2,8 +2,10 @@
 
 import { MapPin } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
+import { useModerationStore } from '@/store/useModerationStore';
 import { useT } from '@/hooks/useT';
 import { statusClass, statusLabelKey } from '@/lib/spotStatus';
+import type { SpotEdit } from '@/lib/moderation';
 import ProfileSpotCard from './ProfileSpotCard';
 
 interface MySpotListProps {
@@ -11,9 +13,24 @@ interface MySpotListProps {
   onOpenSpot: (spotId: string) => void;
 }
 
-/** All of the user's spots with their status badge, or the empty state. */
+/** The review state under a spot (item 4): why it was rejected, or where a proposed edit stands. */
+function ReviewNote({ spot, edit }: Readonly<{ spot: Spot; edit?: SpotEdit }>) {
+  const t = useT();
+  if (spot.status === 'rejected' && spot.rejection) {
+    return <span className="block text-[13px] text-[#FF8A80] mt-1.5 line-clamp-2">{t('rejectionReason', { reason: spot.rejection.reason })}</span>;
+  }
+  if (spot.status !== 'approved' || !edit) return null;
+  return (
+    <span className="block text-[13px] text-amber-300/90 mt-1.5 line-clamp-2">
+      {edit.status === 'pending' ? t('editPendingShort') : t('editRejectedNote', { reason: edit.reason ?? '' })}
+    </span>
+  );
+}
+
+/** All of the user's spots with their status badge (and review state), or the empty state. */
 export default function MySpotList({ spots, onOpenSpot }: Readonly<MySpotListProps>) {
   const t = useT();
+  const ownEdits = useModerationStore((s) => s.ownEdits);
   return (
     <div className="space-y-3">
       {spots.length === 0 ? (
@@ -32,6 +49,7 @@ export default function MySpotList({ spots, onOpenSpot }: Readonly<MySpotListPro
                 {t(statusLabelKey(spot.status))}
               </span>
             </span>
+            <ReviewNote spot={spot} edit={ownEdits[spot.id]} />
           </ProfileSpotCard>
         ))
       )}

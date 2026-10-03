@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Compass, MapPin, Plus, UserRound } from 'lucide-react';
 import { useT } from '@/hooks/useT';
+import type { TranslationKey } from '@/lib/translations';
 import { useUserStore } from '@/store/useUserStore';
 import { useMyLevel } from '@/hooks/useMyLevel';
 import { Z } from '@/lib/constants';
@@ -17,6 +18,8 @@ import LevelRing from '@/components/ui/LevelRing';
 interface BottomNavigationProps {
   /** Add-spot location picking is running. */
   picking: boolean;
+  /** The hint while picking (default: place a new spot). */
+  pickingHint?: TranslationKey;
   /** Slid away (a place card is showing). */
   hidden: boolean;
   /** Approved spots on the map; 0 hides the count line. */
@@ -72,6 +75,7 @@ function Avatar() {
 
 export default function BottomNavigation({
   picking,
+  pickingHint = 'tapMapToPlace',
   hidden,
   spotCount,
   onExplore,
@@ -144,7 +148,7 @@ export default function BottomNavigation({
           {picking && (
             <>
               <MapPin className="w-5 h-5 flex-shrink-0 text-brand-600 chrome-dark:text-brand-400 motion-safe:animate-hint-bob" strokeWidth={2.2} />
-              <span className="text-[15px] font-medium text-chrome-ink truncate">{t('tapMapToPlace')}</span>
+              <span className="text-[15px] font-medium text-chrome-ink truncate">{t(pickingHint)}</span>
             </>
           )}
         </div>

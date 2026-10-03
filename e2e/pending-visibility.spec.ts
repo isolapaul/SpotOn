@@ -79,7 +79,7 @@ test('admin: pending spots on the map and in the pending tab', async ({ page }) 
   const pendingTab = page.getByRole('button', { name: /Pending Approval/ });
   await expect(pendingTab).toHaveText(/Pending Approval\s*[1-9]\d*/);
   await pendingTab.click();
-  await expect(page.locator('.glass-card').filter({ hasText: E2E.pendingSpot.name })).toBeVisible();
+  await expect(page.locator(`button[aria-label="${E2E.pendingSpot.name}"]`)).toBeVisible();
 });
 
 test('owner: a new spot appears in the profile at once, as pending', async ({ page }) => {

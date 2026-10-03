@@ -1,10 +1,11 @@
 /**
- * Firestore triggers on spots/{spotId}: approval, new review, new pending spot.
+ * Firestore triggers on spots/{spotId}: approval, new review, new pending spot, resubmission.
  */
 import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firestore";
 import * as logger from "firebase-functions/logger";
 import "../lib/app";
 import {sendNotificationToAdmins, sendNotificationToUser} from "../lib/notify";
+import {notifyAdminsToReview, notifyInbox} from "../lib/inbox";
 
 // ========================================
 // TRIGGER 1: Spot Approved
@@ -25,18 +26,8 @@ export const onSpotApproved = onDocumentUpdated(
 
       logger.info(`Spot ${spotId} approved, notifying user ${creatorId}`);
 
-      await sendNotificationToUser(
-        creatorId,
-        "spotApproved",
-        "spotApprovedBody",
-        [spotName],
-        {
-          type: "spot_approved",
-          spotId: spotId,
-          spotName: spotName,
-        },
-        "spotApproved",
-      );
+      // Inbox + push (item 4): the approval stays readable in the notification centre.
+      await notifyInbox({uid: creatorId, type: "spot_approved", spotId, spotName});
     }
   },
 );
@@ -119,5 +110,22 @@ export const onNewPendingSpot = onDocumentCreated(
         "newPendingSpot",
       );
     }
+  },
+);
+
+// ========================================
+// TRIGGER 5: Rejected spot resubmitted (item 4)
+// ========================================
+export const onSpotResubmitted = onDocumentUpdated(
+  "spots/{spotId}",
+  async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (before?.status !== "rejected" || after?.status !== "pending") return;
+    const spotId = event.params.spotId;
+    logger.info(`Spot ${spotId} resubmitted, notifying admins`);
+    await notifyAdminsToReview("spotResubmitted", "spotResubmittedBody",
+      [String(after.name ?? ""), String(after.createdByName ?? "Anonymous")],
+      {type: "new_pending_spot", spotId});
   },
 );

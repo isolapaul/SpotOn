@@ -5,7 +5,8 @@ import { CATEGORY_GLYPHS, glyphToSvgMarkup, normalizeCategory } from './category
 describe('markerVariant', () => {
   it('approved spots are green, every other status is pending', () => {
     expect(markerVariant('approved')).toBe('approved');
-    for (const status of ['pending', 'rejected', '', undefined, 'APPROVED']) expect(markerVariant(status)).toBe('pending');
+    expect(markerVariant('rejected')).toBe('rejected');
+    for (const status of ['pending', '', undefined, 'APPROVED']) expect(markerVariant(status)).toBe('pending');
   });
 });
 

@@ -53,6 +53,14 @@ export function imageAccess(spot: SpotAccessFields, uid: string): "allowed" | "a
   return spot.status === "approved" || spot.createdBy === uid ? "allowed" : "admin";
 }
 
+/**
+ * Whether new photos go straight onto the spot (item 4): for admins, and for the owner of a spot
+ * not yet approved (it is reviewed as a whole). Everyone else's photos wait for an admin.
+ */
+export function photosAddDirectly(spot: SpotAccessFields, uid: string, isAdmin: boolean): boolean {
+  return isAdmin || (spot.createdBy === uid && spot.status !== "approved");
+}
+
 function stringArray(x: unknown): string[] {
   return Array.isArray(x) ? x.filter((v): v is string => typeof v === "string") : [];
 }
@@ -152,6 +160,21 @@ export function toggleLikeInImages<T>(
   const next = [...images];
   next[index] = updated;
   return {images: next, liked: !alreadyLiked, likes};
+}
+
+/**
+ * Image ids in the client's format (`${ms}_${0..9999}`); the random part is re-rolled until the id
+ * is not in `used` (existing images and earlier ids of the same call), then recorded there.
+ */
+export function uniqueIdFactory(used: Set<string>, now: () => number = Date.now): () => string {
+  return () => {
+    let id: string;
+    do {
+      id = `${now()}_${Math.floor(Math.random() * 10000)}`;
+    } while (used.has(id));
+    used.add(id);
+    return id;
+  };
 }
 
 const PROD_STORAGE_HOST = "firebasestorage.googleapis.com";

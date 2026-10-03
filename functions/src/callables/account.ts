@@ -8,8 +8,9 @@
  *    spot-images/deleted-user/ first, reviews / photos on others' spots / likes / highlights
  *    removed), each in its own transaction;
  * 2. Storage: removed photos, uploads no own spot shows, profile pictures and banners;
- * 3. usernames/{name}, users/{uid} (syncPublicProfile then drops publicProfiles), publicProfiles;
- * 4. the Firebase Auth user.
+ * 3. the inbox, the user's spotEdits proposals and photoSubmissions (item 4);
+ * 4. usernames/{name}, users/{uid} (syncPublicProfile then drops publicProfiles), publicProfiles;
+ * 5. the Firebase Auth user.
  * Logs only uid and counts.
  */
 import {FieldValue} from "firebase-admin/firestore";
@@ -156,13 +157,22 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
     ...(await listPaths(`profile-banners/${uid}/`)),
   ]));
 
-  // 3. Profile documents.
+  // 3. Moderation documents (item 4): the inbox, the user's pending edit proposals and photo
+  // submissions (their files were orphaned uploads above).
+  const [inbox, edits, submissions] = await Promise.all([
+    userRef.collection("inbox").get(),
+    db.collection("spotEdits").where("ownerId", "==", uid).get(),
+    db.collection("photoSubmissions").where("uploader", "==", uid).get(),
+  ]);
+  await Promise.all([...inbox.docs, ...edits.docs, ...submissions.docs].map((d) => d.ref.delete()));
+
+  // 4. Profile documents.
   const names = await db.collection("usernames").where("uid", "==", uid).get();
   await Promise.all(names.docs.map((d) => d.ref.delete()));
   await userRef.delete();
   await db.collection("publicProfiles").doc(uid).delete();
 
-  // 4. The Auth user, last.
+  // 5. The Auth user, last.
   try {
     await auth.deleteUser(uid);
   } catch (error) {

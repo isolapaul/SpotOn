@@ -3,6 +3,7 @@ import type { SpotImage } from '@/store/useSpotStore';
 import {
   MAX_SPOT_IMAGES,
   PLACEHOLDER_URL,
+  photoLimitKey,
   imageFallbacks,
   extForMime,
   getGalleryUrls,
@@ -302,5 +303,20 @@ describe('imageFallbacks', () => {
     const spot = { id: 's', imageUrls: ['a', 'b'], primaryImageIndex: 1 } as never;
     expect(imageFallbacks(spot, [])).toEqual(['a', 'b']);
     expect(imageFallbacks({ id: 's', imageUrls: [PLACEHOLDER_URL] } as never, [])).toEqual([]);
+  });
+});
+
+describe('photoLimitKey', () => {
+  const spot = (status: 'pending' | 'approved', n: number) =>
+    ({ createdBy: 'o', status, imageUrls: Array.from({ length: n }, (_, i) => `u${i}`) });
+  it('the 20-photo limit applies to everyone', () => {
+    expect(photoLimitKey(spot('approved', 18), 'a', true, 3)).toBe('maxSpotImages');
+    expect(photoLimitKey(spot('approved', 18), 'a', true, 2)).toBeNull();
+  });
+  it('photos waiting for approval: at most 5 at once', () => {
+    expect(photoLimitKey(spot('approved', 0), 'x', false, 6)).toBe('maxPendingPhotos');
+    expect(photoLimitKey(spot('approved', 0), 'o', false, 6)).toBe('maxPendingPhotos');
+    expect(photoLimitKey(spot('approved', 0), 'x', false, 5)).toBeNull();
+    expect(photoLimitKey(spot('pending', 0), 'o', false, 6)).toBeNull();
   });
 });

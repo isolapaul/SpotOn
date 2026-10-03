@@ -27,6 +27,7 @@ import { useInitialLanguage } from '@/hooks/useInitialLanguage';
 import { useMapThemeAttribute } from '@/hooks/useMapThemeAttribute';
 import { useStandaloneFullHeight } from '@/hooks/useStandaloneFullHeight';
 import { useSystemBack } from '@/hooks/useSystemBack';
+import { useRelocateSpot } from '@/hooks/useRelocateSpot';
 import { runViewTransition } from '@/hooks/viewTransition';
 import { useVisibleSpots } from '@/hooks/useVisibleSpots';
 import { useUserLocation } from '@/hooks/useUserLocation';
@@ -61,8 +62,10 @@ export default function Home() {
   const { openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot } =
     useUiStore(useShallow(({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot }) =>
       ({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot })));
-  const { openSpotFromList, arriveAtSpot, closeSpot, goBack } =
-    useUiStore(useShallow(({ openSpotFromList, arriveAtSpot, closeSpot, goBack }) => ({ openSpotFromList, arriveAtSpot, closeSpot, goBack })));
+  const { openSpotFromList, arriveAtSpot, closeSpot, goBack, finishRelocating } = useUiStore(useShallow(
+    ({ openSpotFromList, arriveAtSpot, closeSpot, goBack, finishRelocating }) => ({ openSpotFromList, arriveAtSpot, closeSpot, goBack, finishRelocating })));
+  const relocatingSpotId = useUiStore((s) => s.relocatingSpotId);
+  const relocateSpot = useRelocateSpot();
 
   // Map: the shared location, or the default centre once location is denied (dot + one-time pan).
   const mapLocation = userLocation
@@ -87,6 +90,13 @@ export default function Home() {
         onBack: back,
       }
     : undefined;
+
+  // A tap on the map while picking: a new spot's place, or the edited spot's new location (item 4).
+  const handleLocationSelect = (location: { lat: number; lng: number }) => {
+    if (!relocatingSpotId) return selectLocation(location);
+    finishRelocating();
+    void relocateSpot(relocatingSpotId, location);
+  };
 
   const handleAddSpotClick = () => {
     // Pick the location on the satellite map for accuracy (signed in only)
@@ -143,7 +153,7 @@ export default function Home() {
       {/* Full-screen map background */}
       <MapView
         isAddingSpot={selectingLocation}
-        onLocationSelect={selectLocation}
+        onLocationSelect={handleLocationSelect}
         tempMarker={pendingLocation}
         spots={visibleSpots}
         userLocation={mapLocation}
@@ -179,6 +189,7 @@ export default function Home() {
       {/* Launcher (design 1C) */}
       <BottomNavigation
         picking={selectingLocation}
+        pickingHint={relocatingSpotId ? 'tapNewLocation' : undefined}
         hidden={previewedSpot !== null}
         spotCount={approvedCount}
         onExplore={() => openSheet('discovery')}

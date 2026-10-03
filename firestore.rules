@@ -20,6 +20,9 @@ service cloud.firestore {
         && l.lat is number && l.lat >= -90 && l.lat <= 90
         && l.lng is number && l.lng >= -180 && l.lng <= 180;
     }
+    function validCategory(c) {
+      return c in ['scenic', 'smoke-spot', 'viewpoint', 'other', 'hiking', 'random', 'date-spot', 'park', 'part'];
+    }
     function validSpotCreate() {
       let d = request.resource.data;
       return signedIn()
@@ -32,7 +35,7 @@ service cloud.firestore {
         && d.createdAt == request.time
         && isStr(d.name, 1, 100)
         && d.description is string && d.description.size() <= 2000
-        && d.category in ['scenic', 'smoke-spot', 'viewpoint', 'other', 'hiking', 'random', 'date-spot', 'park', 'part']
+        && validCategory(d.category)
         && validLocation(d.location)
         && (!('createdByName' in d) || isStr(d.createdByName, 0, 100))
         && (!('createdByPhoto' in d) || isStr(d.createdByPhoto, 0, 2048))
@@ -71,22 +74,36 @@ service cloud.firestore {
       return newL is list && newL.size() <= oldL.size() && newL.removeAll(oldL).size() == 0;
     }
     // Owner image edits may only remove entries (SEC-10); removing the last one leaves the placeholder.
+    // Used for spots under review (isOwnerDraftEdit).
     function validOwnerImages() {
       let newU = request.resource.data.get('imageUrls', []);
       return (newU == ['/placeholder-spot.jpg'] || onlyRemoved(resource.data.get('imageUrls', []), newU))
         && onlyRemoved(resource.data.get('spotImages', []), request.resource.data.get('spotImages', []));
     }
-    function isOwnerEdit() {
+    // Item 4: the owner edits a spot still under review (pending) or rejected, and may resubmit a
+    // rejected one: status rejected → pending, with the rejection removed. Photos: removals here;
+    // additions go through addSpotImages (direct for the owner of a spot under review).
+    function isOwnerDraftEdit() {
       let d = request.resource.data;
       let ak = changed();
+      let st = resource.data.status;
       return signedIn()
         && resource.data.createdBy == request.auth.uid
-        && resource.data.status == 'approved'
-        && ak.hasOnly(['name', 'description', 'primaryImageIndex', 'imageUrls', 'spotImages'])
+        && st in ['pending', 'rejected']
+        && ak.hasOnly(['name', 'description', 'category', 'location', 'primaryImageIndex', 'imageUrls', 'spotImages',
+                       'status', 'rejection'])
         && (!ak.hasAny(['name']) || isStr(d.name, 1, 100))
         && (!ak.hasAny(['description']) || (d.description is string && d.description.size() <= 2000))
-        && (!ak.hasAny(['primaryImageIndex']) || (d.primaryImageIndex is int && d.primaryImageIndex >= 0 && d.primaryImageIndex < 20))
-        && (!ak.hasAny(['imageUrls', 'spotImages']) || validOwnerImages());
+        && (!ak.hasAny(['category']) || validCategory(d.category))
+        && (!ak.hasAny(['location']) || validLocation(d.location))
+        && (!ak.hasAny(['primaryImageIndex']) || (d.primaryImageIndex is int && d.primaryImageIndex >= 0
+            && d.primaryImageIndex < d.get('imageUrls', []).size()))
+        && (!ak.hasAny(['imageUrls', 'spotImages']) || validOwnerImages())
+        && (!ak.hasAny(['status']) || (st == 'rejected' && d.status == 'pending' && !('rejection' in d)))
+        && (!ak.hasAny(['rejection']) || (d.status == 'pending' && !('rejection' in d)));
+    }
+    function isAdminEdit() {
+      return isAdmin() && !changed().hasAny(['status', 'rejection', 'createdBy']);
     }
     match /spots/{spotId} {
       // T30: pending spots only for their owner and admins. Rules are not filters: the client queries
@@ -95,8 +112,11 @@ service cloud.firestore {
                   || (request.auth != null && resource.data.createdBy == request.auth.uid)
                   || isAdmin();
       allow create: if validSpotCreate();
-      allow update: if isAdmin() || isReviewAppend() || isOwnerEdit();
-      allow delete: if isAdmin();
+      // An owner's change to an approved spot is a proposal (spotEdits) since item 4. Approving,
+      // rejecting (with a reason) and removing go through the moderation callables, so admins edit
+      // fields and photos here but never the status, and nobody deletes a spot directly.
+      allow update: if isAdminEdit() || isReviewAppend() || isOwnerDraftEdit();
+      allow delete: if false;
     }
 
     // ---------- users ----------
@@ -144,6 +164,52 @@ service cloud.firestore {
         && changed().hasOnly(userClientKeys())
         && validUserFields(request.resource.data, changed());
       allow delete: if false;
+    }
+
+    // ---------- moderation (item 4) ----------
+    // The owner's proposed edit of an approved spot: one per spot (the doc id), reviewed by an admin
+    // (reviewSpotEdit). The owner writes it whole (a new proposal replaces a rejected one) and may
+    // withdraw it; the status and the rejection are set only by the callable.
+    function validProposal(p) {
+      return p is map && p.size() > 0
+        && p.keys().hasOnly(['name', 'description', 'category', 'location', 'removeImageUrls', 'primaryImageUrl'])
+        && (!('name' in p) || isStr(p.name, 1, 100))
+        && (!('description' in p) || (p.description is string && p.description.size() <= 2000))
+        && (!('category' in p) || validCategory(p.category))
+        && (!('location' in p) || validLocation(p.location))
+        && (!('removeImageUrls' in p) || (p.removeImageUrls is list && p.removeImageUrls.size() <= 20))
+        && (!('primaryImageUrl' in p) || isStr(p.primaryImageUrl, 1, 2048));
+    }
+    match /spotEdits/{spotId} {
+      function ownSpot() {
+        let spot = get(/databases/$(database)/documents/spots/$(spotId)).data;
+        return spot.createdBy == request.auth.uid && spot.status == 'approved';
+      }
+      allow get, list: if isAdmin() || (signedIn() && resource.data.ownerId == request.auth.uid);
+      allow create, update: if signedIn()
+        && (resource == null || resource.data.ownerId == request.auth.uid)
+        && request.resource.data.keys().hasOnly(['spotId', 'spotName', 'ownerId', 'status', 'proposed', 'createdAt'])
+        && request.resource.data.keys().hasAll(['spotId', 'spotName', 'ownerId', 'status', 'proposed', 'createdAt'])
+        && request.resource.data.spotId == spotId
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time
+        && isStr(request.resource.data.spotName, 1, 100)
+        && validProposal(request.resource.data.proposed)
+        && ownSpot();
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+    }
+    // Photos waiting for approval: created and resolved only by the callables.
+    match /photoSubmissions/{submissionId} {
+      allow get, list: if isAdmin() || (signedIn() && resource.data.uploader == request.auth.uid);
+      allow write: if false;
+    }
+    // The in-app inbox: written by Cloud Functions; its owner reads it, marks items read, clears them.
+    match /users/{userId}/inbox/{itemId} {
+      allow get, list: if isSelf(userId);
+      allow update: if isSelf(userId) && changed().hasOnly(['read']) && request.resource.data.read is bool;
+      allow delete: if isSelf(userId);
+      allow create: if false;
     }
 
     // ---------- server-maintained ----------

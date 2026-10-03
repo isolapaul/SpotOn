@@ -14,6 +14,14 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - A spot opened from Explore goes back to Explore when you close it, with the same order, category and scroll position.
 - The Android back gesture and the browser's Back button step back inside the app (spot to profile or Explore, a panel to the map) instead of leaving it.
 
+### Added (moderation)
+- Admins can reject a pending spot or delete a spot, always with a reason. The owner gets a push and a note in the notification centre that stays; a rejected spot shows the reason in My Spots and on the spot, and can be edited and resubmitted for review.
+- Changes to an approved spot (name, description, category, location, photos) wait for an admin's approval; the spot stays as it is meanwhile. The owner sees that the changes are under review and can withdraw them.
+- Photos other people add to a spot show after an admin approves them.
+- The admin review has three lists: new spots, changes (shown as old and new) and photos.
+- The owner can change a spot's category and location while editing it; a rejected spot has a grey pin with a cross (only its owner and admins see it).
+- The notification centre also shows decisions about your spots and photos, on every device.
+
 ### Changed
 - The browser and system bars use the app's dark background colour.
 
