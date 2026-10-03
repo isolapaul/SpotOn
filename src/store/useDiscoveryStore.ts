@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { SpotCategory } from './useSpotStore';
+import type { CategoryId } from './useSpotStore';
 import { DISCOVERY_BATCH_SIZE } from '@/lib/constants';
 
 export type DiscoverySort = 'nearest' | 'best-rated';
@@ -11,12 +11,12 @@ export type DiscoverySort = 'nearest' | 'best-rated';
  */
 interface DiscoveryStore {
   sortBy: DiscoverySort;
-  filterCategory: SpotCategory | null;
+  filterCategory: CategoryId | null;
   visibleCount: number;
   scrollTop: number;
   /** A new order or filter starts at the top with the first batch. */
   setSort: (sortBy: DiscoverySort) => void;
-  setCategory: (category: SpotCategory | null) => void;
+  setCategory: (category: CategoryId | null) => void;
   showMore: () => void;
   rememberScroll: (scrollTop: number) => void;
 }

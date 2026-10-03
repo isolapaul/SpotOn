@@ -5,12 +5,13 @@ import { useShallow } from 'zustand/react/shallow';
 import { X, Navigation, Star } from 'lucide-react';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
-import { CATEGORIES } from '@/lib/categories';
+import { useCategoryOptions, useCategoryText } from '@/hooks/useCategory';
 import { haversineKm } from '@/lib/geo';
 import { averageRating } from '@/lib/rating';
-import type { Spot, SpotCategory } from '@/store/useSpotStore';
+import type { CategoryId, Spot } from '@/store/useSpotStore';
 import { useDiscoveryStore, type DiscoverySort } from '@/store/useDiscoveryStore';
 import CategoryIcon from '@/components/ui/CategoryIcon';
+import GlyphIcon from '@/components/ui/GlyphIcon';
 import PanelShell from './ui/PanelShell';
 import FeaturedSpot from './discovery/FeaturedSpot';
 import SpotRow from './discovery/SpotRow';
@@ -30,6 +31,8 @@ const chipClass = (active: boolean) =>
 export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSelect }: Readonly<DiscoveryPanelProps>) {
   const { spots } = useSpotStore();
   const t = useT();
+  const categories = useCategoryOptions();
+  const categoryText = useCategoryText();
   // The list view outlives the panel (useDiscoveryStore): a spot opened from here returns to it.
   const { sortBy, filterCategory, visibleCount, setSort, setCategory, showMore, rememberScroll } = useDiscoveryStore(
     useShallow(({ sortBy, filterCategory, visibleCount, setSort, setCategory, showMore, rememberScroll }) =>
@@ -67,7 +70,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
     if (option === 'nearest' && !userLocation) return;
     setSort(option);
   };
-  const pickCategory = (category: SpotCategory | null) => setCategory(category);
+  const pickCategory = (category: CategoryId | null) => setCategory(category);
 
   if (!isOpen) return null;
 
@@ -143,10 +146,10 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
           <button type="button" aria-pressed={filterCategory === null} onClick={() => pickCategory(null)} className={chipClass(filterCategory === null)}>
             {t('allCategories')}
           </button>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <button key={c.id} type="button" aria-pressed={filterCategory === c.id} onClick={() => pickCategory(c.id)} className={chipClass(filterCategory === c.id)}>
-              <CategoryIcon category={c.id} className="w-4 h-4" />
-              {t(c.labelKey)}
+              <GlyphIcon glyph={c.glyph} className="w-4 h-4" />
+              {categoryText(c)}
             </button>
           ))}
         </div>

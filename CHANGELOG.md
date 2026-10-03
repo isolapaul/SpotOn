@@ -29,6 +29,9 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 ### Added (pin style)
 - From level 4 you can pick one of eight icons (star, crown, flame, mountain, leaf, bolt, diamond, moon) for the map pins of all your spots, in My Spots.
 
+### Added (categories)
+- The super admin can add categories (Hungarian name, optional English and German names that fall back to Hungarian) with one of sixteen hand-drawn icons, rename them, change their icon and delete one no spot uses. They show up for everyone when adding or editing a spot, in Explore and on the map pins.
+
 ### Changed
 - The browser and system bars use the app's dark background colour.
 

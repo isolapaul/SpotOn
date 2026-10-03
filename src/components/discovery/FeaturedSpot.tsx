@@ -2,8 +2,8 @@
 
 import Image from 'next/image';
 import type { Spot } from '@/store/useSpotStore';
-import { useLanguage, useT } from '@/hooks/useT';
-import { categoryTranslationKeys } from '@/lib/spotUtils';
+import { useLanguage } from '@/hooks/useT';
+import { useCategoryLabel } from '@/hooks/useCategory';
 import { formatDistance } from '@/lib/geo';
 import { getThumbnailUrl, isImageUnoptimized } from '@/lib/spotImages';
 import CategoryIcon from '@/components/ui/CategoryIcon';
@@ -19,7 +19,7 @@ interface FeaturedSpotProps {
 
 /** The first spot of the Explore list as a big photo card (design phase 3). */
 export default function FeaturedSpot({ spot, rating, reviewCount, distanceKm, onSelect }: Readonly<FeaturedSpotProps>) {
-  const t = useT();
+  const categoryLabel = useCategoryLabel();
   const language = useLanguage();
   const ratingText = language === 'en' ? rating.toFixed(1) : rating.toFixed(1).replace('.', ',');
 
@@ -35,7 +35,7 @@ export default function FeaturedSpot({ spot, rating, reviewCount, distanceKm, on
       <span className="absolute left-4 right-4 bottom-4">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-md px-2.5 py-1 text-[12px] font-semibold text-white">
           <CategoryIcon category={spot.category} className="w-3.5 h-3.5" />
-          {t(categoryTranslationKeys[spot.category])}
+          {categoryLabel(spot.category)}
         </span>
         <span className="mt-2 block text-[24px] font-bold leading-tight text-white line-clamp-2">{spot.name}</span>
         <span className="mt-1 flex items-center gap-1.5 text-[14px] text-white/85">

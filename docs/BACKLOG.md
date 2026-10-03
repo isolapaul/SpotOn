@@ -9,7 +9,6 @@ Open work, as of v2.0.2 (2026-09-30). Nothing here is started. Each item becomes
 | Google Play release | Trusted Web Activity; the repository side is ready (`docs/deploy.md` §17, `docs/play-store.md`). Left: the developer account, the Bubblewrap build, the closed test and the listing. |
 | Legal pages in English and German | `/privacy` and `/terms` are Hungarian only; English and German users get the Hungarian text. |
 | Accessible labels in all languages | aria-labels and alt texts are English, because the e2e selectors depend on them. |
-| Category manager | The super admin can add categories to `categories/{id}`, but nothing reads them; the add-spot form uses the nine built-in categories. Finish the feature or remove it. |
 | "Special icons" level perk | Level 4 and 5 advertise "Use special icons" (`useCustomIcons`, `perkIcons`), but no such feature exists. Build it or drop the perk text. |
 | Owners deleting their own spots | Only admins can delete a spot. Owners ask by e-mail (the privacy policy says so). |
 
