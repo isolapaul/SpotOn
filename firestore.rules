@@ -112,6 +112,25 @@ service cloud.firestore {
       return isAdmin() && !changed().hasAny(['status', 'rejection', 'createdBy', 'contributors', 'ownerPin']);
     }
     match /spots/{spotId} {
+      // Replies to reviews (questions and answers): on approved spots, by signed-in users; the author
+      // edits the text or deletes, admins delete through reports (Cloud Functions).
+      match /replies/{replyId} {
+        function spotVisible() {
+          return get(/databases/$(database)/documents/spots/$(spotId)).data.status == 'approved';
+        }
+        allow read: if spotVisible() || isAdmin();
+        allow create: if signedIn() && spotVisible()
+          && request.resource.data.keys().hasOnly(['reviewId', 'userId', 'text', 'createdAt'])
+          && request.resource.data.userId == request.auth.uid
+          && isStr(request.resource.data.reviewId, 1, 200)
+          && isStr(request.resource.data.text.trim(), 1, 500)
+          && request.resource.data.createdAt == request.time;
+        allow update: if signedIn() && resource.data.userId == request.auth.uid
+          && changed().hasOnly(['text', 'editedAt'])
+          && isStr(request.resource.data.text.trim(), 1, 500)
+          && request.resource.data.editedAt == request.time;
+        allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+      }
       // T30: pending spots only for their owner and admins. Rules are not filters: the client queries
       // status == 'approved', createdBy == uid, or (admins) everything.
       allow read: if resource.data.status == 'approved'
