@@ -1,13 +1,14 @@
 'use client';
 
-import { useMemo, useCallback, useLayoutEffect, useRef } from 'react';
+import { useMemo, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { X, Navigation, Search, Star } from 'lucide-react';
+import { X, Navigation, Search, Sparkles, Star } from 'lucide-react';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
 import { useCategoryOptions, useCategoryText } from '@/hooks/useCategory';
 import { haversineKm } from '@/lib/geo';
 import { averageRating } from '@/lib/rating';
+import { isNewThisWeek } from '@/lib/newSpots';
 import type { CategoryId, Spot } from '@/store/useSpotStore';
 import { useDiscoveryStore, type DiscoverySort } from '@/store/useDiscoveryStore';
 import CategoryIcon from '@/components/ui/CategoryIcon';
@@ -35,9 +36,9 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   const categories = useCategoryOptions();
   const categoryText = useCategoryText();
   // The list view outlives the panel (useDiscoveryStore): a spot opened from here returns to it.
-  const { sortBy, filterCategory, visibleCount, setSort, setCategory, showMore, rememberScroll } = useDiscoveryStore(
-    useShallow(({ sortBy, filterCategory, visibleCount, setSort, setCategory, showMore, rememberScroll }) =>
-      ({ sortBy, filterCategory, visibleCount, setSort, setCategory, showMore, rememberScroll })),
+  const { sortBy, filterCategory, onlyNew, visibleCount, setSort, setCategory, setOnlyNew, showMore, rememberScroll } = useDiscoveryStore(
+    useShallow(({ sortBy, filterCategory, onlyNew, visibleCount, setSort, setCategory, setOnlyNew, showMore, rememberScroll }) =>
+      ({ sortBy, filterCategory, onlyNew, visibleCount, setSort, setCategory, setOnlyNew, showMore, rememberScroll })),
   );
   const scrollRef = useRef<HTMLDivElement>(null);
   // Item 8: spots and people search, behind the icon in the header.
@@ -55,17 +56,25 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   );
 
   const approvedCount = useMemo(() => spots.filter((s) => s.status === 'approved').length, [spots]);
+  // "New this week", against when Explore first rendered (a session lasting days is not a concern).
+  const [now] = useState(() => Date.now());
+  const newIds = useMemo(
+    () => new Set(spots.filter((s) => s.status === 'approved' && isNewThisWeek(s, now)).map((s) => s.id)),
+    [spots, now],
+  );
 
   // Approved only, the category filter, then the chosen order.
   const sortedSpots = useMemo(() => {
-    const filtered = spots.filter((spot) => spot.status === 'approved' && (!filterCategory || spot.category === filterCategory));
+    const filtered = spots.filter((spot) => spot.status === 'approved'
+      && (!filterCategory || spot.category === filterCategory)
+      && (!onlyNew || newIds.has(spot.id)));
     if (sortBy === 'nearest' && userLocation) {
       filtered.sort((a, b) => (getDistance(a) ?? Infinity) - (getDistance(b) ?? Infinity));
     } else {
       filtered.sort((a, b) => averageRating(b.reviews) - averageRating(a.reviews));
     }
     return filtered;
-  }, [spots, filterCategory, sortBy, userLocation, getDistance]);
+  }, [spots, filterCategory, onlyNew, newIds, sortBy, userLocation, getDistance]);
 
   const displayedSpots = useMemo(() => sortedSpots.slice(0, visibleCount), [sortedSpots, visibleCount]);
   const hasMore = visibleCount < sortedSpots.length;
@@ -163,6 +172,12 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
 
         {/* Category chips */}
         <div className="mt-3 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button type="button" aria-pressed={onlyNew} onClick={() => setOnlyNew(!onlyNew)} className={chipClass(onlyNew)}>
+            <Sparkles className="w-4 h-4" aria-hidden="true" />
+            {t('newThisWeek')}
+            <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[12px] leading-5 tabular-nums ${onlyNew ? 'bg-white/25' : 'bg-white/10'}`}>{newIds.size}</span>
+          </button>
+          <span aria-hidden="true" className="flex-shrink-0 w-px my-1.5 bg-white/[.12]" />
           <button type="button" aria-pressed={filterCategory === null} onClick={() => pickCategory(null)} className={chipClass(filterCategory === null)}>
             {t('allCategories')}
           </button>
@@ -179,10 +194,10 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
             <span className="w-16 h-16 rounded-2xl grid place-items-center bg-brand-500/15 text-brand-400 mb-4">
               <CategoryIcon category={filterCategory ?? 'other'} className="w-8 h-8" />
             </span>
-            <p className="text-label-secondary">{t('noSpotsFound')}</p>
+            <p className="text-label-secondary">{t(onlyNew ? 'noNewSpotsThisWeek' : 'noSpotsFound')}</p>
           </div>
         ) : (
-          <div key={`${sortBy}-${filterCategory ?? 'all'}`} className="px-4 mt-4 space-y-4">
+          <div key={`${sortBy}-${filterCategory ?? 'all'}-${onlyNew}`} className="px-4 mt-4 space-y-4">
             <FeaturedSpot {...props(featured)} />
             {rest.length > 0 && (
               <div className="rounded-[18px] bg-surface-1 overflow-hidden divide-y divide-white/[.06]">

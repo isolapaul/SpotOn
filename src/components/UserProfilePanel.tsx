@@ -1,5 +1,7 @@
 'use client';
 
+import { ListCards, ListView } from './lists/ListsRow';
+import type { SpotList as SpotListType } from '@/lib/lists';
 import { useEffect, useMemo, useState } from 'react';
 import { Lock, X } from 'lucide-react';
 import PanelShell from './ui/PanelShell';
@@ -27,7 +29,7 @@ interface UserProfilePanelProps {
   onOpenSpot: (spotId: string) => void;
 }
 
-type Tab = 'spots' | 'saved';
+type Tab = 'spots' | 'saved' | 'lists';
 
 /**
  * Someone's profile page (item 8): header (picture, name, level, bio), counts, follow button.
@@ -76,6 +78,10 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
   const ownSpots = pick(view?.spotIds);
   const savedSpots = view?.savedSpotIds ? pick(view.savedSpotIds) : null;
   const list = tab === 'saved' && savedSpots ? savedSpots : ownSpots;
+  const lists: SpotListType[] = (view?.lists ?? []).map((l) => ({ ...l, shared: true, updatedAt: 0 }));
+  const [openList, setOpenList] = useState<string | null>(null);
+  const shownList = tab === 'lists' ? lists.find((l) => l.id === openList) : undefined;
+  const tabs: Tab[] = ['spots', ...(savedSpots ? ['saved' as const] : []), ...(lists.length ? ['lists' as const] : [])];
 
   const act = async (run: (me: string) => Promise<unknown>, done?: string) => {
     if (!me) return openAuth();
@@ -153,23 +159,31 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
               </div>
             ) : view ? (
               <div className="mt-6">
-                {savedSpots && (
-                  <div role="tablist" className="mb-3 grid grid-cols-2 rounded-xl bg-white/[.06] p-1">
-                    {(['spots', 'saved'] as const).map((k) => (
+                {tabs.length > 1 && (
+                  <div role="tablist" className={`mb-3 grid ${tabs.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} rounded-xl bg-white/[.06] p-1`}>
+                    {tabs.map((k) => (
                       <button
                         key={k}
                         type="button"
                         role="tab"
                         aria-selected={tab === k}
-                        onClick={() => setTab(k)}
+                        onClick={() => { setTab(k); setOpenList(null); }}
                         className={`no-min-size h-9 rounded-lg text-sm font-semibold transition-colors ${tab === k ? 'bg-white/15 text-label' : 'text-label-secondary'}`}
                       >
-                        {k === 'spots' ? t('spots') : t('favorites')}
+                        {{ spots: t('spots'), saved: t('favorites'), lists: t('lists') }[k]}
                       </button>
                     ))}
                   </div>
                 )}
-                <SpotList spots={list} onOpenSpot={onOpenSpot} empty={tab === 'saved' ? t('noSavedSpotsShared') : t('noSpotsYet')} />
+                {tab === 'lists' ? (
+                  shownList ? (
+                    <ListView list={shownList} spots={[...byId.values()]} onBack={() => setOpenList(null)} onOpenSpot={onOpenSpot} editable={false} />
+                  ) : (
+                    <ListCards lists={lists} onOpen={setOpenList} title={false} />
+                  )
+                ) : (
+                  <SpotList spots={list} onOpenSpot={onOpenSpot} empty={tab === 'saved' ? t('noSavedSpotsShared') : t('noSpotsYet')} />
+                )}
               </div>
             ) : null}
           </div>

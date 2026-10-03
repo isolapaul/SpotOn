@@ -16,6 +16,8 @@ export interface ProfileView {
   blocked?: boolean;
   spotIds?: string[];
   savedSpotIds?: string[];
+  /** The lists the owner shows on the profile (not sent to the owner). */
+  lists?: { id: string; name: string; spotIds: string[] }[];
 }
 
 export interface PersonResult {

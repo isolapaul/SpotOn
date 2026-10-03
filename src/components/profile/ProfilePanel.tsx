@@ -101,7 +101,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<P
       <div className="px-4">
         {activeTab === 'my-spots' && <MySpotsTab user={user} spots={myAllSpots} levelInfo={levelInfo} onOpenSpot={onOpenSpot} />}
 
-        {activeTab === 'favorites' && <FavoritesTab spots={favoriteSpots} onOpenSpot={onOpenSpot} />}
+        {activeTab === 'favorites' && <FavoritesTab spots={favoriteSpots} allSpots={spots} onOpenSpot={onOpenSpot} />}
 
         {/* Pending Spots Tab - Admin Only */}
         {activeTab === 'pending' && userIsAdmin && <PendingTab spots={pendingSpots} onOpenSpot={onOpenSpot} />}

@@ -194,6 +194,18 @@ service cloud.firestore {
         && changed().hasOnly(userClientKeys())
         && validUserFields(request.resource.data, changed());
       allow delete: if false;
+
+      // The user's own spot lists; the profile shows the shared ones through getProfile.
+      match /lists/{listId} {
+        function validList(d) {
+          return d.keys().hasOnly(['name', 'spotIds', 'shared', 'createdAt', 'updatedAt'])
+            && isStr(d.name.trim(), 1, 50) && d.spotIds is list && d.spotIds.size() <= 200
+            && d.shared is bool && d.updatedAt == request.time;
+        }
+        allow read, delete: if isSelf(userId);
+        allow create: if isSelf(userId) && validList(request.resource.data) && request.resource.data.createdAt == request.time;
+        allow update: if isSelf(userId) && validList(request.resource.data) && !changed().hasAny(['createdAt']);
+      }
     }
 
     // ---------- moderation (item 4) ----------
