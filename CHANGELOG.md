@@ -67,7 +67,7 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - Share-link previews use the right photo, and odd links no longer give a server error.
 
 ### Changed (platform)
-- Push notifications use Firebase Installation IDs (the token API is deprecated); a device moves over the next time the app opens. The service worker runs on the modular Firebase SDK.
+- Push notifications use Firebase Installation IDs (the token API is deprecated); a device moves over the next time the app opens, and keeps getting notifications on its old registration until then. The service worker runs on the modular Firebase SDK.
 - Node.js 24 LTS for the app image, the build and Cloud Functions; dependencies on their latest releases.
 - Tailwind CSS 4 (the screens are pixel-identical to before).
 

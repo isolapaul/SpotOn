@@ -2,7 +2,7 @@
 // (FID), delivered by onRegistered after register() (the token API, getToken/deleteToken, is
 // deprecated). The FID is kept in users/{uid}.fcmFids and remembered locally, so sign-out can
 // remove it (SEC-14). Devices registered before v2.1.0 left a token in users/{uid}.fcmTokens: it is
-// removed when the device registers its FID (the server no longer sends to tokens).
+// removed when the device registers its FID (until then the server still sends to it).
 import { arrayRemove, arrayUnion, doc, updateDoc } from 'firebase/firestore';
 import { getMessaging, isSupported, onRegistered, register, unregister, type Messaging } from 'firebase/messaging';
 import { app, db } from '@/lib/firebase';

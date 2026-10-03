@@ -1,7 +1,7 @@
 /**
- * Pure FCM send-result classifier (no firebase imports).
- * A registration (FID) is pruned only when FCM says it is dead (installation-id-not-registered;
- * the token codes are kept for registrations FCM still reports that way).
+ * Pure FCM helpers (no firebase imports): the stored registrations of a user, and the send-result
+ * classifier. A registration (an FID, or a legacy token) is pruned only when FCM says it is dead
+ * (installation-id-not-registered for FIDs, the token codes for tokens).
  */
 export const PRUNABLE_TOKEN_ERROR_CODES: ReadonlySet<string> = new Set([
   "messaging/registration-token-not-registered",
@@ -24,4 +24,10 @@ export function selectTokensToPrune(
     }
   });
   return prune;
+}
+
+/** The non-empty strings of a stored registration list (users.fcmFids, users.fcmTokens). */
+export function registrationList(stored: unknown): string[] {
+  return Array.isArray(stored) ?
+    stored.filter((x: unknown): x is string => typeof x === "string" && x.length > 0) : [];
 }
