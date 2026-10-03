@@ -6,6 +6,7 @@ import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useT } from '@/hooks/useT';
 import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
+import { useShareSpot } from '@/hooks/useShareSpot';
 import type { SpotHighlight } from './useSpotHighlight';
 
 interface SpotActionsProps {
@@ -40,14 +41,7 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
   const favorite = useFavoriteToggle(spot.id);
   const isOwner = !!user && spot.createdBy === user.uid;
 
-  const share = async () => {
-    if (!navigator.share) return;
-    try {
-      await navigator.share({ title: spot.name, text: spot.description, url: globalThis.location.href });
-    } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') console.error('Share error:', err);
-    }
-  };
+  const shareSpot = useShareSpot();
 
   return (
     <div className="flex gap-2">
@@ -80,9 +74,11 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
           <Sparkles className={`w-5 h-5 ${highlight.isHighlightedByUser ? 'text-gold fill-gold' : 'text-gold'}`} aria-hidden="true" />
         </Tile>
       )}
-      <Tile label={t('share')} onClick={() => void share()}>
+      {spot.status === 'approved' && (
+      <Tile label={t('share')} onClick={() => void shareSpot(spot)}>
         <Share2 className="w-5 h-5" aria-hidden="true" />
       </Tile>
+      )}
     </div>
   );
 }

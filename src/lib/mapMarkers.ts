@@ -90,7 +90,29 @@ export function buildPinHtml(o: {
   );
 }
 
-/** Zoom band for the pin CSS: 'far' (country/region view: pins collapse to dots) or 'near'. Mapbox zoom. */
-export function zoomBand(zoom: number): 'far' | 'near' {
-  return zoom < 10 ? 'far' : 'near';
+/** Pins closer than this many px merge into a cluster, up to CLUSTER_MAX_ZOOM (Mapbox zoom). */
+export const CLUSTER_RADIUS = 50;
+/** At the city zoom (12, where the map opens on the user) and closer every spot is a pin. */
+export const CLUSTER_MAX_ZOOM = 11;
+
+/** A cluster's size class: one circle size per band, so the counts stay legible. */
+function clusterSize(count: number): number {
+  if (count < 10) return 36;
+  if (count < 50) return 42;
+  return 48;
+}
+
+/**
+ * A cluster of nearby pins: a green circle with the count (99+ above that); a small clock when a
+ * spot under review is inside (only its owner and admins see those). Constant markup only.
+ */
+export function buildClusterHtml(count: number, hasPending: boolean): string {
+  const size = clusterSize(count);
+  const label = count > 99 ? '99+' : String(Math.max(0, Math.floor(count)));
+  return (
+    `<div class="spot-cluster" style="width:${size}px;height:${size}px" data-count="${label}">` +
+    `<span class="spot-cluster__count">${label}</span>` +
+    (hasPending ? '<span class="spot-cluster__badge" aria-hidden="true"></span>' : '') +
+    `</div>`
+  );
 }

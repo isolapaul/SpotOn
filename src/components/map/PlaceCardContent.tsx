@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { CheckCircle2, Heart, Navigation, X } from 'lucide-react';
+import { CheckCircle2, Heart, Navigation, Share, X } from 'lucide-react';
+import { useShareSpot } from '@/hooks/useShareSpot';
 import type { Spot } from '@/store/useSpotStore';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
@@ -53,6 +54,7 @@ function Thumb({ spot, morphSource }: Readonly<{ spot: Spot; morphSource: boolea
 /** The place card's body (design 1E): keyed by spot, so switching pins resets its state. */
 export default function PlaceCardContent({ spot, userLocation, onClose, onDetails, morphSource }: Readonly<PlaceCardContentProps>) {
   const t = useT();
+  const shareSpot = useShareSpot();
   const categoryLabel = useCategoryLabel();
   const language = useLanguage();
   const isAdmin = useIsAdmin();
@@ -117,6 +119,18 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
             </span>
           )}
         </div>
+        {spot.status === 'approved' && (
+          <button
+            type="button"
+            onClick={() => void shareSpot(spot)}
+            aria-label={t('share')}
+            className="-mt-1 w-11 h-11 flex-shrink-0 grid place-items-center rounded-full touch-manipulation"
+          >
+            <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
+              <Share className="w-4 h-4 text-label-secondary" strokeWidth={2.4} />
+            </span>
+          </button>
+        )}
         <button
           type="button"
           onClick={onClose}
