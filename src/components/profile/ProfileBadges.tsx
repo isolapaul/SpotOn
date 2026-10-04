@@ -1,35 +1,19 @@
 'use client';
 
 import { Shield } from 'lucide-react';
-import { useT } from '@/hooks/useT';
-import type { LevelInfo } from '@/lib/levelUtils';
-import LevelBadge from '@/components/ui/LevelBadge';
 
 interface ProfileBadgesProps {
   isAdmin: boolean;
-  levelInfo: LevelInfo;
-  onOpenLevelInfo: () => void;
 }
 
-/** Admin shield and the level pill (opens the level info modal). */
-export default function ProfileBadges({ isAdmin, levelInfo, onOpenLevelInfo }: Readonly<ProfileBadgesProps>) {
-  const t = useT();
+/** The admin shield under the name (the level is shown, and opened, by the level card). */
+export default function ProfileBadges({ isAdmin }: Readonly<ProfileBadgesProps>) {
+  if (!isAdmin) return null;
   return (
     <div className="flex items-center gap-2 mb-3 flex-wrap justify-center">
-      {isAdmin && (
-        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">
-          <Shield className="w-4 h-4 text-amber-400" />
-        </div>
-      )}
-      <button
-        onClick={onOpenLevelInfo}
-        className={`flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full ${levelInfo.bgColor} border ${levelInfo.borderColor} hover:opacity-80 transition-all active:scale-95`}
-      >
-        <LevelBadge level={levelInfo.level} size={22} />
-        <span className={`${levelInfo.textColor} text-xs font-bold`}>
-          {t('levelLabel', { level: levelInfo.level })}
-        </span>
-      </button>
+      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">
+        <Shield className="w-4 h-4 text-amber-400" />
+      </div>
     </div>
   );
 }

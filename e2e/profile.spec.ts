@@ -19,11 +19,11 @@ test('level-5 user: level pill, progress, tabs, highlight manager and level info
   await signInWithEmail(page, E2E.level5.email, E2E.password);
   await openProfile(page, E2E.level5.username);
 
-  // 1. Level pill and progress card: level 5 from the old spot-count floor (20 spots), with the
-  //    10 XP of its one approved spot (item 5)
-  const levelPill = page.getByRole('button', { name: /Level 5/ });
-  await expect(levelPill).toBeVisible();
-  await expect(page.getByText('Cartographer', { exact: true })).toBeVisible();
+  // 1. The level card (a button that opens the level info): level 5 from the old spot-count floor
+  //    (20 spots), with the 10 XP of its one approved spot (item 5)
+  const levelCard = page.getByRole('button', { name: /Cartographer · Level 5/ });
+  await expect(levelCard).toBeVisible();
+  await expect(page.getByText('Cartographer · Level 5', { exact: true })).toBeVisible();
   await expect(page.getByText('100%', { exact: true })).toBeVisible();
   await expect(page.getByText('10 XP · Maximum level reached!', { exact: true })).toBeVisible();
 
@@ -44,7 +44,7 @@ test('level-5 user: level pill, progress, tabs, highlight manager and level info
   await expect(highlightHeading).toHaveCount(0);
 
   // 4. Level info modal opens from the pill and closes on its backdrop
-  await levelPill.click();
+  await levelCard.click();
   await expect(page.getByRole('heading', { name: 'Level System' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'How to earn XP' })).toBeVisible();
   await expect(page.getByText('Required: 200 XP')).toBeVisible();

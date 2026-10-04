@@ -46,14 +46,14 @@ export default function ProfileHeader({
             <UsernameEditor username={user.username} />
           </div>
 
-          <ProfileBadges isAdmin={isAdmin} levelInfo={levelInfo} onOpenLevelInfo={onOpenLevelInfo} />
+          <ProfileBadges isAdmin={isAdmin} />
 
           <BioEditor bio={user.bio} />
 
           {/* Who you are and your numbers first, then the level card, then the tabs. */}
           <ProfileStats spots={spotsCount} followers={followers} following={following} className="mt-1 mb-5" />
 
-          <LevelProgressCard levelInfo={levelInfo} xp={xp} />
+          <LevelProgressCard levelInfo={levelInfo} xp={xp} onOpen={onOpenLevelInfo} />
         </div>
       </div>
     </div>
