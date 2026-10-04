@@ -10,21 +10,23 @@ import LegalNotice from './legal/LegalNotice';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Open on the e-mail sign-up form with this username filled in (the onboarding's chosen name). */
+  signUpAs?: string;
 }
 
-export default function AuthModal({ isOpen, onClose }: Readonly<AuthModalProps>) {
+export default function AuthModal({ isOpen, onClose, signUpAs }: Readonly<AuthModalProps>) {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useUserStore();
   // English while no language is chosen yet (unlike the app-wide 'hu' default; pre-T24 behaviour).
   const t = useT({ fallback: 'en' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [mode, setMode] = useState<'signin' | 'signup'>(signUpAs === undefined ? 'signin' : 'signup');
+  const [showEmailForm, setShowEmailForm] = useState(signUpAs !== undefined);
   
   // Form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(signUpAs ?? '');
 
   if (!isOpen) return null;
 

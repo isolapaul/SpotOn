@@ -9,7 +9,7 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { compressImage } from '@/lib/imageCompression';
 import { MAX_UPLOAD_BYTES, Z } from '@/lib/constants';
-import { translate, type Language } from '@/lib/i18n';
+import { LANGUAGE_NAMES, translate, type Language } from '@/lib/i18n';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
@@ -23,7 +23,6 @@ interface SettingsPanelProps {
 }
 
 // Each language in its own name (no flag emoji, owner decision).
-const LANGUAGE_NAMES = { hu: 'Magyar', en: 'English', de: 'Deutsch' } as const;
 
 export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPanelProps>) {
   const { user, signOut, updateProfilePicture, updateProfileBanner } = useUserStore();

@@ -24,8 +24,9 @@ export const PIN_COLORS = {
   highlight: '#F7C948', // gold: highlighted only, never a status
 } as const;
 
-// Head: 36px circle (r18) centred at (22,20); the tail tapers to the tip at (22,50).
-const PIN_PATH = 'M22 50C20.6 45.5 18 41.8 14.9 36.5A18 18 0 1 1 29.1 36.5C26 41.8 23.4 45.5 22 50Z';
+// Head: 36px circle (r18) centred at (22,20); the tail tapers to the tip at (22,50). Exported for the
+// onboarding's demo map, which draws the same pin with React elements.
+export const PIN_PATH = 'M22 50C20.6 45.5 18 41.8 14.9 36.5A18 18 0 1 1 29.1 36.5C26 41.8 23.4 45.5 22 50Z';
 const CLOCK_BADGE =
   '<circle cx="36" cy="7" r="7" fill="#111418" stroke="#fff" stroke-width="1.5"/>' +
   '<path d="M36 3.8V7l2.1 1.3" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>';

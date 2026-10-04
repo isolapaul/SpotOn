@@ -10,13 +10,15 @@ import ModalShell from './ui/ModalShell';
 interface UsernameSetupModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Prefill (the name chosen in the onboarding when claiming it after sign-up failed). */
+  initialUsername?: string;
 }
 
-export default function UsernameSetupModal({ isOpen, onClose }: Readonly<UsernameSetupModalProps>) {
+export default function UsernameSetupModal({ isOpen, onClose, initialUsername }: Readonly<UsernameSetupModalProps>) {
   const { user, updateUsername, checkUsernameAvailable, setNeedsUsername } = useUserStore();
   const t = useT();
   const { addNotification } = useNotificationStore();
-  const [username, setUsername] = useState(user?.username || '');
+  const [username, setUsername] = useState(initialUsername ?? (user?.username || ''));
   const [isChecking, setIsChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isSaving, setIsSaving] = useState(false);

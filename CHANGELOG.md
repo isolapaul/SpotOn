@@ -8,6 +8,7 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 ### Added
 - A public page for deleting your account without the app (`/account-deletion`): what is deleted and what stays, how to do it in the app, and sign-in and deletion right on the page.
 - Preparation for the Android app on Google Play: an adaptive (maskable) app icon, screenshots in the web manifest, and the Android app link file.
+- A first-run tour on a demo map: discovering spots and Explore, sharing your own spot, XP, levels and the community, then location, adding SpotOn to the home screen and signing up. Pick your username on the way (it is reserved when you sign up). Everyone sees it once per device, signed-in users a shorter version; it replaces the full-screen install screen. Shared spot links open the spot first.
 
 ### Added (navigation)
 - Tap a spot in your profile (My Spots, Favorites, and Pending for admins): the profile slides away, the map flies to the spot and its place card opens, with a "Profile" button that takes you back. Swiping the card down leaves you on the map at the spot.

@@ -33,13 +33,22 @@ import { runViewTransition } from '@/hooks/viewTransition';
 import { useVisibleSpots } from '@/hooks/useVisibleSpots';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { useSpotLink } from '@/hooks/useSpotLink';
+import { useOnboardingGate } from '@/hooks/useOnboardingGate';
+import { usePendingUsernameClaim } from '@/hooks/usePendingUsernameClaim';
+import { useOnboardingStore } from '@/store/useOnboardingStore';
 import { useMemo } from 'react';
-import { DEFAULT_MAP_CENTER } from '@/lib/constants';
+import { DEFAULT_MAP_CENTER, Z } from '@/lib/constants';
 
 // Client-only: mapbox-gl needs `window` and WebGL
 const MapView = dynamic(() => import('@/components/MapView'), {
   ssr: false,
   loading: () => null, // No loading indicator here, we use LoadingScreen
+});
+
+// The first-run tour: its own chunk, downloaded only while it is due (never again once completed).
+const OnboardingFlow = dynamic(() => import('@/components/onboarding/OnboardingFlow'), {
+  ssr: false,
+  loading: () => <div className={`fixed inset-0 ${Z.onboarding} bg-[#1b1c1e]`} aria-hidden="true" />,
 });
 
 export default function Home() {
@@ -52,6 +61,11 @@ export default function Home() {
   const { location: userLocation, status: locationStatus } = useUserLocation();
   const { user, needsUsername, setNeedsUsername } = useUserStore();
   const t = useT();
+  // First-run tour: the other first-run prompts wait while it is due or open (they show after it).
+  const { showTour, blocking: tourBlocking } = useOnboardingGate();
+  usePendingUsernameClaim();
+  const pendingUsername = useOnboardingStore((s) => s.pendingUsername);
+  const claimingUsername = useOnboardingStore((s) => s.claiming);
 
   const activePanel = useUiStore((s) => s.activePanel);
   const selectingLocation = useUiStore((s) => s.selectingLocation);
@@ -117,13 +131,13 @@ export default function Home() {
   return (
     <>
       {/* Loading Screen - shown until everything is ready */}
-      <LoadingScreen isLoading={!isAppReady} />
-      {/* Notification Prompt - shown after app loads */}
-      <NotificationPrompt />
+      <LoadingScreen isLoading={!isAppReady && !showTour} />
+      {/* Notification Prompt - shown after app loads (never during the tour) */}
+      {!tourBlocking && <NotificationPrompt />}
       {/* Background uploads (G4): above panels too, so a review sent from a spot panel reports back */}
       <UploadStatus />
       {/* Level-up moment: over everything, whenever the own XP level goes up */}
-      <LevelUpCelebration />
+      {!tourBlocking && <LevelUpCelebration />}
       {/* Top-right control stack (design 1C); only over the bare map: it lives outside <main>, so it
           would sit above any panel or modal (the sign-in sheet showed it on top) */}
       {activePanel === 'none' && isAppReady && (
@@ -135,6 +149,7 @@ export default function Home() {
       )}
       {/* Main App - hidden until ready, then fades in */}
       <main
+        inert={showTour}
         className={`fixed inset-0 w-full overflow-hidden transition-opacity duration-700 ${
           isAppReady ? 'opacity-100' : 'opacity-0'
         }`}
@@ -148,10 +163,15 @@ export default function Home() {
       />
       {/* Authentication Modal */}
       <AuthModal isOpen={activePanel === 'auth'} onClose={closePanel} />
-      {/* Username Setup Modal - shown after first login */}
-      <UsernameSetupModal isOpen={!!user && needsUsername} onClose={() => setNeedsUsername(false)} />
-      {/* One-time terms acceptance for users who signed up before the terms (A1) */}
-      <TermsPrompt ready={isAppReady} />
+      {/* Username Setup Modal - shown after first login; after the tour, prefilled with the name chosen there */}
+      <UsernameSetupModal
+        key={pendingUsername ?? ''}
+        initialUsername={pendingUsername ?? undefined}
+        isOpen={!!user && needsUsername && !tourBlocking && !claimingUsername}
+        onClose={() => setNeedsUsername(false)}
+      />
+      {/* One-time terms acceptance for users who signed up before the terms (A1); after the tour */}
+      <TermsPrompt ready={isAppReady && !tourBlocking} />
       {/* Add Spot Modal */}
       <AddSpotModal isOpen={activePanel === 'addSpot'} onClose={closeAddSpot} selectedLocation={pendingLocation} />
       {/* Spot Details Panel */}
@@ -212,6 +232,7 @@ export default function Home() {
         onCancelPicking={cancelSelectingLocation}
       />
       </main>
+      {showTour && <OnboardingFlow />}
     </>
   );
 }
