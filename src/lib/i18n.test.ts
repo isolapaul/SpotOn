@@ -148,6 +148,22 @@ describe('T24 keys', () => {
   });
 });
 
+describe('onboarding keys', () => {
+  it('keep their bold markup balanced', () => {
+    for (const lang of ['hu', 'en', 'de'] as const) {
+      for (const [key, value] of Object.entries(dict[lang])) {
+        if (!key.startsWith('onboarding')) continue;
+        const markers = value.split('**').length - 1;
+        expect(markers % 2, `${lang}.${key}`).toBe(0);
+      }
+    }
+  });
+
+  it('never use the rejected "letűzés" wording', () => {
+    for (const value of Object.values(dict.hu)) expect(value).not.toMatch(/letűz|tűzd/i);
+  });
+});
+
 describe('detectLanguage', () => {
   it('takes the first supported primary subtag', () => {
     expect(detectLanguage(['de-AT', 'en-US'])).toBe('de');
