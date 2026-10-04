@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useT } from '@/hooks/useT';
 import ModalShell from '../ui/ModalShell';
@@ -28,6 +28,7 @@ export default function SpotMoreSheet({ title, items, onClose }: Readonly<{
   onClose: () => void;
 }>) {
   const t = useT();
+  const noteId = useId();
   return createPortal(
     <ModalShell variant="slate" z="modal" onBackdropClick={onClose} backdropLabel={t('close')} panelClassName="w-[92%] max-w-md p-5">
       <div role="dialog" aria-modal="true" aria-labelledby="spot-more-title">
@@ -37,6 +38,9 @@ export default function SpotMoreSheet({ title, items, onClose }: Readonly<{
             <li key={item.key}>
               <button
                 type="button"
+                // The label names it; the note (e.g. "You highlighted this") describes its state.
+                aria-label={item.label}
+                aria-describedby={item.note ? `${noteId}-${item.key}` : undefined}
                 aria-pressed={item.pressed}
                 disabled={item.disabled}
                 onClick={() => {
@@ -49,7 +53,7 @@ export default function SpotMoreSheet({ title, items, onClose }: Readonly<{
                 <span className="w-6 shrink-0 grid place-items-center" aria-hidden="true">{item.icon}</span>
                 <span className="flex-1 min-w-0">
                   <span className="block text-label text-[16px] leading-snug">{item.label}</span>
-                  {item.note && <span className="block mt-0.5 text-label-secondary text-[13px] leading-snug">{item.note}</span>}
+                  {item.note && <span id={`${noteId}-${item.key}`} className="block mt-0.5 text-label-secondary text-[13px] leading-snug">{item.note}</span>}
                 </span>
               </button>
             </li>

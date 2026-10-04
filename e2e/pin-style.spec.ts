@@ -28,7 +28,7 @@ test('a level-5 user puts a crown on all their pins, then goes back to the categ
   const crowned = page.locator('.spot-pin[data-pin="crown"]');
   await expect(crowned).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Profile' }).click();
+  await page.getByRole('button', { name: 'Profile', exact: true }).click();
   await page.getByRole('button', { name: 'Pin style' }).click();
   await page.getByRole('button', { name: 'Crown' }).click();
   await expect(page.getByRole('button', { name: 'Crown' })).toHaveAttribute('aria-pressed', 'true');
@@ -39,9 +39,11 @@ test('a level-5 user puts a crown on all their pins, then goes back to the categ
 
   // The map shows it on the owner's pins (their pending ones too).
   await page.goBack();
+  // The pins are in the DOM under the open panel too: wait until the back step has closed it.
+  await expect(page.getByRole('button', { name: 'Close profile panel' })).toHaveCount(0);
   await expect.poll(() => crowned.count(), { timeout: 20_000 }).toBeGreaterThan(0);
 
-  await page.getByRole('button', { name: 'Profile' }).click();
+  await page.getByRole('button', { name: 'Profile', exact: true }).click();
   await page.getByRole('button', { name: 'Pin style' }).click();
   await page.getByRole('button', { name: 'Category', exact: true }).click();
   await expect.poll(async () => {
