@@ -17,7 +17,7 @@ export default function LevelProgressCard({ levelInfo, xp }: Readonly<LevelProgr
   const remaining = getXpRemainingText(xp, levelInfo, t);
 
   return (
-    <div className={`w-full max-w-md px-4 py-3 rounded-xl ${levelInfo.bgColor} border ${levelInfo.borderColor} transition-all mb-3`}>
+    <div className={`w-full max-w-md px-4 py-3 rounded-xl ${levelInfo.bgColor} border ${levelInfo.borderColor} transition-all`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <LevelBadge level={levelInfo.level} size={30} />

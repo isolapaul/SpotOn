@@ -15,7 +15,6 @@ interface ProfileHeaderProps {
   levelInfo: LevelInfo;
   xp: number;
   spotsCount: number;
-  favoritesCount: number;
   isAdmin: boolean;
   onOpenLevelInfo: () => void;
   failedAvatarSrc: string | null;
@@ -28,7 +27,6 @@ export default function ProfileHeader({
   levelInfo,
   xp,
   spotsCount,
-  favoritesCount,
   isAdmin,
   onOpenLevelInfo,
   failedAvatarSrc,
@@ -52,9 +50,10 @@ export default function ProfileHeader({
 
           <BioEditor bio={user.bio} />
 
-          <LevelProgressCard levelInfo={levelInfo} xp={xp} />
+          {/* Who you are and your numbers first, then the level card, then the tabs. */}
+          <ProfileStats spots={spotsCount} followers={followers} following={following} className="mt-1 mb-5" />
 
-          <ProfileStats spotsCount={spotsCount} favoritesCount={favoritesCount} followers={followers} following={following} />
+          <LevelProgressCard levelInfo={levelInfo} xp={xp} />
         </div>
       </div>
     </div>

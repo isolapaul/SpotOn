@@ -236,11 +236,16 @@ test('level-5 owner highlights their approved spot via the callable', async ({ p
   await spotMarker(page, E2E.level5.approvedSpot.category).filter({ has: page.locator('.spot-pin[data-variant="approved"]') }).click();
   await page.getByRole('button', { name: 'View Details' }).click();
 
+  // The owner's highlight is in the details' More sheet; the sheet closes when it runs.
+  const more = page.getByRole('button', { name: 'More actions', exact: true });
   const highlightButton = page.getByRole('button', { name: 'Highlight this spot', exact: true });
+  await more.click();
   await highlightButton.click();
   await expectNotification(page, 'Spot highlighted! Visible for 7 days');
-  // The live store copy turns the button active once the listener delivers the entry.
+  // The live store copy turns the item active once the listener delivers the entry.
+  await more.click();
   await expect(highlightButton).toBeDisabled();
+  await expect(highlightButton).toHaveAttribute('aria-pressed', 'true');
 
   const spot = await spotData(spotId);
   const entry = ((spot?.highlighted ?? []) as Array<{ userId: string; expiresAt: string }>)

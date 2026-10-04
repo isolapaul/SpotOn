@@ -10,6 +10,7 @@ import LevelBadge from './ui/LevelBadge';
 import StarRating from './ui/StarRating';
 import ProfileSpotCard from './profile/ProfileSpotCard';
 import FollowButton from './profile/FollowButton';
+import ProfileStats from './profile/ProfileStats';
 import ProfileMenu from './profile/ProfileMenu';
 import { useT } from '@/hooks/useT';
 import { useCategoryLabel } from '@/hooks/useCategory';
@@ -126,7 +127,7 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
         ) : (
           <div className="px-5 motion-safe:animate-item-in">
             <Header profile={profile} level={level} />
-            <Stats spots={view?.spotIds?.length ?? null} followers={profile.followersCount ?? 0} following={profile.followingCount ?? 0} />
+            <ProfileStats spots={view?.spotIds?.length ?? null} followers={profile.followersCount ?? 0} following={profile.followingCount ?? 0} className="mx-auto mt-5" />
 
             {view?.blocked ? (
               <p className="mt-6 text-center text-label-secondary text-sm">{t('youBlockedThem')}</p>
@@ -227,23 +228,6 @@ function Header({ profile, level }: Readonly<{ profile: PublicProfile; level: nu
 function LevelName({ level }: Readonly<{ level: number }>) {
   const t = useT();
   return <>{t('levelLabel', { level })} · {t(getLevelInfo(level).nameKey)}</>;
-}
-
-function Stats({ spots, followers, following }: Readonly<{ spots: number | null; followers: number; following: number }>) {
-  const t = useT();
-  const stat = (value: number | null, label: string) => (
-    <div className="flex-1 flex flex-col items-center py-3">
-      <span className="text-[20px] font-bold leading-tight text-label tabular-nums">{value ?? '–'}</span>
-      <span className="text-[13px] text-label-secondary">{label}</span>
-    </div>
-  );
-  return (
-    <div className="mt-5 w-full flex rounded-[18px] bg-surface-1 divide-x divide-white/6">
-      {stat(spots, t('spots'))}
-      {stat(followers, t('followers'))}
-      {stat(following, t('followingCount'))}
-    </div>
-  );
 }
 
 function SpotList({ spots, onOpenSpot, empty }: Readonly<{ spots: Spot[]; onOpenSpot: (id: string) => void; empty: string }>) {

@@ -81,6 +81,8 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 
 ### Changed
 - The browser and system bars use the app's dark background colour.
+- Calmer spot details: under the name one line with the category and the rating, then a wide Directions button, the favourite heart and a "More" button. Save to list, Share and (for your own spots) Highlight are in the More sheet; a signed-out visitor gets a Share button directly.
+- Lighter profile figures: spots, followers and following as one row of large numbers without boxes, right under the name and bio, on your own profile and on other people's. The number of favourites left the row (the Favorites tab shows them).
 
 ## v2.0.2 — 2026-09-29
 
