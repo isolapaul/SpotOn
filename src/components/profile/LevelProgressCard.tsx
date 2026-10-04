@@ -1,5 +1,6 @@
 'use client';
 
+import { ChevronRight } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { getLevelProgress, getXpRemainingText, type LevelInfo } from '@/lib/levelUtils';
 import LevelBadge from '@/components/ui/LevelBadge';
@@ -8,30 +9,38 @@ import PerkIcon from '@/components/ui/PerkIcon';
 interface LevelProgressCardProps {
   levelInfo: LevelInfo;
   xp: number;
+  /** Opens the level info (the card is the profile's one level element, so it is a button). */
+  onOpen: () => void;
 }
 
-/** Current level, progress to the next one and a perks preview (level 3+). */
-export default function LevelProgressCard({ levelInfo, xp }: Readonly<LevelProgressCardProps>) {
+/** Current level, progress to the next one and a perks preview (level 3+); a tap opens the level info. */
+export default function LevelProgressCard({ levelInfo, xp, onOpen }: Readonly<LevelProgressCardProps>) {
   const t = useT();
   const progress = getLevelProgress(xp, levelInfo);
   const remaining = getXpRemainingText(xp, levelInfo, t);
 
   return (
-    <div className={`w-full max-w-md px-4 py-3 rounded-xl ${levelInfo.bgColor} border ${levelInfo.borderColor} transition-all mb-3`}>
+    <button
+      type="button"
+      onClick={onOpen}
+      className={`no-min-size block w-full max-w-md px-4 py-3 rounded-xl text-left ${levelInfo.bgColor} border ${levelInfo.borderColor}
+        touch-manipulation transition-transform duration-150 active:scale-[.98]`}
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <LevelBadge level={levelInfo.level} size={30} />
           <div>
             <p className={`${levelInfo.textColor} font-bold text-sm`}>
-              {t(levelInfo.nameKey)}
+              {t(levelInfo.nameKey)} · {t('levelLabel', { level: levelInfo.level })}
             </p>
             <p className="text-white/60 text-xs">
               {t('xpTotal', { xp })} · {remaining}
             </p>
           </div>
         </div>
-        <span className={`${levelInfo.textColor} font-bold text-lg`}>
+        <span className={`flex items-center gap-1 ${levelInfo.textColor} font-bold text-lg`}>
           {progress.toFixed(0)}%
+          <ChevronRight className="w-4 h-4 opacity-70" aria-hidden="true" />
         </span>
       </div>
 
@@ -57,6 +66,6 @@ export default function LevelProgressCard({ levelInfo, xp }: Readonly<LevelProgr
           )}
         </div>
       )}
-    </div>
+    </button>
   );
 }

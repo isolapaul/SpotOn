@@ -120,15 +120,17 @@ export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<Spo
           {isAdmin && <AdminStatusCard spot={spot} onClose={closeThisSpot} />}
           {isOwner && !isAdmin && <OwnerStatusCard spot={spot} onEdit={edit.start} />}
 
-          <SpotTitle
-            spot={spot}
-            avgRating={avgRating}
-            canEdit={canEdit}
-            edit={edit}
-            isHighlightedByUser={highlight.isHighlightedByUser}
-          />
-
-          <SpotActions spot={spot} navigationUrl={navigationUrl} highlight={highlight} />
+          {/* Title, its category and rating line, and the actions read as one block. */}
+          <div className="space-y-4">
+            <SpotTitle
+              spot={spot}
+              avgRating={avgRating}
+              canEdit={canEdit}
+              edit={edit}
+              isHighlightedByUser={highlight.isHighlightedByUser}
+            />
+            <SpotActions spot={spot} navigationUrl={navigationUrl} highlight={highlight} />
+          </div>
 
           {/* Description / Edit form */}
           {edit.isEditing ? (

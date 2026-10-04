@@ -30,9 +30,10 @@ test('save a spot to a new list, share it on the profile, another user sees it',
   await openApp(page);
   await signInWithEmail(page, E2E.user.email, E2E.password);
 
-  // 1. From the spot's details: Lists → a new list with this spot in it
+  // 1. From the spot's details: More → Save to list → a new list with this spot in it
   await spotMarker(page, E2E.legacySpot.category).click();
   await page.getByRole('button', { name: 'View Details' }).click();
+  await page.getByRole('button', { name: 'More actions' }).click();
   await page.getByRole('button', { name: 'Save to list' }).click();
   await expect(page.getByRole('heading', { name: 'Save to list' })).toBeVisible();
   await page.getByRole('textbox', { name: 'New list name' }).fill(LIST);

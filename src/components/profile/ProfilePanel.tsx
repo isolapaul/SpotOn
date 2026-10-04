@@ -83,7 +83,6 @@ export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<P
         levelInfo={levelInfo}
         xp={xp}
         spotsCount={myAllSpots.length}
-        favoritesCount={favoriteSpots.length}
         isAdmin={userIsAdmin}
         onOpenLevelInfo={() => setShowLevelInfo(true)}
         failedAvatarSrc={failedAvatarSrc}
