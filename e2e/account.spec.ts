@@ -66,15 +66,16 @@ test.beforeEach(async ({ page }) => {
   await blockMapTiles(page);
 });
 
-test('legal pages are readable without the install prompt', async ({ page }) => {
-  // No skipFirstRunOverlays: the install prompt would show on the map page, not here.
+test('legal pages are readable without the first-run tour', async ({ page }) => {
+  // No skipFirstRunOverlays: the tour would show on the map page, never on these pages.
   await page.goto('/privacy');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Adatvédelmi tájékoztató' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '4. Fiók törlése' })).toBeVisible();
   await page.goto('/terms');
   await expect(page.getByRole('heading', { name: 'Felhasználási feltételek (ÁSZF)' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'SpotOn' })).toBeVisible();
-  // Item 9: the English translations, linked both ways, readable without the install prompt too.
+  // Item 9: the English translations, linked both ways, readable without the tour too.
   await page.getByRole('link', { name: 'English' }).click();
   await expect(page.getByRole('heading', { name: 'Terms of Use' })).toBeVisible();
   await expect(page.getByText('the Hungarian version is authoritative')).toBeVisible();
@@ -82,6 +83,7 @@ test('legal pages are readable without the install prompt', async ({ page }) => 
   await expect(page.getByRole('heading', { name: '4. Deleting your account' })).toBeVisible();
   await page.getByRole('link', { name: 'Magyar változat' }).click();
   await expect(page.getByRole('heading', { name: 'Adatvédelmi tájékoztató' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'A SpotOn bemutatója' })).toHaveCount(0);
 });
 
 test('the sign-in sheet links the terms and the privacy policy (sign-in-wrap)', async ({ page }) => {
@@ -232,15 +234,15 @@ test.describe('account deletion page (Google Play)', () => {
   });
   test.afterAll(removeWebGone);
 
-  test('explains deletion without the install prompt, then deletes after sign-in', async ({ page }) => {
-    // Only the language is seeded: the install prompt must not cover this page.
+  test('explains deletion without the first-run tour, then deletes after sign-in', async ({ page }) => {
+    // Only the language is seeded: the tour must not cover this page.
     await page.addInitScript(() => {
       window.localStorage.setItem('spoton-language', JSON.stringify({ state: { language: 'en', hasSelectedLanguage: true }, version: 0 }));
     });
     await page.goto('/account-deletion');
     await expect(page.getByRole('heading', { name: 'Delete your SpotOn account' })).toBeVisible();
     await expect(page.getByText('Open SpotOn, tap your profile, open Settings and tap Delete account.')).toBeVisible();
-    await expect(page.getByText('SpotOn Experience')).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'SpotOn tour' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Sign In' }).click();
     await page.getByRole('button', { name: 'With Email' }).click();

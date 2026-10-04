@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { connection } from 'next/server';
 import './globals.css';
-import InstallGate from '@/components/InstallGate';
 
 export const metadata: Metadata = {
   title: 'SpotOn - Discover Scenic Locations',
@@ -51,7 +50,6 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
       </head>
       <body className="font-sans">
-        <InstallGate />
         {children}
       </body>
     </html>

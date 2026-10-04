@@ -31,7 +31,6 @@ export const ONBOARDING_DONE = { key: 'spoton-onboarding', value: JSON.stringify
 export async function skipFirstRunOverlays(page: Page, language: 'en' | 'hu' | 'de' = 'en') {
   await page.addInitScript(({ lang, done }) => {
     window.localStorage.setItem(done.key, done.value);
-    window.localStorage.setItem('spoton-install-prompt-dismissed', 'true');
     window.localStorage.setItem(
       'spoton-language',
       JSON.stringify({ state: { language: lang, hasSelectedLanguage: true }, version: 0 }),

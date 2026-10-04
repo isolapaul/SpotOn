@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import { E2E } from './fixtures';
-import { test, blockMapTiles, openApp, skipFirstRunOverlays, spotMarker } from './helpers';
+import { test, blockMapTiles, openApp, skipFirstRunOverlays, spotMarker, ONBOARDING_DONE } from './helpers';
 
 // T24: one translation mechanism (useT / translate). Visible text per language must be unchanged.
 
@@ -38,33 +38,14 @@ test.describe('first visit, German browser', () => {
   test.use({ locale: 'de-DE' });
 
   test('takes the browser language, no language dialog', async ({ page }) => {
-    await page.addInitScript(() => {
-      window.localStorage.setItem('spoton-install-prompt-dismissed', 'true');
+    await page.addInitScript((done) => {
+      window.localStorage.setItem(done.key, done.value);
       window.localStorage.removeItem('spoton-language');
-    });
+    }, ONBOARDING_DONE);
     await openApp(page);
     await expect(page.getByRole('button', { name: 'Entdecken', exact: true })).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     const stored = await page.evaluate(() => window.localStorage.getItem('spoton-language'));
     expect(JSON.parse(stored ?? '{}').state).toMatchObject({ language: 'de', hasSelectedLanguage: true });
   });
-});
-
-test('InstallGate keeps its rich-text DOM (hu, Android)', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.removeItem('spoton-install-prompt-dismissed');
-    window.localStorage.setItem(
-      'spoton-language',
-      JSON.stringify({ state: { language: 'hu', hasSelectedLanguage: true }, version: 0 }),
-    );
-  });
-  await page.goto('/');
-  // innerHTML captured from the pre-T24 JSX (<strong> + &quot;) build; step numbers in the brand colour since the design sweep
-  await expect(page.locator('ol')).toHaveJSProperty(
-    'innerHTML',
-    '<li class="flex items-start gap-2"><span class="font-bold text-brand-400 shrink-0">1.</span>'
-      + '<span>Kattints a <strong>három pontra</strong> (⋮) a böngésző jobb felső sarkában.</span></li>'
-      + '<li class="flex items-start gap-2"><span class="font-bold text-brand-400 shrink-0">2.</span>'
-      + '<span>Válaszd az <strong>"App telepítése"</strong> vagy <strong>"Kezdőképernyőre adás"</strong> gombot.</span></li>',
-  );
 });

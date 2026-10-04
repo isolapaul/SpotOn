@@ -7,9 +7,6 @@ export { MAX_SPOT_IMAGES } from './spotImages';
 /** Client-side size cap for a picked image before compression (AddSpotModal, SettingsPanel). */
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
-/** Public pages that must stay usable without installing the app (legal pages A1, account deletion for Google Play). */
-export const INSTALL_GATE_EXEMPT_PATHS: readonly string[] = ['/privacy', '/terms', '/privacy/en', '/terms/en', '/account-deletion'];
-
 /** Maximum feedback attachments (the server limit, T14). */
 export const FEEDBACK_MAX_FILES = FEEDBACK_LIMITS.maxAttachments;
 

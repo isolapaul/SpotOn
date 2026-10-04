@@ -24,7 +24,7 @@ function readDismissFlag(): string | null {
   }
 }
 
-/** Same test InstallGate uses for an installed PWA. */
+/** An installed PWA (display mode, or the iOS home screen). */
 function isStandalone(): boolean {
   return globalThis.matchMedia('(display-mode: standalone)').matches
     || (globalThis.navigator as Navigator & { standalone?: boolean }).standalone === true;

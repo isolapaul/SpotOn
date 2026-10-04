@@ -242,7 +242,7 @@ The app is stateless: all data is in Firebase. Back up only `/srv/docker/spoton/
 - [ ] Add a spot with an image (as a test user); the image shows.
 - [ ] Push: enable notifications and trigger one (e.g. approve a test spot); the notification arrives, and clicking it opens the app.
 - [ ] Feedback: send one with an image; the email arrives with subject `SpotOn_feedback`.
-- [ ] `/account-deletion` opens without the install screen; `/.well-known/assetlinks.json` returns JSON (§17.3).
+- [ ] `/account-deletion` opens without the first-run tour; `/.well-known/assetlinks.json` returns JSON (§17.3).
 - [ ] DevTools console: no CSP errors on the flows above.
 - [ ] `docker inspect spoton --format '{{json .HostConfig.PortBindings}}'` → `{}` (no published ports).
 
@@ -271,11 +271,11 @@ Only after the post-deploy checklist (§13) is green on `spoton.isolapaul.hu`.
 3. Keep Vercel's `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` on `<project>.firebaseapp.com` (the `/__/auth` proxy is unused there).
 
 The Vercel build then shows one slim banner below the top buttons ("SpotOn has a new address: spoton.isolapaul.hu",
-Open and Hide). Hide hides it for good on that device. On the old domain the install overlay and the notification
-prompt are switched off (owner decision). The Docker image cannot get the variable (`check-public-env.mjs --production`
+Open and Hide). Hide hides it for good on that device. On the old domain the first-run tour has no install step and the
+notification prompt is switched off (owner decision). The Docker image cannot get the variable (`check-public-env.mjs --production`
 rejects it), so the banner never appears on the new domain.
 
-Check: open `https://spot-on-rho.vercel.app` → one banner and no install overlay.
+Check: open `https://spot-on-rho.vercel.app` → the tour has no install step; after it, one banner.
 
 Rollback: remove the variable and redeploy, or `git revert`.
 
@@ -305,7 +305,7 @@ curl -sI 'https://spot-on-rho.vercel.app/some/path?x=1'
 ### Stage C: delete the Vercel project (about 90 days after Stage B)
 
 Delete the Vercel project. Then, in a cleanup task, remove `vercel.json`, `deploy/vercel-stage-b.json`,
-`src/components/MovedBanner.tsx`, `src/lib/movedTo.ts` (+ test), the guards in `InstallGate` and
+`src/components/MovedBanner.tsx`, `src/lib/movedTo.ts` (+ test), the old-domain guards in `components/onboarding/OnboardingFlow` (install step) and
 `NotificationPrompt`, the `movedBanner*` translation keys, the `NEXT_PUBLIC_MOVED_TO` entry in `next.config.mjs`
 and `e2e/moved-banner.spec.ts`.
 
@@ -441,4 +441,4 @@ Without asset links the app still opens, but as a Custom Tab with a URL bar. The
 - [ ] Turn on notifications in Settings; approve a test spot from another account: the push arrives, and tapping it opens the app.
 - [ ] Location: "my location" asks for the permission once and centres the map.
 - [ ] The Android back gesture behaves as expected.
-- [ ] https://spoton.isolapaul.hu/account-deletion opens in a normal browser without the install screen.
+- [ ] https://spoton.isolapaul.hu/account-deletion opens in a normal browser without the first-run tour.
