@@ -72,8 +72,6 @@
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
-			<!-- Google sign-in returns here: REVERSED_CLIENT_ID from GoogleService-Info.plist,
-			     written by mobile/scripts/ios-firebase-config.sh (docs/deploy.md §17). -->
 			<key>CFBundleURLName</key>
 			<string>google</string>
 			<key>CFBundleURLSchemes</key>

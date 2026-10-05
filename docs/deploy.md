@@ -379,7 +379,7 @@ Package name / bundle ID: **`hu.isolapaul.spoton`** (permanent; the stores never
 ### 17.1 Firebase (🌐 Firebase console, one time)
 
 1. Project settings → Your apps → **Add app → Android**: package `hu.isolapaul.spoton`. Add the **SHA-1 and SHA-256** fingerprints of the upload key (§17.2, `keytool -list -v -keystore upload.keystore`) and, after the first Play upload, of the *App signing key* (Play Console → App integrity). Google sign-in only works for builds signed with a listed key. Download `google-services.json` to `mobile/android/app/` (git-ignored; never commit it).
-2. **Add app → Apple**: bundle ID `hu.isolapaul.spoton`. Download `GoogleService-Info.plist` and install it on the Mac with `bash mobile/scripts/ios-firebase-config.sh ~/Downloads/GoogleService-Info.plist` (copies it into the Xcode project and sets the Google sign-in URL scheme; git-ignored).
+2. **Add app → Apple**: bundle ID `hu.isolapaul.spoton`. Download `GoogleService-Info.plist` and install it on the Mac with `bash mobile/scripts/ios-firebase-config.sh ~/Downloads/GoogleService-Info.plist` (copies it into the Xcode project, git-ignored, and writes the Google sign-in URL scheme into `Info.plist`; do not commit that `Info.plist` change).
 3. Project settings → Cloud Messaging → Apple app configuration: upload an **APNs auth key** (.p8, from developer.apple.com → Keys, with "Apple Push Notifications service") with its Key ID and Team ID.
 4. Authentication → Settings → Authorized domains: no change (the app runs on `spoton.isolapaul.hu`). The Google provider is already on.
 
