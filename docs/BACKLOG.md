@@ -6,7 +6,8 @@ Open work, as of v2.0.2 (2026-09-30). Nothing here is started. Each item becomes
 
 | Item | Notes |
 |---|---|
-| Google Play release | Trusted Web Activity; the repository side is ready (`docs/deploy.md` §17, `docs/play-store.md`). Left: the developer account, the Bubblewrap build, the closed test and the listing. |
+| Google Play release | Capacitor app (`mobile/`); the repository side is ready (`docs/deploy.md` §17, `docs/play-store.md`). Left: the Firebase Android app and `google-services.json`, the upload key, the developer account, the closed test and the listing. |
+| App Store release | Capacitor app (`mobile/ios`, `docs/deploy.md` §17.4). Left: the Apple Developer account, the Firebase iOS app and APNs key, and decisions on Sign in with Apple (guideline 4.8) and minimum functionality (4.2). |
 | Legal pages in English and German | `/privacy` and `/terms` are Hungarian only; English and German users get the Hungarian text. |
 | Accessible labels in all languages | aria-labels and alt texts are English, because the e2e selectors depend on them. |
 | "Special icons" level perk | Level 4 and 5 advertise "Use special icons" (`useCustomIcons`, `perkIcons`), but no such feature exists. Build it or drop the perk text. |

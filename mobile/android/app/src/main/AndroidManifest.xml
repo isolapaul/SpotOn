@@ -34,6 +34,11 @@
 
         </activity>
 
+        <!-- No FCM token until the user turns notifications on (docs/play-store.md, Data safety);
+             the plugin's getToken switches auto-init on then. -->
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
         <!-- Push notifications (FCM): the small icon and colour of the status bar notification. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"

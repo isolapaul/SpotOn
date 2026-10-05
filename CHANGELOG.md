@@ -3,6 +3,11 @@
 Versions are the git tags that were released to the server (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and were not tagged; they are listed by date.
 
+## Unreleased
+
+### Added
+- SpotOn as an Android and iOS app. It shows the same live site, so it is always up to date, and adds what a browser tab cannot: Google sign-in with the phone's account picker, push notifications, the system share sheet, the Android back button, spot links that open in the app, and a page for when there is no connection. The first-run tour skips its install step in the app.
+
 ## v2.1.0 — 2026-10-03
 
 ### Added

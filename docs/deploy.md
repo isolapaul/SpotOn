@@ -361,64 +361,69 @@ Do the steps one after another, without a long pause between 4 and 7: until the 
 8. Post-deploy checks (§13). In addition: the map shows the Mapbox styles in all five themes; an admin approves a test spot (the owner gets the inbox note and one push); a follow, a reply and a list save work.
 
 
-## 17. Android app (Trusted Web Activity)
+## 17. Android and iOS apps (Capacitor)
 
-The Play app is a Trusted Web Activity: a thin Android shell that opens https://spoton.isolapaul.hu full screen in Chrome. It is built with [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) on the laptop from the live web manifest; the web app itself is unchanged. Listing, Data safety and content rating: [`play-store.md`](play-store.md).
+The store apps are [Capacitor](https://capacitorjs.com) shells (`capacitor.config.ts`, `mobile/android`, `mobile/ios`) that load https://spoton.isolapaul.hu full screen. A web-only release needs no new app build: the apps always show the live site. Native code covers what a WebView cannot do on its own:
 
-Package name: **`hu.isolapaul.spoton`** (permanent; Play never allows it to change).
-
-**Order:** the release with the Play changes (manifest `id`, maskable icons, `/.well-known/assetlinks.json`, `/account-deletion`) must be live before `bubblewrap init`, because Bubblewrap reads the live manifest.
-
-### 17.1 One-time setup (💻 laptop, Git Bash)
-
-```bash
-npm i -g @bubblewrap/cli                 # changes the laptop: installs the CLI (never with sudo)
-mkdir -p ~/spoton-android && cd ~/spoton-android
-bubblewrap init --manifest=https://spoton.isolapaul.hu/manifest.json
-```
-
-The first run offers to download a JDK and the Android command-line tools: answer yes (they go into `~/.bubblewrap`). Then answer the questions:
-
-| Question | Answer |
+| Feature | How |
 |---|---|
-| Domain | `spoton.isolapaul.hu` |
-| URL path | `/` |
-| Application name | `SpotOn` |
-| Short name (launcher) | `SpotOn` |
-| Application ID | `hu.isolapaul.spoton` |
-| Starting version code | `1` |
-| Display mode | `standalone` |
-| Orientation | `portrait` |
-| Status bar colour | `#0E1013` |
-| Splash screen colour | `#0E1013` |
-| Icon URL | `https://spoton.isolapaul.hu/icon-512x512.png` |
-| Maskable icon URL | `https://spoton.isolapaul.hu/icon-maskable-512x512.png` |
-| Monochrome icon URL | leave empty |
-| Shortcuts | No |
-| Play Billing | No |
-| Geolocation delegation | No (Chrome asks for the location permission itself, as on the web) |
-| Key store location | the default (`./android.keystore`) |
-| Key name | `android` |
-| Create a new key | Yes: your name, organisational unit and organisation (`SpotOn` for both is fine), country `HU`, then two passwords |
+| Google sign-in | The native Google SDK (Google refuses OAuth in WebViews); the web SDK signs in with its ID token (`src/store/nativeAuth.ts`). |
+| Push | Native FCM; the device token goes into `users/{uid}.fcmTokens`, which the functions already send to (`src/store/nativePush.ts`). |
+| Android back, spot links, sharing | `src/hooks/useNativeShell.ts` (App Links), `useShareSpot` (system share sheet). |
+| Offline | `mobile/www/offline.html` when the site cannot be loaded. |
 
-The **upload key** (`android.keystore` and its two passwords) signs every build you upload. Keep it outside the repository, back it up (for example in your password manager), and never commit it. If it is lost, the upload key can be reset through Play support, because Google keeps the real app signing key (Play App Signing).
+Package name / bundle ID: **`hu.isolapaul.spoton`** (permanent; the stores never allow it to change). Listing, Data safety and content rating: [`play-store.md`](play-store.md).
 
-### 17.2 Build and upload (💻 laptop)
+**A new app build is needed** when `mobile/`, `capacitor.config.ts` or a `@capacitor*` package changes. The live site talks to every installed app version, so never remove a Capacitor plugin from `package.json` (and never ship a web release that calls a plugin method an older app lacks) while those versions are in use.
+
+### 17.1 Firebase (🌐 Firebase console, one time)
+
+1. Project settings → Your apps → **Add app → Android**: package `hu.isolapaul.spoton`. Add the **SHA-1 and SHA-256** fingerprints of the upload key (§17.2, `keytool -list -v -keystore upload.keystore`) and, after the first Play upload, of the *App signing key* (Play Console → App integrity). Google sign-in only works for builds signed with a listed key. Download `google-services.json` to `mobile/android/app/` (git-ignored; never commit it).
+2. **Add app → Apple**: bundle ID `hu.isolapaul.spoton`. Download `GoogleService-Info.plist` and install it on the Mac with `bash mobile/scripts/ios-firebase-config.sh ~/Downloads/GoogleService-Info.plist` (copies it into the Xcode project and sets the Google sign-in URL scheme; git-ignored).
+3. Project settings → Cloud Messaging → Apple app configuration: upload an **APNs auth key** (.p8, from developer.apple.com → Keys, with "Apple Push Notifications service") with its Key ID and Team ID.
+4. Authentication → Settings → Authorized domains: no change (the app runs on `spoton.isolapaul.hu`). The Google provider is already on.
+
+### 17.2 Android build (💻 laptop: Android Studio, which brings its own JDK and SDK)
 
 ```bash
-cd ~/spoton-android
-bubblewrap build        # changes local files: asks for the two key passwords, writes app-release-bundle.aab and app-release-signed.apk
+npm ci
+npx cap sync android        # changes generated files under mobile/android (git-ignored)
 ```
 
-Upload `app-release-bundle.aab` in Play Console → Test and release → Testing → Internal testing (or Closed testing) → Create new release. Accept **Play App Signing** when asked.
+Upload key, once (the passwords and the file stay outside git; back them up, e.g. in the password manager):
 
-For every later version: `bubblewrap update` (raises the version code; add `--appVersionName=2.1.1` to set the visible version), then `bubblewrap build` and upload the new `.aab`. A web-only release needs no new Android build: the app always shows the live site.
+```bash
+keytool -genkeypair -v -keystore ~/spoton-upload.keystore -alias upload -keyalg RSA -keysize 2048 -validity 10000
+```
+
+`mobile/android/keystore.properties` (git-ignored):
+
+```properties
+storeFile=/home/<you>/spoton-upload.keystore
+storePassword=...
+keyAlias=upload
+keyPassword=...
+```
+
+Build (the visible version is `package.json`'s; raise the version code on every upload):
+
+```bash
+cd mobile/android
+./gradlew bundleRelease -PversionCode=2     # → app/build/outputs/bundle/release/app-release.aab
+./gradlew assembleDebug                     # → app/build/outputs/apk/debug/app-debug.apk (adb install …)
+```
+
+`npm run cap:android` opens the project in Android Studio instead. Upload the `.aab` in Play Console → Test and release → Testing → Internal testing (or Closed testing) → Create new release, and accept **Play App Signing**.
+
+CI (`.github/workflows/mobile.yml`) builds the same on every change to the native shell and keeps the APK and bundle as the run's artifact `spoton-android`. With these repository secrets the bundle is uploadable as is: `GOOGLE_SERVICES_JSON_BASE64` (`base64 -w0 google-services.json`), `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`; its version code is the run number. Without them it uses the demo Firebase config in `mobile/ci` (the app starts, sign-in and push do not work) and the bundle is unsigned.
+
+For a test against a local server: `CAP_SERVER_URL=http://10.0.2.2:3000 npx cap sync android` (the Android emulator's address of the laptop); run `npx cap sync android` again before a release build.
 
 ### 17.3 Digital Asset Links (🌐 Play Console, then 🖥️ server)
 
-Without asset links the app still opens, but as a Custom Tab with a URL bar. The server publishes them from the runtime setting `ANDROID_CERT_SHA256`, so no new image is needed.
+Asset links let spot links (`https://spoton.isolapaul.hu/spot/…`) open in the app (Android App Links). The server publishes them from the runtime setting `ANDROID_CERT_SHA256`, so no new image is needed.
 
-1. 🌐 Play Console → your app → Test and release → App integrity → App signing: copy the **SHA-256 certificate fingerprint** of the *App signing key certificate* (`AB:CD:…`, 32 pairs). To also allow the APK you sideload from `bubblewrap build`, copy the *Upload key certificate* fingerprint as well.
+1. 🌐 Play Console → your app → Test and release → App integrity → App signing: copy the **SHA-256 certificate fingerprint** of the *App signing key certificate* (`AB:CD:…`, 32 pairs). To also allow builds you install yourself, copy the *Upload key certificate* fingerprint as well.
 2. 🖥️ Add it to `/srv/docker/spoton/.env` (changes the server config; comma-separated when there are two):
 
    ```bash
@@ -434,11 +439,31 @@ Without asset links the app still opens, but as a Custom Tab with a URL bar. The
 
    It must show `hu.isolapaul.spoton` and your fingerprint(s). An empty `[]` means the setting is missing or malformed. Google's own check: 🌐 `https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://spoton.isolapaul.hu&relation=delegate_permission/common.handle_all_urls`.
 
-### 17.4 Check on a phone (📱 Android, after installing from the internal or closed test)
+### 17.4 iOS build (💻 Mac with Xcode 16.3 or later, Apple Developer Program membership)
 
-- [ ] The app opens full screen, without a URL bar (asset links work).
-- [ ] Google sign-in works (through the `/__/auth` proxy) and you return to the app signed in; e-mail sign-in works.
-- [ ] Turn on notifications in Settings; approve a test spot from another account: the push arrives, and tapping it opens the app.
+```bash
+npm ci
+bash mobile/scripts/ios-firebase-config.sh ~/Downloads/GoogleService-Info.plist   # §17.1, once per checkout
+npm run cap:ios             # cap sync ios, then opens Xcode
+```
+
+In Xcode: target App → Signing & Capabilities → pick your team (automatic signing). Push Notifications and Background Modes → Remote notifications come from `App/App.entitlements` and `Info.plist`. Set the build number (General → Build) higher than the last upload, then Product → Archive → Distribute App → App Store Connect.
+
+CI builds an unsigned simulator app (artifact `spoton-ios-simulator`) as a compile check; with the secret `GOOGLE_SERVICE_INFO_PLIST_BASE64` it uses the project's Firebase config.
+
+**Before submitting to the App Store, decide:**
+- *Guideline 4.8:* an app that offers Google sign-in must also offer *Sign in with Apple* (or an equivalent privacy-focused login). The e-mail sign-in may not count. Sign in with Apple is not built.
+- *Guideline 4.2 (minimum functionality):* Apple rejects apps that are only a website in a frame. Native sign-in, push, location and the share sheet help, but a rejection is possible.
+
+### 17.5 Check on a phone (📱 Android, after installing from the internal or closed test; same on iPhone)
+
+- [ ] The app opens full screen with the splash on the dark background; the map runs under the status bar without covering controls.
+- [ ] Google sign-in opens the system account picker and you return signed in; e-mail sign-in works; sign-out, then Google sign-in offers the account choice again.
+- [ ] Turn on notifications in Settings (the system dialog asks once); approve a test spot from another account: the push arrives with the SpotOn icon, and tapping it opens the app. With the app open, the message lands in the notification centre.
 - [ ] Location: "my location" asks for the permission once and centres the map.
-- [ ] The Android back gesture behaves as expected.
+- [ ] Add a spot with a photo from the gallery and one taken with the camera.
+- [ ] The Android back gesture closes panels step by step and, on the bare map, sends the app to the background.
+- [ ] Share a spot: the system share sheet opens. Tap a shared spot link in another app: SpotOn opens on that spot (after §17.3).
+- [ ] Airplane mode, then start the app: the offline page shows; "Try again" works once back online.
+- [ ] The first-run tour has no install step.
 - [ ] https://spoton.isolapaul.hu/account-deletion opens in a normal browser without the first-run tour.

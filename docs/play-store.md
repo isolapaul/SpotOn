@@ -1,6 +1,6 @@
 # Google Play: listing, Data safety and content rating
 
-Everything Play Console asks for, drafted from the code. The Android app itself (Trusted Web Activity, Bubblewrap, signing, asset links) is in [`deploy.md` §17](deploy.md#17-android-app-trusted-web-activity).
+Everything Play Console asks for, drafted from the code. The Android app itself (Capacitor shell, Firebase setup, signing, asset links) is in [`deploy.md` §17](deploy.md#17-android-and-ios-apps-capacitor).
 
 **Revisit this page when a feature changes what the app collects** (for example profiles, bio and follows): the Data safety answers must match the app, and Google can reject or remove an app whose answers are wrong.
 

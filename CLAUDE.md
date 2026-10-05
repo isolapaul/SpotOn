@@ -9,7 +9,7 @@ Open work is in `docs/BACKLOG.md`; releases and server operations are in `docs/d
 
 A mobile-first PWA for discovering and sharing places ("spots") on a map.
 Users sign in (Google or email), add spots with photos, review, favourite, and level up.
-Admins approve pending spots. UI languages: Hungarian (default), English, German. A Google Play release is planned.
+Admins approve pending spots. UI languages: Hungarian (default), English, German. Android and iOS apps (Capacitor shells that load the live site, `mobile/`) are prepared for Google Play and the App Store.
 
 **Production:** https://spoton.isolapaul.hu, a hardened Docker container on Paul's home server, reached through a dashboard-managed Cloudflare Tunnel (`cloudflared` on the external docker network `edge`).
 Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only shows the move notice and later redirects (`docs/deploy.md` §15) until it is deleted.
@@ -24,6 +24,7 @@ Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only 
 | State | Zustand 5 (`src/store/*`, several persisted to localStorage) |
 | Backend (BaaS) | Firebase: Auth, Firestore, Storage, Cloud Messaging (web push) |
 | Server code | Cloud Functions v2 in `functions/` (region `europe-west3`) |
+| Mobile apps | Capacitor 8 (`capacitor.config.ts`, `mobile/android`, `mobile/ios`): the shell loads the live site; native plugins only for Google sign-in, FCM, back button/app links and sharing, always behind `isNativeApp()` |
 | Next API routes | `/api/feedback` (nodemailer → SMTP), `/api/firebase-messaging-sw` (generated FCM service worker), `/api/health` (container healthcheck) |
 
 ## 3. Repository map
@@ -88,6 +89,11 @@ scripts/store/                   Store graphics and screenshots (`npm run store:
 deploy/, Dockerfile, docker/     Server compose file, update script, image and healthcheck
 docs/deploy.md, docs/BACKLOG.md  Release and server runbook (Android app: §17); open work
 docs/play-store.md               Play listing texts, Data safety and content rating answers
+capacitor.config.ts, mobile/     The Android/iOS apps (Capacitor): native projects, offline page (mobile/www), icon script, CI demo
+                                 Firebase configs (mobile/ci); built by .github/workflows/mobile.yml; runbook docs/deploy.md §17
+src/lib/nativeApp.ts             isNativeApp()/nativePlatform()/appLinkPath(): the app check (Capacitor bridge), no plugin imports
+src/store/nativeAuth.ts, nativePush.ts  Native Google sign-in (ID token → web SDK) and native FCM tokens (users.fcmTokens)
+src/hooks/useNativeShell.ts      Android back button and App Links inside the app; hooks/pushListeners.ts: the push listener singletons
 ```
 
 ### Firestore data model (current)
@@ -99,7 +105,7 @@ docs/play-store.md               Play listing texts, Data safety and content rat
   Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
   Spots of deleted accounts have `createdBy: "deleted-user"` and no createdByName/createdByPhoto.
   Status changes and deletes go only through the moderation callables (`approveSpot`, `rejectSpot`, `removeSpot`); admins may still edit fields and photos directly.
-- `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmTokens[], language,
+- `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmFids[] (browsers), fcmTokens[] (native app tokens and pre-v2.1.0 web tokens; never drop the field), language,
   notificationsEnabled, notificationSettings, spotsCount (server-maintained, all statuses),
   xp, level, levelFloor (server: XP levels, the floor set once by scripts/migrate-xp.ts), pinIcon,
   termsVersion + termsAcceptedAt (accepted Terms/Privacy version, A1; lib/terms),
@@ -128,7 +134,9 @@ npm run verify              # typecheck + lint + unit tests + next build (gate f
 npm run verify:fn           # functions build + lint + unit tests (gate when functions/ changed)
 npm run test:rules          # Firestore/Storage rules tests on the emulator (Java 21 required)
 npm run test:e2e            # Playwright vs the emulator-seeded build (PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers)
+npm run cap:sync            # after changing capacitor.config.ts, mobile/ or a Capacitor package (needs no SDK)
 ```
+The native builds need the Android SDK / Xcode, which the Claude Code sandbox cannot download (dl.google.com is blocked); `.github/workflows/mobile.yml` builds them.
 `next build` needs Firebase config. Without a `.env.local`, export non-secret demo values first:
 `export NEXT_PUBLIC_FIREBASE_API_KEY=demo-key NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=demo-spoton.firebaseapp.com NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-spoton NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=demo-spoton.appspot.com NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=0 NEXT_PUBLIC_FIREBASE_APP_ID=demo-app NEXT_PUBLIC_FIREBASE_VAPID_KEY=demo`.
 A single e2e spec runs via `npm --prefix functions run build && npx firebase emulators:exec --only auth,firestore,storage,functions --project demo-spoton "npx tsx scripts/seed-emulator.ts && npx playwright test e2e/<file>"` (`npm run test:e2e -- <file>` does not work).
