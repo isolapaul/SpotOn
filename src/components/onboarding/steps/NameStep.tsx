@@ -95,7 +95,7 @@ export default function NameStep({ name, onName, onNext, onLater }: Readonly<Nam
             {t(copy.body)}
           </p>
           <div className={`${s.rise} relative mt-4`} style={riseDelay(560)}>
-            <label htmlFor="onboarding-username" className="sr-only">
+            <label htmlFor="onboarding-username" className="sr-only absolute!">
               {t('username')}
             </label>
             <AtSign className="absolute left-[15px] top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" aria-hidden="true" />
