@@ -1,0 +1,51 @@
+<!doctype html>
+<!-- The app's error page (capacitor.config.ts server.errorPath): the live site could not be loaded.
+     A static file inside the app, so its three languages live here, not in src/lib/translations.ts. -->
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SpotOn</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #0E1013; color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; gap: 12px;
+    padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)); }
+  img { width: 96px; height: 96px; border-radius: 22px; }
+  h1 { font-size: 20px; margin: 12px 0 0; }
+  p { margin: 0; max-width: 320px; color: rgba(255,255,255,0.65); font-size: 15px; line-height: 1.4; }
+  button { margin-top: 16px; min-width: 160px; height: 46px; border: 0; border-radius: 999px;
+    background: #2f7cf6; color: #fff; font-size: 15px; font-weight: 600; }
+  button:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+<main>
+  <img src="icon.png" alt="">
+  <h1 id="title">Nincs kapcsolat</h1>
+  <p id="text">A SpotOn most nem érhető el. Ellenőrizd az internetkapcsolatot, majd próbáld újra.</p>
+  <button id="retry" type="button">Újra</button>
+</main>
+<script>
+  // The live site (capacitor.config.ts server.url).
+  var APP_URL = 'https://spoton.isolapaul.hu/';
+  var texts = {
+    hu: ['Nincs kapcsolat', 'A SpotOn most nem érhető el. Ellenőrizd az internetkapcsolatot, majd próbáld újra.', 'Újra'],
+    en: ['No connection', 'SpotOn cannot be reached right now. Check your internet connection and try again.', 'Try again'],
+    de: ['Keine Verbindung', 'SpotOn ist gerade nicht erreichbar. Prüfe deine Internetverbindung und versuche es erneut.', 'Erneut versuchen']
+  };
+  var lang = (navigator.language || 'hu').slice(0, 2).toLowerCase();
+  var t = texts[lang] || texts.hu;
+  document.documentElement.lang = texts[lang] ? lang : 'hu';
+  document.getElementById('title').textContent = t[0];
+  document.getElementById('text').textContent = t[1];
+  var retry = document.getElementById('retry');
+  retry.textContent = t[2];
+  retry.addEventListener('click', function () { location.replace(APP_URL); });
+  // Back online: try again by itself.
+  window.addEventListener('online', function () { location.replace(APP_URL); });
+</script>
+</body>
+</html>

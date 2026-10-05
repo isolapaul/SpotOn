@@ -22,6 +22,8 @@ import { compressImage } from '@/lib/imageCompression';
 import { mapAdminDoc, type AdminUser } from '@/lib/mapAdminDoc';
 import { TERMS_VERSION } from '@/lib/terms';
 import { forgetDevice } from './pushDevice';
+import { signInWithGoogleNative, signOutNative } from './nativeAuth';
+import { isNativeApp } from '@/lib/nativeApp';
 
 export type { User } from '@/lib/mapUserDoc';
 
@@ -330,8 +332,10 @@ export const useUserStore = create<UserStore>()(
           
           // Try popup first, fallback to redirect for mobile browsers
           try {
-            result = await signInWithPopup(auth, googleProvider);
+            // The Android/iOS app: Google refuses WebView sign-in, the native SDK signs in (nativeAuth.ts).
+            result = isNativeApp() ? await signInWithGoogleNative() : await signInWithPopup(auth, googleProvider);
           } catch (popupError) {
+            if (isNativeApp()) throw popupError;
             // If popup blocked or fails on mobile, try redirect
             const code = (popupError as { code?: string }).code;
             if (code === 'auth/popup-blocked' ||
@@ -467,6 +471,7 @@ export const useUserStore = create<UserStore>()(
         await forgetDevice(null);
         stopAdminListeners(set);
         await firebaseSignOut(auth);
+        if (isNativeApp()) await signOutNative();
         set({ user: null, loading: false });
       },
 
@@ -488,6 +493,7 @@ export const useUserStore = create<UserStore>()(
         stopAdminListeners(set);
 
         await firebaseSignOut(auth);
+        if (isNativeApp()) await signOutNative();
         set({ user: null, loading: false });
       },
       

@@ -1,68 +1,36 @@
 import { useEffect, useState } from 'react';
-import { getMessaging, onMessage, onRegistered, isSupported, type Messaging } from 'firebase/messaging';
+import { getMessaging, isSupported } from 'firebase/messaging';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, app } from '@/lib/firebase';
 import { useUserStore } from '@/store/useUserStore';
 import { useLanguageStore } from '@/store/useLanguageStore';
-import { useNotificationStore, type Notification as AppNotification } from '@/store/useNotificationStore';
-import { translate } from '@/lib/i18n';
+import { useNotificationStore } from '@/store/useNotificationStore';
 import { useT } from '@/hooks/useT';
-import { registerDevice, rememberedFid, saveDeviceFid } from '@/store/pushDevice';
+import { registerDevice, saveDeviceFid } from '@/store/pushDevice';
+import { nativePushPermission, nativePushToken, requestNativePushPermission, saveNativeToken } from '@/store/nativePush';
+import { setupForegroundListener, setupNativeListener } from './pushListeners';
+import { isNativeApp } from '@/lib/nativeApp';
 
 // Get VAPID key from environment variables
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-
-// Singleton: Module-level variable to track foreground listener
-// This ensures only ONE listener is active across all hook instances
-let listenerSetup = false;
 
 // Uid whose FCM registration was silently refreshed this page session (once per sign-in).
 let silentRefreshUid: string | null = null;
 
 const isNotificationSupported = () => 'Notification' in globalThis;
 
-// Setup foreground message listener (when app is open) - SINGLETON
-function setupForegroundListener(messaging: Messaging) {
-  // Prevent duplicate listeners
-  if (listenerSetup) return;
-  
-  listenerSetup = true;
-
-  // FCM may issue a new FID later (routine syncs): store it for whoever is signed in then.
-  onRegistered(messaging, (fid) => {
-    const uid = useUserStore.getState().user?.uid;
-    if (!uid || fid === rememberedFid()) return;
-    saveDeviceFid(uid, fid).catch((error) => console.error('Failed to store the new FCM registration:', error));
-  });
-  
-  onMessage(messaging, (payload) => {
-    // Moderation decisions also land in the server inbox (item 4), which the centre shows already.
-    if (payload.data?.inbox === '1') return;
-    // Read the language at message time: this listener is registered once (no stale closure).
-    const title = payload.notification?.title || translate(useLanguageStore.getState().language ?? 'hu', 'newNotification');
-    const body = payload.notification?.body || '';
-    
-    // Add to notification center only (no toast to avoid stacking)
-    const notificationType = payload.data?.type || 'general';
-    // Use the store directly to avoid stale closure issues
-    useNotificationStore.getState().addNotification({
-      title,
-      body,
-      // The server sends only known kinds; the value is passed through unchecked, as before.
-      type: notificationType as AppNotification['type'],
-    });
-    
-    // Do NOT show a native browser Notification here to avoid duplicates
-    // (the service worker will display notifications when the app is backgrounded,
-    // and in-foreground we add items to the in-app NotificationCenter instead).
-  });
-}
 
 export const usePushNotifications = () => {
   // Read on the first render (the consumers render client-side only; the server has no Notification).
   const [isPermissionGranted, setIsPermissionGranted] = useState(
-    () => isNotificationSupported() && globalThis.Notification.permission === 'granted',
+    () => !isNativeApp() && isNotificationSupported() && globalThis.Notification.permission === 'granted',
   );
+  // The app may still show its permission dialog (read from the plugin, see below).
+  const [nativeCanAsk, setCanAsk] = useState(false);
+  // The one-time offer may still ask: the browser (read live, as before) or the app has not decided yet.
+  const canAsk = isNativeApp()
+    ? nativeCanAsk
+    : isNotificationSupported() && globalThis.Notification.permission === 'default';
   const [isLoading, setIsLoading] = useState(false);
   const { user, loading: authLoading } = useUserStore();
   const { language } = useLanguageStore();
@@ -93,10 +61,25 @@ export const usePushNotifications = () => {
     return { messaging, fid };
   };
 
-  const saveUserFid = async (fid: string) => {
-    if (!user) return;
+  // The app reads its permission asynchronously (the plugin); browsers have it on the first render.
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    let cancelled = false;
+    nativePushPermission()
+      .then((permission) => {
+        if (cancelled) return;
+        setIsPermissionGranted(permission === 'granted');
+        setCanAsk(permission === 'prompt');
+      })
+      .catch((error) => console.error('Reading the notification permission failed:', error));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-    const userRef = doc(db, 'users', user.uid);
+  // The user fields that go with this device's registration (browser FID or app token).
+  const registrationFields = async (uid: string) => {
+    const userRef = doc(db, 'users', uid);
     const defaultSettings = {
       spotApproved: true,
       spotReviewed: true,
@@ -107,14 +90,18 @@ export const usePushNotifications = () => {
     // Never overwrite the user's stored notification choices (BUG-02)
     const userSnap = await getDoc(userRef);
     const hasSettings = Boolean(userSnap.data()?.notificationSettings);
-
-    // Remembered so signOut can remove this device's registration (SEC-14).
-    await saveDeviceFid(user.uid, fid, {
+    return {
       language: language ?? 'hu',
       notificationsEnabled: true,
       lastTokenUpdate: new Date().toISOString(),
       ...(hasSettings ? {} : { notificationSettings: defaultSettings }),
-    });
+    };
+  };
+
+  const saveUserFid = async (fid: string) => {
+    if (!user) return;
+    // Remembered so signOut can remove this device's registration (SEC-14).
+    await saveDeviceFid(user.uid, fid, await registrationFields(user.uid));
   };
 
   // After sign-in / user load: if this device already granted permission and has the FCM service
@@ -129,6 +116,22 @@ export const usePushNotifications = () => {
     }
     if (silentRefreshUid === user.uid) return;
     silentRefreshUid = user.uid;
+
+    const refreshNative = async () => {
+      try {
+        if ((await nativePushPermission()) !== 'granted') return;
+        const userSnap = await getDoc(doc(db, 'users', user.uid));
+        // Only re-register users who explicitly opted in; never opt someone in silently (shared devices).
+        if (userSnap.data()?.notificationsEnabled !== true) return;
+        const token = await nativePushToken();
+        // Bail if the user signed out (or switched) while we were awaiting.
+        if (useUserStore.getState().user?.uid !== user.uid) return;
+        await saveNativeToken(user.uid, token, await registrationFields(user.uid));
+        setupNativeListener();
+      } catch (error) {
+        console.error('Silent FCM registration refresh failed:', error);
+      }
+    };
 
     const refresh = async () => {
       try {
@@ -147,18 +150,52 @@ export const usePushNotifications = () => {
         // Bail if the user signed out (or switched) while we were awaiting.
         if (useUserStore.getState().user?.uid !== user.uid) return;
         await saveUserFid(fid);
-        if (!listenerSetup) setupForegroundListener(messaging);
+        setupForegroundListener(messaging);
       } catch (error) {
         console.error('Silent FCM registration refresh failed:', error);
       }
     };
-    void refresh();
+    void (isNativeApp() ? refreshNative() : refresh());
     // Runs once per signed-in uid; saveUserFid reads the current user/language from this render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, authLoading]);
 
   // Initialize push notifications
+  // The Android/iOS app: the system permission dialog and a native FCM token (store/nativePush.ts).
+  const initializeNativePush = async (): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      setIsLoading(true);
+      const granted = await requestNativePushPermission();
+      setIsPermissionGranted(granted);
+      setCanAsk(false);
+      if (!granted) {
+        addNotification({
+          title: t('notificationsBlocked'),
+          body: t('notificationsBlockedDesc'),
+          type: 'warning',
+        });
+        return false;
+      }
+      const token = await nativePushToken();
+      await saveNativeToken(user.uid, token, await registrationFields(user.uid));
+      setupNativeListener();
+      return true;
+    } catch (error) {
+      console.error('Failed to initialize push notifications:', error);
+      addNotification({
+        title: t('notificationsBlocked'),
+        body: String(error),
+        type: 'warning',
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const initializePush = async (): Promise<boolean> => {
+    if (isNativeApp()) return initializeNativePush();
     try {
       if (!isNotificationSupported()) {
         return false;
@@ -195,9 +232,7 @@ export const usePushNotifications = () => {
       await saveUserFid(registered.fid);
 
       // Singleton: Only setup listener if not already done
-      if (!listenerSetup) {
-        setupForegroundListener(registered.messaging);
-      }
+      setupForegroundListener(registered.messaging);
       return true;
     } catch (error) {
       console.error('Failed to initialize push notifications:', error);
@@ -244,6 +279,7 @@ export const usePushNotifications = () => {
 
   return {
     isPermissionGranted,
+    canAsk,
     isLoading,
     initializePush,
     requestPermission,

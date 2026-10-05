@@ -10,22 +10,17 @@ import { Z } from '@/lib/constants';
 
 /**
  * One-time push offer, shown after the user's first successful contribution (usePushPromptStore),
- * only while the browser has not decided yet (permission 'default').
+ * only while the browser (or the Android/iOS app) has not decided yet (permission 'default' / 'prompt').
  */
 export default function NotificationPrompt() {
   const user = useUserStore((s) => s.user);
   const requested = usePushPromptStore((s) => s.requested);
   const answer = usePushPromptStore((s) => s.answer);
   const t = useT();
-  const { isPermissionGranted, isLoading, initializePush } = usePushNotifications();
+  const { isPermissionGranted, canAsk, isLoading, initializePush } = usePushNotifications();
 
   // Old (Vercel) domain: push tokens are per origin, so never ask there (T19)
-  const canAsk =
-    !getMovedTo() &&
-    'Notification' in globalThis &&
-    globalThis.Notification.permission === 'default';
-
-  if (!requested || !user || isPermissionGranted || !canAsk) return null;
+  if (!requested || !user || isPermissionGranted || !canAsk || getMovedTo()) return null;
 
   const handleEnable = async () => {
     // Enabled or refused in the browser dialog: either way the question is answered.

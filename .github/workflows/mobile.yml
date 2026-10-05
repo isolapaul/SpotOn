@@ -1,0 +1,135 @@
+name: Mobile apps
+
+# Builds the Android and iOS apps (Capacitor, capacitor.config.ts; docs/deploy.md §17). The apps load
+# the live site, so web-only changes need no new app build: this runs when the native shell changes.
+# Without the Firebase secrets the builds use the demo configs in mobile/ci (they start, but Google
+# sign-in and push do not work); without the keystore secrets the release bundle is unsigned.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'claude/**']
+    tags: ['v*']
+    paths:
+      - 'mobile/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/mobile.yml'
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/mobile.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android (debug APK + release bundle)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('mobile/android/**/*.gradle', 'mobile/android/gradle/wrapper/gradle-wrapper.properties', 'package-lock.json') }}
+          restore-keys: gradle-${{ runner.os }}-
+      - run: npm ci
+      - name: Firebase config (google-services.json)
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > mobile/android/app/google-services.json
+            echo "Using the project's google-services.json"
+          else
+            cp mobile/ci/google-services.demo.json mobile/android/app/google-services.json
+            echo "::notice::No GOOGLE_SERVICES_JSON_BASE64 secret: built with the demo Firebase config (sign-in and push disabled)"
+          fi
+      - name: Upload key (release signing)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+            echo "SPOTON_KEYSTORE_FILE=$RUNNER_TEMP/upload.keystore" >> "$GITHUB_ENV"
+          else
+            echo "::notice::No ANDROID_KEYSTORE_BASE64 secret: the release bundle is unsigned"
+          fi
+      - run: npx cap sync android
+      - name: Build
+        working-directory: mobile/android
+        env:
+          SPOTON_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          SPOTON_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          SPOTON_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # Store uploads need a rising version code: the run number by default.
+          VERSION_CODE: ${{ github.run_number }}
+        run: ./gradlew --no-daemon assembleDebug bundleRelease -PversionCode="$VERSION_CODE"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spoton-android
+          path: |
+            mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            mobile/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 14
+
+  ios:
+    name: iOS (simulator build, unsigned)
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Firebase config (GoogleService-Info.plist)
+        env:
+          PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
+        run: |
+          if [ -n "$PLIST_BASE64" ]; then
+            echo "$PLIST_BASE64" | base64 -d > "$RUNNER_TEMP/GoogleService-Info.plist"
+          else
+            cp mobile/ci/GoogleService-Info.demo.plist "$RUNNER_TEMP/GoogleService-Info.plist"
+            echo "::notice::No GOOGLE_SERVICE_INFO_PLIST_BASE64 secret: built with the demo Firebase config (sign-in and push disabled)"
+          fi
+          bash mobile/scripts/ios-firebase-config.sh "$RUNNER_TEMP/GoogleService-Info.plist"
+      - run: npx cap sync ios
+      - name: Build (simulator, no signing)
+        working-directory: mobile/ios/App
+        run: |
+          xcodebuild -version
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+          cd build/Build/Products/Debug-iphonesimulator && zip -qry "$GITHUB_WORKSPACE/SpotOn-simulator.app.zip" App.app
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spoton-ios-simulator
+          path: SpotOn-simulator.app.zip
+          retention-days: 14

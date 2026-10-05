@@ -9,6 +9,7 @@ import { useStepSwipe } from '@/hooks/useStepSwipe';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
 import { useUserStore } from '@/store/useUserStore';
 import { getMovedTo } from '@/lib/movedTo';
+import { isNativeApp } from '@/lib/nativeApp';
 import { stripBold } from '@/lib/i18n';
 import { Z } from '@/lib/constants';
 import {
@@ -42,7 +43,8 @@ function launchContext() {
   const nav = globalThis.navigator as Navigator & { standalone?: boolean };
   return {
     signedIn: useUserStore.getState().user !== null,
-    standalone: isStandaloneLaunch({
+    // The Android/iOS app is installed by definition: no install step.
+    standalone: isNativeApp() || isStandaloneLaunch({
       displayStandalone: globalThis.matchMedia?.('(display-mode: standalone)').matches ?? false,
       iosStandalone: nav.standalone === true,
       referrer: globalThis.document?.referrer ?? '',
