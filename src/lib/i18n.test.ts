@@ -126,25 +126,27 @@ describe('T24 keys', () => {
     'authErrGoogle', 'authErrUsername', 'authErrInvalidEmail', 'authErrWrongPassword', 'authErrEmailInUse',
     'authErrWeakPassword', 'authErrInvalidCredential', 'authErrSignInFailed', 'authErrSignUpFailed',
   ] as const;
-  const INSTALL_KEYS = [
-    'installTitle', 'installBody', 'installIosTitle', 'installIosStep1', 'installIosStep2', 'installIosHint',
-    'installAndroidTitle', 'installAndroidStep1', 'installAndroidStep2', 'installAndroidHint',
-    'installContinueWeb', 'installDontShowAgain', 'installFooter',
-  ] as const;
-  it.each(['hu', 'en', 'de'] as const)('%s has every auth* and install* key', (lang) => {
-    for (const key of [...AUTH_KEYS, ...INSTALL_KEYS]) {
+  it.each(['hu', 'en', 'de'] as const)('%s has every auth* key', (lang) => {
+    for (const key of AUTH_KEYS) {
       expect(dict[lang], `${lang}.${key}`).toHaveProperty(key);
       expect(dict[lang][key].trim(), `${lang}.${key}`).not.toBe('');
     }
   });
+});
 
-  it('install steps keep their bold markup balanced', () => {
+describe('onboarding keys', () => {
+  it('keep their bold markup balanced', () => {
     for (const lang of ['hu', 'en', 'de'] as const) {
-      for (const key of ['installIosStep1', 'installIosStep2', 'installAndroidStep1', 'installAndroidStep2'] as const) {
-        const markers = dict[lang][key].split('**').length - 1;
-        expect(markers > 0 && markers % 2 === 0, `${lang}.${key}`).toBe(true);
+      for (const [key, value] of Object.entries(dict[lang])) {
+        if (!key.startsWith('onboarding')) continue;
+        const markers = value.split('**').length - 1;
+        expect(markers % 2, `${lang}.${key}`).toBe(0);
       }
     }
+  });
+
+  it('never use the rejected "letűzés" wording', () => {
+    for (const value of Object.values(dict.hu)) expect(value).not.toMatch(/letűz|tűzd/i);
   });
 });
 

@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { test, blockMapTiles, openApp } from './helpers';
+import { test, blockMapTiles, openApp, ONBOARDING_DONE } from './helpers';
 
 // T19: domain-move banner. It exists only in a build with NEXT_PUBLIC_MOVED_TO set (the Vercel build);
 // Playwright passes the variable through to the webServer build (playwright.config.ts).
@@ -12,21 +12,22 @@ const MOVED_TO = process.env.NEXT_PUBLIC_MOVED_TO ?? '';
 const DISMISS_KEY = 'spoton-moved-banner-dismissed';
 
 type Lang = 'hu' | 'en';
-const TEXT: Record<Lang, { hide: string; installGate: string; mapControls: string }> = {
-  hu: { hide: 'Elrejtés', installGate: 'SpotOn Élmény', mapControls: 'Térképvezérlők' },
-  en: { hide: 'Hide', installGate: 'SpotOn Experience', mapControls: 'Map controls' },
+const TEXT: Record<Lang, { hide: string; mapControls: string }> = {
+  hu: { hide: 'Elrejtés', mapControls: 'Térképvezérlők' },
+  en: { hide: 'Hide', mapControls: 'Map controls' },
 };
 
 test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
 
-/** Seeds only the language choice, so InstallGate would appear unless the move guard suppresses it. */
+/** Seeds the language choice and the completed first-run tour (its old-domain variant is tested below). */
 async function seedLanguage(page: Page, lang: Lang) {
-  await page.addInitScript((l) => {
+  await page.addInitScript(({ l, done }) => {
+    window.localStorage.setItem(done.key, done.value);
     window.localStorage.setItem(
       'spoton-language',
       JSON.stringify({ state: { language: l, hasSelectedLanguage: true }, version: 0 }),
     );
-  }, lang);
+  }, { l: lang, done: ONBOARDING_DONE });
 }
 
 function banner(page: Page) {
@@ -46,7 +47,6 @@ for (const lang of ['hu', 'en'] as const) {
     await expect(banner(page)).toBeVisible();
     const href = await banner(page).getByRole('link').getAttribute('href');
     expect(href?.startsWith(MOVED_TO)).toBe(true);
-    await expect(page.getByText(TEXT[lang].installGate)).toHaveCount(0);
 
     // In the top-left slot, never overlapping the control stack on the right (design 1C).
     // The toolbar's accessible name is translated (t('mapControls')).
@@ -77,6 +77,18 @@ test('Hide dismisses the banner permanently on this device', async ({ page }) =>
   await page.evaluate((k) => window.localStorage.removeItem(k), DISMISS_KEY);
   await openApp(page);
   await expect(banner(page)).toBeVisible();
+});
+
+test('the first-run tour runs on the old domain, without the install step', async ({ page }) => {
+  test.skip(!MOVED_TO, 'needs a build with NEXT_PUBLIC_MOVED_TO');
+  await page.addInitScript(() => {
+    window.localStorage.setItem('spoton-language', JSON.stringify({ state: { language: 'en', hasSelectedLanguage: true }, version: 0 }));
+  });
+  await page.goto('/');
+  const tour = page.getByRole('dialog', { name: 'SpotOn tour' });
+  await expect(tour).toBeVisible({ timeout: 30_000 });
+  // Signed out: welcome, name, discover, share, levels, location, sign-up (no install).
+  await expect(tour.getByRole('progressbar')).toHaveAttribute('aria-valuemax', '7');
 });
 
 test('no banner without NEXT_PUBLIC_MOVED_TO', async ({ page }) => {

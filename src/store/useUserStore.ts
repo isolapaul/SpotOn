@@ -36,6 +36,12 @@ interface UserStore {
   user: User | null;
   loading: boolean;
   needsUsername: boolean;
+  /**
+   * This session created the signed-in account: 'generated' when it got a generated username (Google,
+   * or a missing user doc), 'chosen' for an e-mail sign-up with the typed one; null otherwise. Not
+   * persisted. The onboarding's chosen name is claimed only for 'generated' (usePendingUsernameClaim).
+   */
+  newAccount: 'generated' | 'chosen' | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
   adminUsers: AdminUser[];
@@ -283,6 +289,7 @@ async function loadOrCreateUser(firebaseUser: FirebaseUser, set: SetState): Prom
       user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data),
       loading: false,
       needsUsername: true,
+      newAccount: 'generated',
     });
   }
 }
@@ -308,6 +315,7 @@ export const useUserStore = create<UserStore>()(
       user: null,
       loading: true,
       needsUsername: false,
+      newAccount: null,
       isAdmin: false,
       isSuperAdmin: false,
       adminUsers: [],
@@ -347,6 +355,7 @@ export const useUserStore = create<UserStore>()(
           
           let data: Record<string, unknown>;
           let needsUsernameSetup = false;
+          let newAccount: 'generated' | null = null;
           
           if (userSnap.exists()) {
             // EXISTING USER: Only update lastLoginAt, preserve all other data
@@ -365,12 +374,14 @@ export const useUserStore = create<UserStore>()(
             data = await createUserDoc(firebaseUser);
             data = withUsername(data, await claimGeneratedUsername(firebaseUser.displayName || 'user'));
             needsUsernameSetup = true;
+            newAccount = 'generated';
           }
           
           set({
             user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data),
             loading: false,
             needsUsername: needsUsernameSetup,
+            newAccount,
           });
         } catch (error) {
           console.error('Google Sign-In error:', error);
@@ -440,6 +451,7 @@ export const useUserStore = create<UserStore>()(
             user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data),
             loading: false,
             needsUsername: needsUsernameSetup,
+            newAccount: 'chosen',
           });
         } catch (error) {
           set({ loading: false });
@@ -497,6 +509,7 @@ export const useUserStore = create<UserStore>()(
             const userSnap = await getDoc(userRef);
             
             let data: Record<string, unknown>;
+            let newAccount: 'generated' | null = null;
             if (userSnap.exists()) {
               // Existing user - just update lastLoginAt
               data = userSnap.data();
@@ -507,8 +520,9 @@ export const useUserStore = create<UserStore>()(
               // New user from redirect - create document, then claim a generated username
               data = await createUserDoc(firebaseUser);
               data = withUsername(data, await claimGeneratedUsername(firebaseUser.displayName || 'user'));
+              newAccount = 'generated';
             }
-            set({ user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data) });
+            set({ user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data), newAccount });
           }
         } catch (error) {
           console.error('Error handling redirect result:', error);
@@ -538,7 +552,7 @@ export const useUserStore = create<UserStore>()(
             } else {
               // User is signed out
               stopAdminListeners(set);
-              set({ user: null, loading: false, needsUsername: false });
+              set({ user: null, loading: false, needsUsername: false, newAccount: null });
             }
             
             // Resolve promise on first auth state change

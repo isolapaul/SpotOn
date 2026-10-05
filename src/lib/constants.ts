@@ -7,9 +7,6 @@ export { MAX_SPOT_IMAGES } from './spotImages';
 /** Client-side size cap for a picked image before compression (AddSpotModal, SettingsPanel). */
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
-/** Public pages that must stay usable without installing the app (legal pages A1, account deletion for Google Play). */
-export const INSTALL_GATE_EXEMPT_PATHS: readonly string[] = ['/privacy', '/terms', '/privacy/en', '/terms/en', '/account-deletion'];
-
 /** Maximum feedback attachments (the server limit, T14). */
 export const FEEDBACK_MAX_FILES = FEEDBACK_LIMITS.maxAttachments;
 
@@ -71,11 +68,12 @@ export const DELAYS = {
  * - `mapInner` sits inside the map container's `mapBase` (`z-0`) context.
  * - `panelInnerBackdrop` / `panelInnerSheet` (SettingsPanel) are rendered inside ProfilePanel's
  *   `panel` (`z-60`) root, so they stack above the profile content although 40/50 < 60 (BUG-22).
+ * `onboarding` (the first-run tour) covers the map chrome and stays below the sign-in sheet it opens.
  */
 export const Z = {
   mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-1000', dock: 'z-50', prompt: 'z-50', placeCard: 'z-55',
   panel: 'z-60', panelInnerBackdrop: 'z-40', panelInnerSheet: 'z-50', panelModal: 'z-70',
-  gallery: 'z-100', floatingButton: 'z-1500', modal: 'z-2000', usernameSetup: 'z-3500',
+  gallery: 'z-100', floatingButton: 'z-1500', onboarding: 'z-1900', modal: 'z-2000', usernameSetup: 'z-3500',
   blocking: 'z-9999',
 } as const;
 

@@ -1,0 +1,126 @@
+/* Install and sign-up steps: the phone that adds SpotOn to its home screen, and the floating icons. */
+
+.phone {
+  position: relative;
+  width: 176px;
+  height: 270px;
+  border-radius: 32px;
+  background: #0b0c0e;
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.12), 0 30px 60px rgb(0 0 0 / 0.5);
+  overflow: hidden;
+}
+.screen {
+  position: absolute;
+  inset: 6px;
+  border-radius: 26px;
+  overflow: hidden;
+  background: #1b1c1e;
+}
+.scene1,
+.scene2,
+.scene3 {
+  position: absolute;
+  inset: 0;
+}
+.scene1,
+.scene2 { opacity: 0; }
+.miniMap {
+  position: absolute;
+  inset: 0 0 42px;
+  background:
+    radial-gradient(circle at 30% 40%, #2a3a30 0 18%, transparent 19%),
+    repeating-linear-gradient(20deg, transparent 0 18px, #2a2c30 18px 20px),
+    repeating-linear-gradient(-70deg, transparent 0 22px, #2a2c30 22px 24px),
+    linear-gradient(#1f2a24, #16181c);
+}
+.bar {
+  position: absolute;
+  inset: auto 0 0;
+  height: 42px;
+  background: rgb(40 42 46 / 0.95);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  color: #0a84ff;
+}
+.shareSheet {
+  position: absolute;
+  inset: auto 0 0;
+  height: 74%;
+  border-radius: 18px 18px 0 0;
+  background: #2a2c31;
+  padding: 12px 10px;
+}
+.row {
+  position: relative;
+  height: 28px;
+  margin-top: 6px;
+  border-radius: 9px;
+  background: rgb(255 255 255 / 0.06);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  overflow: hidden;
+}
+.line {
+  height: 5px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.22);
+}
+.home {
+  background: linear-gradient(160deg, #22395a, #3c2b55 60%, #1c1f2e);
+}
+.grid {
+  position: absolute;
+  inset: 34px 14px auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px 10px;
+}
+.grid i {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.16);
+}
+.tap {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.55);
+  box-shadow: 0 0 0 6px rgb(255 255 255 / 0.15);
+  opacity: 0;
+}
+.floatie {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.35);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .scene1 { animation: ph1 6.4s linear 3; }
+  .scene2 { animation: ph2 6.4s linear 3; }
+  .scene3 { animation: ph3 6.4s linear 3; }
+  .shareSheet { animation: ph2s 6.4s cubic-bezier(0.32, 0.72, 0, 1) 3; }
+  .appIn { animation: ph3i 6.4s cubic-bezier(0.34, 1.56, 0.64, 1) 3; }
+  .tap1 { animation: tap1 6.4s linear 3; }
+  .tap2 { animation: tap2 6.4s linear 3; }
+  .rowHot::after { content: ''; position: absolute; inset: 0; background: rgb(255 255 255 / 0.16); animation: hot 6.4s linear 3; opacity: 0; }
+  .floatie { animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both, floatY 4s ease-in-out 0.8s 4; }
+}
+@keyframes ph1 { 0%, 38% { opacity: 1; } 40%, 100% { opacity: 0; } }
+@keyframes ph2 { 0%, 30% { opacity: 0; } 31%, 66% { opacity: 1; } 69%, 100% { opacity: 0; } }
+@keyframes ph2s { 0%, 31% { transform: translateY(100%); } 40%, 100% { transform: none; } }
+@keyframes ph3 { 0%, 66% { opacity: 0; } 69%, 100% { opacity: 1; } }
+@keyframes ph3i { 0%, 72% { transform: scale(0) rotate(-20deg); opacity: 0; } 80% { transform: scale(1.15) rotate(3deg); opacity: 1; } 86%, 100% { transform: none; opacity: 1; } }
+@keyframes tap1 { 0%, 16% { opacity: 0; transform: scale(1.6); } 20% { opacity: 1; transform: scale(1); } 27% { opacity: 1; transform: scale(0.85); } 31%, 100% { opacity: 0; } }
+@keyframes tap2 { 0%, 48% { opacity: 0; transform: scale(1.6); } 52% { opacity: 1; transform: scale(1); } 59% { opacity: 1; transform: scale(0.85); } 63%, 100% { opacity: 0; } }
+@keyframes hot { 0%, 50% { opacity: 0; } 53%, 62% { opacity: 1; } 66%, 100% { opacity: 0; } }
+@keyframes popIn { 0% { opacity: 0; transform: scale(0.6); } 60% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: none; } }
+@keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }

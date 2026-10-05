@@ -33,6 +33,11 @@ export function splitBold(s: string): Array<{ text: string; bold: boolean }> {
     .filter((part) => part.text !== '');
 }
 
+/** The text without its `**bold**` markers (screen-reader announcements, aria labels). */
+export function stripBold(s: string): string {
+  return s.replaceAll('**', '');
+}
+
 /**
  * Splits `{name}` placeholders out of a translation, so a component can put a link (or any node)
  * in their place without innerHTML: 'a {terms} b' → [{text:'a '}, {slot:'terms'}, {text:' b'}].
@@ -44,7 +49,10 @@ export function splitSlots(s: string): Array<{ text: string } | { slot: string }
     .filter((part) => !('text' in part) || part.text !== '');
 }
 
-const LANGUAGES: readonly Language[] = ['hu', 'en', 'de'];
+export const LANGUAGES: readonly Language[] = ['hu', 'en', 'de'];
+
+/** Each language in its own name (language pickers). */
+export const LANGUAGE_NAMES: Readonly<Record<Language, string>> = { hu: 'Magyar', en: 'English', de: 'Deutsch' };
 
 /**
  * The UI language for a first visit, from the browser's preferred languages (navigator.languages):

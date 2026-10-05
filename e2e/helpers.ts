@@ -24,15 +24,18 @@ export const test = base.extend<{ renderLoopGuard: void }>({
   ],
 });
 
-/** Pre-seeds localStorage so InstallGate and LanguageSelector never render. Call before page.goto. */
+/** The first-run tour's completion record (lib/onboarding: ONBOARDING_STORAGE_KEY, ONBOARDING_VERSION). */
+export const ONBOARDING_DONE = { key: 'spoton-onboarding', value: JSON.stringify({ version: 1, completedAt: '2026-10-04T00:00:00.000Z' }) };
+
+/** Pre-seeds localStorage so the first-run tour never shows and the language is set. Call before page.goto. */
 export async function skipFirstRunOverlays(page: Page, language: 'en' | 'hu' | 'de' = 'en') {
-  await page.addInitScript((lang) => {
-    window.localStorage.setItem('spoton-install-prompt-dismissed', 'true');
+  await page.addInitScript(({ lang, done }) => {
+    window.localStorage.setItem(done.key, done.value);
     window.localStorage.setItem(
       'spoton-language',
       JSON.stringify({ state: { language: lang, hasSelectedLanguage: true }, version: 0 }),
     );
-  }, language);
+  }, { lang: language, done: ONBOARDING_DONE });
 }
 
 /** Aborts map requests so tests never depend on Mapbox (without a token none are made anyway). */

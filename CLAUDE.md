@@ -30,7 +30,7 @@ Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only 
 
 ```
 src/app/page.tsx                 Orchestrator: wires useUiStore (activePanel, location selection, returnTo/focusRequest navigation), useAppBootstrap, useVisibleSpots and useUserLocation to the panels and the map
-src/app/layout.tsx               Metadata, viewport, <InstallGate/> overlay
+src/app/layout.tsx               Metadata, viewport
 src/app/privacy, src/app/terms   Legal pages (A1), rendered by components/legal/LegalPage from src/content/legal/*.hu.ts
 src/app/account-deletion         Public account deletion page for Google Play (components/legal/AccountDeletionPage)
 src/app/.well-known/assetlinks.json  Digital Asset Links for the Android app (runtime ANDROID_CERT_SHA256, lib/assetLinks)
@@ -44,7 +44,8 @@ src/components/spot-details/**   Spot details: hero, actions, gallery, reviews, 
 src/components/discovery/**      Explore list parts (featured spot, rows)
 src/components/map/**            Map chrome: MapControls stack, MapStylePopover, PlaceCard
 src/components/legal/**          LegalPage, the sign-in acceptance notice, the one-time TermsPrompt
-src/components/ui/               Shared primitives: PanelShell, ModalShell, Button/CloseButton, StarRating, CategoryIcon, LevelBadge, LevelRing, PerkIcon
+src/components/ui/               Shared primitives: PanelShell, ModalShell, Button/CloseButton, StarRating, CategoryIcon, LevelBadge, LevelRing, PerkIcon, RichText
+src/components/onboarding/**     First-run tour (lazy chunk): OnboardingFlow (dialog, steps, swipes, keys), MapScene + Scene* (demo map, pins, chrome), steps/*, *.module.css (its motion)
 src/store/useModerationStore.ts  Moderation (item 4): own edit proposals, the admin edit/photo queues, the moderation callables
 src/store/useInboxStore.ts       The server inbox listener (users/{uid}/inbox), merged into the notification centre by hooks/useNotificationFeed
 src/store/useSpotStore.ts        Spot scopes (startSpots / syncSpotScopes / stopSpots) + all spot mutations; admin state lives in useUserStore (isAdmin / isSuperAdmin, from admins/{uid})
@@ -52,6 +53,7 @@ src/store/spotListeners.ts       The approved / own / admin spot listeners behin
 src/store/useUserStore.ts        Auth flows, user doc, terms acceptance, admins, username, profile images, highlights, account deletion
 src/store/useUploadStore.ts      Background uploads of new spots, photos and reviews (G4)
 src/store/useLocationStore.ts    Location status + sessionStorage cache; the only geolocation caller
+src/store/useOnboardingStore.ts  Tour completion (versioned `spoton-onboarding`), pending username, location answer, install offer; selectTourBlocking
 src/store/useDiscoveryStore.ts   Explore's sort, filter, batch and scroll, kept while it is closed
 src/store/use*Store.ts           language (selected language only), map theme, notifications, push prompt, toast (forwards to notifications), ui
 src/hooks/useAppBootstrap.ts     Loading orchestration: auth + spots listeners, map ready, app-ready delays
@@ -60,7 +62,9 @@ src/hooks/useStandaloneFullHeight.ts  iOS standalone full-height fix (lib/appVie
 src/hooks/viewTransition.ts      runViewTransition for sheet and photo-morph transitions
 src/hooks/useSystemBack.ts       The system back steps back in the app (one same-URL history entry while anything is open)
 src/hooks/usePushNotifications.ts FCM permission/token handling
-src/hooks/useUserLocation.ts     The user's location (one automatic request + manual request), from useLocationStore
+src/hooks/useUserLocation.ts     The user's location (one automatic request + manual request), from useLocationStore; no automatic request while the tour is due/open or after its "Not now"
+src/hooks/useOnboardingGate.ts   When the tour shows (page.tsx) and the early beforeinstallprompt capture; usePendingUsernameClaim claims the tour's name after Google sign-up
+src/hooks/useUsernameHint.ts, useStepSwipe.ts, useFocusTrap.ts, useReducedMotion.ts  The tour's name hint, story swipes, focus trap, reduced-motion flag
 src/hooks/useVisibleSpots.ts     Map spots filtered by role (admins: all, others: approved + own)
 src/hooks/useT.ts                useT() translation hook, over src/lib/i18n.ts
 src/lib/firebase.ts              Firebase client init (auth, db, storage, functions)
@@ -70,6 +74,7 @@ src/lib/csp.mjs                  CSP builder shared by src/proxy.ts (pages) and 
 src/lib/levelUtils.ts, levelTheme.ts  XP level thresholds and rewards (parity with functions/src/lib/levels.ts), perks, badge colours, level-up rule
 src/lib/categories.ts, spotUtils.ts  Built-in categories (+ the super admin's from useCategoryStore) and their label keys; navigation URLs
 src/lib/terms.ts                 TERMS_VERSION and the acceptance check (A1)
+src/lib/onboarding.ts, onboardingScene.ts  Tour rules (steps per context, completion record, name hint, pending-name claim) and the demo map's geometry and camera
 src/lib/mapStyles.ts             Mapbox style per theme, offline fallback without a token
 functions/src/index.ts           Exports only: triggers (functions/src/triggers: spot notifications, edit proposals, replies, XP sync,
                                  publicProfiles/spotsCount/admin-flag sync) and callables (functions/src/callables: moderation, reports,
