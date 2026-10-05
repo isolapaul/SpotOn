@@ -55,7 +55,7 @@ export async function sendNotificationToUser(
     }
 
     const fids = registrationList(userData.fcmFids);
-    // Devices from before v2.1.0 until they open the app once (transition; see the header).
+    // Native app tokens, and browsers from before v2.1.0 until they open it once (see the header).
     const tokens = registrationList(userData.fcmTokens);
     if (fids.length === 0 && tokens.length === 0) {
       logger.info(`No FCM registrations for user ${userId}`);
@@ -97,7 +97,7 @@ export async function sendNotificationToUser(
       pruned += dead.length;
     }
     if (tokens.length > 0) {
-      // The deprecated token API, on purpose: legacy devices only (see the header).
+      // The token API, on purpose: app tokens and legacy browsers only (see the header).
       const response = await messaging.sendEachForMulticast({...base, tokens});
       responses.push(response);
       const dead = selectTokensToPrune(tokens, response.responses);

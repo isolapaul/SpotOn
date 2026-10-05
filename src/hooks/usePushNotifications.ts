@@ -7,7 +7,7 @@ import { useLanguageStore } from '@/store/useLanguageStore';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { useT } from '@/hooks/useT';
 import { registerDevice, saveDeviceFid } from '@/store/pushDevice';
-import { nativePushPermission, nativePushToken, requestNativePushPermission, saveNativeToken } from '@/store/nativePush';
+import { hasNativeToken, nativePushPermission, nativePushToken, requestNativePushPermission, saveNativeToken } from '@/store/nativePush';
 import { setupForegroundListener, setupNativeListener } from './pushListeners';
 import { isNativeApp } from '@/lib/nativeApp';
 
@@ -68,8 +68,10 @@ export const usePushNotifications = () => {
     nativePushPermission()
       .then((permission) => {
         if (cancelled) return;
-        setIsPermissionGranted(permission === 'granted');
-        setCanAsk(permission === 'prompt');
+        // "On" means this device has a saved token: Android 12 and older always report 'granted', and
+        // another account may have allowed it on this device before.
+        setIsPermissionGranted(permission === 'granted' && hasNativeToken());
+        setCanAsk(permission !== 'denied' && !hasNativeToken());
       })
       .catch((error) => console.error('Reading the notification permission failed:', error));
     return () => {
@@ -172,7 +174,7 @@ export const usePushNotifications = () => {
       if (!granted) {
         addNotification({
           title: t('notificationsBlocked'),
-          body: t('notificationsBlockedDesc'),
+          body: t('notificationsBlockedDescApp'),
           type: 'warning',
         });
         return false;

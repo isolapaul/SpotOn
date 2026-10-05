@@ -6,6 +6,7 @@ import { LogIn, X, Mail, Lock, User } from 'lucide-react';
 import { useState } from 'react';
 import ModalShell, { SAFE_AREA_MARGINS } from './ui/ModalShell';
 import LegalNotice from './legal/LegalNotice';
+import { isSignInCancelled } from '@/lib/nativeApp';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -50,6 +51,8 @@ export default function AuthModal({ isOpen, onClose, signUpAs }: Readonly<AuthMo
       onClose();
       resetForm();
     } catch (err) {
+      // The app's account picker closed: the sheet stays, without an error.
+      if (isSignInCancelled(err)) return;
       console.error('Google sign-in error:', err);
       setError(t('authErrGoogle'));
     } finally {

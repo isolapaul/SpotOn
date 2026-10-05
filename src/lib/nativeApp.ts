@@ -4,7 +4,6 @@
 
 interface CapacitorGlobal {
   isNativePlatform?: () => boolean;
-  getPlatform?: () => string;
 }
 
 function capacitorOf(scope: object): CapacitorGlobal | undefined {
@@ -16,11 +15,12 @@ export function isNativeApp(scope: object = globalThis): boolean {
   return capacitorOf(scope)?.isNativePlatform?.() === true;
 }
 
-/** 'android' | 'ios' inside the native app, else null. */
-export function nativePlatform(scope: object = globalThis): 'android' | 'ios' | null {
-  if (!isNativeApp(scope)) return null;
-  const platform = capacitorOf(scope)?.getPlatform?.();
-  return platform === 'android' || platform === 'ios' ? platform : null;
+/** Error code of a native sign-in the user closed (the account picker): not an error to show. */
+export const SIGN_IN_CANCELLED = 'app/sign-in-cancelled';
+
+/** True for a sign-in the user cancelled in the app's native account picker. */
+export function isSignInCancelled(error: unknown): boolean {
+  return (error as { code?: unknown } | null)?.code === SIGN_IN_CANCELLED;
 }
 
 /**

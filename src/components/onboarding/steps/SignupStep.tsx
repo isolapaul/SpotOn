@@ -4,6 +4,7 @@ import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/store/useUserStore';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
 import { stepCopy } from '@/lib/onboarding';
+import { isNativeApp, isSignInCancelled } from '@/lib/nativeApp';
 import LegalNotice from '@/components/legal/LegalNotice';
 import Button from '@/components/ui/Button';
 import StepSheet, { riseDelay } from '../StepSheet';
@@ -56,11 +57,15 @@ export default function SignupStep({ name, onEmail, onLater }: Readonly<SignupSt
   const google = async () => {
     setBusy(true);
     setError(false);
-    // Google may leave the page (redirect sign-in): the tour counts as done before it does.
-    useOnboardingStore.getState().complete();
+    // Google may leave the page (redirect sign-in): the tour counts as done before it does. The app
+    // never leaves the page (native sign-in), so there it ends only on success (the user may cancel).
+    const native = isNativeApp();
+    if (!native) useOnboardingStore.getState().complete();
     try {
       await signInWithGoogle();
+      if (native) useOnboardingStore.getState().complete();
     } catch (err) {
+      if (isSignInCancelled(err)) return;
       console.error('Google sign-in from the tour failed:', err);
       setError(true);
     } finally {

@@ -1,31 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { appLinkPath, isNativeApp, nativePlatform } from './nativeApp';
+import { appLinkPath, isNativeApp, isSignInCancelled, SIGN_IN_CANCELLED } from './nativeApp';
 
-const native = (platform: string) => ({ Capacitor: { isNativePlatform: () => true, getPlatform: () => platform } });
+const native = () => ({ Capacitor: { isNativePlatform: () => true } });
 
 describe('isNativeApp', () => {
   it('is true only when the native bridge says so', () => {
-    expect(isNativeApp(native('android'))).toBe(true);
-    expect(isNativeApp({ Capacitor: { isNativePlatform: () => false, getPlatform: () => 'web' } })).toBe(false);
+    expect(isNativeApp(native())).toBe(true);
+    expect(isNativeApp({ Capacitor: { isNativePlatform: () => false } })).toBe(false);
     expect(isNativeApp({ Capacitor: {} })).toBe(false);
     expect(isNativeApp({})).toBe(false);
   });
 
   it('is false in the test runner (no bridge)', () => {
     expect(isNativeApp()).toBe(false);
-  });
-});
-
-describe('nativePlatform', () => {
-  it('names the platform inside the app', () => {
-    expect(nativePlatform(native('android'))).toBe('android');
-    expect(nativePlatform(native('ios'))).toBe('ios');
-  });
-
-  it('is null in a browser or for an unknown platform', () => {
-    expect(nativePlatform({})).toBeNull();
-    expect(nativePlatform(native('electron'))).toBeNull();
-    expect(nativePlatform({ Capacitor: { isNativePlatform: () => true } })).toBeNull();
   });
 });
 
@@ -41,5 +28,14 @@ describe('appLinkPath', () => {
     expect(appLinkPath('https://evil.example/spot/abc', origin)).toBeNull();
     expect(appLinkPath('http://spoton.isolapaul.hu/spot/abc', origin)).toBeNull();
     expect(appLinkPath('not a url', origin)).toBeNull();
+  });
+});
+
+describe('isSignInCancelled', () => {
+  it('recognises only the native cancel code', () => {
+    expect(isSignInCancelled(Object.assign(new Error('x'), { code: SIGN_IN_CANCELLED }))).toBe(true);
+    expect(isSignInCancelled(Object.assign(new Error('x'), { code: 'auth/popup-closed-by-user' }))).toBe(false);
+    expect(isSignInCancelled(new Error('x'))).toBe(false);
+    expect(isSignInCancelled(null)).toBe(false);
   });
 });

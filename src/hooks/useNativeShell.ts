@@ -1,22 +1,26 @@
 import { useEffect } from 'react';
 import { appLinkPath, isNativeApp } from '@/lib/nativeApp';
+import { spotIdFromPath } from '@/lib/spotLinks';
+import { useUiStore } from '@/store/useUiStore';
 
 /** sessionStorage: the launch link already shown (a reload must not open it again). */
 const LAUNCH_LINK_KEY = 'spoton-launch-link';
 
-function openAppLink(url: string, replace: boolean) {
+/** A link that opened the running app: a spot opens in place (no reload: uploads and forms survive). */
+function openRunningAppLink(url: string) {
   const path = appLinkPath(url, globalThis.location.origin);
   if (!path) return;
-  if (replace) globalThis.location.replace(path);
-  else globalThis.location.assign(path);
+  const spotId = spotIdFromPath(new URL(path, globalThis.location.origin).pathname);
+  if (spotId) useUiStore.getState().openSpotLink(spotId);
+  else globalThis.location.replace(path);
 }
 
 /**
  * The native app shell (Android/iOS, capacitor.config.ts); does nothing in a browser.
  * - Android back: steps back in the app's history (useSystemBack keeps one entry while anything is
  *   open); on the map with nothing open it sends the app to the background, as other apps do.
- * - App Links: a spot link that opened the app (cold start or while running) shows that page, where
- *   useSpotLink opens the spot.
+ * - App Links: a spot link that opens the running app opens the spot in place; one that started the
+ *   app loads that page, where useSpotLink opens the spot.
  */
 export function useNativeShell() {
   useEffect(() => {
@@ -32,7 +36,7 @@ export function useNativeShell() {
           if (canGoBack) globalThis.history.back();
           else void App.minimizeApp();
         }),
-        await App.addListener('appUrlOpen', ({ url }) => openAppLink(url, false)),
+        await App.addListener('appUrlOpen', ({ url }) => openRunningAppLink(url)),
       );
       if (cancelled) {
         handles.forEach((h) => void h.remove());
@@ -52,8 +56,9 @@ export function useNativeShell() {
         // see above
       }
       const path = appLinkPath(launch.url, globalThis.location.origin);
+      // Cold start: the page loaded "/"; show the linked page, where useSpotLink opens the spot.
       if (path && path !== `${globalThis.location.pathname}${globalThis.location.search}${globalThis.location.hash}`) {
-        openAppLink(launch.url, true);
+        globalThis.location.replace(path);
       }
     })().catch((error: unknown) => console.error('Native shell setup failed:', error));
 

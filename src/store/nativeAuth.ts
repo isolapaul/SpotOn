@@ -4,8 +4,9 @@
 // (FirebaseAuthentication.skipNativeAuth in capacitor.config.ts).
 import { GoogleAuthProvider, signInWithCredential, type UserCredential } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { SIGN_IN_CANCELLED } from '@/lib/nativeApp';
 
-/** Resolves with the signed-in credential; rejects with auth/popup-closed-by-user when the user cancels. */
+/** Resolves with the signed-in credential; rejects with SIGN_IN_CANCELLED when the user closes the picker. */
 export async function signInWithGoogleNative(): Promise<UserCredential> {
   const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
   let idToken: string | undefined;
@@ -13,9 +14,9 @@ export async function signInWithGoogleNative(): Promise<UserCredential> {
     const result = await FirebaseAuthentication.signInWithGoogle({ skipNativeAuth: true });
     idToken = result.credential?.idToken;
   } catch (error) {
-    // The plugin reports a closed account picker as an error; the UI treats it like a closed popup.
+    // The plugin reports a closed account picker as an error; the UI shows nothing for it.
     const message = error instanceof Error ? error.message : String(error);
-    if (/cancel/i.test(message)) throw Object.assign(new Error(message), { code: 'auth/popup-closed-by-user' });
+    if (/cancel/i.test(message)) throw Object.assign(new Error(message), { code: SIGN_IN_CANCELLED });
     throw error;
   }
   if (!idToken) throw Object.assign(new Error('No Google ID token'), { code: 'auth/internal-error' });

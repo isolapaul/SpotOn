@@ -28,6 +28,9 @@ function write(value: string | null) {
   }
 }
 
+/** This device holds a token saved for a user (push is on in the app, whoever turned it on). */
+export const hasNativeToken = () => read() !== null;
+
 const plugin = async () => (await import('@capacitor-firebase/messaging')).FirebaseMessaging;
 
 /** The app's notification permission ('prompt' also covers Android's "ask again"). */
@@ -94,7 +97,10 @@ export async function listenNativePush(handlers: {
   const messaging = await plugin();
   return Promise.all([
     messaging.addListener('tokenReceived', ({ token }) => {
-      if (token !== read()) handlers.onToken(token);
+      // Only a rotation of the token this device saved: after sign-out (or before anyone turned push on)
+      // a new token must never be stored for whoever signs in next.
+      const saved = read();
+      if (saved !== null && token !== saved) handlers.onToken(token);
     }),
     messaging.addListener('notificationReceived', ({ notification }) => {
       handlers.onMessage({

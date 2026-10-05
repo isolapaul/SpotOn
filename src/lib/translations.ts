@@ -339,6 +339,7 @@ export const translations = {
     saveSettings: 'Beállítások mentése',
     notificationsBlocked: 'Értesítések blokkolva',
     notificationsBlockedDesc: 'Az értesítések blokkolva vannak. Engedélyezd a böngésző beállításaiban.',
+    notificationsBlockedDescApp: 'Az értesítések blokkolva vannak. Engedélyezd a telefon beállításaiban a SpotOnnál.',
     
     // Notification Center
     notifications: 'Értesítések',
@@ -1093,6 +1094,7 @@ export const translations = {
     saveSettings: 'Save Settings',
     notificationsBlocked: 'Notifications blocked',
     notificationsBlockedDesc: 'Notifications are blocked. Enable them in browser settings.',
+    notificationsBlockedDescApp: 'Notifications are blocked. Enable them for SpotOn in your phone settings.',
     
     // Notification Center
     notifications: 'Notifications',
@@ -1846,6 +1848,7 @@ export const translations = {
     saveSettings: 'Einstellungen speichern',
     notificationsBlocked: 'Benachrichtigungen blockiert',
     notificationsBlockedDesc: 'Benachrichtigungen sind blockiert. Aktiviere sie in den Browsereinstellungen.',
+    notificationsBlockedDescApp: 'Benachrichtigungen sind blockiert. Aktiviere sie in den Telefoneinstellungen für SpotOn.',
     
     // Notification Center
     notifications: 'Benachrichtigungen',

@@ -374,6 +374,8 @@ The store apps are [Capacitor](https://capacitorjs.com) shells (`capacitor.confi
 
 Package name / bundle ID: **`hu.isolapaul.spoton`** (permanent; the stores never allow it to change). Listing, Data safety and content rating: [`play-store.md`](play-store.md).
 
+FCM auto-init is off until the user turns notifications on (Data safety, `play-store.md`). The plugin turns it on for good at that point; a token FCM issues later, after sign-out, is never stored for anyone (`src/store/nativePush.ts`).
+
 **A new app build is needed** when `mobile/`, `capacitor.config.ts` or a `@capacitor*` package changes. The live site talks to every installed app version, so never remove a Capacitor plugin from `package.json` (and never ship a web release that calls a plugin method an older app lacks) while those versions are in use.
 
 ### 17.1 Firebase (🌐 Firebase console, one time)
