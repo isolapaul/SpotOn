@@ -31,7 +31,8 @@ Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only 
 ```
 src/app/page.tsx                 Orchestrator: wires useUiStore (activePanel, location selection, returnTo/focusRequest navigation), useAppBootstrap, useVisibleSpots and useUserLocation to the panels and the map
 src/app/layout.tsx               Metadata, viewport
-src/app/privacy, src/app/terms   Legal pages (A1), rendered by components/legal/LegalPage from src/content/legal/*.hu.ts
+src/app/privacy, src/app/terms   Legal pages (A1) in Hungarian and English (/privacy/en, /terms/en), rendered by components/legal/LegalPage from src/content/legal/*.{hu,en}.ts
+src/app/spot/[id]                Shared spot link: the app (hooks/useSpotLink opens the spot) with an Open Graph preview of approved spots (lib/spotPreview)
 src/app/account-deletion         Public account deletion page for Google Play (components/legal/AccountDeletionPage)
 src/app/.well-known/assetlinks.json  Digital Asset Links for the Android app (runtime ANDROID_CERT_SHA256, lib/assetLinks)
 src/app/api/feedback/route.ts    Feedback email endpoint (SMTP)
@@ -83,7 +84,8 @@ functions/src/index.ts           Exports only: triggers (functions/src/triggers:
 firestore.rules, storage.rules   Security rules; tests in tests/rules/ (`npm run test:rules`)
 firestore.indexes.json           Composite indexes
 firebase.json                    Firestore rules/indexes, Storage rules, Functions config, emulator ports
-scripts/                         seed-emulator.ts (e2e fixtures), check-public-env.mjs (build guard), bootstrap-super-admin.ts (recovery only)
+scripts/                         seed-emulator.ts (e2e fixtures), check-public-env.mjs (build guard), build-sw.mjs (bundles the FCM service worker, prebuild),
+                                 migrate-xp.ts + lib/xpPlan.ts (one-time XP migration, already applied), bootstrap-super-admin.ts (recovery only)
 scripts/store/                   Store graphics and screenshots (`npm run store:assets`, emulator demo data; docs/play-store.md)
 deploy/, Dockerfile, docker/     Server compose file, update script, image and healthcheck
 docs/deploy.md, docs/BACKLOG.md  Release and server runbook (Android app: §17); open work
@@ -99,7 +101,7 @@ docs/play-store.md               Play listing texts, Data safety and content rat
   Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
   Spots of deleted accounts have `createdBy: "deleted-user"` and no createdByName/createdByPhoto.
   Status changes and deletes go only through the moderation callables (`approveSpot`, `rejectSpot`, `removeSpot`); admins may still edit fields and photos directly.
-- `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmTokens[], language,
+- `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmFids[] (push registrations, Firebase Installation IDs), fcmTokens[] (legacy push tokens), language,
   notificationsEnabled, notificationSettings, spotsCount (server-maintained, all statuses),
   xp, level, levelFloor (server: XP levels, the floor set once by scripts/migrate-xp.ts), pinIcon,
   termsVersion + termsAcceptedAt (accepted Terms/Privacy version, A1; lib/terms),
@@ -143,6 +145,7 @@ In the Claude Code sandbox, the functions emulator cannot register Firestore tri
 | `NEXT_PUBLIC_MOVED_TO` | build time, Vercel only (T19) | domain-move banner |
 | `NEXT_PUBLIC_CONTROLLER_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` | build time (required by the container build) | legal pages `/privacy`, `/terms` (A1) |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | build time, required for releases (public `pk.` token, URL-restricted) | `components/MapView.tsx` via `lib/mapStyles` |
+| `NEXT_PUBLIC_SITE_URL` | build time, optional (default `https://spoton.isolapaul.hu`) | base URL of the share-link previews (`src/app/spot/[id]`) |
 | `SMTP_HOST/PORT/USER/PASS`, `FEEDBACK_RECIPIENT` | runtime (container `.env`) | `/api/feedback` |
 | `ANDROID_CERT_SHA256` | runtime (container `.env`), optional | `/.well-known/assetlinks.json` (docs/deploy.md §17.3) |
 

@@ -1,4 +1,5 @@
-- v2.1.0 — A new, smoother map (Mapbox) with pin clusters, XP levels, public and private profiles with follows and people search, your own lists, "New this week" in Explore, links to share a place, replies under reviews, and reporting and blocking. Admins review changes and photos before they show. A short tour shows you around on the first start.
+- v2.2.0 — A short tour shows you around on the first start. Your own lists, "New this week" in Explore, links to share a place, pin clusters on the map, replies under reviews, and reporting and blocking. Calmer spot details and profile.
+- v2.1.0 — A new, smoother map (Mapbox), XP levels, public and private profiles with follows and people search, your own pin icon from level 4, and new categories. Admins review changes and photos before they show.
 - v2.0.2 — Sharper maps on phones, and the Light, Dark and Silver styles no longer show a watermark.
 - v2.0.0 — A new look throughout: new map pins, place cards, a redesigned Explore and spot page, level badges and smoother gestures. Privacy policy and terms, and you can delete your account in Settings.
 - v1.0.0 — SpotOn has moved to spoton.isolapaul.hu. Sign in once more there, and re-add it to your home screen if you had installed it.
