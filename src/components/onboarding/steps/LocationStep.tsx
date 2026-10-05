@@ -73,7 +73,7 @@ export default function LocationStep({ onNext }: Readonly<{ onNext: () => void }
             </Button>
           ) : (
             <>
-              <Button block onClick={allow} disabled={asking} data-autofocus>
+              <Button block onClick={allow} disabled={asking} data-autofocus className="max-[359px]:text-[16px]">
                 {asking ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> : <Navigation className="w-[18px] h-[18px]" strokeWidth={2.4} aria-hidden="true" />}
                 {t('onboardingLocationAllow')}
               </Button>

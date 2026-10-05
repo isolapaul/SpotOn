@@ -153,16 +153,20 @@ export interface Camera {
   cy: number;
   s: number;
   fy: number;
+  /** `fy` on short screens (under SHORT_STAGE_PX), where the cards leave a narrower band of map. */
+  fyShort?: number;
 }
+
+export const SHORT_STAGE_PX = 700;
 
 export type SceneShot = OnboardingStep | 'explore' | 'done';
 
 export const CAMERAS: Readonly<Record<SceneShot, Camera>> = {
   welcome: { cx: 700, cy: 1060, s: 0.42, fy: 0.5 },
   name: { cx: 760, cy: 980, s: 0.5, fy: 0.42 },
-  discover: { cx: 470, cy: 1175, s: 1.05, fy: 0.5 },
+  discover: { cx: 470, cy: 1175, s: 1.05, fy: 0.5, fyShort: 0.6 },
   explore: { cx: 640, cy: 1000, s: 0.62, fy: 0.3 },
-  add: { cx: 705, cy: 1060, s: 1.15, fy: 0.56 },
+  add: { cx: 705, cy: 1060, s: 1.15, fy: 0.56, fyShort: 0.64 },
   levels: { cx: 690, cy: 880, s: 0.7, fy: 0.56 },
   location: { cx: 860, cy: 1110, s: 1, fy: 0.3 },
   install: { cx: 700, cy: 1060, s: 0.46, fy: 0.5 },
@@ -172,8 +176,9 @@ export const CAMERAS: Readonly<Record<SceneShot, Camera>> = {
 
 /** The world's CSS transform for a camera on a stage of width w and height h. */
 export function worldTransform(c: Camera, w: number, h: number): string {
+  const fy = h < SHORT_STAGE_PX && c.fyShort !== undefined ? c.fyShort : c.fy;
   const tx = w * 0.5 - c.cx * c.s;
-  const ty = h * c.fy - c.cy * c.s;
+  const ty = h * fy - c.cy * c.s;
   return `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0) scale(${c.s})`;
 }
 

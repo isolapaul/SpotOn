@@ -203,3 +203,12 @@ describe('pendingClaimAction', () => {
     expect(pendingClaimAction({ ...base, attempted: true, needsUsername: false })).toBe('clear');
   });
 });
+
+describe('worldTransform', () => {
+  it('centres the camera point and lifts it on short screens', async () => {
+    const { CAMERAS, worldTransform } = await import('./onboardingScene');
+    const c = CAMERAS.discover;
+    expect(worldTransform(c, 390, 844)).toBe(`translate3d(${(195 - c.cx * c.s).toFixed(1)}px, ${(844 * c.fy - c.cy * c.s).toFixed(1)}px, 0) scale(${c.s})`);
+    expect(worldTransform(c, 320, 568)).toContain(`${(568 * (c.fyShort ?? 0) - c.cy * c.s).toFixed(1)}px`);
+  });
+});
