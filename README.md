@@ -16,13 +16,15 @@ This is a personal project. The code is public so that it can be read; it is not
 
 ## What you can do
 
-- **Explore the map.** Every spot is a pin with its category. Tap one for a place card with the photo, rating and distance, and pull it up for the full page. Choose from five map styles, including satellite.
-- **Discover.** Explore lists the spots nearest you or the best rated, filtered by nine categories.
-- **Add a spot** with up to 20 photos, which are compressed on your phone before upload. An admin approves new spots before everyone sees them.
-- **Review, save and share.** Rate spots, write reviews, add your own photos to other spots, like photos and keep favourites.
-- **Level up.** Your 3rd, 10th, 15th and 20th spot each unlock a new level, with a badge, a name colour, highlight slots for your own spots, and at the top level your own name style.
-- **Stay in the loop.** Optional push notifications when your spot is approved, reviewed or saved.
-- **Own your data.** Delete your account in Settings at any time. See the privacy policy for what is kept and for how long.
+- **Explore the map.** Every spot is a pin with its category; zoomed out, nearby pins merge into clusters. Tap one for a place card with the photo, rating and distance, and pull it up for the full page. Choose from five map styles, including satellite. A short tour shows new users around.
+- **Discover.** Explore lists the spots nearest you or the best rated, filtered by category or to the spots that are new this week, and searches spots by name and people by username.
+- **Add a spot** with up to 20 photos, which are compressed on your phone before upload. An admin approves new spots, later changes and other people's photos before everyone sees them.
+- **Review, save and share.** Rate spots, write reviews and reply under them, add your own photos to other spots, like photos, keep favourites and your own lists, and share a spot with a link.
+- **Follow people.** Every user has a profile with their spots, bio and level. Follow public profiles, or send a request to a private one.
+- **Level up.** Approved spots, photos and reviews earn XP. Each level unlocks a badge and perks: a name colour, highlight slots for your own spots, your own pin icon and, at the top level, your own name style.
+- **Stay in the loop.** Optional push notifications and a notification centre: approvals and moderation decisions, reviews and replies, follows, and new spots from people you follow.
+- **Stay safe.** Report spots, photos, reviews and profiles, and block users.
+- **Own your data.** Delete your account in Settings or at `/account-deletion` at any time. See the privacy policy for what is kept and for how long.
 
 ---
 
@@ -30,7 +32,7 @@ This is a personal project. The code is public so that it can be read; it is not
 
 | Layer | Technology |
 |---|---|
-| App | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, installable PWA |
+| App | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, installable PWA |
 | Map | Mapbox GL JS |
 | State | Zustand |
 | Backend | Firebase: Authentication, Firestore, Storage, Cloud Messaging, and Cloud Functions v2 (`europe-west3`) |
@@ -62,14 +64,14 @@ flowchart LR
 
 | Path | What is there |
 |---|---|
-| `src/app` | Pages (`/`, `/privacy`, `/terms`) and API routes (`/api/feedback`, `/api/firebase-messaging-sw`, `/api/health`) |
+| `src/app` | Pages (`/`, `/spot/…` share links, `/privacy` and `/terms` in Hungarian and English, `/account-deletion`), API routes (`/api/feedback`, `/api/firebase-messaging-sw`, `/api/health`) and `/.well-known/assetlinks.json` |
 | `src/components`, `src/hooks`, `src/store`, `src/lib` | UI, React hooks, Zustand stores with the Firebase calls, and pure unit-tested helpers |
-| `src/content/legal` | The privacy policy and terms texts |
+| `src/content/legal` | The privacy policy and terms texts (Hungarian and English) |
 | `functions/` | Cloud Functions (see [`functions/README.md`](functions/README.md)) |
 | `firestore.rules`, `storage.rules`, `tests/rules/` | Security rules and their tests |
-| `e2e/`, `scripts/seed-emulator.ts` | Playwright tests and their emulator fixtures |
+| `e2e/`, `scripts/` | Playwright tests and their emulator fixtures, the build-time checks, the store graphics and the admin scripts |
 | `Dockerfile`, `deploy/`, `.github/workflows/` | Container image, server compose file and update script, CI and the signed release pipeline |
-| `docs/deploy.md` | Release and server runbook |
+| `docs/deploy.md`, `docs/play-store.md` | Release, server and Android runbook; the Google Play listing |
 | `docs/BACKLOG.md` | Open work |
 | `CLAUDE.md` | Conventions and rules for everyone (people and AI agents) who changes the code |
 
@@ -91,7 +93,7 @@ npm run test:e2e      # Playwright end-to-end tests on the seeded emulators
 
 `npm run build` and the e2e tests need the public Firebase config as build-time variables. For the emulators, demo values are enough; see [`CLAUDE.md`](CLAUDE.md) §4.
 
-Releases are `vX.Y.Z` tags. They build, scan, sign and publish the container image, which is then deployed on the server with `./update.sh`. See [`docs/deploy.md`](docs/deploy.md) and [`CHANGELOG.md`](CHANGELOG.md).
+Releases are `vX.Y.Z` tags. They build, scan, sign and publish the container image, which is then deployed on the server with `./update.sh`; Cloud Functions, rules and indexes are deployed alongside when a release changes them. See [`docs/deploy.md`](docs/deploy.md) and [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 
