@@ -31,6 +31,8 @@ firestore.*
 storage.rules
 vercel.json
 **/*.log
-# Admin/seed scripts import dirs excluded above (functions, e2e) and are not needed in the image; keep only the build-time env check.
+# Admin/seed scripts import dirs excluded above (functions, e2e) and are not needed in the image; keep only
+# the build-time env check and the service worker bundler (`prebuild` runs it before `next build`).
 scripts
 !scripts/check-public-env.mjs
+!scripts/build-sw.mjs
