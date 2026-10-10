@@ -26,6 +26,10 @@ interface UiStore {
   /** Replaces whatever is open. Only the details of the previewed spot keep the way back. */
   openPanel: (p: ActivePanel) => void;
   closePanel: () => void;
+  /** The sign-in sheet over whatever is open; closing it returns there (the feed, a profile, a spot). */
+  openAuth: () => void;
+  /** The panel the sign-in sheet was opened from. */
+  authReturn: ActivePanel | null;
   /** Closes only while that spot is still the open panel (late effects never close another panel). */
   closeSpotPanel: (spotId: string) => void;
   /** Remembers the theme, switches to satellite and starts picking. */
@@ -93,7 +97,16 @@ export const useUiStore = create<UiStore>((set, get) => ({
     const keepsWayBack = isSpotPanel(p) && p.spotId === previewSpotId;
     set({ activePanel: p, previewSpotId: null, returnTo: keepsWayBack ? returnTo : null, ...(keepsWayBack ? {} : { userFrom: null }) });
   },
-  closePanel: () => set({ activePanel: 'none', returnTo: null }),
+  closePanel: () => {
+    const { activePanel, authReturn } = get();
+    if (activePanel === 'auth' && authReturn) return set({ activePanel: authReturn, authReturn: null });
+    set({ activePanel: 'none', returnTo: null, authReturn: null });
+  },
+  authReturn: null,
+  openAuth: () => {
+    const { activePanel } = get();
+    set({ activePanel: 'auth', authReturn: activePanel === 'none' || activePanel === 'auth' ? null : activePanel });
+  },
   closeSpotPanel: (spotId) => {
     const p = get().activePanel;
     if (isSpotPanel(p) && p.spotId === spotId) set({ activePanel: 'none', returnTo: null });

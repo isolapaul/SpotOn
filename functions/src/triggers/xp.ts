@@ -5,6 +5,7 @@
  * Its own writes trigger this again, but then nothing differs, so nothing loops.
  */
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
+import {onlyLikeCountChanged} from "../lib/spotLikes";
 import * as logger from "firebase-functions/logger";
 import {FieldValue} from "firebase-admin/firestore";
 import {DELETED_OWNER} from "../lib/accountDeletion";
@@ -15,6 +16,8 @@ export const syncXp = onDocumentWritten("spots/{spotId}", async (event) => {
   const spotId = event.params.spotId;
   const before = event.data?.before.data();
   const after = event.data?.after.data();
+  // A like only moves likeCount: no XP or contributor change, and no extra read.
+  if (onlyLikeCountChanged(before, after)) return;
 
   const owner = after?.createdBy;
   const realOwner = typeof owner === "string" && owner.length > 0 && owner !== DELETED_OWNER;

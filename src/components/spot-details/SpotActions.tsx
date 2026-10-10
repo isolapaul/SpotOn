@@ -7,6 +7,7 @@ import { useState } from 'react';
 import ListPicker from '../lists/ListPicker';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
+import { useUiStore } from '@/store/useUiStore';
 import { useT } from '@/hooks/useT';
 import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { useShareSpot } from '@/hooks/useShareSpot';
@@ -33,6 +34,7 @@ const ROUND = `no-min-size w-[58px] h-[50px] shrink-0 rounded-full grid place-it
 export default function SpotActions({ spot, navigationUrl, highlight }: Readonly<SpotActionsProps>) {
   const t = useT();
   const user = useUserStore((s) => s.user);
+  const signedIn = !!user;
   const favorite = useFavoriteToggle(spot.id);
   const shareSpot = useShareSpot();
   const [picking, setPicking] = useState(false);
@@ -137,7 +139,7 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
     {like.likes > 0 && (
       <button
         type="button"
-        onClick={() => setLikersOpen(true)}
+        onClick={() => (signedIn ? setLikersOpen(true) : useUiStore.getState().openAuth())}
         aria-haspopup="dialog"
         className="no-min-size mt-2.5 inline-flex items-center gap-1.5 text-[14px] text-label-secondary touch-manipulation active:opacity-60 motion-safe:animate-item-in"
       >

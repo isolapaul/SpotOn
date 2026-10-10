@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUp, Navigation, Users, X } from 'lucide-react';
 import PanelShell from '../ui/PanelShell';
 import FeedCard from './FeedCard';
@@ -50,6 +50,12 @@ function Feed({ onClose, userLocation, onShowOnMap }: Readonly<Omit<FeedPanelPro
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [now] = useState(() => Date.now());
   const [commentsFor, setCommentsFor] = useState<string | null>(null);
+  // A stable callback for the memoised cards (the page passes a new arrow on every render).
+  const showRef = useRef(onShowOnMap);
+  useEffect(() => {
+    showRef.current = onShowOnMap;
+  }, [onShowOnMap]);
+  const showOnMap = useCallback((id: string) => showRef.current(id), []);
   const [scrolled, setScrolled] = useState(false);
   // The newest followed spot when the feed opened: posts above it arrived meanwhile.
   const [topId, setTopId] = useState<string | null | undefined>(undefined);
@@ -81,13 +87,20 @@ function Feed({ onClose, userLocation, onShowOnMap }: Readonly<Omit<FeedPanelPro
   );
   useImagePrefetch(ahead);
 
-  // "Near me" needs the location: ask for it once, else stay on everyone.
+  // "Near me" needs the location: ask for it once (the chip shows it is waiting), else stay on
+  // everyone. A location that goes away later switches back too.
+  const [locating, setLocating] = useState(false);
   const pickNearMe = async () => {
     if (userLocation) return useFeedStore.getState().setNearMe(true);
+    setLocating(true);
     const result = await useLocationStore.getState().request();
+    setLocating(false);
     if (result === 'granted') useFeedStore.getState().setNearMe(true);
     else useToastStore.getState().showToast(t('locationDenied'), 'error');
   };
+  useEffect(() => {
+    if (nearMe && !userLocation && !locating) useFeedStore.getState().setNearMe(false);
+  }, [nearMe, userLocation, locating]);
   const pickScope = (near: boolean) => {
     scrollRef.current?.scrollTo({ top: 0 });
     if (near) void pickNearMe();
@@ -123,7 +136,7 @@ function Feed({ onClose, userLocation, onShowOnMap }: Readonly<Omit<FeedPanelPro
       suggested={s}
       now={now}
       userLocation={userLocation}
-      onShowOnMap={onShowOnMap}
+      onShowOnMap={showOnMap}
       onComments={setCommentsFor}
     />
   );
@@ -145,6 +158,8 @@ function Feed({ onClose, userLocation, onShowOnMap }: Readonly<Omit<FeedPanelPro
         className="flex-1 overflow-y-auto overscroll-contain"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}
       >
+        {/* One phone-width column, also on tablets */}
+        <div className="mx-auto w-full max-w-[560px]">
         {/* Large title */}
         <header className="px-5 pb-3 flex items-end justify-between gap-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.75rem)' }}>
           <div className="min-w-0 motion-safe:animate-rise-in">
@@ -174,18 +189,20 @@ function Feed({ onClose, userLocation, onShowOnMap }: Readonly<Omit<FeedPanelPro
                 type="button"
                 role="radio"
                 aria-checked={active}
+                aria-busy={near && locating}
+                disabled={near && locating}
                 onClick={() => pickScope(near)}
-                className={`no-min-size h-9 px-3.5 rounded-full text-[14px] font-semibold inline-flex items-center gap-1.5 touch-manipulation
+                className={`no-min-size h-11 px-4 rounded-full text-[14px] font-semibold inline-flex items-center gap-1.5 touch-manipulation
                   transition-colors duration-200 active:scale-95 ${active ? 'bg-brand-600 text-white' : 'bg-white/8 text-label-secondary'}`}
               >
-                <Icon className="w-4 h-4" aria-hidden="true" />
+                <Icon className={`w-4 h-4 ${near && locating ? 'motion-safe:animate-pulse' : ''}`} aria-hidden="true" />
                 {t(near ? 'feedNearMe' : 'feedEveryone')}
               </button>
             );
           })}
         </div>
 
-        {!signedIn && <FeedInvite kind="signedOut" onAction={() => useUiStore.getState().openPanel('auth')} />}
+        {!signedIn && <FeedInvite kind="signedOut" onAction={() => useUiStore.getState().openAuth()} />}
         {signedIn && ready && !followsAnyone && <FeedInvite kind="noFollows" onAction={findPeople} />}
 
         {!ready ? (
@@ -213,6 +230,7 @@ function Feed({ onClose, userLocation, onShowOnMap }: Readonly<Omit<FeedPanelPro
             {hasMore && <div ref={sentinelRef} className="h-px" aria-hidden="true" />}
           </>
         )}
+        </div>
       </div>
 
       {/* New posts while scrolled down */}

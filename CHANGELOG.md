@@ -8,7 +8,7 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 ### Added (feed)
 - A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.
 - Tap a spot's name or "Show on map" in the feed: the feed slides away, the map flies to the spot and its place card opens with a "Feed" button that takes you back to the same place in the feed.
-- From a feed card you can like the spot (or double-tap its photo), see who liked it, read and write reviews, share the spot and add it to your favourites; tap the poster to open their profile. Likes also show on the spot's page.
+- From a feed card you can like the spot (or double-tap its photo), see who liked it (people you blocked, or who blocked you, are left out), read and write reviews, share the spot and add it to your favourites; tap the poster to open their profile. Likes also show on the spot's page.
 - "Near me" in the feed shows only spots within 25 km.
 - Your own new spots show in the feed too, marked "You shared this".
 - The next cards' photos load ahead, so scrolling the feed does not wait for them.
@@ -26,6 +26,9 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - A report button on every feed card; Privacy Policy and Terms links at the bottom of Explore, also while signed out.
 - An offline page instead of the browser's error page when the app is opened without internet, and friendly error and "page not found" screens.
 - The page language follows the chosen app language (screen readers, translation prompts).
+
+### Changed
+- Signing in from a panel (the feed, a profile, a spot's reviews) returns you to it instead of the map.
 
 ### Fixed
 - A shared spot link with a broken escape (`/spot/%E0%A4%A`) no longer breaks the page.

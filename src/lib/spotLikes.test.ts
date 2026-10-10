@@ -1,23 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { likersToShow, spotLikeState } from './spotLikes';
+import { spotLikeState } from './spotLikes';
 
 describe('spotLikeState', () => {
-  it('reads the stored like and count (legacy spots have neither)', () => {
-    expect(spotLikeState({}, 'u', null)).toEqual({ liked: false, likes: 0 });
-    expect(spotLikeState({ likedBy: ['u', 'v'], likeCount: 2 }, 'u', null)).toEqual({ liked: true, likes: 2 });
-    expect(spotLikeState({ likedBy: ['v'] }, 'u', null)).toEqual({ liked: false, likes: 1 });
+  it('reads the stored like and count (older spots have no count)', () => {
+    expect(spotLikeState(undefined, false, null)).toEqual({ liked: false, likes: 0 });
+    expect(spotLikeState(2, true, null)).toEqual({ liked: true, likes: 2 });
+    expect(spotLikeState(-3, false, null)).toEqual({ liked: false, likes: 0 });
   });
-  it('applies an optimistic tap until the server agrees', () => {
-    expect(spotLikeState({ likedBy: ['v'], likeCount: 1 }, 'u', true)).toEqual({ liked: true, likes: 2 });
-    expect(spotLikeState({ likedBy: ['u', 'v'], likeCount: 2 }, 'u', true)).toEqual({ liked: true, likes: 2 });
-    expect(spotLikeState({ likedBy: ['u'], likeCount: 1 }, 'u', false)).toEqual({ liked: false, likes: 0 });
-    expect(spotLikeState({ likedBy: ['u'], likeCount: 1 }, null, null)).toEqual({ liked: false, likes: 1 });
+  it('applies a tap until the stored state moves', () => {
+    expect(spotLikeState(1, false, { liked: true, on: false })).toEqual({ liked: true, likes: 2 });
+    // The listener caught up: the stored state and the count already include the like.
+    expect(spotLikeState(2, true, { liked: true, on: false })).toEqual({ liked: true, likes: 2 });
+    expect(spotLikeState(1, true, { liked: false, on: true })).toEqual({ liked: false, likes: 0 });
   });
-});
-
-describe('likersToShow', () => {
-  it('lists the newest first, without blocked people', () => {
-    expect(likersToShow(['a', 'b', 'c', 3], new Set(['b']))).toEqual(['c', 'a']);
-    expect(likersToShow(undefined, new Set())).toEqual([]);
+  it('never shows a like with a zero count', () => {
+    expect(spotLikeState(0, true, null)).toEqual({ liked: true, likes: 1 });
   });
 });

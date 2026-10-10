@@ -82,7 +82,7 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
     if (!signedIn) {
       return (
         <Empty text={t('signInToSearchPeople')}>
-          <button type="button" onClick={() => useUiStore.getState().openPanel('auth')} className="mt-3 px-5 h-10 rounded-full bg-brand-600 text-white font-semibold">
+          <button type="button" onClick={() => useUiStore.getState().openAuth()} className="mt-3 px-5 h-10 rounded-full bg-brand-600 text-white font-semibold">
             {t('signIn')}
           </button>
         </Empty>

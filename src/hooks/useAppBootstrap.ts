@@ -7,6 +7,7 @@ import { useMyLevelStore } from '@/store/useMyLevelStore';
 import { useCategoryStore } from '@/store/useCategoryStore';
 import { useFollowStore } from '@/store/useFollowStore';
 import { useSafetyStore } from '@/store/useSafetyStore';
+import { useLikeStore } from '@/store/useLikeStore';
 import { useListStore } from '@/store/useListStore';
 import { DELAYS } from '@/lib/constants';
 
@@ -31,6 +32,7 @@ function syncScopes(scope: SpotScope) {
   useFollowStore.getState().sync(scope.uid);
   useSafetyStore.getState().sync(scope.uid);
   useListStore.getState().sync(scope.uid);
+  useLikeStore.getState().sync(scope.uid);
 }
 
 /**

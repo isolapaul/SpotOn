@@ -370,4 +370,16 @@ describe('user profiles (item 8)', () => {
     ui().goBack();
     expect(ui().activePanel).toBe('feed');
   });
+  it('the sign-in sheet returns to the panel it was opened from', () => {
+    ui().openPanel('feed');
+    ui().openAuth();
+    expect(ui().activePanel).toBe('auth');
+    ui().closePanel();
+    expect(ui().activePanel).toBe('feed');
+    ui().closePanel();
+    expect(ui().activePanel).toBe('none');
+    ui().openAuth();
+    ui().closePanel();
+    expect(ui().activePanel).toBe('none');
+  });
 });

@@ -13,6 +13,7 @@ beforeEach(async () => {
     const db = ctx.firestore() as unknown as Firestore;
     await setDoc(doc(db, 'reports', 'r1'), { reporter: ALICE, author: BOB, kind: 'profile', targetId: BOB, key: 'k', createdAt: T0 });
     await setDoc(doc(db, 'blocks', `${ALICE}_${BOB}`), { blocker: ALICE, blocked: BOB, createdAt: T0 });
+    await setDoc(doc(db, 'spotLikes', `s1_${ALICE}`), { spotId: 's1', uid: ALICE, createdAt: T0 });
   });
 });
 afterAll(async () => { await env.cleanup(); });
@@ -31,5 +32,17 @@ describe('blocks', () => {
     await assertSucceeds(getDocs(query(collection(dbAs(env, ALICE), 'blocks'), where('blocker', '==', ALICE))));
     await assertFails(getDoc(doc(dbAs(env, BOB), 'blocks', `${ALICE}_${BOB}`)));
     await assertFails(setDoc(doc(dbAs(env, BOB), 'blocks', `${BOB}_${ALICE}`), { blocker: BOB, blocked: ALICE }));
+  });
+});
+
+describe('spot likes', () => {
+  it('each liker reads only their own likes; who liked a spot is not listable; nobody writes', async () => {
+    await assertSucceeds(getDocs(query(collection(dbAs(env, ALICE), 'spotLikes'), where('uid', '==', ALICE))));
+    await assertSucceeds(getDoc(doc(dbAs(env, ALICE), 'spotLikes', `s1_${ALICE}`)));
+    await assertFails(getDoc(doc(dbAs(env, BOB), 'spotLikes', `s1_${ALICE}`)));
+    await assertFails(getDocs(query(collection(dbAs(env, BOB), 'spotLikes'), where('spotId', '==', 's1'))));
+    await assertFails(getDoc(doc(dbAs(env, null), 'spotLikes', `s1_${ALICE}`)));
+    await assertFails(setDoc(doc(dbAs(env, BOB), 'spotLikes', `s1_${BOB}`), { spotId: 's1', uid: BOB }));
+    await assertFails(setDoc(doc(dbAs(env, ADMIN), 'spotLikes', `s1_${ADMIN}`), { spotId: 's1', uid: ADMIN }));
   });
 });

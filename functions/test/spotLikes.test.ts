@@ -1,15 +1,24 @@
 import {describe, expect, it} from "vitest";
-import {toggleSpotLikeIn} from "../src/lib/spotLikes";
-import {planSpotCleanup} from "../src/lib/accountDeletion";
+import {likeChange, onlyLikeCountChanged, spotLikeId} from "../src/lib/spotLikes";
 
 describe("spot likes", () => {
-  it("adds and removes the user, keeping the count exact", () => {
-    expect(toggleSpotLikeIn(undefined, "a")).toEqual({likedBy: ["a"], likeCount: 1, liked: true});
-    expect(toggleSpotLikeIn(["a", "b"], "a")).toEqual({likedBy: ["b"], likeCount: 1, liked: false});
-    expect(toggleSpotLikeIn(["a", 3, null], "b")).toEqual({likedBy: ["a", "b"], likeCount: 2, liked: true});
+  it("sets the wanted state, a repeat changes nothing", () => {
+    expect(likeChange(false, true)).toBe(1);
+    expect(likeChange(true, false)).toBe(-1);
+    expect(likeChange(true, true)).toBe(0);
+    expect(likeChange(false, false)).toBe(0);
   });
-  it("account deletion takes the user's spot like out", () => {
-    const plan = planSpotCleanup({createdBy: "x", likedBy: ["u", "v"], likeCount: 2}, "u", () => null);
-    expect(plan.update).toMatchObject({likedBy: ["v"], likeCount: 1});
+  it("one doc per spot and user", () => {
+    expect(spotLikeId("s1", "u1")).toBe("s1_u1");
+  });
+});
+
+describe("onlyLikeCountChanged", () => {
+  it("is true only for a pure counter change", () => {
+    expect(onlyLikeCountChanged({a: 1, likeCount: 1}, {a: 1, likeCount: 2})).toBe(true);
+    expect(onlyLikeCountChanged({a: 1}, {a: 1, likeCount: 1})).toBe(true);
+    expect(onlyLikeCountChanged({a: 1, likeCount: 1}, {a: 2, likeCount: 2})).toBe(false);
+    expect(onlyLikeCountChanged({a: 1}, {a: 1})).toBe(false);
+    expect(onlyLikeCountChanged(undefined, {likeCount: 1})).toBe(false);
   });
 });

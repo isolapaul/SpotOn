@@ -124,7 +124,7 @@ export default function FeedMedia({ spot, photos, index, onIndex, onDoubleTap, o
       <button
         type="button"
         onClick={onShowOnMap}
-        className="no-min-size absolute left-3 bottom-3 h-9 pl-2.5 pr-3.5 rounded-full material-chrome inline-flex items-center gap-1.5
+        className="no-min-size absolute left-3 bottom-3 h-11 pl-3 pr-4 rounded-full material-chrome inline-flex items-center gap-1.5
           text-[14px] font-semibold text-chrome-ink shadow-float touch-manipulation active:scale-95 transition-transform"
       >
         <MapPin className="w-4 h-4 text-brand-600 chrome-dark:text-brand-400 motion-safe:animate-hint-bob" strokeWidth={2.4} aria-hidden="true" />

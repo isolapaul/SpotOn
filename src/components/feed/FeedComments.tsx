@@ -67,7 +67,7 @@ export default function FeedComments({ spot, onClose }: Readonly<{ spot: Spot; o
                 type="button"
                 onClick={() => {
                   close();
-                  useUiStore.getState().openPanel('auth');
+                  useUiStore.getState().openAuth();
                 }}
                 className="no-min-size h-10 px-4 rounded-full bg-brand-600 text-white font-semibold text-[15px]"
               >

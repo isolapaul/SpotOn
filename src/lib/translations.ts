@@ -802,6 +802,7 @@ export const translations = {
     tryAgain: 'Újrapróbálás',
     backToMap: 'Vissza a térképhez',
     legalLinks: 'Jogi információk',
+    loadFailed: 'Nem sikerült betölteni.',
   },
   en: {
     // Navigation
@@ -1606,6 +1607,7 @@ export const translations = {
     tryAgain: 'Try again',
     backToMap: 'Back to the map',
     legalLinks: 'Legal',
+    loadFailed: 'Couldn\'t load this.',
   },
   de: {
     // Navigation
@@ -2411,6 +2413,7 @@ export const translations = {
     tryAgain: 'Erneut versuchen',
     backToMap: 'Zurück zur Karte',
     legalLinks: 'Rechtliches',
+    loadFailed: 'Konnte nicht geladen werden.',
   },
 };
 

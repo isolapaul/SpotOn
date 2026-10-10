@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Heart, MessageCircle, Share, ThumbsUp } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
 import { useT, useLanguage } from '@/hooks/useT';
@@ -8,6 +8,7 @@ import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { useShareSpot } from '@/hooks/useShareSpot';
 import { useSpotLike } from '@/hooks/useSpotLike';
 import { useUiStore } from '@/store/useUiStore';
+import { useUserStore } from '@/store/useUserStore';
 import { playSound } from '@/store/useSoundStore';
 import { averageRating } from '@/lib/rating';
 import { feedPhotos } from '@/lib/feed';
@@ -36,7 +37,7 @@ const ACTION = `no-min-size h-11 min-w-11 px-2 inline-flex items-center gap-1.5 
  * One post of the following feed: who shared it, the photos, the like / comment / share /
  * favourite row, the name, description and rating. The name and the map pill fly to the spot.
  */
-export default function FeedCard({ spot, index, suggested, now, userLocation, onShowOnMap, onComments }: Readonly<FeedCardProps>) {
+function FeedCard({ spot, index, suggested, now, userLocation, onShowOnMap, onComments }: Readonly<FeedCardProps>) {
   const t = useT();
   const language = useLanguage();
   const [failed, setFailed] = useState<ReadonlySet<string>>(new Set());
@@ -44,6 +45,7 @@ export default function FeedCard({ spot, index, suggested, now, userLocation, on
   const [inView, setPhotoIndex] = useState(0);
   const photoIndex = Math.min(inView, Math.max(0, photos.length - 1));
   const like = useSpotLike(spot);
+  const signedIn = useUserStore((s) => !!s.user);
   const [likersOpen, setLikersOpen] = useState(false);
   const favorite = useFavoriteToggle(spot.id);
   const share = useShareSpot();
@@ -64,7 +66,7 @@ export default function FeedCard({ spot, index, suggested, now, userLocation, on
     setTimeout(() => onShowOnMap(spot.id), 120);
   };
   const toggleFavorite = () => {
-    if (!favorite.canToggle) return useUiStore.getState().openPanel('auth');
+    if (!favorite.canToggle) return useUiStore.getState().openAuth();
     if (!favorite.isFavorite) playSound('favorite');
     void favorite.toggle();
   };
@@ -72,10 +74,11 @@ export default function FeedCard({ spot, index, suggested, now, userLocation, on
   return (
     <article
       aria-label={spot.name}
+      // Off-screen cards skip layout and paint (long feeds stay smooth on mid-range phones).
+      style={{ animationDelay: `${Math.min(index, 6) * 40}ms`, contentVisibility: 'auto', containIntrinsicSize: 'auto 720px' }}
       className={`pb-5 transition-transform duration-150 ease-ios ${leaving ? 'scale-[.97]' : ''} ${
         index < 6 ? 'motion-safe:animate-item-in' : ''
       }`}
-      style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
     >
       <FeedCardHeader spot={spot} suggested={suggested} now={now} />
 
@@ -105,7 +108,7 @@ export default function FeedCard({ spot, index, suggested, now, userLocation, on
               // The count opens who liked it.
               <button
                 type="button"
-                onClick={() => setLikersOpen(true)}
+                onClick={() => (signedIn ? setLikersOpen(true) : useUiStore.getState().openAuth())}
                 aria-label={t('likedByCount', { count: like.likes })}
                 aria-haspopup="dialog"
                 className="no-min-size -ml-1.5 h-11 pr-2 text-[15px] font-semibold tabular-nums text-label touch-manipulation active:opacity-60"
@@ -153,7 +156,7 @@ export default function FeedCard({ spot, index, suggested, now, userLocation, on
             {spot.description}
           </p>
         )}
-        {spot.description && !expanded && spot.description.length > 90 && (
+        {spot.description && !expanded && (spot.description.length > 90 || spot.description.split('\n').length > 2) && (
           <button type="button" onClick={() => setExpanded(true)} className="no-min-size text-[14px] font-medium text-label-tertiary">
             {t('feedMore')}
           </button>
@@ -176,3 +179,6 @@ export default function FeedCard({ spot, index, suggested, now, userLocation, on
     </article>
   );
 }
+
+/** Memoised: a spots snapshot re-renders only the cards whose spot changed (the spot objects are kept). */
+export default memo(FeedCard);

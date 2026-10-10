@@ -14,7 +14,7 @@ export {
   blockUser, unblockUser,
 } from "./callables/follows";
 export {getFollowList} from "./callables/followLists";
-export {toggleSpotLike} from "./callables/spotLikes";
+export {setSpotLike, getSpotLikers} from "./callables/spotLikes";
 export {weeklyFeedDigest} from "./triggers/digest";
 export {approveSpot, rejectSpot, removeSpot, reviewSpotEdit, reviewPhotoSubmission} from "./callables/moderation";
 export {reportContent, resolveReport} from "./callables/reports";

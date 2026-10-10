@@ -30,7 +30,7 @@ export default function FollowChip({ uid, isPrivate = false, tone = 'filled' }: 
     return (
       <span
         className={`shrink-0 inline-flex items-center gap-1 text-[13px] font-semibold text-label-secondary motion-safe:animate-badge-pop ${
-          tone === 'filled' ? 'h-8 px-3 rounded-full bg-white/8' : ''
+          tone === 'filled' ? 'h-11 px-3.5 rounded-full bg-white/8' : ''
         }`}
       >
         {requested ? <Clock className="w-3.5 h-3.5" aria-hidden="true" /> : <Check className="w-3.5 h-3.5" aria-hidden="true" />}
@@ -59,7 +59,7 @@ export default function FollowChip({ uid, isPrivate = false, tone = 'filled' }: 
       disabled={state === 'busy'}
       className={`no-min-size shrink-0 inline-flex items-center gap-1 text-[13px] font-semibold touch-manipulation
         active:scale-90 transition-transform disabled:opacity-60 ${
-          tone === 'filled' ? 'h-8 px-3.5 rounded-full bg-brand-600 text-white' : 'h-8 px-1 text-brand-400'
+          tone === 'filled' ? 'h-11 px-4 rounded-full bg-brand-600 text-white' : 'h-11 px-2 text-brand-400'
         }`}
     >
       {tone === 'filled' && <UserPlus className="w-3.5 h-3.5" aria-hidden="true" />}

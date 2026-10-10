@@ -1,21 +1,25 @@
 /**
- * Spot likes (the feed's thumb): spots/{id}.likedBy (uids, oldest first) and .likeCount, written
- * only by the toggleSpotLike callable (rules). Pure.
+ * Spot likes (the feed's thumb): one spotLikes/{spotId}_{uid} doc per like ({spotId, uid,
+ * createdAt}), read only by the liker (rules), written only by setSpotLike; spots/{id}.likeCount
+ * is the public count. Who liked a spot: getSpotLikers (blocks filtered both ways). Pure.
  */
+export function spotLikeId(spotId: string, uid: string): string {
+  return `${spotId}_${uid}`;
+}
 
-/** A spot keeps at most this many likers (the count stays exact; the list drops the oldest). */
-export const MAX_LIKED_BY = 5000;
+/** What setSpotLike does: nothing when the stored state already matches (idempotent retries). */
+export function likeChange(exists: boolean, wanted: boolean): -1 | 0 | 1 {
+  if (exists === wanted) return 0;
+  return wanted ? 1 : -1;
+}
 
-export function toggleSpotLikeIn(
-  likedBy: unknown,
-  uid: string,
-): {likedBy: string[]; likeCount: number; liked: boolean} {
-  const current = (Array.isArray(likedBy) ? likedBy : [])
-    .filter((x): x is string => typeof x === "string");
-  if (current.includes(uid)) {
-    const next = current.filter((x) => x !== uid);
-    return {likedBy: next, likeCount: next.length, liked: false};
-  }
-  const next = [...current, uid].slice(-MAX_LIKED_BY);
-  return {likedBy: next, likeCount: next.length, liked: true};
+/** Whether a spot write changed nothing but likeCount (the spot triggers have nothing to do). */
+export function onlyLikeCountChanged(
+  before: Record<string, unknown> | undefined,
+  after: Record<string, unknown> | undefined,
+): boolean {
+  if (!before || !after || before.likeCount === after.likeCount) return false;
+  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+  keys.delete("likeCount");
+  return [...keys].every((k) => JSON.stringify(before[k]) === JSON.stringify(after[k]));
 }

@@ -3,7 +3,7 @@ rules_version = '2';
 // SpotOn Firestore rules (T12). The real authorization boundary: UI checks are UX only.
 // Server-only data (publicProfiles, usernames, admins, users.{username, customName*, highlightedSpots,
 // quest*, spotsCount, xp, level, levelFloor, pinIcon}, spots.{highlighted, isHighlighted,
-// contributors, ownerPin, likedBy, likeCount, spotImages likes/additions}) is written by Cloud Functions through the
+// contributors, ownerPin, likeCount, spotLikes, spotImages likes/additions}) is written by Cloud Functions through the
 // Admin SDK, which bypasses these rules.
 // Rules do not filter queries: every client query must be provably allowed (T30 spots), or it fails
 // for everyone.
@@ -298,6 +298,14 @@ service cloud.firestore {
     match /followRequests/{id} {
       allow get, list: if signedIn()
         && (resource.data.requester == request.auth.uid || resource.data.target == request.auth.uid);
+      allow write: if false;
+    }
+
+    // ---------- spot likes ----------
+    // One doc per like, written only by setSpotLike; each liker reads only their own (the feed's
+    // liked state). Who liked a spot is served by getSpotLikers, which filters blocks both ways.
+    match /spotLikes/{id} {
+      allow get, list: if signedIn() && resource.data.uid == request.auth.uid;
       allow write: if false;
     }
 

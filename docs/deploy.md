@@ -333,9 +333,10 @@ Keep a copy of the rules currently in production (Console → Firestore → Rule
 
 ### 16.0 Next release (feed): what it needs
 
-- **Functions first:** new `getFollowList`, `toggleSpotLike`, `weeklyFeedDigest`; changed `followUser`, `onSpotFavorited`, `deleteAccount` and the push helpers. `weeklyFeedDigest` is a scheduled function: the first deploy enables Cloud Scheduler for the project (the CLI asks; it needs the Blaze plan, which the project already has for functions).
-- **Rules** (they only allow less: admins can no longer write `spots.likedBy` / `likeCount`): any time after the functions; no client writes those fields.
-- No new indexes.
+- **Indexes first:** two new composite indexes on `follows` (target / follower + createdAt) for the newest-first follower lists; wait until they are enabled.
+- **Functions:** new `getFollowList`, `setSpotLike`, `getSpotLikers`, `weeklyFeedDigest`; changed `followUser`, `onSpotFavorited`, `deleteAccount`, `removeSpot` children, `syncXp`, `toggleImageLike` and the push helpers. `weeklyFeedDigest` is a scheduled function: the first deploy enables Cloud Scheduler for the project (the CLI asks; it needs the Blaze plan, which the project already has for functions).
+- **Rules** after the functions: the new `spotLikes` collection (each user reads their own likes; the new client listens to them) and admins can no longer write `spots.likeCount`.
+- The Terms changed (TERMS_VERSION 2026-10-10): announce it at least 15 days before this release (Terms §10).
 
 ### 16.1 Release v2.1.0 (one time, in this order)
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useSpotStore, type Spot } from '@/store/useSpotStore';
+import type { Spot } from '@/store/useSpotStore';
+import { useLikeStore } from '@/store/useLikeStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useUiStore } from '@/store/useUiStore';
 import { useToastStore } from '@/store/useToastStore';
@@ -9,29 +10,27 @@ import { actionErrorKey } from '@/lib/callableErrors';
 import { spotLikeState } from '@/lib/spotLikes';
 
 /**
- * Liking a spot (the toggleSpotLike callable) with an optimistic count: the tap shows at once,
- * the spots listener confirms it, a failure puts it back. Signed out: the sign-in sheet.
+ * Liking a spot (the setSpotLike callable) with an optimistic count: the tap shows at once, the
+ * listeners confirm it, a failure puts it back. The server sets the asked state, so a repeat, a
+ * retry or a stale screen never flips it. Signed out: the sign-in sheet.
  */
-export function useSpotLike(spot: Pick<Spot, 'id' | 'likedBy' | 'likeCount' | 'status'>) {
+export function useSpotLike(spot: Pick<Spot, 'id' | 'likeCount' | 'status'>) {
   const t = useT();
   const uid = useUserStore((s) => s.user?.uid ?? null);
-  // The tap, against the stored state it was made on: once the listener delivers a change, it
-  // no longer applies (so a like or unlike from another device shows too).
+  const stored = useLikeStore((s) => s.liked.has(spot.id));
   const [tap, setTap] = useState<{ liked: boolean; on: boolean } | null>(null);
-  const stored = spotLikeState(spot, uid, null).liked;
-  const state = spotLikeState(spot, uid, tap && tap.on === stored ? tap.liked : null);
-  const setOptimistic = (liked: boolean) => setTap({ liked, on: stored });
+  const state = spotLikeState(spot.likeCount, stored, tap);
 
   const set = async (next: boolean) => {
-    if (!uid) return useUiStore.getState().openPanel('auth');
+    if (!uid) return useUiStore.getState().openAuth();
     if (next === state.liked || spot.status !== 'approved') return;
-    setOptimistic(next);
+    setTap({ liked: next, on: stored });
     if (next) playSound('like');
     try {
-      await useSpotStore.getState().toggleSpotLike(spot.id);
+      await useLikeStore.getState().setLike(spot.id, next);
     } catch (error) {
       console.error('Spot like failed:', error);
-      setOptimistic(!next);
+      setTap(null);
       useToastStore.getState().showToast(t(actionErrorKey(error)), 'error');
     }
   };

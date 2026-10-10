@@ -52,7 +52,7 @@ export default function FeedCardHeader({ spot, suggested, now }: Readonly<{ spot
           <span className="w-full h-full rounded-full overflow-hidden grid place-items-center bg-brand-700 text-white font-semibold ring-2 ring-surface-0">
             {picture && !failed ? (
               // eslint-disable-next-line @next/next/no-img-element -- user-hosted avatar URLs (any origin)
-              <img src={picture} alt="" className="w-full h-full object-cover" onError={() => setFailed(true)} />
+              <img src={picture} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" onError={() => setFailed(true)} />
             ) : (
               name.charAt(0).toUpperCase()
             )}

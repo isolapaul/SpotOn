@@ -38,7 +38,7 @@ export default function ReportSheet({ target, onClose }: Readonly<{ target: Repo
   useEffect(() => {
     if (signedIn) return;
     onClose();
-    useUiStore.getState().openPanel('auth');
+    useUiStore.getState().openAuth();
   }, [signedIn, onClose]);
   if (!signedIn) return null;
 

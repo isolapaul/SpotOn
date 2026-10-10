@@ -57,6 +57,7 @@ src/store/useLocationStore.ts    Location status + sessionStorage cache; the onl
 src/store/useOnboardingStore.ts  Tour completion (versioned `spoton-onboarding`), pending username, location answer, install offer; selectTourBlocking
 src/store/useDiscoveryStore.ts   Explore's sort, filter, batch and scroll, kept while it is closed
 src/store/useFeedStore.ts        The feed's last visit (persisted, the launcher's dot), page count and scroll
+src/store/useLikeStore.ts        The own spot likes (spotLikes listener) and the setSpotLike / getSpotLikers callables
 src/store/useSoundStore.ts       Interface sounds (on/off persisted per device) and playSound(), WebAudio over the lib/sound recipes
 src/store/use*Store.ts           language (selected language only), map theme, notifications, push prompt, toast (forwards to notifications), ui
 src/hooks/useAppBootstrap.ts     Loading orchestration: auth + spots listeners, map ready, app-ready delays
@@ -98,7 +99,7 @@ docs/play-store.md               Play listing texts, Data safety and content rat
   status ('pending'|'approved'|'rejected'), rejection{reason,at} (rejected only), createdAt, imageUrls[], spotImages[{id,url,addedBy,addedAt,likes,likedBy[]}],
   primaryImageIndex, **reviews[] embedded array**, highlighted[], isHighlighted, updatedAt (owner edits and photo additions; approveSpot's
   version check), approvedAt (set by approveSpot), contributors[] (server: reviewers and photo adders other than the creator, for XP),
-  ownerPin (server: the owner's pin icon from level 4), likedBy[] + likeCount (server: spot likes, the `toggleSpotLike` callable).
+  ownerPin (server: the owner's pin icon from level 4), likeCount (server: spot likes, the `setSpotLike` callable).
   Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
   Spots of deleted accounts have `createdBy: "deleted-user"` and no createdByName/createdByPhoto.
   Status changes and deletes go only through the moderation callables (`approveSpot`, `rejectSpot`, `removeSpot`); admins may still edit fields and photos directly.
@@ -111,6 +112,7 @@ docs/play-store.md               Play listing texts, Data safety and content rat
   customNameColor/Font, isAdmin, spotsCount, xp, level, bio, isPrivate, followersCount, followingCount); public `get`, no client writes.
 - `usernames/{name}`: `{uid}` registry, written only by the `claimUsername` callable (the `searchUsers` callable reads it by prefix).
 - Item 8: `users/{uid}.bio` (≤150), `.profilePrivate`, `.showSaved` (client-written); `publicProfiles` mirrors `bio`, `isPrivate` and holds `followersCount`/`followingCount`. `follows/{follower}_{target}` and `followRequests/{requester}_{target}` are written only by the follow callables and read by their two sides; `rateLimits/{uid}` is server-only (per-action windows: search, follow, report, reply, photo; `functions/src/lib/rateLimit.ts`), and so is `followNotices/{requester}_{target}` (a private user hears about one requester at most once a day). `adminNotices/edit_{spotId}` (server-only) limits admin pings for edit proposals to one an hour; `favoriteNotices/{favoriter}_{spotId}` (server-only) limits favourite pushes to one a day per person and spot. A private profile hides only the lists on the profile page (`getProfile`) and its followers / following lists (`getFollowList`), never the spots on the map. The client listens to its own `follows` (follower == me) for the feed.
+- `spotLikes/{spotId}_{uid}`: {spotId, uid, createdAt}, one per like, written only by `setSpotLike` (likeCount moves with it), read only by the liker (the client listens to its own); who liked a spot comes from `getSpotLikers` (blocks filtered both ways). Removing a spot and `deleteAccount` delete them.
 - `admins/{uid}`: email, username, photoURL, addedAt, addedBy, role ('super' | 'admin').
 - `categories/{id}` (item 7): name (Hungarian), nameEn?, nameDe? (fall back to name), icon (one of `src/lib/categoryIcons.ts`; legacy docs may hold an emoji), createdAt, updatedAt. Written by the super admin (rules); deleted only by the `deleteCategory` callable while unused. A spot's `category` is a built-in id or such a doc id (rules `validCategory`); unknown ids show as 'other'.
 - `spotEdits/{spotId}` (item 4): the owner's proposed edit of an approved spot, at most one per spot: spotId, spotName, ownerId, status ('pending'|'rejected'), proposed{name?, description?, category?, location?, removeImageUrls?, primaryImageUrl?}, rejection{reason,at}, createdAt. Reviewed with `reviewSpotEdit`.

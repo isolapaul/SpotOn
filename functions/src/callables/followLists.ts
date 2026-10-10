@@ -14,8 +14,8 @@ import {listedPeople} from "../lib/followLists";
 
 /** Enough for any SpotOn profile today; the list says when it is cut. */
 export const FOLLOW_LIST_MAX = 200;
-/** Edges read before the newest-first cut (equality-only query, no composite index). */
-const FOLLOW_LIST_READ = 1000;
+/** Edges read (newest first) before blocked people are dropped. */
+const FOLLOW_LIST_READ = 400;
 
 export const getFollowList = onCall(async (request) => {
   const caller = request.auth?.uid;
@@ -50,24 +50,23 @@ export const getFollowList = onCall(async (request) => {
 
     const side = kind === "followers" ? "target" : "follower";
     const other = kind === "followers" ? "follower" : "target";
+    // Newest first on the server (composite indexes on target/follower + createdAt).
     const edges = await db.collection("follows").where(side, "==", target)
-      .limit(FOLLOW_LIST_READ).get();
-    const uids = edges.docs
+      .orderBy("createdAt", "desc").limit(FOLLOW_LIST_READ).get();
+    const visible = edges.docs
       .map((d) => ({
         uid: d.get(other),
         at: d.get("createdAt") instanceof Timestamp ? (d.get("createdAt") as Timestamp).toMillis() : 0,
       }))
-      .filter((e): e is {uid: string; at: number} => isUid(e.uid) && !hidden.has(e.uid))
-      .sort((a, b) => b.at - a.at)
-      .slice(0, FOLLOW_LIST_MAX)
-      .map((e) => e.uid);
+      .filter((e): e is {uid: string; at: number} => isUid(e.uid) && !hidden.has(e.uid));
+    const uids = visible.slice(0, FOLLOW_LIST_MAX).map((e) => e.uid);
     const refs = uids.map((u) => db.collection("publicProfiles").doc(u));
     const profiles = refs.length ? await db.getAll(...refs) : [];
     const people = listedPeople(
       profiles.map((p) => ({id: p.id, exists: p.exists, data: p.data()})),
     );
     logger.info("getFollowList", {uid: caller, target, kind, count: people.length, outcome: "ok"});
-    return {people, truncated: edges.size > FOLLOW_LIST_MAX};
+    return {people, truncated: visible.length > FOLLOW_LIST_MAX};
   } catch (error) {
     logger.info("getFollowList", {uid: caller, target, kind,
       outcome: error instanceof HttpsError ? error.code : "error"});

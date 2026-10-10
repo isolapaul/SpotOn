@@ -233,6 +233,11 @@ export const translations = {
       `${name} und ${others} weitere haben diese Woche ${count} neue Orte geteilt` :
       `${name} hat diese Woche ${count} ${Number(count) === 1 ? "neuen Ort" : "neue Orte"} geteilt`,
   },
+  weeklyDigestBodyNoName: {
+    hu: (count: TParam) => `${count} új hely azoktól, akiket követsz`,
+    en: (count: TParam) => `${count} new ${Number(count) === 1 ? "spot" : "spots"} from people you follow`,
+    de: (count: TParam) => `${count} ${Number(count) === 1 ? "neuer Ort" : "neue Orte"} von Leuten, denen du folgst`,
+  },
 } satisfies Record<string, Record<Lang, Template>>;
 
 export type TKey = keyof typeof translations;

@@ -103,7 +103,7 @@ function PersonTile({ person, index }: Readonly<{ person: SuggestedPerson; index
         <span className="w-16 h-16 rounded-full overflow-hidden grid place-items-center bg-brand-600 text-white text-[22px] font-semibold ring-2 ring-white/10">
           {person.photo && !failed ? (
             // eslint-disable-next-line @next/next/no-img-element -- user-hosted avatar URLs (any origin)
-            <img src={person.photo} alt="" className="w-full h-full object-cover" onError={() => setFailed(true)} />
+            <img src={person.photo} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" onError={() => setFailed(true)} />
           ) : (
             person.name.charAt(0).toUpperCase()
           )}

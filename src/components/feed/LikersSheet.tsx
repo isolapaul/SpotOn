@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ThumbsUp, X } from 'lucide-react';
 import ModalShell from '../ui/ModalShell';
@@ -8,38 +8,50 @@ import PersonRow from '../profile/PersonRow';
 import FollowChip from '../profile/FollowChip';
 import { useT } from '@/hooks/useT';
 import { useOpenProfile } from '@/hooks/useOpenProfile';
-import { usePublicProfiles } from '@/hooks/usePublicProfile';
-import { useSafetyStore } from '@/store/useSafetyStore';
+import { useLikeStore } from '@/store/useLikeStore';
+import type { PersonResult } from '@/store/useFollowStore';
 import { useUserStore } from '@/store/useUserStore';
 import type { Spot } from '@/store/useSpotStore';
-import { likersToShow } from '@/lib/spotLikes';
 
 /** The exit animation (Tailwind `animate-card-out`). */
 const CLOSE_MS = 260;
-/** Profiles read for the list (public profiles, cached); a longer list shows the newest. */
-const MAX_LIKERS = 100;
 
-/** Who liked a spot: a bottom sheet of people, newest first; a row opens the profile. */
-export default function LikersSheet({ spot, onClose }: Readonly<{ spot: Pick<Spot, 'name' | 'likedBy'>; onClose: () => void }>) {
+type Loaded = { people: PersonResult[] } | { error: true } | null;
+
+/** Who liked a spot: a bottom sheet of people, newest first (getSpotLikers); a row opens the profile. */
+export default function LikersSheet({ spot, onClose }: Readonly<{ spot: Pick<Spot, 'id' | 'name'>; onClose: () => void }>) {
   const t = useT();
   const me = useUserStore((s) => s.user?.uid ?? null);
-  const blocked = useSafetyStore((s) => s.blocked);
   const openProfile = useOpenProfile();
   const [closing, setClosing] = useState(false);
-  const ids = useMemo(() => likersToShow(spot.likedBy, blocked).slice(0, MAX_LIKERS), [spot.likedBy, blocked]);
-  const profiles = usePublicProfiles(ids);
+  const [loaded, setLoaded] = useState<Loaded>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    useLikeStore.getState().getLikers(spot.id)
+      .then((people) => live && setLoaded({ people }))
+      .catch((error: unknown) => {
+        console.error('Likers failed to load:', error);
+        if (live) setLoaded({ error: true });
+      });
+    return () => {
+      live = false;
+    };
+  }, [spot.id, attempt]);
 
   const close = () => {
     if (closing) return;
     setClosing(true);
     setTimeout(onClose, CLOSE_MS);
   };
-  const people = ids.flatMap((uid) => {
-    const p = profiles[uid];
-    if (!p?.username) return [];
-    return [{ uid, username: p.username, profilePictureURL: p.profilePictureURL, level: p.level ?? null, isPrivate: p.isPrivate === true }];
-  });
-  const loading = ids.some((uid) => profiles[uid] === undefined) && people.length === 0;
+  const retry = () => {
+    setLoaded(null);
+    setAttempt((n) => n + 1);
+  };
+  const loading = loaded === null;
+  const failed = loaded !== null && 'error' in loaded;
+  const people = loaded && 'people' in loaded ? loaded.people : [];
 
   return createPortal(
     <ModalShell
@@ -79,11 +91,15 @@ export default function LikersSheet({ spot, onClose }: Readonly<{ spot: Pick<Spo
                 </div>
               ))}
             </div>
+          ) : failed ? (
+            <div className="px-8 py-10 flex flex-col items-center gap-3 text-center">
+              <p className="text-label-secondary">{t('loadFailed')}</p>
+              <button type="button" onClick={retry} className="h-11 px-5 rounded-full bg-white/10 text-label font-semibold">
+                {t('tryAgain')}
+              </button>
+            </div>
           ) : people.length === 0 ? (
-            // Likers whose profiles are gone (deleted accounts) still count, but are not listed.
-            <p className="px-8 py-10 text-center text-label-secondary">
-              {ids.length ? t('likedByCount', { count: ids.length }) : t('noLikesYet')}
-            </p>
+            <p className="px-8 py-10 text-center text-label-secondary">{t('noLikesYet')}</p>
           ) : (
             people.map((p, i) => (
               <PersonRow

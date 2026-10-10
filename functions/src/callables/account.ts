@@ -204,6 +204,14 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
       db.collection("followNotices").where("target", "==", uid).get(),
       db.collection("favoriteNotices").where("favoriter", "==", uid).get(),
     ]);
+  // The user's spot likes: each goes with its count, in one transaction per like.
+  const likes = await db.collection("spotLikes").where("uid", "==", uid).get();
+  await Promise.all(likes.docs.map((d) => db.runTransaction(async (tx) => {
+    if (!(await tx.get(d.ref)).exists) return;
+    tx.delete(d.ref);
+    const spotRef = db.collection("spots").doc(String(d.get("spotId")));
+    if ((await tx.get(spotRef)).exists) tx.update(spotRef, {likeCount: FieldValue.increment(-1)});
+  })));
   const counters = db.collection("publicProfiles");
   const dropEdge = (ref: DocumentReference, other: string, field: string) =>
     db.runTransaction(async (tx) => {

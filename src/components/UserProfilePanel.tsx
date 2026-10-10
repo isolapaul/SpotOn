@@ -48,7 +48,7 @@ export default function UserProfilePanel({ uid, onClose, onOpenSpot }: Readonly<
 function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClose: () => void; onOpenSpot: (id: string) => void }>) {
   const t = useT();
   const me = useUserStore((s) => s.user?.uid ?? null);
-  const openAuth = () => useUiStore.getState().openPanel('auth');
+  const openAuth = () => useUiStore.getState().openAuth();
   const showToast = useToastStore((s) => s.showToast);
   const follows = useFollowStore();
   const spots = useSpotStore((s) => s.spots);
