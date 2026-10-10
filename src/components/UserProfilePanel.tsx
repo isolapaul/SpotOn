@@ -12,13 +12,15 @@ import ProfileSpotCard from './profile/ProfileSpotCard';
 import FollowButton from './profile/FollowButton';
 import ProfileStats from './profile/ProfileStats';
 import ProfileMenu from './profile/ProfileMenu';
+import FollowListSheet from './profile/FollowListSheet';
+import { playSound } from '@/store/useSoundStore';
 import { useT } from '@/hooks/useT';
 import { useCategoryLabel } from '@/hooks/useCategory';
 import { useSpotStore, type Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useUiStore } from '@/store/useUiStore';
 import { useToastStore } from '@/store/useToastStore';
-import { useFollowStore, type ProfileView } from '@/store/useFollowStore';
+import { useFollowStore, type FollowListKind, type ProfileView } from '@/store/useFollowStore';
 import { fetchPublicProfile, type PublicProfile } from '@/store/publicProfiles';
 import { getLevelInfo, getUserNameColor, profileLevel } from '@/lib/levelUtils';
 import { resolveNameFontClass } from '@/lib/nameStyle';
@@ -55,6 +57,7 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
   const [version, setVersion] = useState(0);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>('spots');
+  const [followList, setFollowList] = useState<FollowListKind | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -127,7 +130,15 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
         ) : (
           <div className="px-5 motion-safe:animate-item-in">
             <Header profile={profile} level={level} />
-            <ProfileStats spots={view?.spotIds?.length ?? null} followers={profile.followersCount ?? 0} following={profile.followingCount ?? 0} className="mx-auto mt-5" />
+            <ProfileStats
+              spots={view?.spotIds?.length ?? null}
+              followers={profile.followersCount ?? 0}
+              following={profile.followingCount ?? 0}
+              className="mx-auto mt-5"
+              // Who follows whom: for the people who may see the profile (signed out: sign in first).
+              onOpenList={view?.canView ? (kind) => (me ? setFollowList(kind) : openAuth()) : undefined}
+            />
+            {followList && <FollowListSheet uid={uid} initial={followList} onClose={() => setFollowList(null)} />}
 
             {view?.blocked ? (
               <p className="mt-6 text-center text-label-secondary text-sm">{t('youBlockedThem')}</p>
@@ -137,7 +148,10 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
                   relation={view.relation}
                   isPrivate={profile.isPrivate === true}
                   busy={busy}
-                  onFollow={() => act((m) => follows.follow(m, uid))}
+                  onFollow={() => act(async (m) => {
+                    await follows.follow(m, uid);
+                    playSound('follow');
+                  })}
                   onUnfollow={() => act((m) => follows.unfollow(m, uid))}
                 />
                 {view.followsYou && (

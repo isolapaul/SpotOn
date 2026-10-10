@@ -35,10 +35,18 @@ const unfollowCallable = call<{ uid: string }, { state: FollowState }>('unfollow
 const respondCallable = call<{ uid: string; accept: boolean }, { accepted: boolean }>('respondFollowRequest');
 const removeFollowerCallable = call<{ uid: string }, unknown>('removeFollower');
 const searchUsersCallable = call<{ q: string }, { results: PersonResult[] }>('searchUsers');
+const followListCallable = call<{ uid: string; kind: FollowListKind }, { people: PersonResult[]; truncated: boolean }>('getFollowList');
+
+/** Which side of someone's follows a list shows. */
+export type FollowListKind = 'followers' | 'following';
 
 interface FollowStore {
   /** Follow requests to the signed-in user, oldest first (a live listener). */
   requests: { requester: string; createdAt: number }[];
+  /** Whom the signed-in user follows (a live listener; the feed reads it). */
+  following: ReadonlySet<string>;
+  /** Whether the first `following` snapshot arrived (the feed waits for it). */
+  followingReady: boolean;
   sync: (uid: string | null) => void;
   getProfile: (uid: string) => Promise<ProfileView>;
   follow: (me: string, uid: string) => Promise<FollowState>;
@@ -46,9 +54,12 @@ interface FollowStore {
   respond: (me: string, requester: string, accept: boolean) => Promise<void>;
   removeFollower: (me: string, uid: string) => Promise<void>;
   searchPeople: (q: string) => Promise<PersonResult[]>;
+  /** Someone's followers or the people they follow (the getFollowList callable). */
+  getFollowList: (uid: string, kind: FollowListKind) => Promise<{ people: PersonResult[]; truncated: boolean }>;
 }
 
 let listening: { uid: string; unsubscribe: Unsubscribe } | null = null;
+let followingListener: Unsubscribe | null = null;
 
 /** Both profiles' counters changed: their next read must hit Firestore. */
 function invalidate(a: string, b: string) {
@@ -62,12 +73,27 @@ function invalidate(a: string, b: string) {
  */
 export const useFollowStore = create<FollowStore>((set) => ({
   requests: [],
+  following: new Set(),
+  followingReady: false,
   sync: (uid) => {
     if (listening?.uid === uid) return;
     listening?.unsubscribe();
     listening = null;
-    set({ requests: [] });
+    followingListener?.();
+    followingListener = null;
+    set({ requests: [], following: new Set(), followingReady: false });
     if (!uid) return;
+    followingListener = onSnapshot(
+      query(collection(db, 'follows'), where('follower', '==', uid)),
+      (snap) => {
+        const following = new Set(snap.docs.map((d) => String(d.get('target') ?? '')).filter(Boolean));
+        set({ following, followingReady: true });
+      },
+      (error) => {
+        console.error('Following listener failed:', error);
+        set({ followingReady: true });
+      },
+    );
     const unsubscribe = onSnapshot(
       query(collection(db, 'followRequests'), where('target', '==', uid)),
       (snap) => {
@@ -104,4 +130,5 @@ export const useFollowStore = create<FollowStore>((set) => ({
     invalidate(me, uid);
   },
   searchPeople: async (q) => (await searchUsersCallable({ q })).data.results,
+  getFollowList: async (uid, kind) => (await followListCallable({ uid, kind })).data,
 }));

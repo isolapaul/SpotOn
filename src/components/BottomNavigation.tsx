@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Compass, MapPin, Plus, UserRound } from 'lucide-react';
+import { Compass, GalleryVerticalEnd, MapPin, Plus, UserRound } from 'lucide-react';
+import { useFeedUnseen } from '@/hooks/useFeed';
 import { useT } from '@/hooks/useT';
 import type { TranslationKey } from '@/lib/translations';
 import { useUserStore } from '@/store/useUserStore';
@@ -11,7 +12,7 @@ import { Z } from '@/lib/constants';
 import LevelBadge from '@/components/ui/LevelBadge';
 import LevelRing from '@/components/ui/LevelRing';
 
-// Launcher (design 1C): a capsule with Explore (and the spot count) and the avatar, plus a separate
+// Launcher (design 1C): a capsule with Explore (and the spot count), the feed and the avatar, plus a separate
 // green Add button. The map is always home, so nothing here has a selected state. While a spot is
 // picked for adding, the capsule shows the hint and Add turns into a cancel ×.
 
@@ -25,6 +26,8 @@ interface BottomNavigationProps {
   /** Approved spots on the map; 0 hides the count line. */
   spotCount: number;
   onExplore: () => void;
+  /** Opens the following feed. */
+  onFeed: () => void;
   onAdd: () => void;
   onProfile: () => void;
   onCancelPicking: () => void;
@@ -56,6 +59,32 @@ function AvatarFace() {
   );
 }
 
+/** The feed button: a dot lights up while followed people posted since the last visit. */
+function FeedButton({ onClick, picking }: Readonly<{ onClick: () => void; picking: boolean }>) {
+  const t = useT();
+  const unseen = useFeedUnseen();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      tabIndex={picking ? -1 : 0}
+      aria-label={unseen > 0 ? t('feedOpenUnseen', { count: unseen }) : t('feedTitle')}
+      className="relative w-12 h-12 shrink-0 grid place-items-center rounded-full touch-manipulation text-chrome-ink
+        transition-transform duration-150 active:scale-90"
+    >
+      <GalleryVerticalEnd className="w-6 h-6" strokeWidth={2} aria-hidden="true" />
+      {unseen > 0 && (
+        <span
+          aria-hidden="true"
+          className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-brand-400 ring-2 ring-[rgb(var(--chrome-rgb))] motion-safe:animate-badge-pop"
+        >
+          <span className="absolute inset-0 rounded-full bg-brand-400 motion-safe:animate-ring-ping" />
+        </span>
+      )}
+    </button>
+  );
+}
+
 /** The avatar; signed in, inside the level ring (owner: colour per level) with the level badge. */
 function Avatar() {
   const mine = useMyLevel();
@@ -79,6 +108,7 @@ export default function BottomNavigation({
   hidden,
   spotCount,
   onExplore,
+  onFeed,
   onAdd,
   onProfile,
   onCancelPicking,
@@ -126,6 +156,7 @@ export default function BottomNavigation({
               )}
             </span>
           </button>
+          <FeedButton onClick={onFeed} picking={picking} />
           <button
             type="button"
             onClick={onProfile}

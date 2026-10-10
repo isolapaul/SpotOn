@@ -8,6 +8,8 @@ import SpotDetailsPanel from '@/components/SpotDetailsPanel';
 import ProfilePanel from '@/components/ProfilePanel';
 import UserProfilePanel from '@/components/UserProfilePanel';
 import DiscoveryPanel from '@/components/DiscoveryPanel';
+import FeedPanel from '@/components/feed/FeedPanel';
+import LiveNotice from '@/components/notifications/LiveNotice';
 import LoadingScreen from '@/components/LoadingScreen';
 import NotificationPrompt from '@/components/NotificationPrompt';
 import UploadStatus from '@/components/UploadStatus';
@@ -105,8 +107,8 @@ export default function Home() {
   // The way back to the list a spot was opened from (the details, and the place card for the profile).
   const backToList = returnTo
     ? {
-        label: t(returnTo === 'discovery' ? 'explore' : 'profile'),
-        ariaLabel: t(returnTo === 'discovery' ? 'backToExplore' : 'backToProfile'),
+        label: t(returnTo === 'discovery' ? 'explore' : returnTo === 'feed' ? 'feedTitle' : 'profile'),
+        ariaLabel: t(returnTo === 'discovery' ? 'backToExplore' : returnTo === 'feed' ? 'backToFeed' : 'backToProfile'),
         onBack: back,
       }
     : undefined;
@@ -136,6 +138,8 @@ export default function Home() {
       {!tourBlocking && <NotificationPrompt />}
       {/* Background uploads (G4): above panels too, so a review sent from a spot panel reports back */}
       <UploadStatus />
+      {/* A notice arriving while the app is open (new follower, followed user's spot) drops in on top */}
+      {!tourBlocking && <LiveNotice />}
       {/* Level-up moment: over everything, whenever the own XP level goes up */}
       {!tourBlocking && <LevelUpCelebration />}
       {/* Top-right control stack (design 1C); only over the bare map: it lives outside <main>, so it
@@ -160,6 +164,13 @@ export default function Home() {
         onClose={closeSheet}
         userLocation={userLocation}
         onSpotSelect={(spot) => openFromList(spot.id, 'discovery')}
+      />
+      {/* The following feed */}
+      <FeedPanel
+        isOpen={activePanel === 'feed'}
+        onClose={closeSheet}
+        userLocation={userLocation}
+        onShowOnMap={(id) => openFromList(id, 'feed')}
       />
       {/* Authentication Modal */}
       <AuthModal isOpen={activePanel === 'auth'} onClose={closePanel} />
@@ -227,6 +238,7 @@ export default function Home() {
         hidden={previewedSpot !== null}
         spotCount={approvedCount}
         onExplore={() => openSheet('discovery')}
+        onFeed={() => openSheet('feed')}
         onAdd={handleAddSpotClick}
         onProfile={() => (user ? openSheet('profile') : openPanel('auth'))}
         onCancelPicking={cancelSelectingLocation}

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { playSound } from './useSoundStore';
 import { translate } from '@/lib/i18n';
 import type { TranslationKey } from '@/lib/translations';
 import { DELAYS } from '@/lib/constants';
@@ -95,6 +96,7 @@ export const useUploadStore = create<UploadStore>((set, get) => {
     task.run().then(
       () => {
         patch(id, { status: 'done' });
+        playSound('spotAdded');
         useToastStore.getState().showToast(text(task.spec.doneKey), 'success');
         usePushPromptStore.getState().request();
         setTimeout(() => {

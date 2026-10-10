@@ -8,13 +8,18 @@ import {
   CircleAlert,
   Heart,
   Info,
+  MapPin,
+  MessageCircle,
   Settings2,
+  UserCheck,
+  UserPlus,
   ShieldCheck,
   Star,
   XCircle,
   type LucideIcon,
 } from 'lucide-react';
 import type { Notification } from '@/store/useNotificationStore';
+import type { InboxType } from '@/lib/inbox';
 import { useT } from '@/hooks/useT';
 import { stripEdgeEmoji } from '@/lib/notificationText';
 
@@ -35,6 +40,15 @@ const LOOK: Readonly<Record<NotificationType, { icon: LucideIcon; tint: string }
   general: { icon: Bell, tint: 'bg-white/10 text-white/80' },
 };
 
+// Social inbox items get their own look (the moderation ones keep the approve / decline look).
+const INBOX_LOOK: Partial<Record<InboxType, { icon: LucideIcon; tint: string }>> = {
+  new_follower: { icon: UserPlus, tint: 'bg-violet-500/15 text-violet-300' },
+  follow_request: { icon: UserPlus, tint: 'bg-violet-500/15 text-violet-300' },
+  follow_accepted: { icon: UserCheck, tint: 'bg-violet-500/15 text-violet-300' },
+  followed_spot: { icon: MapPin, tint: 'bg-brand-500/15 text-brand-300' },
+  review_reply: { icon: MessageCircle, tint: 'bg-sky-500/15 text-sky-300' },
+};
+
 // In-app toasts are stored with a generic title ("Success") and the message as body: the message
 // is the headline, the icon already says success / error / info.
 const TOAST_TYPES: ReadonlySet<NotificationType> = new Set(['success', 'error', 'info']);
@@ -50,7 +64,8 @@ interface NotificationItemProps {
 
 export default function NotificationItem({ notification, index, now, onClick }: Readonly<NotificationItemProps>) {
   const t = useT();
-  const { icon: Icon, tint } = LOOK[notification.type] ?? LOOK.general;
+  const { icon: Icon, tint } =
+    (notification.inbox && INBOX_LOOK[notification.inbox.type]) ?? LOOK[notification.type] ?? LOOK.general;
 
   const formatTimestamp = (timestamp: number) => {
     const diff = now - timestamp;

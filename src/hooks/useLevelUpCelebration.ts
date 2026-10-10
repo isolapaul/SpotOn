@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useUserStore } from '@/store/useUserStore';
 import { levelUpStep } from '@/lib/levelTheme';
 import { useMyLevel } from './useMyLevel';
+import { playSound } from '@/store/useSoundStore';
 
 const KEY_PREFIX = 'spoton-level-seen:';
 
@@ -38,8 +39,10 @@ export function useLevelUpCelebration(): { level: number | null; dismiss: () => 
     const step = levelUpStep(readSeen(uid), level);
     if (step.next !== readSeen(uid)) writeSeen(uid, step.next);
     // An external system (storage) decides; the state only mirrors its verdict.
+    if (!step.celebrate) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (step.celebrate) setCelebrate(level);
+    setCelebrate(level);
+    playSound('levelUp');
   }, [uid, level]);
 
   return { level: celebrate, dismiss: () => setCelebrate(null) };

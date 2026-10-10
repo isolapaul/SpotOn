@@ -9,6 +9,9 @@ import LevelProgressCard from './LevelProgressCard';
 import ProfileStats from './ProfileStats';
 import BioEditor from './BioEditor';
 import { useMyLevelStore } from '@/store/useMyLevelStore';
+import { useState } from 'react';
+import FollowListSheet from './FollowListSheet';
+import type { FollowListKind } from '@/store/useFollowStore';
 
 interface ProfileHeaderProps {
   user: User;
@@ -34,6 +37,7 @@ export default function ProfileHeader({
 }: Readonly<ProfileHeaderProps>) {
   const followers = useMyLevelStore((s) => s.followers);
   const following = useMyLevelStore((s) => s.following);
+  const [followList, setFollowList] = useState<FollowListKind | null>(null);
   return (
     <div className="shrink-0 px-5 -mt-14 mb-5 relative">
       <div className="flex flex-col items-center">
@@ -51,7 +55,8 @@ export default function ProfileHeader({
           <BioEditor bio={user.bio} />
 
           {/* Who you are and your numbers first, then the level card, then the tabs. */}
-          <ProfileStats spots={spotsCount} followers={followers} following={following} className="mt-1 mb-5" />
+          <ProfileStats spots={spotsCount} followers={followers} following={following} className="mt-1 mb-5" onOpenList={setFollowList} />
+          {followList && <FollowListSheet uid={user.uid} initial={followList} onClose={() => setFollowList(null)} />}
 
           <LevelProgressCard levelInfo={levelInfo} xp={xp} onOpen={onOpenLevelInfo} />
         </div>

@@ -14,7 +14,8 @@ export type InboxType =
   | 'review_reply'
   | 'follow_request'
   | 'follow_accepted'
-  | 'followed_spot';
+  | 'followed_spot'
+  | 'new_follower';
 
 export interface InboxItem {
   id: string;
@@ -44,12 +45,24 @@ export const INBOX_TEXT: Readonly<Record<InboxType, { title: TranslationKey; bod
   follow_request: { title: 'inboxFollowRequest', body: 'inboxFollowRequestBody' },
   follow_accepted: { title: 'inboxFollowAccepted', body: 'inboxFollowAcceptedBody' },
   followed_spot: { title: 'inboxFollowedSpot', body: 'inboxFollowedSpotBody' },
+  new_follower: { title: 'inboxNewFollower', body: 'inboxNewFollowerBody' },
 };
+
+/** Notices about another user: a tap opens their profile. */
+export function opensProfile(type: InboxType): boolean {
+  return type === 'follow_request' || type === 'follow_accepted' || type === 'new_follower';
+}
+
+/** Notices about a spot that is (still) on the map: a tap flies to it. */
+export function opensSpot(type: InboxType): boolean {
+  return type !== 'spot_removed' && type !== 'content_removed' && !opensProfile(type);
+}
 
 /** Decisions in the user's favour (a positive look in the notification centre). */
 export function isApproval(type: InboxType): boolean {
   return type === 'spot_approved' || type === 'edit_approved' || type === 'photo_approved'
-    || type === 'follow_request' || type === 'follow_accepted' || type === 'followed_spot' || type === 'review_reply';
+    || type === 'follow_request' || type === 'follow_accepted' || type === 'followed_spot' || type === 'review_reply'
+    || type === 'new_follower';
 }
 
 function isInboxType(x: unknown): x is InboxType {

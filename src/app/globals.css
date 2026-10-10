@@ -112,6 +112,54 @@
   --animate-badge-pop: badgePop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-bell-ring: bellRing 0.9s ease-in-out both;
   --animate-prompt-in: promptIn 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
+  /* Following feed: the double tap's thumb, the "caught up" tick and a card leaving for the map. */
+  --animate-like-burst: likeBurst 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-check-draw: checkDraw 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-shimmer: shimmer 1.4s linear infinite;
+
+  @keyframes likeBurst {
+    0% {
+      opacity: 0;
+      transform: scale(0.2) rotate(-12deg);
+    }
+    35% {
+      opacity: 1;
+      transform: scale(1.15) rotate(4deg);
+    }
+    55% {
+      transform: scale(0.95) rotate(0deg);
+    }
+    75% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.1) translateY(-18px);
+    }
+  }
+  @keyframes checkDraw {
+    0% {
+      opacity: 0;
+      transform: scale(0.4) rotate(-30deg);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.12) rotate(6deg);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
 
   @keyframes slideUp {
     0% {
@@ -408,6 +456,20 @@
 
 @utility glass-nav {
   @apply bg-surface-2/90 backdrop-blur-xl border border-white/10;
+}
+
+/* A horizontal strip that scrolls without a visible bar (the feed's photos). */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Loading placeholders with a soft moving sheen (the feed's skeleton cards). */
+@utility skeleton {
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.05) 25%, rgb(255 255 255 / 0.11) 50%, rgb(255 255 255 / 0.05) 75%);
+  background-size: 200% 100%;
 }
 
 @utility touch-manipulation {

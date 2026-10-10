@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { INBOX_TEXT, isApproval, parseInboxItem } from './inbox';
+import { INBOX_TEXT, isApproval, opensProfile, opensSpot, parseInboxItem } from './inbox';
 import { translations } from './translations';
 
 describe('parseInboxItem', () => {
@@ -26,7 +26,19 @@ describe('INBOX_TEXT', () => {
   });
   it('the positive look: the three approvals and follow news (item 8)', () => {
     expect(Object.keys(INBOX_TEXT).filter((type) => isApproval(type as never))).toEqual([
-      'spot_approved', 'edit_approved', 'photo_approved', 'review_reply', 'follow_request', 'follow_accepted', 'followed_spot',
+      'spot_approved', 'edit_approved', 'photo_approved', 'review_reply', 'follow_request', 'follow_accepted', 'followed_spot', 'new_follower',
     ]);
+  });
+});
+
+describe('inbox taps', () => {
+  it('follow news open the profile, spot notices the spot, removals nothing', () => {
+    expect(opensProfile('new_follower')).toBe(true);
+    expect(opensProfile('follow_request')).toBe(true);
+    expect(opensProfile('followed_spot')).toBe(false);
+    expect(opensSpot('followed_spot')).toBe(true);
+    expect(opensSpot('spot_approved')).toBe(true);
+    expect(opensSpot('spot_removed')).toBe(false);
+    expect(opensSpot('new_follower')).toBe(false);
   });
 });

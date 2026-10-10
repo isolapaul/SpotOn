@@ -2,13 +2,19 @@ import { create } from 'zustand';
 import { collection, deleteDoc, doc, limit, onSnapshot, orderBy, query, updateDoc, type Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { parseInboxItem, type InboxItem } from '@/lib/inbox';
+import { playSound } from './useSoundStore';
 
 /** The same cap the server keeps (functions/src/lib/inbox.ts INBOX_LIMIT). */
 const INBOX_LIMIT = 50;
+/** An added notice older than this is a sync catching up, not news (no banner). */
+const FRESH_MS = 2 * 60_000;
 
 interface InboxStore {
   /** Newest first; empty while signed out. */
   items: InboxItem[];
+  /** An unread item that arrived while the app was open (the live banner); null when none. */
+  fresh: InboxItem | null;
+  dismissFresh: () => void;
   /** Listens to the signed-in user's inbox (null stops). */
   sync: (uid: string | null) => void;
   markRead: (id: string) => Promise<void>;
@@ -27,11 +33,14 @@ const itemRef = (uid: string, id: string) => doc(db, 'users', uid, 'inbox', id);
  */
 export const useInboxStore = create<InboxStore>((set, get) => ({
   items: [],
+  fresh: null,
+  dismissFresh: () => set({ fresh: null }),
   sync: (uid) => {
     if (listening?.uid === uid) return;
     listening?.unsubscribe();
     listening = null;
-    set({ items: [] });
+    set({ items: [], fresh: null });
+    let first = true;
     if (!uid) return;
     const q = query(collection(db, 'users', uid, 'inbox'), orderBy('createdAt', 'desc'), limit(INBOX_LIMIT));
     const unsubscribe = onSnapshot(
@@ -41,7 +50,12 @@ export const useInboxStore = create<InboxStore>((set, get) => ({
         const items = snap.docs
           .map((d) => parseInboxItem(d.id, d.data(), now))
           .filter((item): item is InboxItem => item !== null);
-        set({ items });
+        // New unread notices after the first snapshot arrived live: a banner and a chime.
+        const arrived = first ? [] : snap.docChanges().filter((c) => c.type === 'added').map((c) => c.doc.id);
+        first = false;
+        const fresh = items.find((i) => arrived.includes(i.id) && !i.read && now - i.createdAt < FRESH_MS);
+        set(fresh ? { items, fresh } : { items });
+        if (fresh) playSound('notification');
       },
       (error) => console.error('Inbox listener failed:', error),
     );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { playSound } from '@/store/useSoundStore';
 import { getMessaging, onMessage, onRegistered, isSupported, type Messaging } from 'firebase/messaging';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, app } from '@/lib/firebase';
@@ -51,6 +52,7 @@ function setupForegroundListener(messaging: Messaging) {
       // The server sends only known kinds; the value is passed through unchecked, as before.
       type: notificationType as AppNotification['type'],
     });
+    playSound('notification');
     
     // Do NOT show a native browser Notification here to avoid duplicates
     // (the service worker will display notifications when the app is backgrounded,

@@ -3,10 +3,10 @@ import { useMapThemeStore, type MapTheme } from './useMapThemeStore';
 
 /** The one panel or modal page.tsx shows over the map (T29). Opening one replaces the other. */
 export type UserPanel = { type: 'user'; uid: string };
-export type ActivePanel = 'none' | 'auth' | 'addSpot' | 'profile' | 'discovery' | { type: 'spot'; spotId: string } | UserPanel;
+export type ActivePanel = 'none' | 'auth' | 'addSpot' | 'profile' | 'discovery' | 'feed' | { type: 'spot'; spotId: string } | UserPanel;
 
 /** Where "back" from a spot returns to: the list it was opened from (item 8: someone's profile too). */
-export type ReturnTarget = 'profile' | 'discovery' | UserPanel;
+export type ReturnTarget = 'profile' | 'discovery' | 'feed' | UserPanel;
 
 export function isSpotPanel(p: ActivePanel): p is { type: 'spot'; spotId: string } {
   return typeof p === 'object' && p !== null && p.type === 'spot';
@@ -51,7 +51,7 @@ interface UiStore {
   /** The map flies to this spot; each request has a new `seq`. */
   focusRequest: { spotId: string; seq: number } | null;
   /**
-   * Opens a spot from a list. From the profile: the profile closes, the map flies to the spot and
+   * Opens a spot from a list. From the profile or the feed: the panel closes, the map flies to the spot and
    * its place card opens on arrival (arriveAtSpot). From Explore: the details open over it.
    */
   openSpotFromList: (spotId: string, from: ReturnTarget) => void;
@@ -64,7 +64,7 @@ interface UiStore {
   /** Back (the back buttons and the system back): one step up, else close what is open. */
   goBack: () => void;
 
-  /** Item 8: someone's profile page; closing it returns to where it was opened (a spot, Explore). */
+  /** Item 8: someone's profile page; closing it returns to where it was opened (a spot, Explore, the feed). */
   userFrom: ActivePanel | null;
   openUserProfile: (uid: string) => void;
   closeUserProfile: () => void;
@@ -126,7 +126,9 @@ export const useUiStore = create<UiStore>((set, get) => ({
   userFrom: null,
   openUserProfile: (uid) => {
     const { activePanel } = get();
-    const from = isSpotPanel(activePanel) || activePanel === 'discovery' ? activePanel : null;
+    const from = isSpotPanel(activePanel) || activePanel === 'discovery' || activePanel === 'feed' || activePanel === 'profile'
+      ? activePanel
+      : null;
     set({ activePanel: { type: 'user', uid }, userFrom: from, previewSpotId: null, returnTo: null });
   },
   closeUserProfile: () => set({ activePanel: get().userFrom ?? 'none', userFrom: null, returnTo: null }),

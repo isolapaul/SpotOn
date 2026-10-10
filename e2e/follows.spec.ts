@@ -14,11 +14,16 @@ const PEOPLE = [E2E.user.uid, E2E.admin.uid, E2E.level5.uid];
 async function reset() {
   const db = adminDb();
   const { FieldValue } = await import('firebase-admin/firestore');
-  for (const col of ['follows', 'followRequests']) {
+  for (const col of ['follows', 'followRequests', 'followNotices']) {
     const snap = await db.collection(col).get();
     await Promise.all(snap.docs.map((d) => d.ref.delete()));
   }
   await Promise.all(PEOPLE.map((uid) => db.doc(`publicProfiles/${uid}`).set({ followersCount: 0, followingCount: 0 }, { merge: true })));
+  // The follow notices this spec causes (new follower, request, accept).
+  for (const uid of PEOPLE) {
+    const inbox = await db.collection(`users/${uid}/inbox`).where('actorUid', 'in', PEOPLE).get();
+    await Promise.all(inbox.docs.map((d) => d.ref.delete()));
+  }
   await db.doc(`users/${E2E.admin.uid}`).update({ profilePrivate: FieldValue.delete() });
   await db.doc(`users/${E2E.user.uid}`).update({ bio: FieldValue.delete() });
 }
@@ -55,6 +60,17 @@ test('people search, then follow and unfollow a public profile', async ({ page }
   await expect(page.getByRole('button', { name: 'Unfollow' })).toBeVisible();
   await expect.poll(async () => (await followDoc(E2E.user.uid, E2E.level5.uid).get()).exists).toBe(true);
   await expect.poll(async () => (await adminDb().doc(`publicProfiles/${E2E.level5.uid}`).get()).get('followersCount')).toBe(1);
+  // The followed user hears about it (an inbox notice; the push goes with it).
+  await expect.poll(async () => (await adminDb().collection(`users/${E2E.level5.uid}/inbox`)
+    .where('type', '==', 'new_follower').where('actorUid', '==', E2E.user.uid).get()).size).toBe(1);
+  // The followers count opens the list, with the new follower in it.
+  await page.getByRole('button', { name: /^Followers/ }).click();
+  const list = page.getByRole('dialog');
+  await expect(list.getByRole('button', { name: new RegExp(`^${E2E.user.username}`) })).toBeVisible();
+  await list.getByRole('tab', { name: 'Following' }).click();
+  await expect(list.getByText('Not following anyone yet.')).toBeVisible();
+  await list.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Unfollow' }).click();
   await expect(page.getByRole('button', { name: 'Follow', exact: true })).toBeVisible();

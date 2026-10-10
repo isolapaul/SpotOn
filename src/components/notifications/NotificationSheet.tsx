@@ -10,6 +10,10 @@ import ModalShell from '../ui/ModalShell';
 import NotificationItem from './NotificationItem';
 import FollowRequests from './FollowRequests';
 import { useFollowStore } from '@/store/useFollowStore';
+import { useSpotStore } from '@/store/useSpotStore';
+import { useUiStore } from '@/store/useUiStore';
+import { useOpenProfile } from '@/hooks/useOpenProfile';
+import { opensProfile, opensSpot } from '@/lib/inbox';
 
 /** Exit animation length (Tailwind `animate-sheet-out`). */
 const CLOSE_MS = 180;
@@ -28,10 +32,26 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
   const unreadCount = notifications.filter((n) => !n.read).length;
   const hasRequests = useFollowStore((s) => s.requests.length > 0);
 
+  const openProfile = useOpenProfile();
+
   const close = () => {
     if (closing) return;
     setClosing(true);
     setTimeout(onClose, CLOSE_MS);
+  };
+
+  // A tap reads the item; follow news open the other user's profile, spot news fly to the spot.
+  const open = (id: string) => {
+    markAsRead(id);
+    const target = notifications.find((n) => n.id === id)?.inbox;
+    if (!target) return;
+    if (opensProfile(target.type) && target.actorUid) {
+      close();
+      openProfile(target.actorUid);
+    } else if (opensSpot(target.type) && useSpotStore.getState().spots.some((s) => s.id === target.spotId)) {
+      close();
+      useUiStore.getState().openSpotLink(target.spotId);
+    }
   };
 
   const today = notifications.filter((n) => isSameLocalDay(n.timestamp, now));
@@ -128,7 +148,7 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
                     notification={notification}
                     index={i + (groupIndex === 0 ? 0 : today.length)}
                     now={now}
-                    onClick={markAsRead}
+                    onClick={open}
                   />
                 ))}
               </div>

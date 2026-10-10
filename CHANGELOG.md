@@ -3,6 +3,22 @@
 Versions are the git tags that were released to the server (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and were not tagged; they are listed by date.
 
+## Unreleased
+
+### Added (feed)
+- A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.
+- Tap a spot's name or "Show on map" in the feed: the feed slides away, the map flies to the spot and its place card opens with a "Feed" button that takes you back to the same place in the feed.
+- From a feed card you can like the photo (or double-tap it), read and write reviews, share the spot and add it to your favourites; tap the poster to open their profile.
+- The feed button in the bottom bar lights up when people you follow shared something new since your last visit; new posts arriving while you scroll show a "new spots" button.
+
+### Added (people)
+- Tap the followers or following count on a profile (yours or anyone's you can see) to see who follows them and whom they follow, with a name filter and a Follow button.
+- When someone follows you, you get a notification in the app and a push (at most once a day per person; it follows the "Follows" notification setting).
+- A notice that arrives while the app is open drops in at the top for a few seconds; tapping it, or the notice in the notification centre, opens that person's profile or flies to the spot.
+
+### Added (sounds)
+- Short, quiet sounds when your spot or photos are uploaded, a notification arrives, you like a photo, add a favourite, follow someone or level up. They can be turned off in Settings → Sounds; the iPhone's silent switch mutes them.
+
 ## v2.1.0 — 2026-10-03
 
 ### Added

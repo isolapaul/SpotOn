@@ -355,4 +355,19 @@ describe('user profiles (item 8)', () => {
     useUiStore.getState().goBack();
     expect(useUiStore.getState().activePanel).toEqual({ type: 'user', uid: 'u1' });
   });
+  it('a spot opened from the feed flies there, and back returns to the feed', () => {
+    ui().openPanel('feed');
+    ui().openSpotFromList('s1', 'feed');
+    expect(ui()).toMatchObject({ activePanel: 'none', returnTo: 'feed', focusRequest: { spotId: 's1' } });
+    ui().arriveAtSpot('s1');
+    expect(ui().previewSpotId).toBe('s1');
+    ui().goBack();
+    expect(ui()).toMatchObject({ activePanel: 'feed', previewSpotId: null, returnTo: null });
+  });
+  it('a profile opened from the feed returns to the feed', () => {
+    ui().openPanel('feed');
+    ui().openUserProfile('u1');
+    ui().goBack();
+    expect(ui().activePanel).toBe('feed');
+  });
 });

@@ -1,17 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Lock, MapPin, Search, UserRound } from 'lucide-react';
+import { MapPin, Search, UserRound } from 'lucide-react';
 import { useT } from '@/hooks/useT';
 import { useOpenProfile } from '@/hooks/useOpenProfile';
 import { useUserStore } from '@/store/useUserStore';
 import { useUiStore } from '@/store/useUiStore';
 import { useFollowStore, type PersonResult } from '@/store/useFollowStore';
+import PersonRow from '../profile/PersonRow';
 import { useDiscoveryStore } from '@/store/useDiscoveryStore';
 import type { Spot } from '@/store/useSpotStore';
-import { getLevelInfo } from '@/lib/levelUtils';
 import { matchesSpotQuery, MIN_SEARCH_LENGTH, SPOT_SEARCH_LIMIT } from '@/lib/search';
-import LevelBadge from '@/components/ui/LevelBadge';
 import SpotRow from './SpotRow';
 
 type Mode = 'spots' | 'people';
@@ -154,38 +153,5 @@ function Empty({ text, children }: Readonly<{ text: string; children?: React.Rea
       <p className="text-label-secondary">{text}</p>
       {children}
     </div>
-  );
-}
-
-function PersonRow({ person, index, onOpen }: Readonly<{ person: PersonResult; index: number; onOpen: () => void }>) {
-  const t = useT();
-  const level = person.level ?? 1;
-  const [failed, setFailed] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="no-min-size w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/4 motion-safe:animate-item-in"
-      style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
-    >
-      <span aria-hidden="true" className="w-11 h-11 rounded-full overflow-hidden grid place-items-center bg-brand-600 text-white font-semibold shrink-0">
-        {person.profilePictureURL && !failed ? (
-          // eslint-disable-next-line @next/next/no-img-element -- user-hosted avatar URLs (any origin)
-          <img src={person.profilePictureURL} alt="" className="w-full h-full object-cover" onError={() => setFailed(true)} />
-        ) : (
-          person.username.charAt(0).toUpperCase()
-        )}
-      </span>
-      <span className="flex-1 min-w-0">
-        <span className="flex items-center gap-1.5 text-label font-semibold text-[16px]">
-          <span className="truncate">{person.username}</span>
-          {person.isPrivate && <Lock className="w-3.5 h-3.5 text-label-tertiary shrink-0" aria-label={t('privateProfile')} />}
-        </span>
-        <span className="flex items-center gap-1 text-[13px] text-label-secondary">
-          <LevelBadge level={level} size={14} />
-          {t(getLevelInfo(level).nameKey)}
-        </span>
-      </span>
-    </button>
   );
 }
