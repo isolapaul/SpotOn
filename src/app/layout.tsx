@@ -47,7 +47,7 @@ export default async function RootLayout({
     <html lang="en">
       <head>
         <link rel="icon" href="/icon-192x192.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className="font-sans">
         {children}

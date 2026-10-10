@@ -31,6 +31,7 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - The Android back gesture and Escape close the sheet on top first (reviews, likers, followers, the photo viewer) instead of the whole panel under it, and focus moves into the sheet and back.
 - A notice banner stays while you touch it; an "Offline" pill shows while there is no connection.
 - Slightly brighter secondary text for better contrast; the panels load in their own parts, so the app starts faster.
+- Android 13+ themed (monochrome) app icon and a proper 180 px home-screen icon for iPhones.
 - Sign in with Apple is ready for the iOS app (off until it is set up; `docs/app-store.md`).
 - Signing in from a panel (the feed, a profile, a spot's reviews) returns you to it instead of the map.
 

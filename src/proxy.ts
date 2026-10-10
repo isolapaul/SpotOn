@@ -30,7 +30,7 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     {
-      source: '/((?!api/|_next/static/|_next/image$|__/auth(?:/|$)|__/firebase/init\\.json$|manifest\\.json$|icon-(?:maskable-)?(?:192x192|512x512)\\.png$|screenshots/[^/]+\\.jpg$|\\.well-known/assetlinks\\.json$|placeholder-spot\\.jpg$|patch-notes\\.md$).*)',
+      source: '/((?!api/|_next/static/|_next/image$|__/auth(?:/|$)|__/firebase/init\\.json$|manifest\\.json$|icon-(?:maskable-|monochrome-)?(?:192x192|512x512)\\.png$|apple-touch-icon\\.png$|screenshots/[^/]+\\.jpg$|\\.well-known/assetlinks\\.json$|placeholder-spot\\.jpg$|patch-notes\\.md$).*)',
       missing: [{ type: 'header', key: 'next-router-prefetch' }],
     },
   ],

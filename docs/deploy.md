@@ -400,9 +400,10 @@ The first run offers to download a JDK and the Android command-line tools: answe
 | Splash screen colour | `#0E1013` |
 | Icon URL | `https://spoton.isolapaul.hu/icon-512x512.png` |
 | Maskable icon URL | `https://spoton.isolapaul.hu/icon-maskable-512x512.png` |
-| Monochrome icon URL | leave empty |
+| Monochrome icon URL | `https://spoton.isolapaul.hu/icon-monochrome-512x512.png` (Android 13+ themed icon) |
 | Shortcuts | No |
 | Play Billing | No |
+| Notifications (`enableNotifications`) | Yes (Android 13+ notification permission and delegation) |
 | Geolocation delegation | No (Chrome asks for the location permission itself, as on the web) |
 | Key store location | the default (`./android.keystore`) |
 | Key name | `android` |
