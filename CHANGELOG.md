@@ -21,6 +21,12 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - A notice that arrives while the app is open drops in at the top for a few seconds; tapping it, or the notice in the notification centre, opens that person's profile or flies to the spot.
 - Tapping a push opens what it is about: a new follower's or follow request's profile, or the spot (profile links: `/user/<id>`).
 
+### Added (app store readiness)
+- The Terms now say plainly that abusive users and objectionable content are not tolerated, how to report and block in the app, and that reports are reviewed within 24 hours; everyone accepts the updated Terms once.
+- A report button on every feed card; Privacy Policy and Terms links at the bottom of Explore, also while signed out.
+- An offline page instead of the browser's error page when the app is opened without internet, and friendly error and "page not found" screens.
+- The page language follows the chosen app language (screen readers, translation prompts).
+
 ### Fixed
 - A shared spot link with a broken escape (`/spot/%E0%A4%A`) no longer breaks the page.
 - Someone adding your spot to their favourites over and over no longer sends you a push each time (at most one a day per person and spot), and people you blocked send none.

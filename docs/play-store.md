@@ -110,6 +110,7 @@ Play's definitions: data is **collected** when it leaves the device; it is **sha
 |---|---|---|---|---|---|
 | Personal info → Email address | Yes | No | Required | Account management, App functionality | Sign-in (Firebase Auth) |
 | Personal info → User IDs | Yes | No | Required | Account management, App functionality | Account id and the public username |
+| Personal info → Name | Yes | No | Optional | Account management | Google sign-in only: the Google account name, used to suggest the first username |
 | Photos and videos → Photos | Yes | No | Optional | App functionality | Spot photos, profile picture and banner, feedback attachments (EXIF location removed) |
 | App activity → Other user-generated content | Yes | No | Optional | App functionality | Spots (name, description, category, the map position the user picks), reviews, favourites, likes, the profile bio, feedback messages |
 | App activity → Other actions | Yes | No | Optional | App functionality | Highlights, image likes, follows and follow requests, profile visibility, notification settings, the people-search counter |

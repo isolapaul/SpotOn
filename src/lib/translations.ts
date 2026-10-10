@@ -795,6 +795,13 @@ export const translations = {
     feedNearMe: 'Közel hozzám',
     feedNothingNear: '{km} km-en belül még nincs megosztott hely.',
     feedYouShared: 'Te osztottad meg',
+    errorScreenTitle: 'Valami elromlott',
+    errorScreenText: 'Elnézést! Próbáld újra, vagy térj vissza a térképhez.',
+    notFoundTitle: 'Ez az oldal nem létezik',
+    notFoundText: 'Lehet, hogy elírták a címet, vagy a tartalmat törölték.',
+    tryAgain: 'Újrapróbálás',
+    backToMap: 'Vissza a térképhez',
+    legalLinks: 'Jogi információk',
   },
   en: {
     // Navigation
@@ -1592,6 +1599,13 @@ export const translations = {
     feedNearMe: 'Near me',
     feedNothingNear: 'No spots shared within {km} km yet.',
     feedYouShared: 'You shared this',
+    errorScreenTitle: 'Something went wrong',
+    errorScreenText: 'Sorry about that. Try again, or go back to the map.',
+    notFoundTitle: 'This page doesn\'t exist',
+    notFoundText: 'The address may be mistyped, or the content was removed.',
+    tryAgain: 'Try again',
+    backToMap: 'Back to the map',
+    legalLinks: 'Legal',
   },
   de: {
     // Navigation
@@ -2390,6 +2404,13 @@ export const translations = {
     feedNearMe: 'In meiner Nähe',
     feedNothingNear: 'Im Umkreis von {km} km wurde noch kein Ort geteilt.',
     feedYouShared: 'Von dir geteilt',
+    errorScreenTitle: 'Etwas ist schiefgelaufen',
+    errorScreenText: 'Entschuldigung! Versuche es erneut oder kehre zur Karte zurück.',
+    notFoundTitle: 'Diese Seite gibt es nicht',
+    notFoundText: 'Die Adresse ist vielleicht falsch, oder der Inhalt wurde entfernt.',
+    tryAgain: 'Erneut versuchen',
+    backToMap: 'Zurück zur Karte',
+    legalLinks: 'Rechtliches',
   },
 };
 

@@ -4,7 +4,7 @@ import type { LegalDocument } from './types';
 export const TERMS_HU: LegalDocument = {
   lang: 'hu',
   title: 'Felhasználási feltételek (ÁSZF)',
-  updated: 'Utolsó módosítás: 2026. szeptember 30.',
+  updated: 'Utolsó módosítás: 2026. október 10.',
   intro: [
     'Ezek a feltételek a SpotOn (https://spoton.isolapaul.hu) használatára vonatkoznak. A személyes adataid kezeléséről az Adatvédelmi tájékoztató szól.',
     'A feltételeket a regisztráció előtt megismerheted: a bejelentkezési ablakból ez az oldal és az Adatvédelmi tájékoztató is elérhető. A regisztrációval vagy bejelentkezéssel fogadod el őket; a korábban regisztrált felhasználók az alkalmazásban, az Elfogadom gombbal fogadják el. Az elfogadás időpontját és a feltételek akkori változatát rögzítjük.',
@@ -47,7 +47,8 @@ export const TERMS_HU: LegalDocument = {
           'olyan helyet, amely más ember lakóhelyét azonosítja, az ő hozzájárulása nélkül;',
           'magánterületet, lezárt vagy életveszélyes helyet, ha a helyszín felkeresése jogsértő vagy veszélyes;',
           'reklámot, kéretlen üzenetet, hamis vagy megtévesztő adatot;',
-          'más szerzői jogát vagy egyéb jogát sértő tartalmat.',
+          'más szerzői jogát vagy egyéb jogát sértő tartalmat;',
+          'más felhasználók zaklatását, fenyegetését, megfélemlítését, vagy más nevében való fellépést.',
         ],
         'A fotókon szereplő személyek hozzájárulásáért (Ptk. 2:48. §) te felelsz.',
         'A feltöltéssel ingyenes, nem kizárólagos, időben és területileg nem korlátozott felhasználási engedélyt adsz a szolgáltatónak arra, hogy a tartalmat a SpotOn keretében többszörözze (tárolja, beleértve a tárhely- és infrastruktúra-szolgáltatóknál), nyilvánossághoz közvetítse (lehívásra hozzáférhetővé tegye), és a működéshez szükséges mértékben átdolgozza (méretezés, tömörítés). Az engedély a fiókod törlése után is fennmarad azokra a helyekre és fotókra, amelyek a törlés után megmaradnak; ezeket ekkor szerzői név feltüntetése nélkül jelenítjük meg, amihez hozzájárulsz. Kérésre az ilyen tartalmat is eltávolítjuk. Az értékeléseid és a mások helyeihez feltöltött fotóid a fiók törlésekor törlődnek (részletek az Adatvédelmi tájékoztatóban).',
@@ -56,7 +57,7 @@ export const TERMS_HU: LegalDocument = {
     {
       heading: '5. Moderálás',
       blocks: [
-        'A szolgáltató és az adminok a beküldött helyeket, a módosításokat és a fotókat jóváhagyhatják vagy indoklással elutasíthatják, és a feltételeket sértő tartalmat előzetes értesítés nélkül, indoklással törölhetik. Egy elutasított helyet javíthatsz és újra beküldhetsz. Ismételt vagy súlyos szabálysértés esetén a fiókot felfüggeszthetjük vagy törölhetjük. Az elutasításról, a tartalom eltávolításáról vagy a fiók felfüggesztéséről – ha nem jogszabály tiltja – az indoklással együtt az alkalmazás értesítési központjában és push-értesítésben értesítünk; az értesítés az értesítési központban megmarad, amíg nem törlöd. A döntés ellen a(z) {email} címen kifogást tehetsz, amelyet emberi felülvizsgálattal 30 napon belül elbírálunk. Ha jogsértő tartalmat látsz, jelezd a visszajelzés funkcióval vagy e-mailben.',
+        'A szolgáltató és az adminok a beküldött helyeket, a módosításokat és a fotókat jóváhagyhatják vagy indoklással elutasíthatják, és a feltételeket sértő tartalmat előzetes értesítés nélkül, indoklással törölhetik. Egy elutasított helyet javíthatsz és újra beküldhetsz. Ismételt vagy súlyos szabálysértés esetén a fiókot felfüggeszthetjük vagy törölhetjük. Az elutasításról, a tartalom eltávolításáról vagy a fiók felfüggesztéséről – ha nem jogszabály tiltja – az indoklással együtt az alkalmazás értesítési központjában és push-értesítésben értesítünk; az értesítés az értesítési központban megmarad, amíg nem törlöd. A döntés ellen a(z) {email} címen kifogást tehetsz, amelyet emberi felülvizsgálattal 30 napon belül elbírálunk. A kifogásolható tartalommal és a bántó felhasználókkal szemben zéró toleranciát alkalmazunk. Ha ilyet látsz, jelentsd az alkalmazásban a hely, fotó, értékelés, válasz vagy profil Jelentés gombjával (vagy írj a(z) {email} címre); egy felhasználót le is tilthatsz, ekkor egyikőtök sem látja a másikat. A jelentéseket 24 órán belül átnézzük, és szükség esetén eltávolítjuk a tartalmat vagy felfüggesztjük a fiókot.',
       ],
     },
     {

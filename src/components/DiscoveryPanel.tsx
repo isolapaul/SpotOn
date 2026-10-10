@@ -17,6 +17,7 @@ import PanelShell from './ui/PanelShell';
 import FeaturedSpot from './discovery/FeaturedSpot';
 import SpotRow from './discovery/SpotRow';
 import SearchView from './discovery/SearchView';
+import LegalLinks from './legal/LegalLinks';
 
 interface DiscoveryPanelProps {
   isOpen: boolean;
@@ -219,6 +220,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
             )}
           </div>
         )}
+        <LegalLinks className="mt-6" />
         </>
         )}
       </div>

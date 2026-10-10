@@ -13,6 +13,7 @@ import { getUserNameColor, profileLevel } from '@/lib/levelUtils';
 import { resolveNameFontClass } from '@/lib/nameStyle';
 import LevelBadge from '../ui/LevelBadge';
 import FollowChip from '../profile/FollowChip';
+import ReportButton from '../safety/ReportButton';
 import { useUserStore } from '@/store/useUserStore';
 
 /**
@@ -86,6 +87,8 @@ export default function FeedCardHeader({ spot, suggested, now }: Readonly<{ spot
           {categoryLabel(spot.category)}
         </p>
       </div>
+      {/* Reporting right where the content shows (store UGC rules); not for one's own spots. */}
+      {!own && <ReportButton variant="icon" target={{ kind: 'spot', spotId: spot.id, targetId: spot.id }} className="-mr-1.5 shrink-0" />}
       {suggested && !own && <FollowChip uid={spot.createdBy} isPrivate={profile?.isPrivate === true} tone="text" />}
     </header>
   );

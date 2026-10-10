@@ -35,6 +35,8 @@ import { runViewTransition } from '@/hooks/viewTransition';
 import { useVisibleSpots } from '@/hooks/useVisibleSpots';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { useSpotLink } from '@/hooks/useSpotLink';
+import { useServiceWorker } from '@/hooks/useServiceWorker';
+import { useDocumentLanguage } from '@/hooks/useDocumentLanguage';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import { usePendingUsernameClaim } from '@/hooks/usePendingUsernameClaim';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
@@ -96,6 +98,8 @@ export default function Home() {
   // A shared link (/spot/<id>) opens its spot once the app is ready.
   const visibleIds = useMemo(() => new Set(visibleSpots.map((s) => s.id)), [visibleSpots]);
   useSpotLink(isAppReady, visibleIds);
+  useServiceWorker(isAppReady);
+  useDocumentLanguage();
 
   // Full-screen panels open and close as sheets; the place card's Details morphs its photo into the hero.
   const openSheet = (p: Parameters<typeof openPanel>[0]) => runViewTransition(() => openPanel(p));

@@ -3,7 +3,7 @@
 // users accept once in a prompt. The users doc records the version and the time.
 
 /** Bump when the Terms or the Privacy Policy change materially: everyone is asked once more. */
-export const TERMS_VERSION = '2026-09-30';
+export const TERMS_VERSION = '2026-10-10';
 
 /** Whether the signed-in user still has to accept the current version. */
 export function needsTermsAcceptance(acceptedVersion: string | undefined): boolean {
