@@ -67,6 +67,9 @@ describe('feedPhotos', () => {
   it('reads legacy imageUrls with the server ids and drops the placeholder', () => {
     expect(feedPhotos(spot('s', 'x', 0, { imageUrls: ['u1'] }))).toEqual([{ url: 'u1', imageId: 's_0', likes: 0, likedBy: [] }]);
     expect(feedPhotos(spot('s', 'x', 0, { imageUrls: ['/placeholder-spot.jpg'] }))).toEqual([]);
+    // Only the legacy singular imageUrl: shown, not likeable.
+    expect(feedPhotos(spot('s', 'x', 0, { imageUrls: undefined as never, imageUrl: 'old.jpg' } as Partial<Spot>)))
+      .toEqual([{ url: 'old.jpg', imageId: null, likes: 0, likedBy: [] }]);
   });
 });
 

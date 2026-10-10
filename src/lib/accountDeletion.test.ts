@@ -6,6 +6,8 @@ describe('deletionConfirmWord', () => {
     expect(deletionConfirmWord({ username: 'anna', email: 'a@example.com' })).toBe('anna');
     expect(deletionConfirmWord({ username: '', email: 'a@example.com' })).toBe('a@example.com');
     expect(deletionConfirmWord({ username: null, email: null })).toBe('delete');
+    // A doc without a username shows "user", but the server expects the e-mail.
+    expect(deletionConfirmWord({ username: 'user', usernameMissing: true, email: 'a@example.com' })).toBe('a@example.com');
   });
 });
 

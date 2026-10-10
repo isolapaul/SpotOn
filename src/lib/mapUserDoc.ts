@@ -10,6 +10,8 @@ export interface NotificationSettings {
 export interface User {
   uid: string;
   username: string; // Only username, no separate display name
+  /** The doc has no username (shown as "user"): account deletion then asks for the e-mail, as the server does. */
+  usernameMissing?: true;
   email: string;
   photoURL?: string;
   profilePictureURL?: string;
@@ -57,6 +59,7 @@ export function mapUserDoc(uid: string, authInfo: AuthInfo, data: Record<string,
   const user: User = {
     uid,
     username: str(data.username) || 'user',
+    ...(str(data.username) ? {} : { usernameMissing: true as const }),
     email: authInfo.email || '',
     photoURL: authInfo.photoURL || str(data.photoURL) || '',
     profilePictureURL: str(data.profilePictureURL) || str(data.photoURL) || authInfo.photoURL || '',

@@ -192,16 +192,18 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
 
   // 4b. Follows (item 8), after the users doc is gone (the follow callables read both users docs
   // in their transactions, so no new edge or counter can appear): both directions (the other
-  // side's count drops, only for an edge that still exists), requests, request-notice cooldowns,
-  // rate limits.
-  const [following, followers, sent, received, noticesSent, noticesReceived] = await Promise.all([
-    db.collection("follows").where("follower", "==", uid).get(),
-    db.collection("follows").where("target", "==", uid).get(),
-    db.collection("followRequests").where("requester", "==", uid).get(),
-    db.collection("followRequests").where("target", "==", uid).get(),
-    db.collection("followNotices").where("requester", "==", uid).get(),
-    db.collection("followNotices").where("target", "==", uid).get(),
-  ]);
+  // side's count drops, only for an edge that still exists), requests, request-notice and
+  // favourite-notice cooldowns, rate limits.
+  const [following, followers, sent, received, noticesSent, noticesReceived, favNotices] =
+    await Promise.all([
+      db.collection("follows").where("follower", "==", uid).get(),
+      db.collection("follows").where("target", "==", uid).get(),
+      db.collection("followRequests").where("requester", "==", uid).get(),
+      db.collection("followRequests").where("target", "==", uid).get(),
+      db.collection("followNotices").where("requester", "==", uid).get(),
+      db.collection("followNotices").where("target", "==", uid).get(),
+      db.collection("favoriteNotices").where("favoriter", "==", uid).get(),
+    ]);
   const counters = db.collection("publicProfiles");
   const dropEdge = (ref: DocumentReference, other: string, field: string) =>
     db.runTransaction(async (tx) => {
@@ -212,8 +214,8 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
   await Promise.all([
     ...following.docs.map((d) => dropEdge(d.ref, String(d.get("target")), "followersCount")),
     ...followers.docs.map((d) => dropEdge(d.ref, String(d.get("follower")), "followingCount")),
-    ...[...sent.docs, ...received.docs, ...noticesSent.docs, ...noticesReceived.docs]
-      .map((d) => d.ref.delete()),
+    ...[sent, received, noticesSent, noticesReceived, favNotices]
+      .flatMap((q) => q.docs).map((d) => d.ref.delete()),
     db.collection("rateLimits").doc(uid).delete(),
   ]);
 

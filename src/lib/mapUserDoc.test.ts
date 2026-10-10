@@ -44,6 +44,7 @@ describe('mapUserDoc', () => {
     expect(user).toEqual({
       uid: 'u2',
       username: 'user',
+      usernameMissing: true,
       email: '',
       photoURL: '',
       profilePictureURL: '',
@@ -60,6 +61,7 @@ describe('mapUserDoc', () => {
   it('maps a legacy doc with photoURL only and no username', () => {
     const user = mapUserDoc('u3', { email: 'l@b.test', photoURL: null }, { photoURL: 'https://doc/legacy.png' });
     expect(user.username).toBe('user');
+    expect(user.usernameMissing).toBe(true);
     expect(user.photoURL).toBe('https://doc/legacy.png');
     expect(user.profilePictureURL).toBe('https://doc/legacy.png');
     expect(user.savedSpots).toEqual([]);

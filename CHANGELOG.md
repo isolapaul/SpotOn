@@ -19,6 +19,12 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 
 ### Fixed
 - A shared spot link with a broken escape (`/spot/%E0%A4%A`) no longer breaks the page.
+- Someone adding your spot to their favourites over and over no longer sends you a push each time (at most one a day per person and spot), and people you blocked send none.
+- Users without a username can delete their account again: the confirmation now asks for the e-mail address, as the server expects (it asked for "user").
+- Signing out clears this device's notification list, so the next account does not see it.
+- Tapping the heart on two spots quickly no longer loses the first favourite until a reload.
+- Signing up with Google through the redirect (blocked pop-ups, home-screen app) asks for a username like the pop-up sign-up.
+- Reply pushes follow the "Reviews and likes" setting instead of "Spot approved".
 
 ### Added (sounds)
 - Short, quiet sounds when your spot or photos are uploaded, a notification arrives, you like a photo, add a favourite, follow someone or level up. They can be turned off in Settings → Sounds; the iPhone's silent switch mutes them.

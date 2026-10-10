@@ -2,7 +2,7 @@
 // earlier spots of everyone else so the feed is never empty. Pure.
 import type { Spot } from '@/store/useSpotStore';
 import { publishedAt } from './newSpots';
-import { getGalleryUrls, getHeroImageUrl, getSpotImages, PLACEHOLDER_URL, sortSpotImagesByLikes } from './spotImages';
+import { getHeroImageUrl, getSpotImages, imageFallbacks, PLACEHOLDER_URL, sortSpotImagesByLikes } from './spotImages';
 
 /** Cards rendered per page while scrolling. */
 export const FEED_PAGE_SIZE = 10;
@@ -61,11 +61,14 @@ export interface FeedPhoto {
   likedBy: string[];
 }
 
-/** A card's photos: the details hero first, then the gallery order; at most FEED_MAX_PHOTOS. */
+/**
+ * A card's photos: the details hero first, then the gallery order, then the legacy singular
+ * `imageUrl` (so old spots and broken spotImages entries still show a photo); at most FEED_MAX_PHOTOS.
+ */
 export function feedPhotos(spot: Spot): FeedPhoto[] {
   const images = getSpotImages(spot);
   const sorted = sortSpotImagesByLikes(images, 'missingAsZero');
-  const gallery = getGalleryUrls(spot, sorted);
+  const gallery = imageFallbacks(spot, sorted);
   const hero = getHeroImageUrl(spot, sorted);
   const urls = (hero !== PLACEHOLDER_URL ? [hero, ...gallery] : gallery)
     .filter((url, i, all) => all.indexOf(url) === i)

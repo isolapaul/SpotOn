@@ -22,6 +22,8 @@ import { compressImage } from '@/lib/imageCompression';
 import { mapAdminDoc, type AdminUser } from '@/lib/mapAdminDoc';
 import { TERMS_VERSION } from '@/lib/terms';
 import { forgetDevice } from './pushDevice';
+import { useNotificationStore } from './useNotificationStore';
+import { useFeedStore } from './useFeedStore';
 
 export type { User } from '@/lib/mapUserDoc';
 
@@ -467,6 +469,9 @@ export const useUserStore = create<UserStore>()(
         await forgetDevice(null);
         stopAdminListeners(set);
         await firebaseSignOut(auth);
+        // The device's notification list belongs to the account (the next one must not see it).
+        useNotificationStore.getState().clearAll();
+        useFeedStore.getState().markSeen(0);
         set({ user: null, loading: false });
       },
 
@@ -522,7 +527,9 @@ export const useUserStore = create<UserStore>()(
               data = withUsername(data, await claimGeneratedUsername(firebaseUser.displayName || 'user'));
               newAccount = 'generated';
             }
-            set({ user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data), newAccount });
+            // A new account (or one without a name) picks its username, as after the popup sign-in.
+            const needsName = newAccount !== null || typeof data.username !== 'string' || !data.username;
+            set({ user: mapUserDoc(firebaseUser.uid, authInfoOf(firebaseUser), data), newAccount, ...(needsName ? { needsUsername: true } : {}) });
           }
         } catch (error) {
           console.error('Error handling redirect result:', error);
@@ -577,23 +584,14 @@ export const useUserStore = create<UserStore>()(
             await updateDoc(userRef, {
               savedSpots: arrayRemove(spotId),
             });
-            set({
-              user: {
-                ...user,
-                savedSpots: user.savedSpots.filter((id) => id !== spotId),
-              },
-            });
+            // From the current state: another toggle may have finished meanwhile (lost update).
+            set((s) => (s.user ? { user: { ...s.user, savedSpots: s.user.savedSpots.filter((id) => id !== spotId) } } : {}));
           } else {
             // Add to favorites
             await updateDoc(userRef, {
               savedSpots: arrayUnion(spotId),
             });
-            set({
-              user: {
-                ...user,
-                savedSpots: [...user.savedSpots, spotId],
-              },
-            });
+            set((s) => (s.user ? { user: { ...s.user, savedSpots: [...new Set([...s.user.savedSpots, spotId])] } } : {}));
           }
         } catch (error) {
           throw error;

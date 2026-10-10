@@ -52,8 +52,12 @@ const FOLLOW_TYPES: readonly InboxType[] = [
 /** Kinds whose push names the other user first, then the spot. */
 const ACTOR_SPOT_TYPES: readonly InboxType[] = ["followed_spot", "review_reply"];
 
-/** Moderation decisions follow the "spot status" setting; follow news "follows" (item 8). */
+/**
+ * Moderation decisions follow the "spot status" setting, follow news "follows" (item 8) and
+ * replies the "reviews and likes" one (they are about reviews).
+ */
 function settingsKeyOf(type: InboxType): NotificationSettingsKey {
+  if (type === "review_reply") return "spotReviewed";
   return FOLLOW_TYPES.includes(type) ? "follows" : "spotApproved";
 }
 

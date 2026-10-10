@@ -6,6 +6,9 @@ import * as logger from "firebase-functions/logger";
 import {db} from "../lib/app";
 import {sendNotificationToUser} from "../lib/notify";
 
+/** One favourite push per person and spot a day (favoriteNotices/{favoriter}_{spot}). */
+const FAVORITE_NOTICE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
 // ========================================
 // TRIGGER 3: Spot Favorited (Liked)
 // ========================================
@@ -43,6 +46,17 @@ export const onSpotFavorited = onDocumentUpdated(
           logger.info(`User ${favoriterId} favorited their own spot, skipping notification`);
           return;
         }
+
+        // Not from someone the owner blocked, and once a day per person and spot: a remove/add
+        // loop of the same favourite must not flood the owner with pushes.
+        const [blocked, notice] = await db.getAll(
+          db.collection("blocks").doc(`${creatorId}_${favoriterId}`),
+          db.collection("favoriteNotices").doc(`${favoriterId}_${newSpotId}`),
+        );
+        if (blocked.exists) return;
+        const last = notice.get("at");
+        if (typeof last === "number" && Date.now() - last < FAVORITE_NOTICE_COOLDOWN_MS) return;
+        await notice.ref.set({favoriter: favoriterId, spotId: newSpotId, at: Date.now()});
 
         logger.info(`Spot ${newSpotId} favorited, notifying owner ${creatorId}`);
 
