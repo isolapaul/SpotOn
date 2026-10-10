@@ -3,13 +3,8 @@
 import dynamic from 'next/dynamic';
 import BottomNavigation from '@/components/BottomNavigation';
 import AuthModal from '@/components/AuthModal';
-import AddSpotModal from '@/components/AddSpotModal';
-import SpotDetailsPanel from '@/components/SpotDetailsPanel';
-import ProfilePanel from '@/components/ProfilePanel';
-import UserProfilePanel from '@/components/UserProfilePanel';
-import DiscoveryPanel from '@/components/DiscoveryPanel';
-import FeedPanel from '@/components/feed/FeedPanel';
 import LiveNotice from '@/components/notifications/LiveNotice';
+import OfflineBanner from '@/components/OfflineBanner';
 import LoadingScreen from '@/components/LoadingScreen';
 import NotificationPrompt from '@/components/NotificationPrompt';
 import UploadStatus from '@/components/UploadStatus';
@@ -40,7 +35,8 @@ import { useDocumentLanguage } from '@/hooks/useDocumentLanguage';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import { usePendingUsernameClaim } from '@/hooks/usePendingUsernameClaim';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { closeTopOverlay, useOverlayStore } from '@/store/useOverlayStore';
 import { DEFAULT_MAP_CENTER, Z } from '@/lib/constants';
 
 // Client-only: mapbox-gl needs `window` and WebGL
@@ -48,6 +44,15 @@ const MapView = dynamic(() => import('@/components/MapView'), {
   ssr: false,
   loading: () => null, // No loading indicator here, we use LoadingScreen
 });
+
+// The panels load in their own chunks right after the first paint (each renders nothing while
+// closed), so the loading screen and the map need less JavaScript on a slow connection.
+const AddSpotModal = dynamic(() => import('@/components/AddSpotModal'), { ssr: false, loading: () => null });
+const SpotDetailsPanel = dynamic(() => import('@/components/SpotDetailsPanel'), { ssr: false, loading: () => null });
+const ProfilePanel = dynamic(() => import('@/components/ProfilePanel'), { ssr: false, loading: () => null });
+const UserProfilePanel = dynamic(() => import('@/components/UserProfilePanel'), { ssr: false, loading: () => null });
+const DiscoveryPanel = dynamic(() => import('@/components/DiscoveryPanel'), { ssr: false, loading: () => null });
+const FeedPanel = dynamic(() => import('@/components/feed/FeedPanel'), { ssr: false, loading: () => null });
 
 // The first-run tour: its own chunk, downloaded only while it is due (never again once completed).
 const OnboardingFlow = dynamic(() => import('@/components/onboarding/OnboardingFlow'), {
@@ -105,9 +110,28 @@ export default function Home() {
   const openSheet = (p: Parameters<typeof openPanel>[0]) => runViewTransition(() => openPanel(p));
   const closeSheet = () => runViewTransition(closePanel);
   const openFromList = (spotId: string, from: ReturnTarget) => runViewTransition(() => openSpotFromList(spotId, from));
-  const back = () => runViewTransition(goBack);
+  // A sheet over a panel (comments, likers, follower lists) closes first, then the panel steps back.
+  const overlays = useOverlayStore((s) => s.stack.length);
+  const back = () => {
+    if (closeTopOverlay()) return;
+    runViewTransition(goBack);
+  };
+  // Escape does what the system back does (keyboards, ChromeOS, desktop); the tour has its own keys.
+  const tourRef = useRef(showTour);
+  useEffect(() => {
+    tourRef.current = showTour;
+  }, [showTour]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented || tourRef.current) return;
+      if (closeTopOverlay()) return;
+      if (hasBackStep(useUiStore.getState())) runViewTransition(useUiStore.getState().goBack);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
   // The system back steps back in the app (Android back gesture, browser Back) while anything is open.
-  useSystemBack(canGoBack, `${JSON.stringify(activePanel)}|${previewSpotId}`, back);
+  useSystemBack(canGoBack || overlays > 0, `${JSON.stringify(activePanel)}|${previewSpotId}|${overlays}`, back);
   // The way back to the list a spot was opened from (the details, and the place card for the profile).
   const backToList = returnTo
     ? {
@@ -144,6 +168,7 @@ export default function Home() {
       <UploadStatus />
       {/* A notice arriving while the app is open (new follower, followed user's spot) drops in on top */}
       {!tourBlocking && <LiveNotice />}
+      {isAppReady && <OfflineBanner />}
       {/* Level-up moment: over everything, whenever the own XP level goes up */}
       {!tourBlocking && <LevelUpCelebration />}
       {/* Top-right control stack (design 1C); only over the bare map: it lives outside <main>, so it

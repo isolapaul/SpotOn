@@ -1,5 +1,6 @@
 'use client';
 
+import { useOverlay } from '@/hooks/useOverlay';
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
@@ -48,12 +49,14 @@ function GalleryView({ urls, startIndex, onClose, alt, spotId }: Readonly<Omit<G
     enabled: count > 1,
   });
 
+  // Escape and the system back close the gallery first, not the spot under it.
+  useOverlay(onClose);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') nextImage();
       if (e.key === 'ArrowLeft') prevImage();
-      if (e.key === 'Escape') onClose();
     };
     globalThis.addEventListener('keydown', handleKeyDown);
     return () => globalThis.removeEventListener('keydown', handleKeyDown);

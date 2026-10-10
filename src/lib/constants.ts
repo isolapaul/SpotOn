@@ -79,3 +79,6 @@ export const Z = {
 
 /** Z keys that live inside another layer's stacking context (see Z). */
 export const NESTED_Z_LAYERS: ReadonlyArray<keyof typeof Z> = ['mapInner', 'panelInnerBackdrop', 'panelInnerSheet'];
+
+/** Sign in with Apple is offered (build-time; enable once the provider is set up in Firebase Auth). */
+export const APPLE_SIGN_IN = process.env.NEXT_PUBLIC_APPLE_SIGN_IN === '1';

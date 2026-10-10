@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useOverlay } from '@/hooks/useOverlay';
 import { ThumbsUp, X } from 'lucide-react';
 import ModalShell from '../ui/ModalShell';
 import PersonRow from '../profile/PersonRow';
@@ -45,6 +46,8 @@ export default function LikersSheet({ spot, onClose }: Readonly<{ spot: Pick<Spo
     setClosing(true);
     setTimeout(onClose, CLOSE_MS);
   };
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useOverlay(close, dialogRef);
   const retry = () => {
     setLoaded(null);
     setAttempt((n) => n + 1);
@@ -65,7 +68,7 @@ export default function LikersSheet({ spot, onClose }: Readonly<{ spot: Pick<Spo
       }`}
       panelClassName={`w-full max-w-[560px] max-h-[75vh] rounded-b-none! ${closing ? 'motion-safe:animate-card-out' : 'motion-safe:animate-card-in'}`}
     >
-      <div role="dialog" aria-modal="true" aria-labelledby="likers-title" className="flex flex-col min-h-0 h-full">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="likers-title" className="flex flex-col min-h-0 h-full outline-none">
         <span aria-hidden="true" className="mx-auto mt-2 w-9 h-[5px] rounded-full bg-white/25" />
         <div className="flex items-center gap-2 pl-5 pr-3 pt-2 pb-2 border-b border-white/6">
           <span className="w-9 h-9 rounded-full grid place-items-center bg-brand-500/20 text-brand-300">

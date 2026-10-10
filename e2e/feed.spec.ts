@@ -45,6 +45,13 @@ test('signed in: followed people first; a card flies to the map and back returns
   await expect(page.getByRole('heading', { name: 'Earlier spots' })).toBeVisible();
   await expect(page.getByRole('article', { name: E2E.modernSpot.name }).getByText('You shared this')).toBeVisible();
 
+  // A sheet over the feed closes first on Escape (and the system back); the feed stays.
+  await card.getByRole('button', { name: 'Reviews' }).click();
+  await expect(page.getByRole('dialog', { name: 'Reviews' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Reviews' })).toHaveCount(0);
+  await expect(card).toBeVisible();
+
   // Near me (the test browser sits in Budapest, next to every fixture): the cards stay.
   await page.getByRole('radio', { name: 'Near me' }).click();
   await expect(page.getByRole('radio', { name: 'Near me' })).toHaveAttribute('aria-checked', 'true');

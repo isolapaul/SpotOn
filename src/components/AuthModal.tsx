@@ -1,5 +1,6 @@
 'use client';
 
+import { APPLE_SIGN_IN } from '@/lib/constants';
 import { useUserStore } from '@/store/useUserStore';
 import { useT } from '@/hooks/useT';
 import { LogIn, X, Mail, Lock, User } from 'lucide-react';
@@ -15,7 +16,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose, signUpAs }: Readonly<AuthModalProps>) {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useUserStore();
+  const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } = useUserStore();
   // English while no language is chosen yet (unlike the app-wide 'hu' default; pre-T24 behaviour).
   const t = useT({ fallback: 'en' });
   const [loading, setLoading] = useState(false);
@@ -41,12 +42,12 @@ export default function AuthModal({ isOpen, onClose, signUpAs }: Readonly<AuthMo
     return mode === 'signin' ? t('authSignInDesc') : t('authSignUpDesc');
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = (provider: 'google' | 'apple' = 'google') => async () => {
     setLoading(true);
     setError(null);
     
     try {
-      await signInWithGoogle();
+      await (provider === 'apple' ? signInWithApple() : signInWithGoogle());
       onClose();
       resetForm();
     } catch (err) {
@@ -282,7 +283,7 @@ export default function AuthModal({ isOpen, onClose, signUpAs }: Readonly<AuthMo
           <div className="flex flex-col gap-3">
             {/* Google Sign In Button */}
             <button
-              onClick={handleGoogleSignIn}
+              onClick={handleGoogleSignIn('google')}
               disabled={loading}
               className="w-full py-4 px-6 rounded-2xl font-semibold text-lg
                 bg-white text-gray-900 shadow-lg
@@ -320,6 +321,25 @@ export default function AuthModal({ isOpen, onClose, signUpAs }: Readonly<AuthMo
                 </>
               )}
             </button>
+
+            {/* Sign in with Apple (App Store 4.8), when the build enables it */}
+            {APPLE_SIGN_IN && (
+              <button
+                type="button"
+                onClick={handleGoogleSignIn('apple')}
+                disabled={loading}
+                className="w-full py-4 px-6 rounded-2xl font-semibold text-lg bg-black text-white ring-1 ring-white/20
+                  active:scale-98 transition-all duration-200 flex items-center justify-center gap-3 disabled:opacity-50"
+              >
+                <svg className="w-5 h-6" viewBox="0 0 17 20" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M14.05 10.63c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.83-.81-3-.79-1.55.02-2.97.9-3.77 2.28-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.51 1.25-2.58-.03-.01-2.4-.92-2.42-3.65zM11.78 3.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.75-.96 2.79 1.02.08 2.05-.52 2.68-1.27z"
+                  />
+                </svg>
+                <span>{t('authApple')}</span>
+              </button>
+            )}
 
             {/* Divider */}
             <div className="flex items-center gap-3" aria-hidden="true">

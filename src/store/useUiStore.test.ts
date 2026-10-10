@@ -382,4 +382,10 @@ describe('user profiles (item 8)', () => {
     ui().closePanel();
     expect(ui().activePanel).toBe('none');
   });
+  it('back from the sign-in sheet returns to its opener', () => {
+    ui().openPanel('feed');
+    ui().openAuth();
+    ui().goBack();
+    expect(ui().activePanel).toBe('feed');
+  });
 });

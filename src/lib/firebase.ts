@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence, connectAuthEmulator } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, OAuthProvider, browserLocalPersistence, setPersistence, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
@@ -61,4 +61,10 @@ googleProvider.setCustomParameters({
   prompt: 'select_account',
 });
 
-export { app, auth, db, storage, functions, googleProvider };
+// Sign in with Apple (App Store guideline 4.8 next to Google). Shown only when the build enables it
+// (NEXT_PUBLIC_APPLE_SIGN_IN=1) after the Apple provider is set up in Firebase Auth.
+const appleProvider = new OAuthProvider('apple.com');
+appleProvider.addScope('email');
+appleProvider.addScope('name');
+
+export { app, auth, db, storage, functions, googleProvider, appleProvider };

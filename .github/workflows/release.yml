@@ -58,6 +58,7 @@ jobs:
             NEXT_PUBLIC_CONTROLLER_NAME=${{ vars.NEXT_PUBLIC_CONTROLLER_NAME }}
             NEXT_PUBLIC_CONTACT_EMAIL=${{ vars.NEXT_PUBLIC_CONTACT_EMAIL }}
             NEXT_PUBLIC_MAPBOX_TOKEN=${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN }}
+            NEXT_PUBLIC_APPLE_SIGN_IN=${{ vars.NEXT_PUBLIC_APPLE_SIGN_IN }}
             VERSION=${{ github.ref_name }}
             VCS_REF=${{ github.sha }}
       - name: Read manifest digest

@@ -182,6 +182,7 @@ export const useUiStore = create<UiStore>((set, get) => ({
   goBack: () => {
     const s = get();
     if (s.activePanel === 'addSpot') return s.closeAddSpot();
+    if (s.activePanel === 'auth') return s.closePanel();
     if (s.activePanel === 'none' && s.previewSpotId === null && s.selectingLocation) return s.cancelSelectingLocation();
     if (isUserPanel(s.activePanel)) return s.closeUserProfile();
     const onSpot = isSpotPanel(s.activePanel) || s.previewSpotId !== null;

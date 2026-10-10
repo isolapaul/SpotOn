@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useOverlay } from '@/hooks/useOverlay';
 import { X } from 'lucide-react';
 import type { Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -31,6 +32,8 @@ export default function FeedComments({ spot, onClose }: Readonly<{ spot: Spot; o
     setClosing(true);
     setTimeout(onClose, CLOSE_MS);
   };
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useOverlay(close, dialogRef);
 
   return createPortal(
     <ModalShell
@@ -44,7 +47,7 @@ export default function FeedComments({ spot, onClose }: Readonly<{ spot: Spot; o
       }`}
       panelClassName={`w-full max-w-[560px] h-[88vh] rounded-b-none! ${closing ? 'motion-safe:animate-card-out' : 'motion-safe:animate-card-in'}`}
     >
-      <div role="dialog" aria-modal="true" aria-labelledby="feed-comments-title" className="flex flex-col min-h-0 h-full">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="feed-comments-title" className="flex flex-col min-h-0 h-full outline-none">
         <span aria-hidden="true" className="mx-auto mt-2 w-9 h-[5px] rounded-full bg-white/25" />
         <div className="flex items-center gap-2 pl-5 pr-3 pt-2 pb-2 border-b border-white/6">
           <div className="flex-1 min-w-0">

@@ -92,6 +92,7 @@ scripts/store/                   Store graphics and screenshots (`npm run store:
 deploy/, Dockerfile, docker/     Server compose file, update script, image and healthcheck
 docs/deploy.md, docs/BACKLOG.md  Release and server runbook (Android app: §17); open work
 docs/play-store.md               Play listing texts, Data safety and content rating answers
+docs/app-store.md                The Apple App Store path: what is in place, owner steps, the native shell work
 ```
 
 ### Firestore data model (current)
@@ -147,6 +148,7 @@ In the Claude Code sandbox, the functions emulator cannot register Firestore tri
 | `NEXT_PUBLIC_USE_EMULATORS` | build time, tests only | `lib/firebase.ts` |
 | `NEXT_PUBLIC_MOVED_TO` | build time, Vercel only (T19) | domain-move banner |
 | `NEXT_PUBLIC_CONTROLLER_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` | build time (required by the container build) | legal pages `/privacy`, `/terms` (A1) |
+| `NEXT_PUBLIC_APPLE_SIGN_IN` | build time, optional (`1` shows Sign in with Apple; set only after the provider is enabled in Firebase Auth, `docs/app-store.md`) | `components/AuthModal.tsx` via `lib/constants` |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | build time, required for releases (public `pk.` token, URL-restricted) | `components/MapView.tsx` via `lib/mapStyles` |
 | `SMTP_HOST/PORT/USER/PASS`, `FEEDBACK_RECIPIENT` | runtime (container `.env`) | `/api/feedback` |
 | `ANDROID_CERT_SHA256` | runtime (container `.env`), optional | `/.well-known/assetlinks.json` (docs/deploy.md §17.3) |

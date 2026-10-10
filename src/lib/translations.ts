@@ -803,6 +803,8 @@ export const translations = {
     backToMap: 'Vissza a térképhez',
     legalLinks: 'Jogi információk',
     loadFailed: 'Nem sikerült betölteni.',
+    offlineBanner: 'Nincs internet, a térkép elavult lehet',
+    authApple: 'Folytatás Apple-fiókkal',
   },
   en: {
     // Navigation
@@ -1608,6 +1610,8 @@ export const translations = {
     backToMap: 'Back to the map',
     legalLinks: 'Legal',
     loadFailed: 'Couldn\'t load this.',
+    offlineBanner: 'Offline: the map may be out of date',
+    authApple: 'Continue with Apple',
   },
   de: {
     // Navigation
@@ -2414,6 +2418,8 @@ export const translations = {
     backToMap: 'Zurück zur Karte',
     legalLinks: 'Rechtliches',
     loadFailed: 'Konnte nicht geladen werden.',
+    offlineBanner: 'Offline: Die Karte ist eventuell veraltet',
+    authApple: 'Mit Apple fortfahren',
   },
 };
 

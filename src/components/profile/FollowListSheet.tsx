@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useOverlay } from '@/hooks/useOverlay';
 import { Lock, Search, Users, X } from 'lucide-react';
 import ModalShell from '../ui/ModalShell';
 import PersonRow from './PersonRow';
@@ -61,6 +62,8 @@ export default function FollowListSheet({ uid, initial, onClose }: Readonly<Foll
     setClosing(true);
     setTimeout(onClose, CLOSE_MS);
   };
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useOverlay(close, dialogRef);
   const open = (person: string) => {
     close();
     openProfile(person);
@@ -85,7 +88,7 @@ export default function FollowListSheet({ uid, initial, onClose }: Readonly<Foll
       }`}
       panelClassName={`w-full max-w-[560px] h-[85vh] rounded-b-none! ${closing ? 'motion-safe:animate-card-out' : 'motion-safe:animate-card-in'}`}
     >
-      <div role="dialog" aria-modal="true" aria-label={t(kind === 'followers' ? 'followers' : 'followingCount')} className="flex flex-col min-h-0 h-full">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t(kind === 'followers' ? 'followers' : 'followingCount')} className="flex flex-col min-h-0 h-full outline-none">
         <span aria-hidden="true" className="mx-auto mt-2 w-9 h-[5px] rounded-full bg-white/25" />
         <div className="flex items-center gap-2 px-4 pt-3">
           {/* The switch: the thumb slides between the two halves */}

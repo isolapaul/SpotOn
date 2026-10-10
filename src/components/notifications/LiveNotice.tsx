@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { MapPin, MessageCircle, Bell, UserCheck, UserPlus, type LucideIcon } from 'lucide-react';
 import { useInboxStore } from '@/store/useInboxStore';
-import { useSpotStore } from '@/store/useSpotStore';
 import { useUiStore } from '@/store/useUiStore';
 import { useOpenProfile } from '@/hooks/useOpenProfile';
 import { useT } from '@/hooks/useT';
@@ -38,15 +37,18 @@ function Banner({ item }: Readonly<{ item: InboxItem }>) {
   const t = useT();
   const openProfile = useOpenProfile();
   const [leaving, setLeaving] = useState(false);
+  // Touching or focusing the banner holds it (time to read, WCAG 2.2.1).
+  const [held, setHeld] = useState(false);
   const Icon = ICONS[item.type] ?? Bell;
 
   const dismiss = () => setLeaving(true);
 
   // Stays a few seconds, then slides away; the store forgets it once the slide is over.
   useEffect(() => {
+    if (held) return;
     const timer = setTimeout(() => setLeaving(true), VISIBLE_MS);
     return () => clearTimeout(timer);
-  }, []);
+  }, [held]);
   useEffect(() => {
     if (!leaving) return;
     const timer = setTimeout(() => useInboxStore.getState().dismissFresh(), LEAVE_MS);
@@ -57,9 +59,8 @@ function Banner({ item }: Readonly<{ item: InboxItem }>) {
     void useInboxStore.getState().markRead(item.id).catch(console.error);
     dismiss();
     if (opensProfile(item.type) && item.actorUid) openProfile(item.actorUid);
-    else if (opensSpot(item.type) && useSpotStore.getState().spots.some((s) => s.id === item.spotId)) {
-      useUiStore.getState().openSpotLink(item.spotId);
-    }
+    // The spot may not have reached the map yet: the link flight waits for it.
+    else if (opensSpot(item.type) && item.spotId) useUiStore.getState().openSpotLink(item.spotId);
   };
 
   const text = INBOX_TEXT[item.type];
@@ -71,6 +72,10 @@ function Banner({ item }: Readonly<{ item: InboxItem }>) {
       <button
         type="button"
         onClick={open}
+        onPointerDown={() => setHeld(true)}
+        onFocus={() => setHeld(true)}
+        onPointerLeave={() => setHeld(false)}
+        onBlur={() => setHeld(false)}
         className={`no-min-size pointer-events-auto w-full max-w-[420px] flex items-center gap-3 rounded-[22px] p-3 pr-4
           material-chrome shadow-float text-left touch-manipulation active:scale-[.98] transition-transform ${
             leaving ? 'motion-safe:animate-sheet-out' : 'motion-safe:animate-toast-in'
