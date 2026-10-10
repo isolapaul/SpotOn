@@ -45,7 +45,8 @@ Together with the Firestore/Storage rules (`firestore.rules`, `storage.rules` in
 | `removeAdmin` | Callable | Deletes an `admins/{uid}` document (a super admin cannot be removed) | Super admin only |
 | `deleteCategory` | Callable | Deletes a category only while no spot and no waiting edit uses it | Super admin only |
 | `getProfile` | Callable | What a visitor may see of a profile: approved spot ids, saved spot ids if shared, the lists shown on the profile; private profiles only for accepted followers; the caller's follow state | Anyone |
-| `followUser` | Callable | Follows a public profile, or sends a follow request to a private one (inbox + push, at most once a day per pair); at most 60 an hour | Signed-in users |
+| `followUser` | Callable | Follows a public profile (the target gets a "new follower" inbox item + push) or sends a follow request to a private one (inbox + push); either notice at most once a day per pair; at most 60 follows an hour | Signed-in users |
+| `getFollowList` | Callable | Someone's followers or the people they follow (newest first, at most 200), with the profile page's visibility (private: only the owner and accepted followers) and without people either side blocked; at most 30 calls a minute | Signed-in users |
 | `unfollowUser` | Callable | Unfollows, or cancels the caller's request | Signed-in users |
 | `respondFollowRequest` | Callable | Accepts or declines a request to the caller (accept: inbox + push to the requester) | Signed-in users |
 | `removeFollower` | Callable | Removes someone who follows the caller | Signed-in users |
@@ -60,7 +61,7 @@ The super admin is the `admins/{uid}` document with `role: 'super'`. It exists a
 
 ## Inbox
 
-Moderation decisions, removals, follow news (requests, accepts, followed users' new spots) and replies reach the user twice: a push (each type follows its own notification setting, `settingsKeyOf` in `lib/inbox.ts`) and an item in `users/{uid}/inbox` (type, spot id and name, the reason, the other user for follow news and replies; at most 50 kept). The app shows the inbox in its notification centre, so a reason stays readable after the push and on every device.
+Moderation decisions, removals, follow news (requests, accepts, new followers, followed users' new spots) and replies reach the user twice: a push (each type follows its own notification setting, `settingsKeyOf` in `lib/inbox.ts`) and an item in `users/{uid}/inbox` (type, spot id and name, the reason, the other user for follow news and replies; at most 50 kept). The app shows the inbox in its notification centre, so a reason stays readable after the push and on every device.
 
 ## Parameters
 

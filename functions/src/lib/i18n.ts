@@ -206,6 +206,16 @@ export const translations = {
     en: (user: TParam, spotName: TParam) => `${user}: "${spotName}"`,
     de: (user: TParam, spotName: TParam) => `${user}: "${spotName}"`,
   },
+  newFollower: {
+    hu: "Új követő",
+    en: "New follower",
+    de: "Neuer Follower",
+  },
+  newFollowerBody: {
+    hu: (user: TParam) => `${user} bekövetett`,
+    en: (user: TParam) => `${user} started following you`,
+    de: (user: TParam) => `${user} folgt dir jetzt`,
+  },
 } satisfies Record<string, Record<Lang, Template>>;
 
 export type TKey = keyof typeof translations;

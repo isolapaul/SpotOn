@@ -25,7 +25,8 @@ export type InboxType =
   | "review_reply"
   | "follow_request"
   | "follow_accepted"
-  | "followed_spot";
+  | "followed_spot"
+  | "new_follower";
 
 /** Push texts per inbox kind (lib/i18n keys; the body takes the spot name, then the reason). */
 const PUSH: Record<InboxType, {title: TKey; body: TKey}> = {
@@ -41,9 +42,12 @@ const PUSH: Record<InboxType, {title: TKey; body: TKey}> = {
   follow_request: {title: "followRequest", body: "followRequestBody"},
   follow_accepted: {title: "followAccepted", body: "followAcceptedBody"},
   followed_spot: {title: "followedSpot", body: "followedSpotBody"},
+  new_follower: {title: "newFollower", body: "newFollowerBody"},
 };
 
-const FOLLOW_TYPES: readonly InboxType[] = ["follow_request", "follow_accepted", "followed_spot"];
+const FOLLOW_TYPES: readonly InboxType[] = [
+  "follow_request", "follow_accepted", "followed_spot", "new_follower",
+];
 /** Kinds whose push names the other user first, then the spot. */
 const ACTOR_SPOT_TYPES: readonly InboxType[] = ["followed_spot", "review_reply"];
 
