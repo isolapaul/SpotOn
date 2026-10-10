@@ -226,6 +226,7 @@ describe('owner edits (approved spot): none since item 4, the owner proposes (sp
     await assertFails(upd(db, SPOT_APPROVED, { status: 'pending' }));
     await assertFails(upd(db, SPOT_APPROVED, { highlighted: [{ userId: ALICE }] }));
     await assertFails(upd(db, SPOT_APPROVED, { isHighlighted: true }));
+    await assertFails(upd(db, SPOT_APPROVED, { likedBy: [ALICE], likeCount: 1 }));
     await assertFails(upd(db, SPOT_PENDING, { status: 'approved' }));
   });
   it('SEC-02/10: denies adding or swapping image URLs and changing likes', async () => {
@@ -262,6 +263,9 @@ describe('admin and delete', () => {
     await assertFails(upd(db, SPOT_APPROVED, { createdBy: BOB }));
     await assertFails(upd(db, SPOT_APPROVED, { contributors: [BOB] }));
     await assertFails(upd(db, SPOT_APPROVED, { ownerPin: 'crown' }));
+    // Spot likes only through toggleSpotLike.
+    await assertFails(upd(db, SPOT_APPROVED, { likedBy: [BOB] }));
+    await assertFails(upd(db, SPOT_APPROVED, { likeCount: 99 }));
     await assertFails(deleteDoc(doc(db, 'spots', SPOT_APPROVED)));
   });
   it('SEC-02: denies delete by owner, other users and anonymous', async () => {

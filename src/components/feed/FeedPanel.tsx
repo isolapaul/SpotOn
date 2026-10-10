@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUp, X } from 'lucide-react';
+import { ArrowUp, Navigation, Users, X } from 'lucide-react';
 import PanelShell from '../ui/PanelShell';
 import FeedCard from './FeedCard';
 import FeedComments from './FeedComments';
@@ -13,7 +13,10 @@ import { useUserStore } from '@/store/useUserStore';
 import { useUiStore } from '@/store/useUiStore';
 import { useDiscoveryStore } from '@/store/useDiscoveryStore';
 import { runViewTransition } from '@/hooks/viewTransition';
-import { FEED_CAUGHT_UP_MIN, suggestedPeople } from '@/lib/feed';
+import { FEED_CAUGHT_UP_MIN, FEED_NEAR_KM, FEED_PREFETCH_CARDS, feedPhotos, suggestedPeople } from '@/lib/feed';
+import { useImagePrefetch } from '@/hooks/useImagePrefetch';
+import { useLocationStore } from '@/store/useLocationStore';
+import { useToastStore } from '@/store/useToastStore';
 
 /** Scrolled this far down, new posts announce themselves with the pill instead of shifting the list. */
 const PILL_SCROLL_PX = 300;
@@ -40,7 +43,8 @@ export default function FeedPanel({ isOpen, onClose, userLocation, onShowOnMap }
 function Feed({ onClose, userLocation, onShowOnMap }: Readonly<Omit<FeedPanelProps, 'isOpen'>>) {
   const t = useT();
   const signedIn = useUserStore((s) => !!s.user);
-  const { followed, suggested, ready, followsAnyone } = useFeed();
+  const nearMe = useFeedStore((s) => s.nearMe);
+  const { followed, suggested, ready, followsAnyone } = useFeed(nearMe ? userLocation : null);
   const visibleCount = useFeedStore((s) => s.visibleCount);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -70,6 +74,25 @@ function Feed({ onClose, userLocation, onShowOnMap }: Readonly<Omit<FeedPanelPro
   const shownSuggested = shown.filter((i) => i.suggested);
   const people = useMemo(() => (signedIn ? suggestedPeople(suggested, PEOPLE_TO_FOLLOW) : []), [signedIn, suggested]);
   const hasMore = visibleCount < items.length;
+  // The next cards' first photos load ahead, so scrolling never waits for them.
+  const ahead = useMemo(
+    () => items.slice(visibleCount, visibleCount + FEED_PREFETCH_CARDS).map((i) => feedPhotos(i.spot)[0]?.url ?? ''),
+    [items, visibleCount],
+  );
+  useImagePrefetch(ahead);
+
+  // "Near me" needs the location: ask for it once, else stay on everyone.
+  const pickNearMe = async () => {
+    if (userLocation) return useFeedStore.getState().setNearMe(true);
+    const result = await useLocationStore.getState().request();
+    if (result === 'granted') useFeedStore.getState().setNearMe(true);
+    else useToastStore.getState().showToast(t('locationDenied'), 'error');
+  };
+  const pickScope = (near: boolean) => {
+    scrollRef.current?.scrollTo({ top: 0 });
+    if (near) void pickNearMe();
+    else useFeedStore.getState().setNearMe(false);
+  };
 
   // The next page when the end of the list comes into view.
   useEffect(() => {
@@ -140,6 +163,28 @@ function Feed({ onClose, userLocation, onShowOnMap }: Readonly<Omit<FeedPanelPro
           </button>
         </header>
 
+        {/* Scope: everyone or near me */}
+        <div role="radiogroup" aria-label={t('feedScope')} className="flex gap-2 px-5 pb-4">
+          {([false, true] as const).map((near) => {
+            const active = nearMe === near;
+            const Icon = near ? Navigation : Users;
+            return (
+              <button
+                key={String(near)}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => pickScope(near)}
+                className={`no-min-size h-9 px-3.5 rounded-full text-[14px] font-semibold inline-flex items-center gap-1.5 touch-manipulation
+                  transition-colors duration-200 active:scale-95 ${active ? 'bg-brand-600 text-white' : 'bg-white/8 text-label-secondary'}`}
+              >
+                <Icon className="w-4 h-4" aria-hidden="true" />
+                {t(near ? 'feedNearMe' : 'feedEveryone')}
+              </button>
+            );
+          })}
+        </div>
+
         {!signedIn && <FeedInvite kind="signedOut" onAction={() => useUiStore.getState().openPanel('auth')} />}
         {signedIn && ready && !followsAnyone && <FeedInvite kind="noFollows" onAction={findPeople} />}
 
@@ -162,7 +207,9 @@ function Feed({ onClose, userLocation, onShowOnMap }: Readonly<Omit<FeedPanelPro
                 {shownSuggested.map((item, i) => card(item, i))}
               </>
             )}
-            {items.length === 0 && <p className="px-8 py-16 text-center text-label-secondary">{t('noSpotsFound')}</p>}
+            {items.length === 0 && (
+              <p className="px-8 py-16 text-center text-label-secondary">{nearMe ? t('feedNothingNear', { km: FEED_NEAR_KM }) : t('noSpotsFound')}</p>
+            )}
             {hasMore && <div ref={sentinelRef} className="h-px" aria-hidden="true" />}
           </>
         )}

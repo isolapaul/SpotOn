@@ -2,6 +2,7 @@
 // earlier spots of everyone else so the feed is never empty. Pure.
 import type { Spot } from '@/store/useSpotStore';
 import { publishedAt } from './newSpots';
+import { haversineKm } from './geo';
 import { getHeroImageUrl, getSpotImages, imageFallbacks, PLACEHOLDER_URL, sortSpotImagesByLikes } from './spotImages';
 
 /** Cards rendered per page while scrolling. */
@@ -10,13 +11,17 @@ export const FEED_PAGE_SIZE = 10;
 export const FEED_MAX_PHOTOS = 10;
 /** Fewer followed cards than this: no "all caught up" line before the suggestions. */
 export const FEED_CAUGHT_UP_MIN = 3;
+/** "Near me": spots within this distance of the user. */
+export const FEED_NEAR_KM = 25;
+/** Cards past the rendered ones whose first photo is fetched ahead (smooth scrolling). */
+export const FEED_PREFETCH_CARDS = 4;
 /** A card younger than this gets the "New" badge. */
 export const FEED_NEW_MS = 24 * 60 * 60 * 1000;
 
 const DELETED_OWNER = 'deleted-user';
 
 export interface FeedSections {
-  /** Spots of followed people, newest first. */
+  /** Spots of followed people and the user's own, newest first. */
   followed: Spot[];
   /** Everyone else's spots (not the user's own), newest first. */
   suggested: Spot[];
@@ -25,26 +30,35 @@ export interface FeedSections {
 const time = (s: Spot) => publishedAt(s) ?? 0;
 
 /**
- * Approved spots with a known poster, split into followed and suggested. The user's own spots
- * and the spots of people either side blocked are left out.
+ * Approved spots with a known poster, split into followed (the user's own included, marked on the
+ * card) and suggested. People the user blocked are left out. `near` keeps only spots within
+ * FEED_NEAR_KM of that point.
  */
 export function buildFeed(
   spots: readonly Spot[],
-  o: { following: ReadonlySet<string>; me: string | null; hidden: ReadonlySet<string> },
+  o: {
+    following: ReadonlySet<string>;
+    me: string | null;
+    hidden: ReadonlySet<string>;
+    near?: { lat: number; lng: number } | null;
+  },
 ): FeedSections {
+  const near = o.near;
   const shown = spots
     .filter((s) => s.status === 'approved' && s.createdBy && s.createdBy !== DELETED_OWNER)
-    .filter((s) => s.createdBy !== o.me && !o.hidden.has(s.createdBy))
+    .filter((s) => !o.hidden.has(s.createdBy))
+    .filter((s) => !near || haversineKm(near.lat, near.lng, s.location.lat, s.location.lng) <= FEED_NEAR_KM)
     .sort((a, b) => time(b) - time(a));
+  const inFollowed = (s: Spot) => o.following.has(s.createdBy) || s.createdBy === o.me;
   return {
-    followed: shown.filter((s) => o.following.has(s.createdBy)),
-    suggested: shown.filter((s) => !o.following.has(s.createdBy)),
+    followed: shown.filter(inFollowed),
+    suggested: shown.filter((s) => !inFollowed(s)),
   };
 }
 
-/** Followed spots that appeared after `seenAt` (the launcher's dot). */
-export function countUnseen(followed: readonly Spot[], seenAt: number): number {
-  return followed.filter((s) => time(s) > seenAt).length;
+/** Followed people's spots that appeared after `seenAt` (the launcher's dot; never the user's own). */
+export function countUnseen(followed: readonly Spot[], seenAt: number, me: string | null = null): number {
+  return followed.filter((s) => s.createdBy !== me && time(s) > seenAt).length;
 }
 
 /** Appeared within FEED_NEW_MS of `now`. */

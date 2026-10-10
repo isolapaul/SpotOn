@@ -6,7 +6,7 @@ import type { Spot } from '@/store/useSpotStore';
 import { useT, useLanguage } from '@/hooks/useT';
 import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { useShareSpot } from '@/hooks/useShareSpot';
-import { usePhotoLike } from '@/hooks/usePhotoLike';
+import { useSpotLike } from '@/hooks/useSpotLike';
 import { useUiStore } from '@/store/useUiStore';
 import { playSound } from '@/store/useSoundStore';
 import { averageRating } from '@/lib/rating';
@@ -15,6 +15,7 @@ import { formatDistance, haversineKm } from '@/lib/geo';
 import StarRating from '../ui/StarRating';
 import FeedMedia from './FeedMedia';
 import FeedCardHeader from './FeedCardHeader';
+import LikersSheet from './LikersSheet';
 
 interface FeedCardProps {
   spot: Spot;
@@ -42,7 +43,8 @@ export default function FeedCard({ spot, index, suggested, now, userLocation, on
   const photos = useMemo(() => feedPhotos(spot).filter((p) => !failed.has(p.url)), [spot, failed]);
   const [inView, setPhotoIndex] = useState(0);
   const photoIndex = Math.min(inView, Math.max(0, photos.length - 1));
-  const like = usePhotoLike(spot.id, photos[photoIndex]);
+  const like = useSpotLike(spot);
+  const [likersOpen, setLikersOpen] = useState(false);
   const favorite = useFavoriteToggle(spot.id);
   const share = useShareSpot();
   const [expanded, setExpanded] = useState(false);
@@ -90,17 +92,28 @@ export default function FeedCard({ spot, index, suggested, now, userLocation, on
       {/* Actions */}
       <div className="flex items-center gap-1 px-2 pt-1.5">
         {like.canLike && (
-          <button type="button" onClick={() => void like.toggle()} aria-pressed={like.liked} aria-label={t('likePhoto')} className={ACTION}>
-            <ThumbsUp
-              key={String(like.liked)}
-              className={`w-[24px] h-[24px] ${like.liked ? 'fill-brand-500 text-brand-400 motion-safe:animate-badge-pop' : ''}`}
-              strokeWidth={2}
-              aria-hidden="true"
-            />
+          <span className="inline-flex items-center">
+            <button type="button" onClick={() => void like.toggle()} aria-pressed={like.liked} aria-label={t('likeSpot')} className={ACTION}>
+              <ThumbsUp
+                key={String(like.liked)}
+                className={`w-[24px] h-[24px] ${like.liked ? 'fill-brand-500 text-brand-400 motion-safe:animate-badge-pop' : ''}`}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+            </button>
             {like.likes > 0 && (
-              <span key={like.likes} className="text-[15px] font-semibold tabular-nums motion-safe:animate-rise-in">{like.likes}</span>
+              // The count opens who liked it.
+              <button
+                type="button"
+                onClick={() => setLikersOpen(true)}
+                aria-label={t('likedByCount', { count: like.likes })}
+                aria-haspopup="dialog"
+                className="no-min-size -ml-1.5 h-11 pr-2 text-[15px] font-semibold tabular-nums text-label touch-manipulation active:opacity-60"
+              >
+                <span key={like.likes} className="inline-block motion-safe:animate-rise-in">{like.likes}</span>
+              </button>
             )}
-          </button>
+          </span>
         )}
         <button type="button" onClick={() => onComments(spot.id)} aria-label={t('reviews')} className={ACTION}>
           <MessageCircle className="w-[24px] h-[24px]" strokeWidth={2} aria-hidden="true" />
@@ -128,6 +141,7 @@ export default function FeedCard({ spot, index, suggested, now, userLocation, on
           />
         </button>
       </div>
+      {likersOpen && <LikersSheet spot={spot} onClose={() => setLikersOpen(false)} />}
 
       {/* Caption */}
       <div className="px-4">

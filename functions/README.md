@@ -25,6 +25,8 @@ Together with the Firestore/Storage rules (`firestore.rules`, `storage.rules` in
 | `highlightSpot` | Callable | Highlights one of the caller's approved spots for 7 days, within the caller's level allowance | Signed-in users (own, approved spots) |
 | `unhighlightSpot` | Callable | Removes the caller's highlight from a spot | Signed-in users |
 | `toggleImageLike` | Callable | Likes or unlikes one image of a spot, in a transaction | Signed-in users |
+| `toggleSpotLike` | Callable | Likes or unlikes an approved spot (`spots.likedBy` / `likeCount`, the feed's thumb), in a transaction; at most 120 an hour | Signed-in users |
+| `weeklyFeedDigest` | Scheduled (Mondays 9:00, Europe/Budapest) | Pushes "N new spots from people you follow this week" to everyone whose followed people shared approved spots in the past 7 days (the "Follows" setting; opens `/feed`) | Nobody (schedule) |
 | `addSpotImages` | Callable | Adds already uploaded images (the caller's own `spot-images/{uid}/…` objects) to a spot, up to 20 images. Admins and the owner of a spot under review add them directly; everyone else's become `photoSubmissions` for an admin (item 4), at most 5 waiting per user and spot and 20 submissions an hour per user | Signed-in users |
 | `approveSpot` | Callable | Approves the version of a pending spot the admin saw (`seenAt`; refused with `SPOT_CHANGED` if the owner edited it since), stamps `approvedAt`; `onSpotUpdated` then tells the owner | Admins |
 | `rejectSpot` | Callable | Rejects a pending spot with a reason (1–500 characters, stored on the spot for its owner) and tells the owner | Admins |

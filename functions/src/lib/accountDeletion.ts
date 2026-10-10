@@ -147,6 +147,13 @@ export function planSpotCleanup(
     }
   }
 
+  // The user's like of the spot itself (the feed's thumb).
+  const spotLikers = asArray(spot.likedBy);
+  if (spotLikers.includes(uid)) {
+    update.likedBy = spotLikers.filter((id) => id !== uid);
+    update.likeCount = (update.likedBy as unknown[]).length;
+  }
+
   // Highlights by the user.
   const highlighted = asArray(spot.highlighted);
   const keptHighlights = highlighted.filter((h) => asRecord(h)?.userId !== uid);

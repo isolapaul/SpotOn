@@ -8,7 +8,11 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 ### Added (feed)
 - A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.
 - Tap a spot's name or "Show on map" in the feed: the feed slides away, the map flies to the spot and its place card opens with a "Feed" button that takes you back to the same place in the feed.
-- From a feed card you can like the photo (or double-tap it), read and write reviews, share the spot and add it to your favourites; tap the poster to open their profile.
+- From a feed card you can like the spot (or double-tap its photo), see who liked it, read and write reviews, share the spot and add it to your favourites; tap the poster to open their profile. Likes also show on the spot's page.
+- "Near me" in the feed shows only spots within 25 km.
+- Your own new spots show in the feed too, marked "You shared this".
+- The next cards' photos load ahead, so scrolling the feed does not wait for them.
+- A weekly push on Monday mornings: how many new spots the people you follow shared that week (turn it off with the "Follows" notification setting); tapping it opens the feed.
 - The feed button in the bottom bar lights up when people you follow shared something new since your last visit; new posts arriving while you scroll show a "new spots" button.
 
 ### Added (people)

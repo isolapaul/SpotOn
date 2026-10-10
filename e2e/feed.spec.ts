@@ -41,9 +41,15 @@ test('signed in: followed people first; a card flies to the map and back returns
   const card = page.getByRole('article', { name: E2E.detailsSpot.name });
   await expect(card).toBeVisible();
   await expect(card.getByRole('button', { name: E2E.admin.username, exact: true })).toBeVisible();
-  // Followed spots come before the community section; the user's own spots never show.
+  // Followed spots come before the community section; the user's own spots are marked.
   await expect(page.getByRole('heading', { name: 'Earlier spots' })).toBeVisible();
-  await expect(page.getByRole('article', { name: E2E.modernSpot.name })).toHaveCount(0);
+  await expect(page.getByRole('article', { name: E2E.modernSpot.name }).getByText('You shared this')).toBeVisible();
+
+  // Near me (the test browser sits in Budapest, next to every fixture): the cards stay.
+  await page.getByRole('radio', { name: 'Near me' }).click();
+  await expect(page.getByRole('radio', { name: 'Near me' })).toHaveAttribute('aria-checked', 'true');
+  await expect(card).toBeVisible();
+  await page.getByRole('radio', { name: 'Everyone' }).click();
 
   await card.getByRole('button', { name: 'Show on map' }).click();
   await expect(page.getByRole('heading', { name: 'Feed', level: 2 })).toHaveCount(0);

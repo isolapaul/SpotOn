@@ -20,10 +20,18 @@ export function useSpotLink(isAppReady: boolean, visibleIds: ReadonlySet<string>
   const [linked] = useState(() => spotIdFromPath(pathname));
   // A profile link (/user/<uid>, from a follow push) opens that profile instead.
   const [linkedUser] = useState(() => userIdFromPath(pathname));
+  // The feed link (/feed, from the weekly digest push) opens the feed.
+  const [linkedFeed] = useState(() => /^\/feed\/?$/.test(pathname ?? ''));
   const visibleRef = useRef(visibleIds);
   useEffect(() => {
     visibleRef.current = visibleIds;
   }, [visibleIds]);
+
+  useEffect(() => {
+    if (!linkedFeed || !isAppReady) return;
+    globalThis.history.replaceState(globalThis.history.state, '', '/');
+    useUiStore.getState().openPanel('feed');
+  }, [isAppReady, linkedFeed]);
 
   useEffect(() => {
     if (!linkedUser || !isAppReady) return;

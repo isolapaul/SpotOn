@@ -331,6 +331,12 @@ Order, when a release needs several of them:
 
 Keep a copy of the rules currently in production (Console → Firestore → Rules) before replacing them, so a bad deploy can be reverted by pasting them back.
 
+### 16.0 Next release (feed): what it needs
+
+- **Functions first:** new `getFollowList`, `toggleSpotLike`, `weeklyFeedDigest`; changed `followUser`, `onSpotFavorited`, `deleteAccount` and the push helpers. `weeklyFeedDigest` is a scheduled function: the first deploy enables Cloud Scheduler for the project (the CLI asks; it needs the Blaze plan, which the project already has for functions).
+- **Rules** (they only allow less: admins can no longer write `spots.likedBy` / `likeCount`): any time after the functions; no client writes those fields.
+- No new indexes.
+
 ### 16.1 Release v2.1.0 (one time, in this order)
 
 v2.1.0 needs a new build variable, new indexes, new and removed functions, a one-time data migration and new rules.

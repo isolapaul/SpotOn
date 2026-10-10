@@ -1,6 +1,8 @@
 'use client';
 
-import { Heart, ListPlus, MoreHorizontal, Navigation, Share, Sparkles } from 'lucide-react';
+import { Heart, ListPlus, MoreHorizontal, Navigation, Share, Sparkles, ThumbsUp } from 'lucide-react';
+import { useSpotLike } from '@/hooks/useSpotLike';
+import LikersSheet from '../feed/LikersSheet';
 import { useState } from 'react';
 import ListPicker from '../lists/ListPicker';
 import type { Spot } from '@/store/useSpotStore';
@@ -35,6 +37,8 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
   const shareSpot = useShareSpot();
   const [picking, setPicking] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const like = useSpotLike(spot);
+  const [likersOpen, setLikersOpen] = useState(false);
 
   const actions = spotOverflowActions({
     signedIn: !!user,
@@ -63,6 +67,7 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
   const single = items.length === 1 ? items[0] : null;
 
   return (
+    <div>
     <div className="flex gap-2">
       <a
         href={navigationUrl}
@@ -75,6 +80,23 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
         <Navigation className="w-[18px] h-[18px] shrink-0" strokeWidth={2.2} aria-hidden="true" />
         {t('directions')}
       </a>
+      {like.canLike && (
+        <button
+          type="button"
+          onClick={() => void like.toggle()}
+          aria-label={t('likeSpot')}
+          aria-pressed={like.liked}
+          className={`${ROUND} ${like.likes > 0 ? 'w-auto! px-4 gap-1.5 flex!' : ''}`}
+        >
+          <ThumbsUp
+            key={String(like.liked)}
+            className={`w-5 h-5 ${like.liked ? 'fill-brand-500 text-brand-400 motion-safe:animate-badge-pop' : ''}`}
+            strokeWidth={2}
+            aria-hidden="true"
+          />
+          {like.likes > 0 && <span className="text-[15px] font-semibold tabular-nums">{like.likes}</span>}
+        </button>
+      )}
       {favorite.canToggle && (
         <button
           type="button"
@@ -110,6 +132,20 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
       )}
       {moreOpen && <SpotMoreSheet title={spot.name} items={items} onClose={() => setMoreOpen(false)} />}
       {picking && <ListPicker spotId={spot.id} onClose={() => setPicking(false)} />}
+    </div>
+    {/* Who liked it */}
+    {like.likes > 0 && (
+      <button
+        type="button"
+        onClick={() => setLikersOpen(true)}
+        aria-haspopup="dialog"
+        className="no-min-size mt-2.5 inline-flex items-center gap-1.5 text-[14px] text-label-secondary touch-manipulation active:opacity-60 motion-safe:animate-item-in"
+      >
+        <ThumbsUp className="w-3.5 h-3.5 fill-brand-500 text-brand-400" aria-hidden="true" />
+        {t('likedByCount', { count: like.likes })}
+      </button>
+    )}
+    {likersOpen && <LikersSheet spot={spot} onClose={() => setLikersOpen(false)} />}
     </div>
   );
 }

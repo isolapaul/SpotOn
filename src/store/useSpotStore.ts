@@ -77,6 +77,9 @@ export interface Spot {
   updatedAt?: DateInput;
   reviews?: Review[];
   averageRating?: number;
+  /** Who liked the spot (the feed's thumb), oldest first, and how many; server-written (toggleSpotLike). */
+  likedBy?: string[];
+  likeCount?: number;
   /** The owner's special pin icon (item 6), server-written; normalise before use. */
   ownerPin?: string;
   highlighted?: {
@@ -100,6 +103,8 @@ interface SpotStore {
   /** Stops every spots listener and clears the spots (unmount, T21). */
   stopSpots: () => void;
   toggleSpotImageLike: (spotId: string, imageId: string) => Promise<void>;
+  /** Likes or unlikes an approved spot (the toggleSpotLike callable). */
+  toggleSpotLike: (spotId: string) => Promise<void>;
   approveSpot: (spotId: string) => Promise<void>;
   /** Direct field edits: admins on any spot, owners on a spot under review or rejected (the rules). */
   updateSpotFields: (spotId: string, fields: SpotFieldsPatch) => Promise<void>;
@@ -109,6 +114,7 @@ interface SpotStore {
 
 // Callables (T10, region europe-west3 via `functions`)
 const toggleImageLikeCallable = httpsCallable<{ spotId: string; imageId: string }, unknown>(functions, 'toggleImageLike');
+const toggleSpotLikeCallable = httpsCallable<{ spotId: string }, unknown>(functions, 'toggleSpotLike');
 /** approveSpot refused: the owner changed the spot after the admin saw it (shown as its own message). */
 export const SPOT_CHANGED_ERROR = 'SPOT_CHANGED';
 
@@ -137,6 +143,10 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
 
   toggleSpotImageLike: async (spotId, imageId) => {
     await toggleImageLikeCallable({ spotId, imageId });
+  },
+
+  toggleSpotLike: async (spotId) => {
+    await toggleSpotLikeCallable({ spotId });
   },
 
   approveSpot: async (spotId) => {

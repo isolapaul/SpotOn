@@ -30,15 +30,21 @@ describe('buildFeed', () => {
   ];
   const feed = buildFeed(spots, { following: new Set(['anna', 'bela']), me: 'me', hidden: new Set(['dani']) });
 
-  it('lists followed people newest first by approval, then creation', () => {
-    expect(feed.followed.map((s) => s.id)).toEqual(['approved-later', 'new-followed', 'old-followed']);
+  it('lists followed people and the own spots newest first by approval, then creation', () => {
+    expect(feed.followed.map((s) => s.id)).toEqual(['mine', 'approved-later', 'new-followed', 'old-followed']);
   });
-  it('suggests everyone else, never own, pending, deleted-user or blocked spots', () => {
+  it('suggests everyone else, never pending, deleted-user or blocked spots', () => {
     expect(feed.suggested.map((s) => s.id)).toEqual(['other']);
   });
-  it('counts followed spots newer than the last visit', () => {
-    expect(countUnseen(feed.followed, 4000)).toBe(2);
-    expect(countUnseen(feed.followed, 7000)).toBe(0);
+  it('counts followed spots newer than the last visit, never the own', () => {
+    expect(countUnseen(feed.followed, 4000, 'me')).toBe(2);
+    expect(countUnseen(feed.followed, 7000, 'me')).toBe(0);
+  });
+  it('near me keeps spots within the radius', () => {
+    const far = spot('far', 'cili', 4000, { location: { lat: 47.5, lng: 21 } });
+    const near = buildFeed([...spots, far], { following: new Set(), me: null, hidden: new Set(), near: { lat: 0, lng: 0 } });
+    expect([...near.followed, ...near.suggested].map((s) => s.id)).not.toContain('far');
+    expect(near.suggested.map((s) => s.id)).toContain('other');
   });
 });
 

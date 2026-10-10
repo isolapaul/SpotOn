@@ -13,6 +13,7 @@ import { getUserNameColor, profileLevel } from '@/lib/levelUtils';
 import { resolveNameFontClass } from '@/lib/nameStyle';
 import LevelBadge from '../ui/LevelBadge';
 import FollowChip from '../profile/FollowChip';
+import { useUserStore } from '@/store/useUserStore';
 
 /**
  * Who shared the spot (picture, styled name, level), when, and the category. The picture and the
@@ -24,6 +25,7 @@ export default function FeedCardHeader({ spot, suggested, now }: Readonly<{ spot
   const openProfile = useOpenProfile();
   const categoryLabel = useCategoryLabel();
   const profile = usePublicProfile(spot.createdBy);
+  const own = useUserStore((s) => s.user?.uid === spot.createdBy);
   const [failed, setFailed] = useState(false);
 
   const name = profile?.username || spot.createdByName || t('anonymous');
@@ -67,6 +69,11 @@ export default function FeedCardHeader({ spot, suggested, now }: Readonly<{ spot
             {name}
           </button>
           <LevelBadge level={level} size={16} className="shrink-0" />
+          {own && (
+            <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-px text-[11px] font-semibold text-label-secondary">
+              {t('feedYouShared')}
+            </span>
+          )}
           {isFreshSpot(spot, now) && (
             <span className="shrink-0 rounded-full bg-brand-500/20 px-1.5 py-px text-[11px] font-bold uppercase tracking-wide text-brand-300">
               {t('feedNew')}
@@ -79,7 +86,7 @@ export default function FeedCardHeader({ spot, suggested, now }: Readonly<{ spot
           {categoryLabel(spot.category)}
         </p>
       </div>
-      {suggested && <FollowChip uid={spot.createdBy} isPrivate={profile?.isPrivate === true} tone="text" />}
+      {suggested && !own && <FollowChip uid={spot.createdBy} isPrivate={profile?.isPrivate === true} tone="text" />}
     </header>
   );
 }

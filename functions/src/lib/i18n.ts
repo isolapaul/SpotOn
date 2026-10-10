@@ -216,6 +216,23 @@ export const translations = {
     en: (user: TParam) => `${user} started following you`,
     de: (user: TParam) => `${user} folgt dir jetzt`,
   },
+  // Weekly feed digest: (first name, how many others, how many spots).
+  weeklyDigest: {
+    hu: "Heti összefoglaló",
+    en: "Your week on SpotOn",
+    de: "Deine Woche auf SpotOn",
+  },
+  weeklyDigestBody: {
+    hu: (name: TParam, others: TParam, count: TParam) => Number(others) > 0 ?
+      `${name} és még ${others} ember ${count} új helyet osztott meg a héten` :
+      `${name} ${count} új helyet osztott meg a héten`,
+    en: (name: TParam, others: TParam, count: TParam) => Number(others) > 0 ?
+      `${name} and ${others} more shared ${count} new spots this week` :
+      `${name} shared ${count} new ${Number(count) === 1 ? "spot" : "spots"} this week`,
+    de: (name: TParam, others: TParam, count: TParam) => Number(others) > 0 ?
+      `${name} und ${others} weitere haben diese Woche ${count} neue Orte geteilt` :
+      `${name} hat diese Woche ${count} ${Number(count) === 1 ? "neuen Ort" : "neue Orte"} geteilt`,
+  },
 } satisfies Record<string, Record<Lang, Template>>;
 
 export type TKey = keyof typeof translations;

@@ -98,7 +98,7 @@ docs/play-store.md               Play listing texts, Data safety and content rat
   status ('pending'|'approved'|'rejected'), rejection{reason,at} (rejected only), createdAt, imageUrls[], spotImages[{id,url,addedBy,addedAt,likes,likedBy[]}],
   primaryImageIndex, **reviews[] embedded array**, highlighted[], isHighlighted, updatedAt (owner edits and photo additions; approveSpot's
   version check), approvedAt (set by approveSpot), contributors[] (server: reviewers and photo adders other than the creator, for XP),
-  ownerPin (server: the owner's pin icon from level 4).
+  ownerPin (server: the owner's pin icon from level 4), likedBy[] + likeCount (server: spot likes, the `toggleSpotLike` callable).
   Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
   Spots of deleted accounts have `createdBy: "deleted-user"` and no createdByName/createdByPhoto.
   Status changes and deletes go only through the moderation callables (`approveSpot`, `rejectSpot`, `removeSpot`); admins may still edit fields and photos directly.
