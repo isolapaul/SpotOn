@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useUiStore } from '@/store/useUiStore';
 import { useToastStore } from '@/store/useToastStore';
-import { spotIdFromPath } from '@/lib/spotLinks';
+import { spotIdFromPath, userIdFromPath } from '@/lib/spotLinks';
 import { useT } from './useT';
 
 /** How long a link waits for its spot (signed-in users' own pending spots load after sign-in). */
@@ -18,10 +18,18 @@ export function useSpotLink(isAppReady: boolean, visibleIds: ReadonlySet<string>
   const t = useT();
   // The linked id, read once from the first address.
   const [linked] = useState(() => spotIdFromPath(pathname));
+  // A profile link (/user/<uid>, from a follow push) opens that profile instead.
+  const [linkedUser] = useState(() => userIdFromPath(pathname));
   const visibleRef = useRef(visibleIds);
   useEffect(() => {
     visibleRef.current = visibleIds;
   }, [visibleIds]);
+
+  useEffect(() => {
+    if (!linkedUser || !isAppReady) return;
+    globalThis.history.replaceState(globalThis.history.state, '', '/');
+    useUiStore.getState().openUserProfile(linkedUser);
+  }, [isAppReady, linkedUser]);
 
   useEffect(() => {
     if (!linked || !isAppReady) return;

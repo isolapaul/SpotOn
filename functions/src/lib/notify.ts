@@ -12,6 +12,7 @@ import * as logger from "firebase-functions/logger";
 import {db, messaging} from "./app";
 import {TKey, TParam, translate} from "./i18n";
 import {registrationList, selectTokensToPrune} from "./tokens";
+import {pushLink} from "./inboxLinks";
 
 const APP_URL = defineString("APP_URL", {
   description: "Public base URL of the web app (notification click link)",
@@ -66,8 +67,9 @@ export async function sendNotificationToUser(
     const title = translate(titleKey, userLanguage);
     const body = translate(bodyKey, userLanguage, bodyParams);
 
-    // FCM requires an HTTPS link; the emulator value (http://localhost:3000) is omitted.
-    const appUrl = APP_URL.value();
+    // FCM requires an HTTPS link; the emulator value (http://localhost:3000) is omitted. A notice's
+    // own path (data.link: its spot or the other user's profile) opens right there.
+    const link = pushLink(APP_URL.value(), data.link);
     const base: BaseMessage = {
       notification: {
         title: title,
@@ -75,7 +77,7 @@ export async function sendNotificationToUser(
       },
       data: data,
       webpush: {
-        ...(appUrl.startsWith("https://") ? {fcmOptions: {link: appUrl}} : {}),
+        ...(link ? {fcmOptions: {link}} : {}),
         notification: {
           requireInteraction: false,
           icon: "/icon-192x192.png",

@@ -24,6 +24,8 @@ interface FeedMediaProps {
   onIndex: (index: number) => void;
   /** A double tap: likes the photo in view (never unlikes). */
   onDoubleTap: () => void;
+  /** A photo failed to load: the card drops it (the like keeps following the photo in view). */
+  onFailed: (url: string) => void;
   onShowOnMap: () => void;
 }
 
@@ -32,12 +34,11 @@ interface FeedMediaProps {
  * pill, and a double tap that likes the photo with a thumb burst. No photo: a tinted tile with
  * the category icon and the name.
  */
-export default function FeedMedia({ spot, photos, index, onIndex, onDoubleTap, onShowOnMap }: Readonly<FeedMediaProps>) {
+export default function FeedMedia({ spot, photos, index, onIndex, onDoubleTap, onFailed, onShowOnMap }: Readonly<FeedMediaProps>) {
   const t = useT();
   const lastTap = useRef<{ at: number; x: number; y: number } | null>(null);
   const [burst, setBurst] = useState(0);
-  const [failed, setFailed] = useState<ReadonlySet<string>>(new Set());
-  const shown = photos.filter((p) => !failed.has(p.url));
+  const shown = photos;
 
   const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
     const now = e.timeStamp;
@@ -55,7 +56,7 @@ export default function FeedMedia({ spot, photos, index, onIndex, onDoubleTap, o
     <div className="relative mx-3 aspect-[4/5] rounded-r3 overflow-hidden bg-surface-2 select-none">
       {shown.length ? (
         <div
-          className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar overscroll-x-contain"
+          className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar overscroll-x-contain touch-manipulation"
           onScroll={(e) => {
             const el = e.currentTarget;
             const i = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
@@ -72,14 +73,14 @@ export default function FeedMedia({ spot, photos, index, onIndex, onDoubleTap, o
                 sizes="(max-width: 560px) 100vw, 560px"
                 className="object-cover"
                 draggable={false}
-                onError={() => setFailed((prev) => new Set(prev).add(photo.url))}
+                onError={() => onFailed(photo.url)}
               />
             </div>
           ))}
         </div>
       ) : (
         <div
-          className="absolute inset-0 grid place-items-center bg-linear-to-br from-brand-700/60 via-surface-2 to-surface-1"
+          className="absolute inset-0 grid place-items-center bg-linear-to-br from-brand-700/60 via-surface-2 to-surface-1 touch-manipulation"
           onPointerUp={onPointerUp}
         >
           <div className="flex flex-col items-center gap-3 px-8 text-center">

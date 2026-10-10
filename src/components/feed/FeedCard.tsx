@@ -38,8 +38,10 @@ const ACTION = `no-min-size h-11 min-w-11 px-2 inline-flex items-center gap-1.5 
 export default function FeedCard({ spot, index, suggested, now, userLocation, onShowOnMap, onComments }: Readonly<FeedCardProps>) {
   const t = useT();
   const language = useLanguage();
-  const photos = useMemo(() => feedPhotos(spot), [spot]);
-  const [photoIndex, setPhotoIndex] = useState(0);
+  const [failed, setFailed] = useState<ReadonlySet<string>>(new Set());
+  const photos = useMemo(() => feedPhotos(spot).filter((p) => !failed.has(p.url)), [spot, failed]);
+  const [inView, setPhotoIndex] = useState(0);
+  const photoIndex = Math.min(inView, Math.max(0, photos.length - 1));
   const like = usePhotoLike(spot.id, photos[photoIndex]);
   const favorite = useFavoriteToggle(spot.id);
   const share = useShareSpot();
@@ -81,6 +83,7 @@ export default function FeedCard({ spot, index, suggested, now, userLocation, on
         index={photoIndex}
         onIndex={setPhotoIndex}
         onDoubleTap={() => void like.like()}
+        onFailed={(url) => setFailed((prev) => new Set(prev).add(url))}
         onShowOnMap={showOnMap}
       />
 

@@ -9,6 +9,7 @@ import {db} from "./app";
 import {NotificationSettingsKey, sendNotificationToAdmins, sendNotificationToUser} from "./notify";
 import {TKey} from "./i18n";
 import {DELETED_OWNER} from "./accountDeletion";
+import {inboxLinkPath} from "./inboxLinks";
 
 export const INBOX_LIMIT = 50;
 
@@ -112,7 +113,7 @@ export async function notifyInbox(notice: InboxNotice): Promise<void> {
     });
     await trimInbox(uid);
     await sendNotificationToUser(uid, PUSH[type].title, PUSH[type].body, pushParams(notice),
-      {type, spotId, spotName, inbox: "1"}, settingsKeyOf(type));
+      {type, spotId, spotName, inbox: "1", link: inboxLinkPath(notice)}, settingsKeyOf(type));
   } catch (error) {
     logger.error("notifyInbox failed", {uid, type, spotId, error: String(error)});
   }

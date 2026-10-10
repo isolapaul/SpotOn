@@ -15,6 +15,10 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - Tap the followers or following count on a profile (yours or anyone's you can see) to see who follows them and whom they follow, with a name filter and a Follow button.
 - When someone follows you, you get a notification in the app and a push (at most once a day per person; it follows the "Follows" notification setting).
 - A notice that arrives while the app is open drops in at the top for a few seconds; tapping it, or the notice in the notification centre, opens that person's profile or flies to the spot.
+- Tapping a push opens what it is about: a new follower's or follow request's profile, or the spot (profile links: `/user/<id>`).
+
+### Fixed
+- A shared spot link with a broken escape (`/spot/%E0%A4%A`) no longer breaks the page.
 
 ### Added (sounds)
 - Short, quiet sounds when your spot or photos are uploaded, a notification arrives, you like a photo, add a favourite, follow someone or level up. They can be turned off in Settings → Sounds; the iPhone's silent switch mutes them.
