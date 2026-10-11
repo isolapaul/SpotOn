@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { APP_BUILD, SITE_URL } from '@/lib/constants';
-import { appLinkPath, isNativeApp } from '@/lib/nativeApp';
+import { appLinkPath, isNativeApp, nativePlatform } from '@/lib/nativeApp';
 import { openAppPath } from './appPaths';
 
 /** sessionStorage: the launch link already shown (a reload must not open it again). */
@@ -24,6 +24,8 @@ function linkPath(url: string): string | null {
  *   open); on the map with nothing open it sends the app to the background, as other apps do.
  * - App Links / Universal Links: a spot, profile or feed link that opens the running app opens it
  *   in place; one that started the app loads that page, where useSpotLink opens it.
+ * - `<html data-app="ios|android">`: the apps' own motion in globals.css (springier presses and
+ *   sheets, the splash zooming into the map).
  */
 export function useNativeShell(ready: boolean) {
   // The link that started the app opens once the app is ready (the map and the spots are there).
@@ -36,6 +38,7 @@ export function useNativeShell(ready: boolean) {
 
   useEffect(() => {
     if (!isNativeApp()) return;
+    document.documentElement.dataset.app = nativePlatform() ?? 'app';
     let cancelled = false;
     const handles: Array<{ remove: () => Promise<void> }> = [];
 

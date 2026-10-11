@@ -9,6 +9,7 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - SpotOn as an Android and iOS app, each its own build with the app bundled inside (it opens without waiting for the website), adding what a browser tab cannot: Google sign-in with the phone's account picker, push notifications, the system share sheet, the Android back button and spot links that open in the app. The first-run tour skips its install step in the app.
 - In the apps: Sign in with Apple on iPhone (when enabled), tapping a push opens the profile, spot or feed it is about, profile and feed links open in the app too (iOS Universal Links), a light haptic tap with the interface sounds, and the Android 13+ themed icon.
 - On iPhone: a running upload (a new spot, photos or a review) shows its progress in the Dynamic Island and on the lock screen, and stays there a few seconds with the result; long-press the app icon for Add a spot, Feed and Near me.
+- The apps move a little livelier than the website: buttons give under the finger, sheets rise with a spring, the start screen's mark grows into the map, and a new spot lands with a small confetti burst.
 
 ### Added (feed)
 - A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.

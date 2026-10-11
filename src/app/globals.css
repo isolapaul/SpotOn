@@ -990,3 +990,32 @@ html[data-vt="morph"]::view-transition-new(panel):only-child {
 @keyframes vt-fade-rise {
   from { opacity: 0; transform: translateY(24px); }
 }
+
+/* The apps' own motion (html[data-app], set by useNativeShell; never in browsers). */
+@layer utilities {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Presses give a little. :where keeps it below a button's own active:scale-* (same layer). */
+    :where(html[data-app] button:not(:disabled)):active {
+      scale: 0.96;
+    }
+    /* The splash mark grows into the map as the screen fades (`scale`, so its pop animation's
+       transform stays untouched). */
+    html[data-app] [data-exiting] [data-splash-mark] {
+      transition: scale 0.5s cubic-bezier(0.5, 0, 0.75, 0), opacity 0.4s ease-in 0.1s;
+      scale: 2.6;
+      opacity: 0;
+    }
+  }
+}
+/* Sheets rise with a spring that settles just past the top edge and back. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-app]:not([data-vt="morph"])::view-transition-new(panel):only-child {
+    animation: vt-sheet-spring 0.62s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  }
+}
+@keyframes vt-sheet-spring {
+  0% { transform: translateY(100%); }
+  62% { transform: translateY(-1.6%); }
+  82% { transform: translateY(0.5%); }
+  100% { transform: translateY(0); }
+}

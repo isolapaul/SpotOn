@@ -28,6 +28,7 @@ export default function LoadingScreen({ isLoading }: Readonly<LoadingScreenProps
   return (
     <div
       data-testid="loading-screen"
+      data-exiting={isLoading ? undefined : ''}
       className={`fixed inset-0 z-9999 bg-surface-0 flex flex-col items-center justify-center transition-[opacity,transform] duration-500 ${
         isLoading ? 'opacity-100' : 'opacity-0 scale-[1.04]'
       }`}
@@ -38,6 +39,7 @@ export default function LoadingScreen({ isLoading }: Readonly<LoadingScreenProps
         viewBox="0 0 96 96"
         role="img"
         aria-label="SpotOn"
+        data-splash-mark=""
         className="motion-safe:animate-level-pop"
       >
         <defs>
