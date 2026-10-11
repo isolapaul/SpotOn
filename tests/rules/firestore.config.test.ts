@@ -1,8 +1,8 @@
-// config/app (growth plan): public read, no client writes (the owner edits it in the console).
+// Growth plan collections: config/app (public read, console-edited), telemetry, referrals.
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, type Firestore } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where, type Firestore } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
-import { ALICE, SUPER, dbAs, seed, setupEnv } from './helpers';
+import { ALICE, BOB, SUPER, dbAs, seed, setupEnv } from './helpers';
 
 let env: RulesTestEnvironment;
 beforeAll(async () => { env = await setupEnv(); });
@@ -34,5 +34,25 @@ describe('telemetry', () => {
       await assertFails(getDoc(doc(dbAs(env, null), col, 'x')));
       await assertFails(setDoc(doc(dbAs(env, SUPER), col, 'x'), { a: 1 }));
     }
+  });
+});
+
+describe('referrals', () => {
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore() as unknown as Firestore, 'referrals', BOB), { referrer: ALICE, invitee: BOB, spotApproved: false });
+    });
+  });
+  it('the inviter and the invitee read it, nobody else; nobody writes', async () => {
+    await assertSucceeds(getDoc(doc(dbAs(env, ALICE), 'referrals', BOB)));
+    await assertSucceeds(getDoc(doc(dbAs(env, BOB), 'referrals', BOB)));
+    await assertFails(getDoc(doc(dbAs(env, SUPER), 'referrals', BOB)));
+    await assertFails(getDoc(doc(dbAs(env, null), 'referrals', BOB)));
+    await assertSucceeds(getDocs(query(collection(dbAs(env, ALICE), 'referrals'), where('referrer', '==', ALICE))));
+    await assertFails(getDocs(collection(dbAs(env, ALICE), 'referrals')));
+    await assertFails(setDoc(doc(dbAs(env, BOB), 'referrals', BOB), { referrer: ALICE, invitee: BOB, spotApproved: true }));
+  });
+  it('the user cannot write referredBy', async () => {
+    await assertFails(updateDoc(doc(dbAs(env, BOB), 'users', BOB), { referredBy: ALICE }));
   });
 });

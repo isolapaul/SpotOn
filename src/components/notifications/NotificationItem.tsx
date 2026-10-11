@@ -6,6 +6,7 @@ import {
   Check,
   CheckCircle2,
   CircleAlert,
+  Gift,
   Heart,
   Info,
   MapPin,
@@ -43,6 +44,7 @@ const LOOK: Readonly<Record<NotificationType, { icon: LucideIcon; tint: string }
 // Social inbox items get their own look (the moderation ones keep the approve / decline look).
 const INBOX_LOOK: Partial<Record<InboxType, { icon: LucideIcon; tint: string }>> = {
   new_follower: { icon: UserPlus, tint: 'bg-violet-500/15 text-violet-300' },
+  invite_joined: { icon: Gift, tint: 'bg-brand-500/15 text-brand-300' },
   follow_request: { icon: UserPlus, tint: 'bg-violet-500/15 text-violet-300' },
   follow_accepted: { icon: UserCheck, tint: 'bg-violet-500/15 text-violet-300' },
   followed_spot: { icon: MapPin, tint: 'bg-brand-500/15 text-brand-300' },

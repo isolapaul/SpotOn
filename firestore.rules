@@ -360,6 +360,13 @@ service cloud.firestore {
       allow read: if isSuperAdmin();
       allow write: if false;
     }
+    // Referral program (growth plan §2): written only by claimReferral and the XP trigger; the
+    // inviter and the invitee read their own.
+    match /referrals/{inviteeId} {
+      allow get, list: if signedIn()
+        && (resource.data.referrer == request.auth.uid || inviteeId == request.auth.uid);
+      allow write: if false;
+    }
     // App-wide switches (growth plan: minimum app versions, locked pins, launch challenge end):
     // public, edited by the owner in the Firebase console only.
     match /config/{id} {

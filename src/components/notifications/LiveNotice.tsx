@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapPin, MessageCircle, Bell, UserCheck, UserPlus, type LucideIcon } from 'lucide-react';
+import { Gift, MapPin, MessageCircle, Bell, UserCheck, UserPlus, type LucideIcon } from 'lucide-react';
 import { useInboxStore } from '@/store/useInboxStore';
 import { useUiStore } from '@/store/useUiStore';
 import { useOpenProfile } from '@/hooks/useOpenProfile';
@@ -16,6 +16,7 @@ const LEAVE_MS = 180;
 
 const ICONS: Partial<Record<InboxType, LucideIcon>> = {
   new_follower: UserPlus,
+  invite_joined: Gift,
   follow_request: UserPlus,
   follow_accepted: UserCheck,
   followed_spot: MapPin,

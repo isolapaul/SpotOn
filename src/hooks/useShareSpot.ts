@@ -1,11 +1,10 @@
 import { useCallback } from 'react';
 import { APP_BUILD, SITE_URL } from '@/lib/constants';
 import type { Spot } from '@/store/useSpotStore';
-import { useToastStore } from '@/store/useToastStore';
 import { spotLink } from '@/lib/spotLinks';
-import { isNativeApp } from '@/lib/nativeApp';
 import { useT } from './useT';
 import { track } from '@/store/telemetry';
+import { shareLink } from './shareLink';
 
 /** Shares a spot's public link: the system share sheet (native in the app), else the clipboard (with a notice). */
 export function useShareSpot(): (spot: Pick<Spot, 'id' | 'name'>) => Promise<void> {
@@ -13,32 +12,6 @@ export function useShareSpot(): (spot: Pick<Spot, 'id' | 'name'>) => Promise<voi
   return useCallback(async (spot) => {
     // The public address (inside the app the page runs on a local origin).
     const url = spotLink(APP_BUILD ? SITE_URL : globalThis.location.origin, spot.id);
-    // The Android/iOS app: the system share sheet (Android's WebView has no navigator.share).
-    if (isNativeApp()) {
-      try {
-        const { Share } = await import('@capacitor/share');
-        await Share.share({ title: spot.name, url });
-        track('spot_shared');
-        return;
-      } catch (error) {
-        // Closing the share sheet rejects too: nothing more to do then.
-        if (error instanceof Error && /cancel/i.test(error.message)) return;
-      }
-    }
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: spot.name, url });
-        track('spot_shared');
-        return;
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      useToastStore.getState().showToast(t('linkCopied'), 'success');
-    } catch {
-      useToastStore.getState().showToast(url, 'info');
-    }
+    if (await shareLink({ title: spot.name, url }, t('linkCopied')) === 'shared') track('spot_shared');
   }, [t]);
 }

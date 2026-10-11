@@ -13,6 +13,7 @@ import PlaceCard from '@/components/map/PlaceCard';
 import LevelUpCelebration from '@/components/LevelUpCelebration';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
 import TermsPrompt from '@/components/legal/TermsPrompt';
+import InvitePrompt from '@/components/invite/InvitePrompt';
 import MovedBanner from '@/components/MovedBanner';
 import { useShallow } from 'zustand/react/shallow';
 import { useUserStore } from '@/store/useUserStore';
@@ -227,6 +228,8 @@ export default function Home() {
       />
       {/* One-time terms acceptance for users who signed up before the terms (A1); after the tour */}
       <TermsPrompt ready={isAppReady && !tourBlocking} />
+      {/* "Who invited you?" after sign-up or an opened invite link (growth plan §2) */}
+      {isAppReady && !tourBlocking && <InvitePrompt />}
       {/* Add Spot Modal */}
       <AddSpotModal isOpen={activePanel === 'addSpot'} onClose={closeAddSpot} selectedLocation={pendingLocation} />
       {/* Spot Details Panel */}

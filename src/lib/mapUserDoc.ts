@@ -27,6 +27,7 @@ export interface User {
   bio?: string; // Item 8: up to BIO_MAX characters
   profilePrivate?: boolean; // Item 8: only accepted followers see the profile's lists
   showSaved?: boolean; // Item 8: saved spots shown on the profile (default hidden)
+  referredBy?: string; // Growth plan §2: the inviter's uid (server-written by claimReferral)
 }
 
 export interface AuthInfo {
@@ -79,6 +80,7 @@ export function mapUserDoc(uid: string, authInfo: AuthInfo, data: Record<string,
   if (typeof data.bio === 'string' && data.bio) user.bio = data.bio;
   if (data.profilePrivate === true) user.profilePrivate = true;
   if (data.showSaved === true) user.showSaved = true;
+  if (typeof data.referredBy === 'string' && data.referredBy) user.referredBy = data.referredBy;
 
   const spotsCount = data.spotsCount;
   if (typeof spotsCount === 'number' && Number.isInteger(spotsCount) && spotsCount >= 0) {

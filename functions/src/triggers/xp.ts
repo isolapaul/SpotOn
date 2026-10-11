@@ -11,6 +11,22 @@ import {FieldValue} from "firebase-admin/firestore";
 import {DELETED_OWNER} from "../lib/accountDeletion";
 import {syncUserLevel} from "../lib/userLevel";
 import {changedXpUids, sameContributors, spotContributors} from "../lib/xp";
+import {db} from "../lib/app";
+
+/**
+ * Marks an invitee's referral as having an approved spot (once); returns the inviter whose XP
+ * changes, else null.
+ */
+async function markInviteeSpotApproved(invitee: string): Promise<string | null> {
+  const ref = db.collection("referrals").doc(invitee);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists || snap.get("spotApproved") === true) return null;
+    tx.update(ref, {spotApproved: true});
+    const referrer = snap.get("referrer");
+    return typeof referrer === "string" ? referrer : null;
+  });
+}
 
 export const syncXp = onDocumentWritten("spots/{spotId}", async (event) => {
   const spotId = event.params.spotId;
@@ -46,6 +62,11 @@ export const syncXp = onDocumentWritten("spots/{spotId}", async (event) => {
 
   const uids = new Set(changedXpUids(before, after));
   if (realOwner && before?.createdBy !== owner) uids.add(owner);
+  // Referral program: the first approved spot of an invited user earns their inviter a bonus.
+  if (realOwner && after?.status === "approved" && before?.status !== "approved") {
+    const inviter = await markInviteeSpotApproved(owner);
+    if (inviter) uids.add(inviter);
+  }
   for (const uid of uids) {
     const outcome = await syncUserLevel(uid);
     logger.info("syncXp", {spotId, uid, outcome});

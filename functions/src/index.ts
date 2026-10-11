@@ -21,3 +21,4 @@ export {reportContent, resolveReport} from "./callables/reports";
 export {editReview, deleteReview, addReply} from "./callables/reviews";
 export {onReplyCreated} from "./triggers/replies";
 export {logEvents, reportClientError} from "./callables/telemetry";
+export {claimReferral} from "./callables/referrals";

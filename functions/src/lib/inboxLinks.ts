@@ -4,7 +4,7 @@
  */
 export type LinkedNotice = {type: string; spotId: string; actorUid?: string};
 
-const PROFILE_TYPES = ["follow_request", "follow_accepted", "new_follower"];
+const PROFILE_TYPES = ["follow_request", "follow_accepted", "new_follower", "invite_joined"];
 const NO_SPOT_TYPES = ["spot_removed", "content_removed"];
 
 export function inboxLinkPath(n: LinkedNotice): string {

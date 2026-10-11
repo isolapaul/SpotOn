@@ -23,20 +23,20 @@ Status: `[ ]` open, `[x]` done.
   it). The super admin sees the last 30 days as a funnel.
 
 ## 2. Referral program
-- [ ] **Code = username.** Personal link `https://spoton.isolapaul.hu/i/<username>`; opening it
+- [x] **Code = username.** Personal link `https://spoton.isolapaul.hu/i/<username>`; opening it
   stores the inviter on the device and opens the app (App Links / Universal Links cover `/i/`).
-- [ ] **"Who invited you?"** after sign-up (prefilled from the link, editable, skippable), and in
-  Settings for 7 days after sign-up. The `claimReferral` callable: once per account, not yourself,
+- [x] **"Who invited you?"** after sign-up or an opened invite link (prefilled, editable,
+  skippable), and on the invite sheet for 7 days after sign-up. The `claimReferral` callable: once per account, not yourself,
   the inviter must exist and not be blocked either way, account younger than 7 days; writes
   `referrals/{inviteeUid}` (`referrer`, `createdAt`, `spotApproved`) — server-only.
-- [ ] **Rewards (XP, no money)**: invitee +10 XP when claiming; inviter +10 XP per invitee, and
+- [x] **Rewards (XP, no money)**: invitee +10 XP when claiming; inviter +10 XP per invitee, and
   +20 more when the invitee's first spot is approved (set by `approveSpot` / the spot trigger).
   Referral XP joins the XP sum in `syncUserLevel` (one query on `referrals`).
-- [ ] **Badges at 3, 5 and 10 invitees** (new design: bronze, silver, gold "Ambassador"),
+- [x] **Badges at 3, 5 and 10 invitees** (new design: bronze, silver, gold "Ambassador"),
   shown on the profile; `publicProfiles.invites` mirrors the count. Steps 1-3-5-10 show as a
   progress row on the invite screen (1 = first friend, XP only).
-- [ ] The inviter gets an inbox notice and a push ("X joined with your invite"), follows setting.
-- [ ] Invite screen: the link, copy, share, the progress row, the friends who joined.
+- [x] The inviter gets an inbox notice and a push ("X joined with your invite"), follows setting.
+- [x] Invite screen: the link, copy, share, the progress row, the friends who joined.
 
 ## 3. Views and popularity
 - [ ] `recordSpotView` callable: one counted view per person, spot and day (server marks), the

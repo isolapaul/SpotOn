@@ -28,6 +28,7 @@ import { useFeedStore } from './useFeedStore';
 import { signInWithAppleNative, signInWithGoogleNative, signOutNative } from './nativeAuth';
 import { isNativeApp } from '@/lib/nativeApp';
 import { track } from './telemetry';
+import { useReferralStore } from './useReferralStore';
 
 export type { User } from '@/lib/mapUserDoc';
 
@@ -245,6 +246,7 @@ async function createUserDoc(firebaseUser: FirebaseUser): Promise<Record<string,
     lastLoginAt: serverTimestamp(),
   }, { merge: true });
   track('sign_up');
+  useReferralStore.getState().markSignedUp();
   return data;
 }
 

@@ -216,6 +216,17 @@ export const translations = {
     en: (user: TParam) => `${user} started following you`,
     de: (user: TParam) => `${user} folgt dir jetzt`,
   },
+  // Referral program (growth plan §2): (the new user's name).
+  inviteJoined: {
+    hu: "Valaki a meghívásodra jött",
+    en: "A friend joined with your invite",
+    de: "Jemand ist deiner Einladung gefolgt",
+  },
+  inviteJoinedBody: {
+    hu: (user: TParam) => `${user} regisztrált a meghívásodra. Ez XP-t ért!`,
+    en: (user: TParam) => `${user} signed up with your invite. That earned you XP!`,
+    de: (user: TParam) => `${user} hat sich mit deiner Einladung registriert. Das bringt dir XP!`,
+  },
   // Weekly feed digest: (first name, how many others, how many spots).
   weeklyDigest: {
     hu: "Heti összefoglaló",

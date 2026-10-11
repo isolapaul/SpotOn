@@ -11,6 +11,9 @@ import BioEditor from './BioEditor';
 import { useMyLevelStore } from '@/store/useMyLevelStore';
 import { useState } from 'react';
 import FollowListSheet from './FollowListSheet';
+import InviteSheet from '../invite/InviteSheet';
+import { Gift } from 'lucide-react';
+import { useT } from '@/hooks/useT';
 import type { FollowListKind } from '@/store/useFollowStore';
 
 interface ProfileHeaderProps {
@@ -37,6 +40,9 @@ export default function ProfileHeader({
 }: Readonly<ProfileHeaderProps>) {
   const followers = useMyLevelStore((s) => s.followers);
   const following = useMyLevelStore((s) => s.following);
+  const invites = useMyLevelStore((s) => s.invites);
+  const [inviting, setInviting] = useState(false);
+  const t = useT();
   const [followList, setFollowList] = useState<FollowListKind | null>(null);
   return (
     <div className="shrink-0 px-5 -mt-14 mb-5 relative">
@@ -50,7 +56,7 @@ export default function ProfileHeader({
             <UsernameEditor username={user.username} />
           </div>
 
-          <ProfileBadges isAdmin={isAdmin} />
+          <ProfileBadges isAdmin={isAdmin} invites={invites} />
 
           <BioEditor bio={user.bio} />
 
@@ -59,6 +65,17 @@ export default function ProfileHeader({
           {followList && <FollowListSheet uid={user.uid} initial={followList} onClose={() => setFollowList(null)} />}
 
           <LevelProgressCard levelInfo={levelInfo} xp={xp} onOpen={onOpenLevelInfo} />
+
+          {/* Growth plan §2: the personal invite link */}
+          <button
+            type="button"
+            onClick={() => setInviting(true)}
+            className="mt-3 w-full h-12 rounded-2xl bg-brand-600/15 ring-1 ring-brand-400/30 text-brand-200 font-semibold flex items-center justify-center gap-2"
+          >
+            <Gift className="w-4 h-4" aria-hidden="true" />
+            {t('inviteFriends')}
+          </button>
+          {inviting && <InviteSheet onClose={() => setInviting(false)} />}
         </div>
       </div>
     </div>

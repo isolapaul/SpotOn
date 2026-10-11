@@ -23,7 +23,9 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {auth, db} from "../lib/app";
 import {parseStorageDownloadUrl} from "../lib/spotImages";
+import {syncUserLevel} from "../lib/userLevel";
 import {
+  DELETED_OWNER,
   DeletionRefusal,
   orphanedUploads,
   planSpotCleanup,
@@ -226,6 +228,20 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
       .flatMap((q) => q.docs).map((d) => d.ref.delete()),
     db.collection("rateLimits").doc(uid).delete(),
   ]);
+
+  // 4b2. Referrals (growth plan §2): the user's own referral goes (their inviter's XP is
+  // recomputed); the referrals of the people they invited keep their invitees' XP but no longer
+  // name them (DELETED_OWNER).
+  const [ownReferral, invitedByThem] = await Promise.all([
+    db.collection("referrals").doc(uid).get(),
+    db.collection("referrals").where("referrer", "==", uid).get(),
+  ]);
+  await Promise.all(invitedByThem.docs.map((d) => d.ref.update({referrer: DELETED_OWNER})));
+  if (ownReferral.exists) {
+    await ownReferral.ref.delete();
+    const inviter = ownReferral.get("referrer");
+    if (typeof inviter === "string" && inviter !== DELETED_OWNER) await syncUserLevel(inviter);
+  }
 
   // 4c. Blocks either way, reports the user filed, their replies and other people's replies to
   // their (removed) reviews, and the notices in other users' inboxes that name them (follow
