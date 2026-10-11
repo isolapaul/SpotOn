@@ -1,31 +1,45 @@
 name: Mobile apps
 
-# Builds the Android and iOS apps (Capacitor, capacitor.config.ts; docs/deploy.md §17). The apps load
-# the live site, so web-only changes need no new app build: this runs when the native shell changes.
-# Without the Firebase secrets the builds use the demo configs in mobile/ci (they start, but Google
-# sign-in and push do not work); without the keystore secrets the release bundle is unsigned.
+# Builds the Android and iOS apps (Capacitor, capacitor.config.ts; docs/deploy.md §17). Each app bundles
+# its own static build of the web app (`npm run build:app`, with the same public build variables as the
+# web release), so every code change runs it. Without the Firebase secrets the builds use the demo
+# configs in mobile/ci (they start, but Google sign-in and push do not work); without the keystore
+# secrets the release bundle is unsigned.
 
 on:
   workflow_dispatch:
   push:
     branches: [main, 'claude/**']
     tags: ['v*']
-    paths:
-      - 'mobile/**'
-      - 'capacitor.config.ts'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/mobile.yml'
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - 'functions/**'
   pull_request:
-    paths:
-      - 'mobile/**'
-      - 'capacitor.config.ts'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/mobile.yml'
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - 'functions/**'
 
 permissions:
   contents: read
+
+# The app's own web build: the public values the web release uses (repository variables), the app's
+# Mapbox token, and safe demo values where a variable is not set (forks, first runs).
+env:
+  NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY || 'demo-api-key' }}
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'demo-spoton.firebaseapp.com' }}
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-spoton' }}
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ vars.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'demo-spoton.appspot.com' }}
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '000000000000' }}
+  NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID || '1:000000000000:web:0000000000000000000000' }}
+  NEXT_PUBLIC_FIREBASE_VAPID_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_VAPID_KEY }}
+  NEXT_PUBLIC_CONTROLLER_NAME: ${{ vars.NEXT_PUBLIC_CONTROLLER_NAME }}
+  NEXT_PUBLIC_CONTACT_EMAIL: ${{ vars.NEXT_PUBLIC_CONTACT_EMAIL }}
+  NEXT_PUBLIC_MAPBOX_TOKEN: ${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN }}
+  NEXT_PUBLIC_MAPBOX_TOKEN_APP: ${{ vars.NEXT_PUBLIC_MAPBOX_TOKEN_APP }}
+  NEXT_PUBLIC_APPLE_SIGN_IN: ${{ vars.NEXT_PUBLIC_APPLE_SIGN_IN }}
+  NEXT_TELEMETRY_DISABLED: 1
 
 concurrency:
   group: mobile-${{ github.ref }}
@@ -77,6 +91,7 @@ jobs:
           else
             echo "::notice::No ANDROID_KEYSTORE_BASE64 secret: the release bundle is unsigned"
           fi
+      - run: npm run build:app
       - run: npx cap sync android
       - name: Build
         working-directory: mobile/android
@@ -119,6 +134,7 @@ jobs:
             echo "::notice::No GOOGLE_SERVICE_INFO_PLIST_BASE64 secret: built with the demo Firebase config (sign-in and push disabled)"
           fi
           bash mobile/scripts/ios-firebase-config.sh "$RUNNER_TEMP/GoogleService-Info.plist"
+      - run: npm run build:app
       - run: npx cap sync ios
       - name: Build (simulator, no signing)
         working-directory: mobile/ios/App

@@ -2,6 +2,7 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import { FEEDBACK_LIMITS, hasSmallJsonStructure, parseFeedbackPayload } from '@/lib/feedback/validate';
 import { createTokenBucket, getClientIp } from '@/lib/feedback/rateLimit';
 import { readLimitedBody } from '@/lib/feedback/readLimitedBody';
+import { corsHeaders } from '@/lib/feedback/cors';
 import { KeySetUnavailableError, verifyIdToken, type VerifiedIdToken } from './verifyIdToken';
 
 export const runtime = 'nodejs';
@@ -157,11 +158,20 @@ async function handle(req: Request): Promise<Response> {
   }
 }
 
+/** The apps' preflight (they post from their own local origin, lib/feedback/cors). */
+export function OPTIONS(req: Request): Response {
+  const cors = corsHeaders(req.headers.get('origin'));
+  return new Response(null, { status: Object.keys(cors).length ? 204 : 403, headers: cors });
+}
+
 export async function POST(req: Request): Promise<Response> {
+  let res: Response;
   try {
-    return await handle(req);
+    res = await handle(req);
   } catch (err) {
     console.error('feedback: server error', err instanceof Error ? err.name : 'unknown');
-    return fail(500, 'server_error');
+    res = fail(500, 'server_error');
   }
+  for (const [k, v] of Object.entries(corsHeaders(req.headers.get('origin')))) res.headers.set(k, v);
+  return res;
 }

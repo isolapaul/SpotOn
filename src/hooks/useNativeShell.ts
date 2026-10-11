@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { APP_BUILD, SITE_URL } from '@/lib/constants';
 import { appLinkPath, isNativeApp } from '@/lib/nativeApp';
 import { openAppPath } from './appPaths';
 
@@ -7,9 +8,14 @@ const LAUNCH_LINK_KEY = 'spoton-launch-link';
 
 /** A link that opened the running app: a spot, profile or the feed opens in place (openAppPath). */
 function openRunningAppLink(url: string) {
-  const path = appLinkPath(url, globalThis.location.origin);
+  const path = linkPath(url);
   if (!path) return;
-  if (!openAppPath(path)) globalThis.location.replace(path);
+  if (!openAppPath(path) && !APP_BUILD) globalThis.location.replace(path);
+}
+
+/** The in-app path of a link to the site (or to the page's own origin, a live-site build). */
+function linkPath(url: string): string | null {
+  return appLinkPath(url, SITE_URL) ?? appLinkPath(url, globalThis.location.origin);
 }
 
 /**
@@ -19,7 +25,15 @@ function openRunningAppLink(url: string) {
  * - App Links / Universal Links: a spot, profile or feed link that opens the running app opens it
  *   in place; one that started the app loads that page, where useSpotLink opens it.
  */
-export function useNativeShell() {
+export function useNativeShell(ready: boolean) {
+  // The link that started the app opens once the app is ready (the map and the spots are there).
+  const [launchPath, setLaunchPath] = useState<string | null>(null);
+  useEffect(() => {
+    if (!ready || !launchPath) return;
+    // The bundled app has only "/": everything opens in place. A live-site shell loads the page.
+    if (!openAppPath(launchPath) && !APP_BUILD) globalThis.location.replace(launchPath);
+  }, [ready, launchPath]);
+
   useEffect(() => {
     if (!isNativeApp()) return;
     let cancelled = false;
@@ -52,10 +66,9 @@ export function useNativeShell() {
       } catch {
         // see above
       }
-      const path = appLinkPath(launch.url, globalThis.location.origin);
-      // Cold start: the page loaded "/"; show the linked page, where useSpotLink opens the spot.
+      const path = linkPath(launch.url);
       if (path && path !== `${globalThis.location.pathname}${globalThis.location.search}${globalThis.location.hash}`) {
-        globalThis.location.replace(path);
+        setLaunchPath(path);
       }
     })().catch((error: unknown) => console.error('Native shell setup failed:', error));
 

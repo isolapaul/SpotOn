@@ -24,7 +24,10 @@ import {
 
 // Build-time, public: a Mapbox access token restricted to the app's URL. Without it the map is a
 // plain background in the theme's colour (local builds, e2e), and Mapbox is never called.
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN?.trim() || undefined;
+// The apps have their own token (NEXT_PUBLIC_MAPBOX_TOKEN_APP): the web token is restricted to the
+// site's URL, and the bundled app runs on a local origin.
+const MAPBOX_TOKEN = (process.env.NEXT_PUBLIC_APP_BUILD === '1' && process.env.NEXT_PUBLIC_MAPBOX_TOKEN_APP?.trim())
+  || process.env.NEXT_PUBLIC_MAPBOX_TOKEN?.trim() || undefined;
 
 interface MapViewProps {
   isAddingSpot?: boolean;

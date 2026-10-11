@@ -9,7 +9,7 @@ Open work is in `docs/BACKLOG.md`; releases and server operations are in `docs/d
 
 A mobile-first PWA for discovering and sharing places ("spots") on a map.
 Users sign in (Google or email), add spots with photos, review, favourite, and level up.
-Admins approve pending spots. UI languages: Hungarian (default), English, German. Android and iOS apps (Capacitor shells that load the live site, `mobile/`) are prepared for Google Play and the App Store.
+Admins approve pending spots. UI languages: Hungarian (default), English, German. Android and iOS apps (Capacitor projects that bundle their own static build of the web app, `npm run build:app`, `mobile/`) are prepared for Google Play and the App Store.
 
 **Production:** https://spoton.isolapaul.hu, a hardened Docker container on Paul's home server, reached through a dashboard-managed Cloudflare Tunnel (`cloudflared` on the external docker network `edge`).
 Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only shows the move notice and later redirects (`docs/deploy.md` §15) until it is deleted.
@@ -24,7 +24,7 @@ Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only 
 | State | Zustand 5 (`src/store/*`, several persisted to localStorage) |
 | Backend (BaaS) | Firebase: Auth, Firestore, Storage, Cloud Messaging (web push) |
 | Server code | Cloud Functions v2 in `functions/` (region `europe-west3`) |
-| Mobile apps | Capacitor 8 (`capacitor.config.ts`, `mobile/android`, `mobile/ios`): the shell loads the live site; native plugins only for Google sign-in, FCM, back button/app links and sharing, always behind `isNativeApp()` |
+| Mobile apps | Capacitor 8 (`capacitor.config.ts`, `mobile/android`, `mobile/ios`): bundles the static app export (`out-app/`, `output: 'export'` when `NEXT_PUBLIC_APP_BUILD=1`); web-only files are `*.web.ts(x)`; native plugins always behind `isNativeApp()`, app-only code behind `APP_BUILD` (`lib/constants`) |
 | Next API routes | `/api/feedback` (nodemailer → SMTP), `/api/firebase-messaging-sw` (generated FCM service worker), `/api/health` (container healthcheck) |
 
 ## 3. Repository map
@@ -94,7 +94,7 @@ deploy/, Dockerfile, docker/     Server compose file, update script, image and h
 docs/deploy.md, docs/BACKLOG.md  Release and server runbook (Android app: §17); open work
 docs/play-store.md               Play listing texts, Data safety and content rating answers
 docs/app-store.md                The Apple App Store path: what is in place, owner steps, the native shell work
-capacitor.config.ts, mobile/     The Android/iOS apps (Capacitor): native projects, offline page (mobile/www), icon script, CI demo
+capacitor.config.ts, mobile/     The Android/iOS apps (Capacitor): native projects bundling out-app/ (npm run build:app), icon script, CI demo
                                  Firebase configs (mobile/ci); built by .github/workflows/mobile.yml; runbook docs/deploy.md §17
 src/lib/nativeApp.ts             isNativeApp()/nativePlatform()/appLinkPath(): the app check (Capacitor bridge), no plugin imports
 src/store/nativeAuth.ts, nativePush.ts  Native Google sign-in (ID token → web SDK) and native FCM tokens (users.fcmTokens)
@@ -140,7 +140,8 @@ npm run verify              # typecheck + lint + unit tests + next build (gate f
 npm run verify:fn           # functions build + lint + unit tests (gate when functions/ changed)
 npm run test:rules          # Firestore/Storage rules tests on the emulator (Java 21 required)
 npm run test:e2e            # Playwright vs the emulator-seeded build (PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers)
-npm run cap:sync            # after changing capacitor.config.ts, mobile/ or a Capacitor package (needs no SDK)
+npm run build:app           # the apps' static export (out-app/); cap:sync / cap:android / cap:ios run it first
+npm run cap:sync            # build:app + copy into the native projects (needs no SDK)
 ```
 The native builds need the Android SDK / Xcode, which the Claude Code sandbox cannot download (dl.google.com is blocked); `.github/workflows/mobile.yml` builds them.
 `next build` needs Firebase config. Without a `.env.local`, export non-secret demo values first:
@@ -157,6 +158,8 @@ In the Claude Code sandbox, the functions emulator cannot register Firestore tri
 | `NEXT_PUBLIC_MOVED_TO` | build time, Vercel only (T19) | domain-move banner |
 | `NEXT_PUBLIC_CONTROLLER_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` | build time (required by the container build) | legal pages `/privacy`, `/terms` (A1) |
 | `NEXT_PUBLIC_APPLE_SIGN_IN` | build time, optional (`1` shows Sign in with Apple; set only after the provider is enabled in Firebase Auth, `docs/app-store.md`) | `components/AuthModal.tsx` via `lib/constants` |
+| `NEXT_PUBLIC_APP_BUILD` | build time, set by `npm run build:app` only | `next.config.mjs` (static export), `lib/constants` `APP_BUILD` / `apiUrl()` |
+| `NEXT_PUBLIC_MAPBOX_TOKEN_APP` | build time, app build (repository variable; a public token without the URL restriction) | `components/MapView.tsx` in the apps |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | build time, required for releases (public `pk.` token, URL-restricted) | `components/MapView.tsx` via `lib/mapStyles` |
 | `SMTP_HOST/PORT/USER/PASS`, `FEEDBACK_RECIPIENT` | runtime (container `.env`) | `/api/feedback` |
 | `ANDROID_CERT_SHA256` | runtime (container `.env`), optional | `/.well-known/assetlinks.json` (docs/deploy.md §17.3) |

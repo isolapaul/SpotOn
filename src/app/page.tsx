@@ -73,7 +73,7 @@ export default function Home() {
   useInitialLanguage();
   useMapThemeAttribute();
   useStandaloneFullHeight();
-  useNativeShell();
+  useNativeShell(isAppReady);
   const visibleSpots = useVisibleSpots();
   const { location: userLocation, status: locationStatus } = useUserLocation();
   const { user, needsUsername, setNeedsUsername } = useUserStore();

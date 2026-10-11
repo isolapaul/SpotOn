@@ -22,9 +22,10 @@
     "verify:fn": "npm --prefix functions run build && npm --prefix functions run lint && npm --prefix functions test",
     "test:e2e": "npm --prefix functions run build && firebase emulators:exec --only auth,firestore,storage,functions --project demo-spoton \"tsx scripts/seed-emulator.ts && playwright test\"",
     "store:assets": "firebase emulators:exec --only auth,firestore,storage --project demo-spoton \"tsx scripts/store/seed-demo.ts && playwright test -c playwright.store.config.ts\"",
-    "cap:sync": "cap sync",
-    "cap:android": "cap sync android && cap open android",
-    "cap:ios": "cap sync ios && cap open ios",
+    "build:app": "npm run sw:build && NEXT_PUBLIC_APP_BUILD=1 next build",
+    "cap:sync": "npm run build:app && cap sync",
+    "cap:android": "npm run build:app && cap sync android && cap open android",
+    "cap:ios": "npm run build:app && cap sync ios && cap open ios",
     "test:rules": "firebase emulators:exec --only firestore,storage --project demo-spoton \"vitest run --config vitest.rules.config.ts\""
   },
   "dependencies": {

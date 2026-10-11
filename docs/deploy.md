@@ -370,20 +370,21 @@ Do the steps one after another, without a long pause between 4 and 7: until the 
 
 ## 17. Android and iOS apps (Capacitor)
 
-The store apps are [Capacitor](https://capacitorjs.com) shells (`capacitor.config.ts`, `mobile/android`, `mobile/ios`) that load https://spoton.isolapaul.hu full screen. A web-only release needs no new app build: the apps always show the live site. Native code covers what a WebView cannot do on its own:
+The store apps are their own builds: [Capacitor](https://capacitorjs.com) projects (`capacitor.config.ts`, `mobile/android`, `mobile/ios`) that bundle a static export of the web app (`npm run build:app` → `out-app/`, `NEXT_PUBLIC_APP_BUILD=1` in `next.config.mjs`). The app starts without the network and does not depend on the server, except for `/api/feedback` on the live site (CORS for the apps' origins). Web-only files carry a `.web` extension (`route.web.ts`, `page.web.tsx`, `proxy.web.ts`) and are not in the app. A web change reaches the apps with their next store release. Native code covers:
 
 | Feature | How |
 |---|---|
 | Google sign-in | The native Google SDK (Google refuses OAuth in WebViews); the web SDK signs in with its ID token (`src/store/nativeAuth.ts`). |
 | Push | Native FCM; the device token goes into `users/{uid}.fcmTokens`, which the functions already send to (`src/store/nativePush.ts`). |
 | Android back, spot links, sharing | `src/hooks/useNativeShell.ts` (App Links), `useShareSpot` (system share sheet). |
-| Offline | `mobile/www/offline.html` when the site cannot be loaded. |
+| Offline start | The app itself is bundled; data needs the network (Firestore). |
+| Maps | `NEXT_PUBLIC_MAPBOX_TOKEN_APP`: a second public Mapbox token without the site URL restriction (the app runs on `capacitor://localhost` / `https://localhost`), as a repository variable. |
 
 Package name / bundle ID: **`hu.isolapaul.spoton`** (permanent; the stores never allow it to change). Listing, Data safety and content rating: [`play-store.md`](play-store.md).
 
 FCM auto-init is off until the user turns notifications on (Data safety, `play-store.md`). The plugin turns it on for good at that point; a token FCM issues later, after sign-out, is never stored for anyone (`src/store/nativePush.ts`).
 
-**A new app build is needed** when `mobile/`, `capacitor.config.ts` or a `@capacitor*` package changes. The live site talks to every installed app version, so never remove a Capacitor plugin from `package.json` (and never ship a web release that calls a plugin method an older app lacks) while those versions are in use.
+**Every app release is a new build** (the web code is inside it). Installed app versions keep talking to the same Firebase project, so callables and rules must stay compatible with the app versions still in use (as with the web, CLAUDE.md rule 6), and `/api/feedback` must keep its CORS.
 
 ### 17.1 Firebase (🌐 Firebase console, one time)
 
@@ -462,7 +463,7 @@ CI builds an unsigned simulator app (artifact `spoton-ios-simulator`) as a compi
 
 **Before submitting to the App Store, decide:**
 - *Guideline 4.8:* an app that offers Google sign-in must also offer *Sign in with Apple*. It is built (the system Apple sheet in the iOS app, a pop-up in browsers; never in the Android app): enable the Apple provider in Firebase Auth (for the iOS app the bundle ID is enough; for browsers also a Services ID, key and the return URL Firebase shows), then set the GitHub repository variable `NEXT_PUBLIC_APPLE_SIGN_IN=1` and release the web app.
-- *Guideline 4.2 (minimum functionality):* Apple rejects apps that are only a website in a frame. Native sign-in, push, location and the share sheet help, but a rejection is possible.
+- *Guideline 4.2 (minimum functionality):* the app is its own build (bundled, works without the server), with native sign-in, push, haptics, the Dynamic Island (Live Activities), home-screen quick actions and the share sheet.
 
 **Universal Links** (spot, profile and feed links open the iOS app): add `APPLE_TEAM_ID=<your 10-character Team ID>` to `/srv/docker/spoton/.env` and `docker compose up -d` (no new image); `https://spoton.isolapaul.hu/.well-known/apple-app-site-association` must then list `<TEAMID>.hu.isolapaul.spoton`. Apple caches it; a reinstall picks up a change.
 

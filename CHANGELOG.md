@@ -6,7 +6,7 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 ## Unreleased
 
 ### Added (apps)
-- SpotOn as an Android and iOS app. It shows the same live site, so it is always up to date, and adds what a browser tab cannot: Google sign-in with the phone's account picker, push notifications, the system share sheet, the Android back button, spot links that open in the app, and a page for when there is no connection. The first-run tour skips its install step in the app.
+- SpotOn as an Android and iOS app, each its own build with the app bundled inside (it opens without waiting for the website), adding what a browser tab cannot: Google sign-in with the phone's account picker, push notifications, the system share sheet, the Android back button and spot links that open in the app. The first-run tour skips its install step in the app.
 - In the apps: Sign in with Apple on iPhone (when enabled), tapping a push opens the profile, spot or feed it is about, profile and feed links open in the app too (iOS Universal Links), a light haptic tap with the interface sounds, and the Android 13+ themed icon.
 
 ### Added (feed)

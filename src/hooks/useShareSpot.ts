@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { APP_BUILD, SITE_URL } from '@/lib/constants';
 import type { Spot } from '@/store/useSpotStore';
 import { useToastStore } from '@/store/useToastStore';
 import { spotLink } from '@/lib/spotLinks';
@@ -9,7 +10,8 @@ import { useT } from './useT';
 export function useShareSpot(): (spot: Pick<Spot, 'id' | 'name'>) => Promise<void> {
   const t = useT();
   return useCallback(async (spot) => {
-    const url = spotLink(globalThis.location.origin, spot.id);
+    // The public address (inside the app the page runs on a local origin).
+    const url = spotLink(APP_BUILD ? SITE_URL : globalThis.location.origin, spot.id);
     // The Android/iOS app: the system share sheet (Android's WebView has no navigator.share).
     if (isNativeApp()) {
       try {

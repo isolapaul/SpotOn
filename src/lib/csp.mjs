@@ -1,5 +1,5 @@
 // Content-Security-Policy builder (T15, nonce support T32). Pure ES module with JSDoc types, so that both
-// next.config.mjs (plain Node) and src/proxy.ts can import it.
+// next.config.mjs (plain Node) and src/proxy.web.ts can import it.
 // - dev (`next dev`) adds 'unsafe-eval' (React debugging) and drops upgrade-insecure-requests;
 // - emulator test builds (NEXT_PUBLIC_USE_EMULATORS=1) allow the local http/ws emulator endpoints and
 //   must not upgrade http:// sub-resources;

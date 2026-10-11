@@ -82,3 +82,14 @@ export const NESTED_Z_LAYERS: ReadonlyArray<keyof typeof Z> = ['mapInner', 'pane
 
 /** Sign in with Apple is offered (build-time; enable once the provider is set up in Firebase Auth). */
 export const APPLE_SIGN_IN = process.env.NEXT_PUBLIC_APPLE_SIGN_IN === '1';
+
+/** The Android/iOS app build: the bundled static export (next.config.mjs, `npm run build:app`). */
+export const APP_BUILD = process.env.NEXT_PUBLIC_APP_BUILD === '1';
+
+/** The public site: shared links and the server API point here (the app runs on a local origin). */
+export const SITE_URL = 'https://spoton.isolapaul.hu';
+
+/** An API route's address: relative on the site, absolute (the live site) in the app build. */
+export function apiUrl(path: string): string {
+  return APP_BUILD ? `${SITE_URL}${path}` : path;
+}

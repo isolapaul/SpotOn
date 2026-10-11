@@ -35,3 +35,6 @@ export const config = {
     },
   ],
 };
+
+// With pageExtensions (proxy.web.ts, web build only) Next looks for the default export.
+export default proxy;

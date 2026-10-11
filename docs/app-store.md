@@ -1,6 +1,6 @@
 # Apple App Store: the path for SpotOn
 
-The Android and iOS apps are Capacitor shells around the live site (`capacitor.config.ts`, `mobile/`; build runbook `docs/deploy.md` §17). This page is the App Store checklist: what is in place and what the owner does.
+The Android and iOS apps are their own builds: Capacitor projects that bundle a static export of the web app (`npm run build:app`; `capacitor.config.ts`, `mobile/`; runbook `docs/deploy.md` §17). This page is the App Store checklist: what is in place and what the owner does.
 
 ## Already in the app (both stores)
 
@@ -24,4 +24,3 @@ Native Google sign-in and Sign in with Apple (system sheets), native push (APNs 
 2. Firebase: the iOS app and the APNs key (`docs/deploy.md` §17.1); the Apple sign-in provider; then `NEXT_PUBLIC_APPLE_SIGN_IN=1` and a web release.
 3. `APPLE_TEAM_ID` in the server's `.env` (Universal Links, §17.4).
 4. App Store Connect: App Privacy (e-mail, name, user ID, photos, other user content, device ID for push; nothing for tracking), age rating with unrestricted user-generated content (16+ as on Play), a demo account and the moderation note (report, block, 24-hour review) in the review notes.
-5. Guideline 4.2: the app loads the live site; native sign-in, push, links, share and haptics make it more than a website, but a rejection is still possible. If it comes, the answer is to bundle the web build into the app (`webDir`) instead of `server.url`.

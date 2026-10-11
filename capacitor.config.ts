@@ -1,29 +1,24 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-// The Android and iOS apps (Capacitor). The native shell loads the live site, like the PWA and the
-// earlier TWA plan: every web release reaches the apps without a store update. Native code covers what a
-// WebView cannot do on its own: Google sign-in (Google blocks OAuth in embedded WebViews), push
-// notifications (no Web Push in a WebView), the Android back button, app links and the share sheet.
-// docs/deploy.md §17 is the runbook.
+// The Android and iOS apps (Capacitor). The app is its own build: `npm run build:app` exports the web
+// app statically (next.config.mjs, NEXT_PUBLIC_APP_BUILD=1) into out-app/, which is bundled into the
+// native projects, so the app starts without the network, works offline as far as Firestore allows,
+// and gets app-only extras (native sign-in, push, haptics, the Dynamic Island, quick actions, more
+// animation). Data comes from Firebase; the few server routes (feedback) are called on the live site.
+// A web change reaches the apps with the next app release. docs/deploy.md §17 is the runbook.
 //
-// CAP_SERVER_URL points a development build at another server (for example http://10.0.2.2:3000, the
-// laptop's `npm run dev` from the Android emulator). It is read by `npx cap sync`, not at runtime.
-const serverUrl = process.env.CAP_SERVER_URL || 'https://spoton.isolapaul.hu';
+// CAP_SERVER_URL points a development build at a server instead (for example http://10.0.2.2:3000, the
+// laptop's `npm run dev` from the Android emulator, for live reload). Read by `npx cap sync`.
+const serverUrl = process.env.CAP_SERVER_URL;
 
 const config: CapacitorConfig = {
   appId: 'hu.isolapaul.spoton',
   appName: 'SpotOn',
-  // Only the offline page (errorPath) and a fallback index.html: the app itself comes from serverUrl.
-  webDir: 'mobile/www',
+  webDir: 'out-app',
   backgroundColor: '#0E1013',
   // Lets the server and analytics tell the app apart from a browser ("… SpotOnApp").
   appendUserAgent: 'SpotOnApp',
-  server: {
-    url: serverUrl,
-    cleartext: serverUrl.startsWith('http://'),
-    // Shown when the site cannot be loaded (offline, server down).
-    errorPath: 'offline.html',
-  },
+  ...(serverUrl ? { server: { url: serverUrl, cleartext: serverUrl.startsWith('http://') } } : {}),
   android: {
     path: 'mobile/android',
   },
