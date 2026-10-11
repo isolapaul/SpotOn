@@ -20,8 +20,11 @@ export function useLanguage(opts?: LanguageOptions): Language {
  */
 export function useT(opts?: LanguageOptions) {
   const lang = useLanguage(opts);
+  // A dictionary that arrives later (English, German) gives a new function, so texts re-render.
+  const dictionaries = useLanguageStore((s) => s.dictionaries);
   return useCallback(
     (key: TranslationKey, vars?: TranslationVars) => translate(lang, key, vars),
-    [lang],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `dictionaries` only invalidates
+    [lang, dictionaries],
   );
 }

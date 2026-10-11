@@ -8,6 +8,8 @@ import { useCategoryStore } from '@/store/useCategoryStore';
 import { useFollowStore } from '@/store/useFollowStore';
 import { useSafetyStore } from '@/store/useSafetyStore';
 import { useLikeStore } from '@/store/useLikeStore';
+import { ensureLanguage, useLanguageStore } from '@/store/useLanguageStore';
+import { detectLanguage } from '@/lib/i18n';
 import { useListStore } from '@/store/useListStore';
 import { DELAYS } from '@/lib/constants';
 
@@ -80,8 +82,11 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
     let cancelled = false;
 
     // Initialize Firebase auth listener
+    // The chosen (or, on a first visit, the browser's) language's texts load with it, so the app
+    // never shows Hungarian first to an English or German user (lib/translations).
     const initializeAuth = async () => {
-      await useUserStore.getState().initAuth();
+      const lang = useLanguageStore.getState().language ?? detectLanguage(globalThis.navigator?.languages);
+      await Promise.all([useUserStore.getState().initAuth(), ensureLanguage(lang)]);
       setLoadingStates(prev => ({ ...prev, auth: true }));
     };
 

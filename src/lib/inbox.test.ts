@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { INBOX_TEXT, isApproval, opensProfile, opensSpot, parseInboxItem } from './inbox';
-import { translations } from './translations';
+import { translations } from './translations.all';
 
 describe('parseInboxItem', () => {
   it('reads a decision with its reason and time', () => {

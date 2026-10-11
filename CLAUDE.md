@@ -72,7 +72,7 @@ src/hooks/useUsernameHint.ts, useStepSwipe.ts, useFocusTrap.ts, useReducedMotion
 src/hooks/useVisibleSpots.ts     Map spots filtered by role (admins: all, others: approved + own)
 src/hooks/useT.ts                useT() translation hook, over src/lib/i18n.ts
 src/lib/firebase.ts              Firebase client init (auth, db, storage, functions)
-src/lib/translations.ts          hu/en/de dictionaries (TranslationKey type)
+src/lib/translations.ts          TranslationKey and Dictionary types over lib/dictionaries/{hu,en,de}.ts (hu bundled; en/de load on demand via useLanguageStore.ensureLanguage; tests use translations.all.ts)
 src/lib/i18n.ts                  Pure translate()/interpolate()/splitBold()/splitSlots() and the Language type
 src/lib/csp.mjs                  CSP builder shared by src/proxy.ts (pages) and next.config.mjs (/api/*)
 src/lib/levelUtils.ts, levelTheme.ts  XP level thresholds and rewards (parity with functions/src/lib/levels.ts), perks, badge colours, level-up rule
@@ -176,7 +176,7 @@ Never commit `.env*` files — sole exception: `functions/.env.demo-spoton` (emu
 - **Layers:** `components/` render only → `hooks/` compose data + UI state → `store/` app state + Firebase side effects → `lib/` pure functions (unit-tested, no React, no Firebase).
 - Components do **not** import `firebase/*` directly; go through a store action or a hook.
 - No new file over ~300 lines; extract sub-components/hooks instead.
-- One way to translate: `useT()` (React) or `translate()` from `lib/i18n` (non-React code). No hardcoded user-visible strings — add keys to all three languages in `lib/translations.ts`. No emoji in interface text.
+- One way to translate: `useT()` (React) or `translate()` from `lib/i18n` (non-React code). No hardcoded user-visible strings — add keys to all three files in `lib/dictionaries/` (a missing English or German key is a type error). No emoji in interface text.
 - Shared primitives (`components/ui/`): `PanelShell`, `ModalShell`, `Button`/`CloseButton`, `StarRating`, `CategoryIcon`, `LevelBadge`; sheet gestures via `useSheetDrag` / `useCardDrag`. Don't hand-roll new overlays.
 - Constants (limits, thresholds, categories, z-index) live in `lib/` — no magic numbers in JSX.
 - Tailwind classes must be static strings (the scanner cannot see `replace()`-built class names). The app's plain CSS in globals.css lives in `@layer utilities` (as it came after the utilities under v3); the `.mapboxgl-*` overrides stay unlayered, because mapbox-gl.css is unlayered and would win over any layer. Children of `space-y-*` should not carry their own vertical margins (v4 puts the space as margin-bottom); use `flex flex-col gap-*` there. Buttons with custom layouts need `no-min-size` (the global button rule centres content and sets a minimum size).

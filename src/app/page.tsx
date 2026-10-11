@@ -35,6 +35,8 @@ import { useDocumentLanguage } from '@/hooks/useDocumentLanguage';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import { usePendingUsernameClaim } from '@/hooks/usePendingUsernameClaim';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
+import { ensureLanguage, useLanguageStore } from '@/store/useLanguageStore';
+import { detectLanguage } from '@/lib/i18n';
 import { useEffect, useMemo, useRef } from 'react';
 import { closeTopOverlay, useOverlayStore } from '@/store/useOverlayStore';
 import { DEFAULT_MAP_CENTER, Z } from '@/lib/constants';
@@ -55,7 +57,11 @@ const DiscoveryPanel = dynamic(() => import('@/components/DiscoveryPanel'), { ss
 const FeedPanel = dynamic(() => import('@/components/feed/FeedPanel'), { ssr: false, loading: () => null });
 
 // The first-run tour: its own chunk, downloaded only while it is due (never again once completed).
-const OnboardingFlow = dynamic(() => import('@/components/onboarding/OnboardingFlow'), {
+const OnboardingFlow = dynamic(() => Promise.all([
+  import('@/components/onboarding/OnboardingFlow'),
+  // The tour shows before the app is ready: its language's texts come with it.
+  ensureLanguage(useLanguageStore.getState().language ?? detectLanguage(globalThis.navigator?.languages)),
+]).then(([m]) => m), {
   ssr: false,
   loading: () => <div className={`fixed inset-0 ${Z.onboarding} bg-[#1b1c1e]`} aria-hidden="true" />,
 });

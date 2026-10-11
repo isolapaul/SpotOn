@@ -1,10 +1,24 @@
-import { describe, expect, it } from 'vitest';
-import { detectLanguage, interpolate, splitBold, splitSlots, translate, type Language } from './i18n';
-import { translations, type TranslationKey } from './translations';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { detectLanguage, hasDictionary, interpolate, registerDictionary, splitBold, splitSlots, translate, type Language } from './i18n';
+import { translations } from './translations.all';
+import type { TranslationKey } from './translations';
 
 const dict = translations; // test oracle; aliased so the T24 acceptance grep only flags app code
 
+describe('dictionaries on demand', () => {
+  it('stands in with Hungarian while a dictionary is not loaded yet', () => {
+    expect(hasDictionary('hu')).toBe(true);
+    expect(hasDictionary('de')).toBe(false);
+    expect(translate('de', 'explore')).toBe('Felfedezés');
+  });
+});
+
 describe('translate', () => {
+  beforeAll(() => {
+    registerDictionary('en', dict.en);
+    registerDictionary('de', dict.de);
+  });
+
   it.each([
     ['hu', 'Felfedezés'],
     ['en', 'Explore'],
@@ -18,8 +32,8 @@ describe('translate', () => {
     expect(translate('en', 'noSuchKey' as TranslationKey)).toBe('noSuchKey');
   });
 
-  it('returns the key for an unsupported language instead of throwing', () => {
-    expect(translate('fr' as Language, 'explore')).toBe('explore');
+  it('falls back to Hungarian for an unsupported language instead of throwing', () => {
+    expect(translate('fr' as Language, 'explore')).toBe('Felfedezés');
   });
 
   it('applies vars', () => {
