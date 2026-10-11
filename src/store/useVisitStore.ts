@@ -5,6 +5,7 @@ import { db, functions } from '@/lib/firebase';
 import type { TranslationKey } from '@/lib/translations';
 import { useLocationStore } from './useLocationStore';
 import { track } from './telemetry';
+import { actionErrorKey, callableReason } from '@/lib/callableErrors';
 
 export interface Visit {
   spotId: string;
@@ -36,10 +37,8 @@ export class VisitError extends Error {
 /** markVisited's failures → texts. */
 export function visitErrorKey(error: unknown): TranslationKey {
   if (error instanceof VisitError) return error.key;
-  const message = (error as { message?: unknown } | null)?.message;
-  if (message === 'VISIT_TOO_FAR') return 'visitTooFar';
-  if (typeof message === 'string' && /RATE_LIMIT/.test(message)) return 'rateLimited';
-  return 'genericError';
+  if (callableReason(error) === 'VISIT_TOO_FAR') return 'visitTooFar';
+  return actionErrorKey(error);
 }
 
 let listening: { uid: string; unsubscribe: Unsubscribe } | null = null;

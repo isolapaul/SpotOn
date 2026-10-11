@@ -1,3 +1,4 @@
+import { callableReason } from '@/lib/callableErrors';
 import { create } from 'zustand';
 import {
   doc,
@@ -154,7 +155,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       try {
         await approveSpotCallable({ spotId, seenAt });
       } catch (error) {
-        if (error instanceof Error && error.message === SPOT_CHANGED_ERROR) throw new Error(SPOT_CHANGED_ERROR);
+        if (callableReason(error) === SPOT_CHANGED_ERROR) throw new Error(SPOT_CHANGED_ERROR);
         throw error;
       }
       updateSpotInState(set, spotId, (spot) => ({ ...spot, status: 'approved' as const }));

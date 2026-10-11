@@ -9,6 +9,7 @@ import { useT } from '@/hooks/useT';
 import GlyphIcon from '@/components/ui/GlyphIcon';
 import { resolveCategory, type CustomCategory } from '@/lib/categories';
 import CategoryForm from './CategoryForm';
+import { callableReason } from '@/lib/callableErrors';
 
 function errorText(error: unknown): string | undefined {
   return (error as { message?: string } | undefined)?.message;
@@ -60,7 +61,7 @@ export default function CategoryManager() {
       await deleteCategory(category.id);
       showToast(t('categoryDeleted'), 'success');
     } catch (error) {
-      showToast(errorText(error) === 'CATEGORY_IN_USE' ? t('categoryInUse') : t('genericError'), 'error');
+      showToast(callableReason(error) === 'CATEGORY_IN_USE' ? t('categoryInUse') : t('genericError'), 'error');
     } finally {
       setConfirming(null);
     }

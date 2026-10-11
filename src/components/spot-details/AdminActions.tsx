@@ -11,6 +11,7 @@ import { DELAYS } from '@/lib/constants';
 import { statusClass, statusLabelKey } from '@/lib/spotStatus';
 import Button from '../ui/Button';
 import ReasonSheet from '../moderation/ReasonSheet';
+import { callableReason } from '@/lib/callableErrors';
 
 // Admin-only parts of the details panel. UI only: the rules and the moderation callables enforce
 // them. Two exports because they sit at different DOM positions (status card first, delete button
@@ -57,7 +58,7 @@ export function AdminStatusCard({ spot, onClose }: Readonly<AdminActionProps>) {
         approveCloseTimerRef.current = setTimeout(() => onClose(), DELAYS.approveClose);
       }
     } catch (error) {
-      showToast(t(error instanceof Error && error.message === SPOT_CHANGED_ERROR ? 'spotChangedReview' : 'approveError'), 'error');
+      showToast(t(callableReason(error) === SPOT_CHANGED_ERROR ? 'spotChangedReview' : 'approveError'), 'error');
     } finally {
       setIsApproving(false);
     }

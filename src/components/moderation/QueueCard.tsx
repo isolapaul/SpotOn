@@ -8,6 +8,7 @@ import { useT } from '@/hooks/useT';
 import type { TranslationKey } from '@/lib/translations';
 import Button from '../ui/Button';
 import ReasonSheet from './ReasonSheet';
+import { callableReason } from '@/lib/callableErrors';
 
 interface QueueCardProps {
   /** What is reviewed (the spot's name): the card's accessible name. */
@@ -35,7 +36,7 @@ export default function QueueCard({ label, children, rejectTitle, onApprove, onR
       showToast(t(approvedToast), 'success');
     } catch (error) {
       console.error('Approve failed:', error);
-      showToast(t(error instanceof Error && error.message === SPOT_CHANGED_ERROR ? 'spotChangedReview' : 'moderationError'), 'error');
+      showToast(t(callableReason(error) === SPOT_CHANGED_ERROR ? 'spotChangedReview' : 'moderationError'), 'error');
       setBusy(false);
     }
   };

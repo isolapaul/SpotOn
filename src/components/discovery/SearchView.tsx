@@ -13,6 +13,7 @@ import { useDiscoveryStore } from '@/store/useDiscoveryStore';
 import type { Spot } from '@/store/useSpotStore';
 import { matchesSpotQuery, MIN_SEARCH_LENGTH, SPOT_SEARCH_LIMIT } from '@/lib/search';
 import SpotRow from './SpotRow';
+import { isRateLimited } from '@/lib/callableErrors';
 
 type Mode = 'spots' | 'people' | 'lists';
 const MODES: readonly Mode[] = ['spots', 'people', 'lists'];
@@ -58,7 +59,7 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
         .then((results) => live && setPeople({ q, results, error: null }))
         .catch((error: { details?: unknown; message?: string }) => {
           if (!live) return;
-          setPeople({ q, results: null, error: error?.message === 'SEARCH_RATE_LIMIT' ? 'rate' : 'failed' });
+          setPeople({ q, results: null, error: isRateLimited(error) ? 'rate' : 'failed' });
         });
     }, 300);
     return () => {

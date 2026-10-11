@@ -6,6 +6,7 @@ import { auth, db, functions } from '@/lib/firebase';
 import type { TranslationKey } from '@/lib/translations';
 import { useUserStore } from './useUserStore';
 import { track } from './telemetry';
+import { callableReason } from '@/lib/callableErrors';
 
 export interface Invitee {
   uid: string;
@@ -42,8 +43,8 @@ const CLAIM_ERRORS: Record<string, TranslationKey> = {
 };
 
 export function claimErrorKey(error: unknown): TranslationKey {
-  const message = (error as { message?: unknown } | null)?.message;
-  return (typeof message === 'string' && CLAIM_ERRORS[message]) || 'genericError';
+  const reason = callableReason(error);
+  return (reason && CLAIM_ERRORS[reason]) || 'genericError';
 }
 
 /** When the signed-in account was created (Firebase Auth), ms. */
