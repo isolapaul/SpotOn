@@ -883,6 +883,10 @@ export const en: Dictionary = {
   lockedAddSpot: 'Add a spot',
   lockedInvite: 'Invite a friend',
   lockedBanner: '{count} more hidden places are waiting. Share your first spot to open them all.',
+  shareAsImage: 'Share as image',
+  cardRating: '{rating} · {count} reviews',
+  cardCta: 'See it on SpotOn',
+  cardDownloaded: 'Image downloaded',
 };
 
 export default en;

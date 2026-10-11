@@ -884,6 +884,10 @@ export const de: Dictionary = {
   lockedAddSpot: 'Ort hinzufügen',
   lockedInvite: 'Freund einladen',
   lockedBanner: '{count} weitere versteckte Orte warten. Teile deinen ersten Ort, um alle zu öffnen.',
+  shareAsImage: 'Als Bild teilen',
+  cardRating: '{rating} · {count} Bewertungen',
+  cardCta: 'Auf SpotOn ansehen',
+  cardDownloaded: 'Bild heruntergeladen',
 };
 
 export default de;

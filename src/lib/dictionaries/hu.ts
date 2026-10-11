@@ -882,6 +882,10 @@ export const hu = {
   lockedAddSpot: 'Hely hozzáadása',
   lockedInvite: 'Barát meghívása',
   lockedBanner: 'Még {count} rejtett hely vár rád. Rakd ki az első helyed, és mind megnyílik.',
+  shareAsImage: 'Megosztás képként',
+  cardRating: '{rating} · {count} értékelés',
+  cardCta: 'Nézd meg a SpotOnon',
+  cardDownloaded: 'A kép letöltve',
 };
 
 export default hu;

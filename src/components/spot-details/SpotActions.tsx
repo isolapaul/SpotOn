@@ -1,6 +1,7 @@
 'use client';
 
-import { Heart, ListPlus, MoreHorizontal, Navigation, Share, Sparkles, ThumbsUp } from 'lucide-react';
+import { Heart, Image as ImageIcon, ListPlus, MoreHorizontal, Navigation, Share, Sparkles, ThumbsUp } from 'lucide-react';
+import { useShareSpotCard } from '@/hooks/useShareSpotCard';
 import { useSpotLike } from '@/hooks/useSpotLike';
 import LikersSheet from '../feed/LikersSheet';
 import { useState } from 'react';
@@ -37,6 +38,7 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
   const signedIn = !!user;
   const favorite = useFavoriteToggle(spot.id);
   const shareSpot = useShareSpot();
+  const card = useShareSpotCard();
   const [picking, setPicking] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const like = useSpotLike(spot);
@@ -53,6 +55,14 @@ export default function SpotActions({ spot, navigationUrl, highlight }: Readonly
         return { key: action, label: t('saveToList'), icon: <ListPlus className="w-5 h-5 text-label" />, onSelect: () => setPicking(true) };
       case 'share':
         return { key: action, label: t('share'), icon: <Share className="w-5 h-5 text-label" />, onSelect: () => void shareSpot(spot) };
+      case 'card':
+        return {
+          key: action,
+          label: t('shareAsImage'),
+          icon: <ImageIcon className="w-5 h-5 text-label" />,
+          disabled: card.busy,
+          onSelect: () => void card.share(spot),
+        };
       case 'highlight':
         return {
           key: action,

@@ -64,7 +64,7 @@ Status: `[ ]` open, `[x]` done.
   inviting others). The lock is a nudge, not protection: approved spots stay publicly readable.
 
 ## 6. Share cards
-- [ ] A clean 1080×1920 story card drawn on a canvas: the spot photo, name, category, rating and
+- [x] A clean 1080×1920 story card drawn on a canvas: the spot photo, name, category, rating and
   the link; shared as an image (Web Share with files, the native share sheet in the apps through
   a temporary file), else downloaded.
 
