@@ -2,6 +2,7 @@ import { spotIdFromPath, userIdFromPath } from '@/lib/spotLinks';
 import { useUiStore } from '@/store/useUiStore';
 import { runViewTransition } from './viewTransition';
 import { invitePathCode } from '@/lib/referral';
+import { publicListFromPath } from '@/lib/lists';
 import { useReferralStore } from '@/store/useReferralStore';
 import { useUserStore } from '@/store/useUserStore';
 
@@ -31,6 +32,11 @@ export function openAppPath(path: string): boolean {
   const uid = userIdFromPath(pathname);
   if (uid) {
     runViewTransition(() => useUiStore.getState().openUserProfile(uid));
+    return true;
+  }
+  const list = publicListFromPath(pathname);
+  if (list) {
+    useUiStore.getState().openPublicList(list);
     return true;
   }
   const invite = invitePathCode(pathname);

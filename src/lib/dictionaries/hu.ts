@@ -886,6 +886,17 @@ export const hu = {
   cardRating: '{rating} · {count} értékelés',
   cardCta: 'Nézd meg a SpotOnon',
   cardDownloaded: 'A kép letöltve',
+  publicList: 'Nyilvános lista',
+  publicListMissing: 'Ez a lista már nem nyilvános.',
+  publicListToggle: 'Nyilvános lista',
+  publicListToggleHint: 'Bárki megtalálhatja a keresőben és a weben.',
+  searchListsPlaceholder: 'Listák keresése',
+  noListsFound: 'Nincs ilyen nevű lista.',
+  noPublicListsYet: 'Még nincs nyilvános lista. Tedd nyilvánossá az egyik listádat!',
+  newPublicLists: 'Friss listák',
+  publicListBy: '@{owner} listája',
+  publicListMeta: '@{owner} listája a SpotOnon: {count} hely, köztük {names}.',
+  publicListOpenApp: 'Megnyitás a SpotOnban',
 };
 
 export default hu;

@@ -61,6 +61,9 @@ interface UiStore {
   openSpotFromList: (spotId: string, from: ReturnTarget) => void;
   /** A shared link (/spot/<id>): the map flies to the spot and its card opens (no way back). */
   openSpotLink: (spotId: string) => void;
+  /** Growth plan §7: the public list open in its sheet (from search or a /list link). */
+  publicList: { uid: string; listId: string } | null;
+  openPublicList: (list: { uid: string; listId: string } | null) => void;
   /** Spots opened from a link or a notice this session: never locked (growth plan §5). */
   linkedSpotIds: readonly string[];
   /** The map reached the focused spot: show its card, unless something else was opened meanwhile. */
@@ -155,6 +158,8 @@ export const useUiStore = create<UiStore>((set, get) => ({
     const seq = (get().focusRequest?.seq ?? 0) + 1;
     set({ activePanel: 'none', previewSpotId: null, returnTo: from, focusRequest: { spotId, seq } });
   },
+  publicList: null,
+  openPublicList: (publicList) => set({ publicList }),
   linkedSpotIds: [],
   openSpotLink: (spotId) => {
     const seq = (get().focusRequest?.seq ?? 0) + 1;

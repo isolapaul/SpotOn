@@ -69,10 +69,10 @@ Status: `[ ]` open, `[x]` done.
   a temporary file), else downloaded.
 
 ## 7. Public lists
-- [ ] Shared lists get a public page `/list/<uid>/<listId>` (server-rendered, SEO title and
+- [x] Lists switched to public get a page `/list/<uid>/<listId>` (server-rendered, SEO title and
   description, the spots with photos, "Open in SpotOn"), listed in `/sitemap.xml` with the spots.
-- [ ] Rules: a shared list is readable by anyone; lists store `nameLower` for search.
-- [ ] Explore: "Lists" search over public lists.
+- [x] Rules: a shared list is readable by anyone; lists store `nameLower` for search.
+- [x] Explore: "Lists" search over public lists.
 
 ## 8. Launch challenge (season "Launch", until 2027-06-30)
 - [ ] Five easy steps: add a spot, write a review, follow someone, mark a visit, invite a friend

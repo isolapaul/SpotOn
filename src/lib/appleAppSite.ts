@@ -4,7 +4,7 @@
 export const IOS_BUNDLE_ID = 'hu.isolapaul.spoton';
 
 /** The links that open in the app: spots, profiles and the feed (as the Android App Links do). */
-export const APP_LINK_PATHS = ['/spot/*', '/user/*', '/feed', '/i/*'] as const;
+export const APP_LINK_PATHS = ['/spot/*', '/user/*', '/feed', '/i/*', '/list/*'] as const;
 
 /** An Apple Developer Team ID (10 upper-case letters or digits), else null. */
 export function parseTeamId(raw: string | undefined): string | null {

@@ -84,7 +84,7 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
   const ownSpots = pick(view?.spotIds);
   const savedSpots = view?.savedSpotIds ? pick(view.savedSpotIds) : null;
   const list = tab === 'saved' && savedSpots ? savedSpots : ownSpots;
-  const lists: SpotListType[] = (view?.lists ?? []).map((l) => ({ ...l, shared: true, updatedAt: 0 }));
+  const lists: SpotListType[] = (view?.lists ?? []).map((l) => ({ ...l, shared: true, public: false, updatedAt: 0 }));
   const [openList, setOpenList] = useState<string | null>(null);
   const shownList = tab === 'lists' ? lists.find((l) => l.id === openList) : undefined;
   const tabs: Tab[] = ['spots', ...(savedSpots ? ['saved' as const] : []), ...(lists.length ? ['lists' as const] : [])];

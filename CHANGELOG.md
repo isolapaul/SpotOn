@@ -26,6 +26,8 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 
 - Share as image: a spot's "More" menu makes a clean story card (1080×1920: the photo, the name, the category, the rating and the link) and shares it through the share sheet, or downloads it where sharing images is not supported.
 
+- Public lists: switch a list to "Public list" and anyone can find it under Explore → Search → Lists and open it; it also gets its own web page (`/list/<user>/<list>`, with a link preview) that search engines find through the new `/sitemap.xml` (with every approved spot) and `robots.txt`.
+
 ### Added (feed)
 - A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.
 - Tap a spot's name or "Show on map" in the feed: the feed slides away, the map flies to the spot and its place card opens with a "Feed" button that takes you back to the same place in the feed.

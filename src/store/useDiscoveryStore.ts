@@ -23,8 +23,8 @@ interface DiscoveryStore {
   showMore: () => void;
   rememberScroll: (scrollTop: number) => void;
   /** Item 8: the search (null = not searching), kept like the list, so back from a result returns to it. */
-  search: { query: string; mode: 'spots' | 'people' } | null;
-  setSearch: (search: { query: string; mode: 'spots' | 'people' } | null) => void;
+  search: { query: string; mode: 'spots' | 'people' | 'lists' } | null;
+  setSearch: (search: { query: string; mode: 'spots' | 'people' | 'lists' } | null) => void;
 }
 
 export const useDiscoveryStore = create<DiscoveryStore>((set) => ({

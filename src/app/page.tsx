@@ -45,6 +45,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { closeTopOverlay, useOverlayStore } from '@/store/useOverlayStore';
 import { DEFAULT_MAP_CENTER, Z } from '@/lib/constants';
 import { useSpotLock } from '@/hooks/useSpotLock';
+import PublicListSheet from '@/components/lists/PublicListSheet';
 
 // Client-only: mapbox-gl needs `window` and WebGL
 const MapView = dynamic(() => import('@/components/MapView'), {
@@ -79,6 +80,7 @@ export default function Home() {
   useStandaloneFullHeight();
   useNativeShell(isAppReady);
   const visibleSpots = useVisibleSpots();
+  const publicList = useUiStore((s) => s.publicList);
   // Growth plan §5: locked places (config/app.lockEnabled) until the user contributes.
   const { isLocked } = useSpotLock();
   const lockedIds = useMemo(() => new Set(visibleSpots.filter(isLocked).map((s) => s.id)), [visibleSpots, isLocked]);
@@ -238,6 +240,8 @@ export default function Home() {
       <TermsPrompt ready={isAppReady && !tourBlocking} />
       {/* "Who invited you?" after sign-up or an opened invite link (growth plan §2) */}
       {isAppReady && !tourBlocking && <InvitePrompt />}
+      {/* A public list (growth plan §7): from Explore's list search or a /list link */}
+      {publicList && <PublicListSheet uid={publicList.uid} listId={publicList.listId} onClose={() => useUiStore.getState().openPublicList(null)} />}
       {/* Add Spot Modal */}
       <AddSpotModal isOpen={activePanel === 'addSpot'} onClose={closeAddSpot} selectedLocation={pendingLocation} />
       {/* Spot Details Panel */}

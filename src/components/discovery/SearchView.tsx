@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { MapPin, Search, UserRound } from 'lucide-react';
+import { ListChecks, MapPin, Search, UserRound } from 'lucide-react';
+import ListSearchResults from './ListSearchResults';
 import { useT } from '@/hooks/useT';
 import { useOpenProfile } from '@/hooks/useOpenProfile';
 import { useUserStore } from '@/store/useUserStore';
@@ -13,7 +14,8 @@ import type { Spot } from '@/store/useSpotStore';
 import { matchesSpotQuery, MIN_SEARCH_LENGTH, SPOT_SEARCH_LIMIT } from '@/lib/search';
 import SpotRow from './SpotRow';
 
-type Mode = 'spots' | 'people';
+type Mode = 'spots' | 'people' | 'lists';
+const MODES: readonly Mode[] = ['spots', 'people', 'lists'];
 type PeopleState = { q: string; results: PersonResult[] | null; error: 'rate' | 'failed' | null };
 
 interface SearchViewProps {
@@ -24,7 +26,8 @@ interface SearchViewProps {
 
 /**
  * Explore search (item 8): Spots (the loaded approved spots, by name) | People (usernames by
- * prefix on the server, signed in only, 2+ characters, 10 results).
+ * prefix on the server, signed in only, 2+ characters, 10 results) | Lists (public lists, growth
+ * plan §7).
  */
 export default function SearchView({ spots, rowProps, onCancel }: Readonly<SearchViewProps>) {
   const t = useT();
@@ -111,7 +114,7 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label={t('search')}
-            placeholder={mode === 'spots' ? t('searchSpotsPlaceholder') : t('searchPeoplePlaceholder')}
+            placeholder={t(mode === 'spots' ? 'searchSpotsPlaceholder' : mode === 'people' ? 'searchPeoplePlaceholder' : 'searchListsPlaceholder')}
             className="flex-1 min-w-0 bg-transparent text-label placeholder:text-label-tertiary focus:outline-hidden text-[16px]"
           />
         </label>
@@ -121,19 +124,20 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
       </div>
 
       <div className="px-5 mt-3">
-        <div role="radiogroup" aria-label={t('search')} className="relative grid grid-cols-2 p-0.5 rounded-[10px] bg-white/8">
+        <div role="radiogroup" aria-label={t('search')} className="relative grid grid-cols-3 p-0.5 rounded-[10px] bg-white/8">
           <span
             aria-hidden="true"
-            className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-r1 bg-white/16 shadow-xs transition-transform duration-350 ease-ios"
-            style={{ transform: mode === 'spots' ? 'translateX(0)' : 'translateX(100%)' }}
+            className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(33.333%-1.333px)] rounded-r1 bg-white/16 shadow-xs transition-transform duration-350 ease-ios"
+            style={{ transform: `translateX(${MODES.indexOf(mode) * 100}%)` }}
           />
           {segment('spots', t('spots'), MapPin)}
           {segment('people', t('people'), UserRound)}
+          {segment('lists', t('lists'), ListChecks)}
         </div>
       </div>
 
       <div key={mode} className="px-4 mt-4">
-        {mode === 'people' ? peopleBody() : !ready ? (
+        {mode === 'lists' ? <ListSearchResults query={query} /> : mode === 'people' ? peopleBody() : !ready ? (
           <Empty text={t('searchMinChars', { count: MIN_SEARCH_LENGTH })} />
         ) : spotResults.length ? (
           <div className="rounded-[18px] bg-surface-1 overflow-hidden divide-y divide-white/6">

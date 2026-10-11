@@ -888,6 +888,17 @@ export const de: Dictionary = {
   cardRating: '{rating} · {count} Bewertungen',
   cardCta: 'Auf SpotOn ansehen',
   cardDownloaded: 'Bild heruntergeladen',
+  publicList: 'Öffentliche Liste',
+  publicListMissing: 'Diese Liste ist nicht mehr öffentlich.',
+  publicListToggle: 'Öffentliche Liste',
+  publicListToggleHint: 'Jeder kann sie in der Suche und im Web finden.',
+  searchListsPlaceholder: 'Listen suchen',
+  noListsFound: 'Keine Liste mit diesem Namen.',
+  noPublicListsYet: 'Noch keine öffentlichen Listen. Mach eine deiner Listen öffentlich!',
+  newPublicLists: 'Neue Listen',
+  publicListBy: 'Eine Liste von @{owner}',
+  publicListMeta: 'Eine Liste von @{owner} auf SpotOn: {count} Orte, darunter {names}.',
+  publicListOpenApp: 'In SpotOn öffnen',
 };
 
 export default de;
