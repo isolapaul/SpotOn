@@ -20,6 +20,8 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 
 - Views: opening a spot's details counts a view (once a day per person; the owner's own views do not count), shown quietly next to the rating. Explore gets a "Popular" order (views, likes, reviews and visits). Owners whose spots were viewed at least 3 times hear about it in the Monday digest.
 
+- "I was here": at a spot (within 300 m of it), one tap on its page collects a stamp; the page shows how many people were there, and the profile's stamp collection lists every place you visited. Where you have been stays private.
+
 ### Added (feed)
 - A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.
 - Tap a spot's name or "Show on map" in the feed: the feed slides away, the map flies to the spot and its place card opens with a "Feed" button that takes you back to the same place in the feed.

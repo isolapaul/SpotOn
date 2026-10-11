@@ -270,6 +270,12 @@ service cloud.firestore {
       allow write: if false;
     }
     // The in-app inbox: written by Cloud Functions; its owner reads it, marks items read, clears them.
+    // "I was here" (growth plan §4): written only by markVisited; where someone has been is
+    // private, so only the owner reads it.
+    match /users/{userId}/visits/{spotId} {
+      allow read: if isSelf(userId);
+      allow write: if false;
+    }
     match /users/{userId}/inbox/{itemId} {
       allow get, list: if isSelf(userId);
       allow update: if isSelf(userId) && changed().hasOnly(['read']) && request.resource.data.read is bool;

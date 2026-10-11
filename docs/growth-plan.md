@@ -48,10 +48,10 @@ Status: `[ ]` open, `[x]` done.
   (`ownerStats/{uid}`, one week at a time).
 
 ## 4. "I was here"
-- [ ] A button on the spot details; the `markVisited` callable checks that the reported position
-  is within 300 m of the spot (and the device location is fresh), one per person and spot.
+- [x] A button on the spot details; the `markVisited` callable checks that the reported position
+  is within 300 m of the spot, one per person and spot.
   `users/{uid}/visits/{spotId}` (owner read), `spots.visitCount`.
-- [ ] Profile: a "Visited" count and a stamp grid of the visited spots.
+- [x] Profile: a "Visited" count and a stamp grid of the visited spots.
 
 ## 5. Locked pins (give-to-get)
 - [ ] Every pin stays on the map. A locked pin's card shows a blurred photo, the category and the

@@ -18,6 +18,8 @@ export const RATE_LIMITS = {
   reply: {windowMs: 60 * 60_000, max: 30},
   // Photo submissions for review: each call pings the admins.
   photo: {windowMs: 60 * 60_000, max: 20},
+  // "I was here" (markVisited).
+  visit: {windowMs: 60 * 60_000, max: 30},
 } as const;
 
 export type RateAction = keyof typeof RATE_LIMITS;

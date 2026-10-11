@@ -865,6 +865,17 @@ export const hu = {
   inboxInviteJoinedBody: '{user} regisztrált a meghívásodra. Ez XP-t ért!',
   sortPopular: 'Népszerű',
   viewCount: '{count} megtekintés',
+  visitQuestion: 'Jártál már itt?',
+  visitHint: 'Ha a helyszínen vagy, gyűjtsd be a pecsétet.',
+  visitButton: 'Itt jártam',
+  visitDone: 'Itt jártál',
+  visitCount: '{count} ember járt itt',
+  visitSignIn: 'Jelentkezz be, hogy begyűjtsd a pecsétet.',
+  visitNeedsLocation: 'Ehhez engedélyezd a helymeghatározást.',
+  visitTooFar: 'Ehhez a hely közelében kell lenned (300 m-en belül).',
+  visitsButton: 'Pecsétek ({count})',
+  visitsTitle: 'Pecsétjeim ({count})',
+  visitsEmpty: 'Még nincs pecséted. Egy hely adatlapján nyomd meg az „Itt jártam” gombot, amikor ott vagy.',
 };
 
 export default hu;

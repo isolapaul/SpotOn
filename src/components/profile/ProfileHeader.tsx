@@ -12,7 +12,9 @@ import { useMyLevelStore } from '@/store/useMyLevelStore';
 import { useState } from 'react';
 import FollowListSheet from './FollowListSheet';
 import InviteSheet from '../invite/InviteSheet';
-import { Gift } from 'lucide-react';
+import { Footprints, Gift } from 'lucide-react';
+import VisitsSheet from './VisitsSheet';
+import { useVisitStore } from '@/store/useVisitStore';
 import { useT } from '@/hooks/useT';
 import type { FollowListKind } from '@/store/useFollowStore';
 
@@ -42,6 +44,8 @@ export default function ProfileHeader({
   const following = useMyLevelStore((s) => s.following);
   const invites = useMyLevelStore((s) => s.invites);
   const [inviting, setInviting] = useState(false);
+  const [stamps, setStamps] = useState(false);
+  const visitCount = useVisitStore((s) => s.visits.length);
   const t = useT();
   const [followList, setFollowList] = useState<FollowListKind | null>(null);
   return (
@@ -66,16 +70,27 @@ export default function ProfileHeader({
 
           <LevelProgressCard levelInfo={levelInfo} xp={xp} onOpen={onOpenLevelInfo} />
 
-          {/* Growth plan §2: the personal invite link */}
-          <button
-            type="button"
-            onClick={() => setInviting(true)}
-            className="mt-3 w-full h-12 rounded-2xl bg-brand-600/15 ring-1 ring-brand-400/30 text-brand-200 font-semibold flex items-center justify-center gap-2"
-          >
-            <Gift className="w-4 h-4" aria-hidden="true" />
-            {t('inviteFriends')}
-          </button>
+          {/* Growth plan §4 and §2: the "I was here" stamps and the personal invite link */}
+          <div className="mt-3 w-full grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setStamps(true)}
+              className="h-12 rounded-2xl bg-white/6 text-label font-semibold flex items-center justify-center gap-2"
+            >
+              <Footprints className="w-4 h-4 text-brand-300" aria-hidden="true" />
+              {t('visitsButton', { count: visitCount })}
+            </button>
+            <button
+              type="button"
+              onClick={() => setInviting(true)}
+              className="h-12 rounded-2xl bg-brand-600/15 ring-1 ring-brand-400/30 text-brand-200 font-semibold flex items-center justify-center gap-2"
+            >
+              <Gift className="w-4 h-4" aria-hidden="true" />
+              {t('inviteFriends')}
+            </button>
+          </div>
           {inviting && <InviteSheet onClose={() => setInviting(false)} />}
+          {stamps && <VisitsSheet onClose={() => setStamps(false)} />}
         </div>
       </div>
     </div>

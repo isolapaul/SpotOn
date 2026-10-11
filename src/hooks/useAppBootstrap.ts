@@ -6,6 +6,7 @@ import { useInboxStore } from '@/store/useInboxStore';
 import { useMyLevelStore } from '@/store/useMyLevelStore';
 import { useCategoryStore } from '@/store/useCategoryStore';
 import { useAppConfigStore } from '@/store/useAppConfigStore';
+import { useVisitStore } from '@/store/useVisitStore';
 import { useFollowStore } from '@/store/useFollowStore';
 import { useSafetyStore } from '@/store/useSafetyStore';
 import { useLikeStore } from '@/store/useLikeStore';
@@ -37,6 +38,7 @@ function syncScopes(scope: SpotScope) {
   useSafetyStore.getState().sync(scope.uid);
   useListStore.getState().sync(scope.uid);
   useLikeStore.getState().sync(scope.uid);
+  useVisitStore.getState().listen(scope.uid);
 }
 
 /**

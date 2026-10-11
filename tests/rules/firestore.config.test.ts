@@ -70,3 +70,11 @@ describe('views and visits', () => {
     await assertSucceeds(updateDoc(doc(dbAs(env, SUPER), 'spots', 'approvedSpot'), { description: 'edited by an admin' }));
   });
 });
+
+describe('visits', () => {
+  it('only the owner reads their visits; nobody writes them', async () => {
+    await assertSucceeds(getDocs(collection(dbAs(env, ALICE), 'users', ALICE, 'visits')));
+    await assertFails(getDocs(collection(dbAs(env, BOB), 'users', ALICE, 'visits')));
+    await assertFails(setDoc(doc(dbAs(env, ALICE), 'users', ALICE, 'visits', 'approvedSpot'), { spotId: 'approvedSpot' }));
+  });
+});

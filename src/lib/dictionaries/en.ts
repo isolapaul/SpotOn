@@ -866,6 +866,17 @@ export const en: Dictionary = {
   inboxInviteJoinedBody: '{user} signed up with your invite. That earned you XP!',
   sortPopular: 'Popular',
   viewCount: '{count} views',
+  visitQuestion: 'Been here?',
+  visitHint: 'Collect the stamp when you are there.',
+  visitButton: 'I was here',
+  visitDone: 'You were here',
+  visitCount: 'Visitors: {count}',
+  visitSignIn: 'Sign in to collect the stamp.',
+  visitNeedsLocation: 'Allow location access for this.',
+  visitTooFar: 'You need to be near the spot for this (within 300 m).',
+  visitsButton: 'Stamps ({count})',
+  visitsTitle: 'My stamps ({count})',
+  visitsEmpty: 'No stamps yet. Tap "I was here" on a spot\'s page when you are there.',
 };
 
 export default en;

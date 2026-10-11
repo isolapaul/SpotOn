@@ -23,4 +23,5 @@ export {onReplyCreated} from "./triggers/replies";
 export {logEvents, reportClientError} from "./callables/telemetry";
 export {claimReferral} from "./callables/referrals";
 export {recordSpotView} from "./callables/spotViews";
+export {markVisited} from "./callables/visits";
 export {rollupSpotStats} from "./triggers/spotStats";

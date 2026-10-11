@@ -251,6 +251,13 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
     await batch.commit();
   }
   await db.collection("ownerStats").doc(uid).delete();
+  // "I was here" (growth plan §4): where the user has been.
+  const visits = await db.collection("users").doc(uid).collection("visits").select().get();
+  for (let i = 0; i < visits.docs.length; i += 400) {
+    const batch = db.batch();
+    visits.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
 
   // 4c. Blocks either way, reports the user filed, their replies and other people's replies to
   // their (removed) reviews, and the notices in other users' inboxes that name them (follow

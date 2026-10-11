@@ -867,6 +867,17 @@ export const de: Dictionary = {
   inboxInviteJoinedBody: '{user} hat sich mit deiner Einladung registriert. Das bringt dir XP!',
   sortPopular: 'Beliebt',
   viewCount: '{count} Aufrufe',
+  visitQuestion: 'Schon hier gewesen?',
+  visitHint: 'Hol dir den Stempel, wenn du dort bist.',
+  visitButton: 'Ich war hier',
+  visitDone: 'Du warst hier',
+  visitCount: '{count} Personen waren hier',
+  visitSignIn: 'Melde dich an, um den Stempel zu holen.',
+  visitNeedsLocation: 'Erlaube dafür den Standortzugriff.',
+  visitTooFar: 'Dafür musst du in der Nähe des Ortes sein (innerhalb von 300 m).',
+  visitsButton: 'Stempel ({count})',
+  visitsTitle: 'Meine Stempel ({count})',
+  visitsEmpty: 'Noch keine Stempel. Tippe auf einer Ortsseite auf „Ich war hier“, wenn du dort bist.',
 };
 
 export default de;
