@@ -864,6 +864,8 @@ export const en: Dictionary = {
   inviteAlreadyClaimed: 'You already named who invited you.',
   inboxInviteJoined: 'A friend joined with your invite',
   inboxInviteJoinedBody: '{user} signed up with your invite. That earned you XP!',
+  sortPopular: 'Popular',
+  viewCount: '{count} views',
 };
 
 export default en;

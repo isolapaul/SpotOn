@@ -56,3 +56,17 @@ describe('referrals', () => {
     await assertFails(updateDoc(doc(dbAs(env, BOB), 'users', BOB), { referredBy: ALICE }));
   });
 });
+
+describe('views and visits', () => {
+  it('anyone reads a spot\'s counters; the marks and owner stats are server-only', async () => {
+    await assertSucceeds(getDoc(doc(dbAs(env, null), 'spotStats', 'x')));
+    await assertFails(setDoc(doc(dbAs(env, SUPER), 'spotStats', 'x'), { viewCount: 9 }));
+    await assertFails(getDoc(doc(dbAs(env, ALICE), 'viewMarks', 'x_alice')));
+    await assertFails(getDoc(doc(dbAs(env, ALICE), 'ownerStats', ALICE)));
+  });
+  it('admins cannot write the rolled-up counters on a spot', async () => {
+    await assertFails(updateDoc(doc(dbAs(env, SUPER), 'spots', 'approvedSpot'), { viewCount: 100 }));
+    await assertFails(updateDoc(doc(dbAs(env, SUPER), 'spots', 'approvedSpot'), { visitCount: 100 }));
+    await assertSucceeds(updateDoc(doc(dbAs(env, SUPER), 'spots', 'approvedSpot'), { description: 'edited by an admin' }));
+  });
+});

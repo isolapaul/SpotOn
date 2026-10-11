@@ -92,6 +92,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "ownerStats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "week",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "views",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [

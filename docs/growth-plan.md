@@ -39,13 +39,13 @@ Status: `[ ]` open, `[x]` done.
 - [x] Invite screen: the link, copy, share, the progress row, the friends who joined.
 
 ## 3. Views and popularity
-- [ ] `recordSpotView` callable: one counted view per person, spot and day (server marks), the
+- [x] `recordSpotView` callable: one counted view per person, spot and day (server marks), the
   owner's own views do not count; `spots.viewCount`. Called once when the details open.
-- [ ] Shown quietly: a small eye count on the details stats row, nothing else.
-- [ ] **Popularity** = views + 5·likes + 10·reviews + 10·visits (`lib/popularity`): an Explore
+- [x] Shown quietly: a small eye count on the details stats row, nothing else.
+- [x] **Popularity** = views + 5·likes + 10·reviews + 10·visits (`lib/popularity`): an Explore
   sort "Popular" and the unlocked set of the locked pins (below).
-- [ ] The weekly digest also tells creators how many times their spots were viewed that week
-  (`users.weekViews`, reset by the digest).
+- [x] The weekly digest also tells creators how many times their spots were viewed that week
+  (`ownerStats/{uid}`, one week at a time).
 
 ## 4. "I was here"
 - [ ] A button on the spot details; the `markVisited` callable checks that the reported position

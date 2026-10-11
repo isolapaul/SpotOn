@@ -227,6 +227,17 @@ export const translations = {
     en: (user: TParam) => `${user} signed up with your invite. That earned you XP!`,
     de: (user: TParam) => `${user} hat sich mit deiner Einladung registriert. Das bringt dir XP!`,
   },
+  // Growth plan §3: (views last week).
+  weeklyViews: {
+    hu: "Népszerűek a helyeid",
+    en: "Your spots are popular",
+    de: "Deine Orte sind beliebt",
+  },
+  weeklyViewsBody: {
+    hu: (n: TParam) => `A helyeidet a múlt héten ${n} alkalommal nézték meg.`,
+    en: (n: TParam) => `Your spots were viewed ${n} times last week.`,
+    de: (n: TParam) => `Deine Orte wurden letzte Woche ${n}-mal angesehen.`,
+  },
   // Weekly feed digest: (first name, how many others, how many spots).
   weeklyDigest: {
     hu: "Heti összefoglaló",

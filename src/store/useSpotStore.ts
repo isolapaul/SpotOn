@@ -79,6 +79,9 @@ export interface Spot {
   averageRating?: number;
   /** How many people like the spot (the feed's thumb); server-written by setSpotLike. */
   likeCount?: number;
+  /** Growth plan §3/§4: views and "I was here" visits, rolled up from spotStats once a day. */
+  viewCount?: number;
+  visitCount?: number;
   /** The owner's special pin icon (item 6), server-written; normalise before use. */
   ownerPin?: string;
   highlighted?: {

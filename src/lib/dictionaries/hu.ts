@@ -863,6 +863,8 @@ export const hu = {
   inviteAlreadyClaimed: 'Már megadtad, ki hívott meg.',
   inboxInviteJoined: 'Valaki a meghívásodra jött',
   inboxInviteJoinedBody: '{user} regisztrált a meghívásodra. Ez XP-t ért!',
+  sortPopular: 'Népszerű',
+  viewCount: '{count} megtekintés',
 };
 
 export default hu;

@@ -1,6 +1,7 @@
 'use client';
 
-import { Pencil, Star } from 'lucide-react';
+import { Eye, Pencil, Star } from 'lucide-react';
+import { compactCount } from '@/lib/popularity';
 import type { Spot } from '@/store/useSpotStore';
 import { useLanguage, useT } from '@/hooks/useT';
 import { useCategoryLabel } from '@/hooks/useCategory';
@@ -14,13 +15,15 @@ interface SpotTitleProps {
   canEdit: boolean;
   edit: SpotEdit;
   isHighlightedByUser: boolean;
+  /** Growth plan §3: the public view count (quiet, only when there is one). */
+  views?: number;
 }
 
 /**
  * Title (or the name input while editing), highlight star and edit button, then one quiet line with
  * the category and the rating, as the place card shows them.
  */
-export default function SpotTitle({ spot, avgRating, canEdit, edit, isHighlightedByUser }: Readonly<SpotTitleProps>) {
+export default function SpotTitle({ spot, avgRating, canEdit, edit, isHighlightedByUser, views = 0 }: Readonly<SpotTitleProps>) {
   const t = useT();
   const categoryLabel = useCategoryLabel();
   const language = useLanguage();
@@ -76,6 +79,12 @@ export default function SpotTitle({ spot, avgRating, canEdit, edit, isHighlighte
           </span>
         ) : (
           <span className="text-label-tertiary">{t('noReviews')}</span>
+        )}
+        {views > 0 && (
+          <span className="inline-flex items-center gap-1 text-label-tertiary tabular-nums" aria-label={t('viewCount', { count: views })}>
+            <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+            {compactCount(views)}
+          </span>
         )}
       </p>
     </div>

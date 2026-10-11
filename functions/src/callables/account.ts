@@ -243,6 +243,15 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
     if (typeof inviter === "string" && inviter !== DELETED_OWNER) await syncUserLevel(inviter);
   }
 
+  // 4b3. Views (growth plan §3): the user's daily view marks and their weekly owner stats.
+  const marks = await db.collection("viewMarks").where("uid", "==", uid).select().get();
+  for (let i = 0; i < marks.docs.length; i += 400) {
+    const batch = db.batch();
+    marks.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+  await db.collection("ownerStats").doc(uid).delete();
+
   // 4c. Blocks either way, reports the user filed, their replies and other people's replies to
   // their (removed) reviews, and the notices in other users' inboxes that name them (follow
   // news, replies). Reports about them stay until an admin resolves them; their author field no

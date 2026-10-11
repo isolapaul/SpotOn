@@ -865,6 +865,8 @@ export const de: Dictionary = {
   inviteAlreadyClaimed: 'Du hast schon angegeben, wer dich eingeladen hat.',
   inboxInviteJoined: 'Jemand ist deiner Einladung gefolgt',
   inboxInviteJoinedBody: '{user} hat sich mit deiner Einladung registriert. Das bringt dir XP!',
+  sortPopular: 'Beliebt',
+  viewCount: '{count} Aufrufe',
 };
 
 export default de;

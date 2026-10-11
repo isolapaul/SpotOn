@@ -18,6 +18,8 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 
 - Invite friends: everyone has a personal link (`/i/<username>`, also opens the apps). A friend who signs up with it, or names you under "Who invited you?" within a week, earns you +10 XP and themselves +10 XP; their first approved spot earns you +20 XP more. Bronze, silver and gold Ambassador badges at 3, 5 and 10 friends, shown on the profile; the invite sheet shows the 1-3-5-10 steps and who joined. You hear about every friend who joins (in the app and as a push, with the "Follows" setting).
 
+- Views: opening a spot's details counts a view (once a day per person; the owner's own views do not count), shown quietly next to the rating. Explore gets a "Popular" order (views, likes, reviews and visits). Owners whose spots were viewed at least 3 times hear about it in the Monday digest.
+
 ### Added (feed)
 - A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.
 - Tap a spot's name or "Show on map" in the feed: the feed slides away, the map flies to the spot and its place card opens with a "Feed" button that takes you back to the same place in the feed.

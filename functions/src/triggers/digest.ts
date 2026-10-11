@@ -10,9 +10,30 @@ import {db} from "../lib/app";
 import {DELETED_OWNER} from "../lib/accountDeletion";
 import {DIGEST_WINDOW_MS, planDigests} from "../lib/digest";
 import {sendNotificationToUser} from "../lib/notify";
+import {lastWeekKey, VIEWS_DIGEST_MIN} from "../lib/spotStats";
 
 /** Pushes in flight at once (each reads the user doc and calls FCM). */
 const SEND_CHUNK = 50;
+
+/**
+ * Growth plan §3: owners whose spots were viewed at least VIEWS_DIGEST_MIN times last week hear
+ * how many times ("Your spots were viewed 12 times last week"), with the "reviews and likes"
+ * setting. Push only.
+ */
+async function sendViewDigests(): Promise<void> {
+  const stats = await db.collection("ownerStats")
+    .where("week", "==", lastWeekKey(Date.now()))
+    .where("views", ">=", VIEWS_DIGEST_MIN)
+    .get();
+  let failed = 0;
+  for (let i = 0; i < stats.docs.length; i += SEND_CHUNK) {
+    const results = await Promise.allSettled(stats.docs.slice(i, i + SEND_CHUNK).map((d) =>
+      sendNotificationToUser(d.id, "weeklyViews", "weeklyViewsBody", [Number(d.get("views"))],
+        {type: "weekly_views"}, "spotReviewed")));
+    failed += results.filter((r) => r.status === "rejected").length;
+  }
+  logger.info("weeklyViewDigest", {recipients: stats.size, failed});
+}
 
 export const weeklyFeedDigest = onSchedule(
   {schedule: "0 9 * * 1", timeZone: "Europe/Budapest", timeoutSeconds: 540},
@@ -31,6 +52,7 @@ export const weeklyFeedDigest = onSchedule(
       .filter((o): o is string => typeof o === "string" && o !== "" && o !== DELETED_OWNER);
     if (!owners.length) {
       logger.info("weeklyFeedDigest", {spots: 0, recipients: 0});
+      await sendViewDigests();
       return;
     }
     const followers = new Map<string, string[]>();
@@ -60,5 +82,6 @@ export const weeklyFeedDigest = onSchedule(
       failed += results.filter((r) => r.status === "rejected").length;
     }
     logger.info("weeklyFeedDigest", {spots: owners.length, recipients: digests.length, failed});
+    await sendViewDigests();
   },
 );

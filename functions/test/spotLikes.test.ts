@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {likeChange, onlyLikeCountChanged, spotLikeId} from "../src/lib/spotLikes";
+import {likeChange, onlyCountersChanged, spotLikeId} from "../src/lib/spotLikes";
 
 describe("spot likes", () => {
   it("sets the wanted state, a repeat changes nothing", () => {
@@ -13,12 +13,19 @@ describe("spot likes", () => {
   });
 });
 
-describe("onlyLikeCountChanged", () => {
+describe("onlyCountersChanged", () => {
   it("is true only for a pure counter change", () => {
-    expect(onlyLikeCountChanged({a: 1, likeCount: 1}, {a: 1, likeCount: 2})).toBe(true);
-    expect(onlyLikeCountChanged({a: 1}, {a: 1, likeCount: 1})).toBe(true);
-    expect(onlyLikeCountChanged({a: 1, likeCount: 1}, {a: 2, likeCount: 2})).toBe(false);
-    expect(onlyLikeCountChanged({a: 1}, {a: 1})).toBe(false);
-    expect(onlyLikeCountChanged(undefined, {likeCount: 1})).toBe(false);
+    expect(onlyCountersChanged({a: 1, likeCount: 1}, {a: 1, likeCount: 2})).toBe(true);
+    expect(onlyCountersChanged({a: 1}, {a: 1, likeCount: 1})).toBe(true);
+    expect(onlyCountersChanged({a: 1, likeCount: 1}, {a: 2, likeCount: 2})).toBe(false);
+    expect(onlyCountersChanged({a: 1}, {a: 1})).toBe(false);
+    expect(onlyCountersChanged(undefined, {likeCount: 1})).toBe(false);
+  });
+});
+
+describe("onlyCountersChanged: views and visits", () => {
+  it("ignores view and visit roll-ups too", () => {
+    expect(onlyCountersChanged({name: "a", viewCount: 1}, {name: "a", viewCount: 5, visitCount: 2})).toBe(true);
+    expect(onlyCountersChanged({name: "a", viewCount: 1}, {name: "b", viewCount: 5})).toBe(false);
   });
 });

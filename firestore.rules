@@ -127,7 +127,7 @@ service cloud.firestore {
         && (!ak.hasAny(['rejection']) || (d.status == 'pending' && !('rejection' in d)));
     }
     function isAdminEdit() {
-      return isAdmin() && !changed().hasAny(['status', 'rejection', 'createdBy', 'contributors', 'ownerPin', 'likedBy', 'likeCount']);
+      return isAdmin() && !changed().hasAny(['status', 'rejection', 'createdBy', 'contributors', 'ownerPin', 'likedBy', 'likeCount', 'viewCount', 'visitCount']);
     }
     match /spots/{spotId} {
       // Replies to reviews (questions and answers): created only by the addReply callable (it checks
@@ -367,6 +367,15 @@ service cloud.firestore {
         && (resource.data.referrer == request.auth.uid || inviteeId == request.auth.uid);
       allow write: if false;
     }
+    // Views and visits (growth plan §3, §4): counters written only by the callables; the counts are
+    // public (the details show them). The per-person marks and the owners' weekly views are
+    // server-only.
+    match /spotStats/{spotId} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+    match /viewMarks/{id}  { allow read, write: if false; }
+    match /ownerStats/{uid} { allow read, write: if false; }
     // App-wide switches (growth plan: minimum app versions, locked pins, launch challenge end):
     // public, edited by the owner in the Firebase console only.
     match /config/{id} {

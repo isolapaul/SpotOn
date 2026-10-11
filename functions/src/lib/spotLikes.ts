@@ -13,13 +13,18 @@ export function likeChange(exists: boolean, wanted: boolean): -1 | 0 | 1 {
   return wanted ? 1 : -1;
 }
 
-/** Whether a spot write changed nothing but likeCount (the spot triggers have nothing to do). */
-export function onlyLikeCountChanged(
+/** Server counters on a spot: a write of only these leaves the spot triggers nothing to do. */
+export const SPOT_COUNTERS = ["likeCount", "viewCount", "visitCount"] as const;
+
+/** Whether a spot write changed some counters (SPOT_COUNTERS) and nothing else. */
+export function onlyCountersChanged(
   before: Record<string, unknown> | undefined,
   after: Record<string, unknown> | undefined,
 ): boolean {
-  if (!before || !after || before.likeCount === after.likeCount) return false;
+  if (!before || !after) return false;
+  const counters: readonly string[] = SPOT_COUNTERS;
+  if (counters.every((k) => before[k] === after[k])) return false;
   const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-  keys.delete("likeCount");
+  for (const k of counters) keys.delete(k);
   return [...keys].every((k) => JSON.stringify(before[k]) === JSON.stringify(after[k]));
 }

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { CategoryId } from './useSpotStore';
 import { DISCOVERY_BATCH_SIZE } from '@/lib/constants';
 
-export type DiscoverySort = 'nearest' | 'best-rated';
+export type DiscoverySort = 'nearest' | 'best-rated' | 'popular';
 
 /**
  * Explore's list view: the order, the category filter, how many rows are shown and where the list was
