@@ -818,6 +818,9 @@ export const en: Dictionary = {
   quickActionAdd: 'Add a spot',
   quickActionFeed: 'Feed',
   quickActionNearby: 'Near me',
+  updateRequiredTitle: 'Update SpotOn',
+  updateRequiredText: 'This version is no longer supported. Everything works again with the latest version.',
+  updateRequiredButton: 'Update',
 };
 
 export default en;

@@ -5,6 +5,7 @@ import { useModerationStore } from '@/store/useModerationStore';
 import { useInboxStore } from '@/store/useInboxStore';
 import { useMyLevelStore } from '@/store/useMyLevelStore';
 import { useCategoryStore } from '@/store/useCategoryStore';
+import { useAppConfigStore } from '@/store/useAppConfigStore';
 import { useFollowStore } from '@/store/useFollowStore';
 import { useSafetyStore } from '@/store/useSafetyStore';
 import { useLikeStore } from '@/store/useLikeStore';
@@ -115,6 +116,7 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
     initializeAuth();
     initializeSpots();
     useCategoryStore.getState().start();
+    useAppConfigStore.getState().start();
     syncScopes(scope);
 
     // Cleanup
@@ -125,6 +127,7 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
       // Clean up all spots listeners (read from the store at cleanup time)
       useSpotStore.getState().stopSpots();
       useCategoryStore.getState().stop();
+      useAppConfigStore.getState().stop();
       syncScopes({ uid: null, isAdmin: false });
     };
   }, []);

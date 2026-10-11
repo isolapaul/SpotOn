@@ -817,6 +817,9 @@ export const hu = {
   quickActionAdd: 'Hely hozzáadása',
   quickActionFeed: 'Hírfolyam',
   quickActionNearby: 'Közel hozzám',
+  updateRequiredTitle: 'Frissítsd a SpotOnt',
+  updateRequiredText: 'Ez a verzió már nem támogatott. A legújabb verzióval minden újra működik.',
+  updateRequiredButton: 'Frissítés',
 };
 
 export default hu;

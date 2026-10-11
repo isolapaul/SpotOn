@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { buildCsp } from './src/lib/csp.mjs';
+
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 const isDev = process.env.NODE_ENV !== 'production';
 const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === '1';
@@ -39,6 +42,8 @@ const nextConfig = {
     NEXT_PUBLIC_USE_EMULATORS: useEmulators ? '1' : '0',
     NEXT_PUBLIC_MOVED_TO: process.env.NEXT_PUBLIC_MOVED_TO ?? '',
     NEXT_PUBLIC_APP_BUILD: appBuild ? '1' : '0',
+    // The build's version (package.json): the apps' minimum-version check (config/app).
+    NEXT_PUBLIC_APP_VERSION: version,
   },
   images: {
     unoptimized: process.env.NODE_ENV === 'production' || appBuild,

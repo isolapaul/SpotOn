@@ -11,6 +11,9 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 - On iPhone: a running upload (a new spot, photos or a review) shows its progress in the Dynamic Island and on the lock screen, and stays there a few seconds with the result; long-press the app icon for Add a spot, Feed and Near me.
 - The apps move a little livelier than the website: buttons give under the finger, sheets rise with a spring, the start screen's mark grows into the map, and a new spot lands with a small confetti burst.
 
+### Added (growth)
+- The apps can ask for an update: when a build is too old for the server, they show an "Update SpotOn" screen with the store link (`config/app.minVersion`).
+
 ### Added (feed)
 - A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.
 - Tap a spot's name or "Show on map" in the feed: the feed slides away, the map flies to the spot and its place card opens with a "Feed" button that takes you back to the same place in the feed.

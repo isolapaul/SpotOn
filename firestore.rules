@@ -350,6 +350,12 @@ service cloud.firestore {
       // Only through the deleteCategory callable, which checks that nothing uses it.
       allow delete: if false;
     }
+    // App-wide switches (growth plan: minimum app versions, locked pins, launch challenge end):
+    // public, edited by the owner in the Firebase console only.
+    match /config/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
     // everything else (incl. legacy favorites, reviews, notifications): denied (no match)
   }
 }

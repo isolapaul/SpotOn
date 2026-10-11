@@ -819,6 +819,9 @@ export const de: Dictionary = {
   quickActionAdd: 'Ort hinzufügen',
   quickActionFeed: 'Feed',
   quickActionNearby: 'In meiner Nähe',
+  updateRequiredTitle: 'Aktualisiere SpotOn',
+  updateRequiredText: 'Diese Version wird nicht mehr unterstützt. Mit der neuesten Version funktioniert wieder alles.',
+  updateRequiredButton: 'Aktualisieren',
 };
 
 export default de;

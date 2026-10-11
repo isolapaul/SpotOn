@@ -88,6 +88,9 @@ export const APPLE_SIGN_IN = process.env.NEXT_PUBLIC_APPLE_SIGN_IN === '1';
 /** The Android/iOS app build: the bundled static export (next.config.mjs, `npm run build:app`). */
 export const APP_BUILD = process.env.NEXT_PUBLIC_APP_BUILD === '1';
 
+/** This build's version (package.json), for the apps' update check (lib/appConfig). */
+export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0';
+
 /** The public site: shared links and the server API point here (the app runs on a local origin). */
 export const SITE_URL = 'https://spoton.isolapaul.hu';
 

@@ -25,6 +25,7 @@ import { useInitialLanguage } from '@/hooks/useInitialLanguage';
 import { useMapThemeAttribute } from '@/hooks/useMapThemeAttribute';
 import { useStandaloneFullHeight } from '@/hooks/useStandaloneFullHeight';
 import { useIosExtras } from '@/hooks/useIosExtras';
+import UpdateRequired from '@/components/UpdateRequired';
 import { useNativeShell } from '@/hooks/useNativeShell';
 import { useSystemBack } from '@/hooks/useSystemBack';
 import { useRelocateSpot } from '@/hooks/useRelocateSpot';
@@ -174,6 +175,8 @@ export default function Home() {
     <>
       {/* Loading Screen - shown until everything is ready */}
       <LoadingScreen isLoading={!isAppReady && !showTour} />
+      {/* The apps' minimum-version gate (config/app); never on the web */}
+      <UpdateRequired />
       {/* Notification Prompt - shown after app loads (never during the tour) */}
       {!tourBlocking && <NotificationPrompt />}
       {/* Background uploads (G4): above panels too, so a review sent from a spot panel reports back */}
