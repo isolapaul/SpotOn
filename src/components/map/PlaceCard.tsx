@@ -7,6 +7,7 @@ import { useT } from '@/hooks/useT';
 import { Z } from '@/lib/constants';
 import BackButton, { type SpotBack } from '@/components/ui/BackButton';
 import PlaceCardContent from './PlaceCardContent';
+import LockedPlaceCard from './LockedPlaceCard';
 
 /** Exit animation length (Tailwind `animate-card-out`). */
 const EXIT_MS = 280;
@@ -19,6 +20,9 @@ interface PlaceCardProps {
   onDetails: (spot: Spot) => void;
   /** Opened from the profile: a back capsule to it (a pull down or Close stays on the map). */
   back?: SpotBack;
+  /** Growth plan §5: a locked place shows only its category and what unlocks it. */
+  isLocked?: (spot: Spot) => boolean;
+  onAddSpot?: () => void;
 }
 
 /**
@@ -27,13 +31,14 @@ interface PlaceCardProps {
  * map tap or when dragged down. Pulled up, or its grabber tapped, it opens the spot's details
  * (owner request). It keeps the last spot while it animates out.
  */
-export default function PlaceCard({ spot, userLocation, onClose, onDetails, back }: Readonly<PlaceCardProps>) {
+export default function PlaceCard({ spot, userLocation, onClose, onDetails, back, isLocked, onAddSpot }: Readonly<PlaceCardProps>) {
   const [shown, setShown] = useState<Spot | null>(spot);
   const [prev, setPrev] = useState<Spot | null>(spot);
   const [leaving, setLeaving] = useState(false);
   const t = useT();
+  const locked = !!shown && !!isLocked?.(shown);
   const expand = () => {
-    if (shown && !leaving) onDetails(shown);
+    if (shown && !leaving && !locked) onDetails(shown);
   };
   const drag = useCardDrag(onClose, expand);
 
@@ -68,7 +73,7 @@ export default function PlaceCard({ spot, userLocation, onClose, onDetails, back
       inert={leaving}
     >
       <section
-        aria-label={shown.name}
+        aria-label={locked ? t('lockedTitle') : shown.name}
         {...drag.handlers}
         className={`material-sheet relative rounded-r4 shadow-sheet px-4 pt-3 touch-pan-x ${
           drag.dragging ? '' : 'transition-transform duration-350 ease-ios'
@@ -89,14 +94,18 @@ export default function PlaceCard({ spot, userLocation, onClose, onDetails, back
         {back && !leaving && (
           <BackButton label={back.label} ariaLabel={back.ariaLabel} onClick={back.onBack} tone="sheet" className="mb-3 -ml-0.5" />
         )}
-        <PlaceCardContent
-          key={shown.id}
-          spot={shown}
-          morphSource={!leaving}
-          userLocation={userLocation}
-          onClose={onClose}
-          onDetails={() => onDetails(shown)}
-        />
+        {locked ? (
+          <LockedPlaceCard key={shown.id} spot={shown} userLocation={userLocation} onClose={onClose} onAddSpot={() => onAddSpot?.()} />
+        ) : (
+          <PlaceCardContent
+            key={shown.id}
+            spot={shown}
+            morphSource={!leaving}
+            userLocation={userLocation}
+            onClose={onClose}
+            onDetails={() => onDetails(shown)}
+          />
+        )}
       </section>
     </div>
   );

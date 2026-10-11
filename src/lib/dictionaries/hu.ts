@@ -876,6 +876,12 @@ export const hu = {
   visitsButton: 'Pecsétek ({count})',
   visitsTitle: 'Pecsétjeim ({count})',
   visitsEmpty: 'Még nincs pecséted. Egy hely adatlapján nyomd meg az „Itt jártam” gombot, amikor ott vagy.',
+  lockedTitle: 'Rejtett hely',
+  lockedText: 'Rakd ki az első helyed, vagy hívj meg egy barátot, és minden hely megnyílik.',
+  lockedTextIos: 'Rakd ki az első helyed, és minden hely megnyílik.',
+  lockedAddSpot: 'Hely hozzáadása',
+  lockedInvite: 'Barát meghívása',
+  lockedBanner: 'Még {count} rejtett hely vár rád. Rakd ki az első helyed, és mind megnyílik.',
 };
 
 export default hu;

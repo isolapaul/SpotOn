@@ -44,6 +44,7 @@ import { detectLanguage } from '@/lib/i18n';
 import { useEffect, useMemo, useRef } from 'react';
 import { closeTopOverlay, useOverlayStore } from '@/store/useOverlayStore';
 import { DEFAULT_MAP_CENTER, Z } from '@/lib/constants';
+import { useSpotLock } from '@/hooks/useSpotLock';
 
 // Client-only: mapbox-gl needs `window` and WebGL
 const MapView = dynamic(() => import('@/components/MapView'), {
@@ -78,6 +79,9 @@ export default function Home() {
   useStandaloneFullHeight();
   useNativeShell(isAppReady);
   const visibleSpots = useVisibleSpots();
+  // Growth plan §5: locked places (config/app.lockEnabled) until the user contributes.
+  const { isLocked } = useSpotLock();
+  const lockedIds = useMemo(() => new Set(visibleSpots.filter(isLocked).map((s) => s.id)), [visibleSpots, isLocked]);
   const { location: userLocation, status: locationStatus } = useUserLocation();
   const { user, needsUsername, setNeedsUsername } = useUserStore();
   const t = useT();
@@ -209,6 +213,10 @@ export default function Home() {
         onClose={closeSheet}
         userLocation={userLocation}
         onSpotSelect={(spot) => openFromList(spot.id, 'discovery')}
+        onAddSpot={() => {
+          closeSheet();
+          handleAddSpotClick();
+        }}
       />
       {/* The following feed */}
       <FeedPanel
@@ -256,6 +264,7 @@ export default function Home() {
         onMapClick={onMapClick}
         focusRequest={focusRequest}
         onSpotArrive={arriveAtSpot}
+        lockedIds={lockedIds}
       />
       {/* Empty state (shares the top-left slot with the move banner) */}
       {visibleSpots.length === 0 && !selectingLocation && !movedBannerVisible && (
@@ -277,6 +286,11 @@ export default function Home() {
         onClose={() => previewSpot(null)}
         onDetails={(spot) => runViewTransition(() => openPanel({ type: 'spot', spotId: spot.id }), 'morph')}
         back={cardBack}
+        isLocked={isLocked}
+        onAddSpot={() => {
+          previewSpot(null);
+          handleAddSpotClick();
+        }}
       />
       {/* Launcher (design 1C) */}
       <BottomNavigation

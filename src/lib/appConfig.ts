@@ -10,11 +10,17 @@ export interface AppConfig {
   storeUrl: Partial<Record<StorePlatform, string>>;
   /** Locked pins (give-to-get) are on. */
   lockEnabled: boolean;
+  /** How many of the most popular places stay open for everyone while locking (default 30). */
+  lockOpenCount: number;
   /** The launch challenge runs until this moment (ms); null = the built-in end. */
   launchChallengeEnd: number | null;
 }
 
-export const DEFAULT_APP_CONFIG: AppConfig = { minVersion: {}, storeUrl: {}, lockEnabled: false, launchChallengeEnd: null };
+export const DEFAULT_LOCK_OPEN_COUNT = 30;
+
+export const DEFAULT_APP_CONFIG: AppConfig = {
+  minVersion: {}, storeUrl: {}, lockEnabled: false, lockOpenCount: DEFAULT_LOCK_OPEN_COUNT, launchChallengeEnd: null,
+};
 
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=hu.isolapaul.spoton';
 
@@ -45,6 +51,8 @@ export function parseAppConfig(data: Record<string, unknown> | undefined): AppCo
     minVersion: platformStrings(data.minVersion, (s) => VERSION.test(s)),
     storeUrl: platformStrings(data.storeUrl, (s) => s.startsWith('https://')),
     lockEnabled: data.lockEnabled === true,
+    lockOpenCount: typeof data.lockOpenCount === 'number' && Number.isInteger(data.lockOpenCount) && data.lockOpenCount >= 0
+      ? Math.min(data.lockOpenCount, 500) : DEFAULT_LOCK_OPEN_COUNT,
     launchChallengeEnd: millis(data.launchChallengeEnd),
   };
 }

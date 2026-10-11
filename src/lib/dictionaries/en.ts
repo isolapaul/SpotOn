@@ -877,6 +877,12 @@ export const en: Dictionary = {
   visitsButton: 'Stamps ({count})',
   visitsTitle: 'My stamps ({count})',
   visitsEmpty: 'No stamps yet. Tap "I was here" on a spot\'s page when you are there.',
+  lockedTitle: 'Hidden place',
+  lockedText: 'Share your first spot or invite a friend, and every place opens up.',
+  lockedTextIos: 'Share your first spot, and every place opens up.',
+  lockedAddSpot: 'Add a spot',
+  lockedInvite: 'Invite a friend',
+  lockedBanner: '{count} more hidden places are waiting. Share your first spot to open them all.',
 };
 
 export default en;

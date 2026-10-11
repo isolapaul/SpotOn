@@ -6,7 +6,7 @@ Status: `[ ]` open, `[x]` done.
 
 ## Shared foundation
 - [x] **`config/app` doc** (public read, edited in the Firebase console): `minVersion {ios, android}`,
-  `lockEnabled`, `launchChallengeEnd`. One listener in the client (`useAppConfigStore`).
+  `lockEnabled`, `lockOpenCount`, `launchChallengeEnd`. One listener in the client (`useAppConfigStore`).
 - [x] **Minimum version gate** (apps only): when the bundled build is older than `minVersion`,
   a full-screen "Update SpotOn" with the store link. The bundled apps cannot follow server-side
   changes by themselves, so this is the way to retire an old build. The web is always current.
@@ -54,13 +54,13 @@ Status: `[ ]` open, `[x]` done.
 - [x] Profile: a "Visited" count and a stamp grid of the visited spots.
 
 ## 5. Locked pins (give-to-get)
-- [ ] Every pin stays on the map. A locked pin's card shows a blurred photo, the category and the
+- [x] Every pin stays on the map. A locked pin's card shows a blurred photo, the category and the
   distance, but not the name, description or details, with "Add your first spot to unlock every
   place" (and on the web and Android also "or invite a friend").
-- [ ] Unlocked for everyone: the 30 most popular spots, own spots, spots of people you follow,
+- [x] Unlocked for everyone: the `lockOpenCount` (default 30) most popular spots, own spots, spots of people you follow,
   spots opened from a link. Everything unlocks with one submitted spot or one claimed invite.
-- [ ] Switched by `config/app.lockEnabled` (off by default until a city has enough spots).
-- [ ] Apple: the iOS app shows only the "add a spot" unlock (guideline 3.2.2: no unlocking through
+- [x] Switched by `config/app.lockEnabled` (off by default until a city has enough spots).
+- [x] Apple: the iOS app shows only the "add a spot" unlock (guideline 3.2.2: no unlocking through
   inviting others). The lock is a nudge, not protection: approved spots stay publicly readable.
 
 ## 6. Share cards

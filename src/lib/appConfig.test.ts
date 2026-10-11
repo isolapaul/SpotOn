@@ -9,7 +9,9 @@ describe('appConfig', () => {
       storeUrl: { ios: 'https://apps.apple.com/app/id1', android: 'http://x' },
       lockEnabled: 'yes',
       launchChallengeEnd: { toMillis: () => 5 },
-    })).toEqual({ minVersion: { ios: '2.2.0' }, storeUrl: { ios: 'https://apps.apple.com/app/id1' }, lockEnabled: false, launchChallengeEnd: 5 });
+    })).toEqual({ minVersion: { ios: '2.2.0' }, storeUrl: { ios: 'https://apps.apple.com/app/id1' }, lockEnabled: false, lockOpenCount: 30, launchChallengeEnd: 5 });
+    expect(parseAppConfig({ lockOpenCount: 0 }).lockOpenCount).toBe(0);
+    expect(parseAppConfig({ lockOpenCount: -1 }).lockOpenCount).toBe(30);
     expect(parseAppConfig({ lockEnabled: true }).lockEnabled).toBe(true);
   });
   it('compares versions numerically', () => {

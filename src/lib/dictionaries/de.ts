@@ -878,6 +878,12 @@ export const de: Dictionary = {
   visitsButton: 'Stempel ({count})',
   visitsTitle: 'Meine Stempel ({count})',
   visitsEmpty: 'Noch keine Stempel. Tippe auf einer Ortsseite auf „Ich war hier“, wenn du dort bist.',
+  lockedTitle: 'Versteckter Ort',
+  lockedText: 'Teile deinen ersten Ort oder lade einen Freund ein, und alle Orte öffnen sich.',
+  lockedTextIos: 'Teile deinen ersten Ort, und alle Orte öffnen sich.',
+  lockedAddSpot: 'Ort hinzufügen',
+  lockedInvite: 'Freund einladen',
+  lockedBanner: '{count} weitere versteckte Orte warten. Teile deinen ersten Ort, um alle zu öffnen.',
 };
 
 export default de;

@@ -5,6 +5,7 @@ import { useSafetyStore } from '@/store/useSafetyStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useFeedStore } from '@/store/useFeedStore';
 import { buildFeed, countUnseen, type FeedSections } from '@/lib/feed';
+import { useSpotLock } from './useSpotLock';
 
 /**
  * The following feed: approved spots of the people the user follows, then everyone else's (people
@@ -18,10 +19,12 @@ export function useFeed(
   const following = useFollowStore((s) => s.following);
   const followingReady = useFollowStore((s) => s.followingReady);
   const blocked = useSafetyStore((s) => s.blocked);
-  const sections = useMemo(
-    () => buildFeed(spots, { following, me, hidden: blocked, near }),
-    [spots, following, me, blocked, near],
-  );
+  // Growth plan §5: locked places stay out of the suggested section (followed ones are never locked).
+  const { isLocked } = useSpotLock();
+  const sections = useMemo(() => {
+    const built = buildFeed(spots, { following, me, hidden: blocked, near });
+    return { ...built, suggested: built.suggested.filter((spot) => !isLocked(spot)) };
+  }, [spots, following, me, blocked, near, isLocked]);
   return { ...sections, ready: !me || followingReady, followsAnyone: following.size > 0 };
 }
 
