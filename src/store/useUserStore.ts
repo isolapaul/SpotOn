@@ -25,6 +25,8 @@ import { TERMS_VERSION } from '@/lib/terms';
 import { forgetDevice } from './pushDevice';
 import { useNotificationStore } from './useNotificationStore';
 import { useFeedStore } from './useFeedStore';
+import { signInWithAppleNative, signInWithGoogleNative, signOutNative } from './nativeAuth';
+import { isNativeApp } from '@/lib/nativeApp';
 
 export type { User } from '@/lib/mapUserDoc';
 
@@ -325,8 +327,14 @@ async function signInWithProvider(provider: AuthProvider, set: SetState): Promis
       
       // Try popup first, fallback to redirect for mobile browsers
       try {
-        result = await signInWithPopup(auth, provider);
+        // The Android/iOS app: providers refuse WebView sign-in, the native SDKs sign in (nativeAuth.ts).
+        if (isNativeApp()) {
+          result = provider.providerId === 'apple.com' ? await signInWithAppleNative() : await signInWithGoogleNative();
+        } else {
+          result = await signInWithPopup(auth, provider);
+        }
       } catch (popupError) {
+        if (isNativeApp()) throw popupError;
         // If popup blocked or fails on mobile, try redirect
         const code = (popupError as { code?: string }).code;
         if (code === 'auth/popup-blocked' ||
@@ -478,6 +486,7 @@ export const useUserStore = create<UserStore>()(
         await forgetDevice(null);
         stopAdminListeners(set);
         await firebaseSignOut(auth);
+        if (isNativeApp()) await signOutNative();
         // The device's notification list belongs to the account (the next one must not see it).
         useNotificationStore.getState().clearAll();
         useFeedStore.getState().markSeen(0);
@@ -502,6 +511,7 @@ export const useUserStore = create<UserStore>()(
         stopAdminListeners(set);
 
         await firebaseSignOut(auth);
+        if (isNativeApp()) await signOutNative();
         set({ user: null, loading: false });
       },
       

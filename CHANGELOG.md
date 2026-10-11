@@ -5,6 +5,10 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 
 ## Unreleased
 
+### Added (apps)
+- SpotOn as an Android and iOS app. It shows the same live site, so it is always up to date, and adds what a browser tab cannot: Google sign-in with the phone's account picker, push notifications, the system share sheet, the Android back button, spot links that open in the app, and a page for when there is no connection. The first-run tour skips its install step in the app.
+- In the apps: Sign in with Apple on iPhone (when enabled), tapping a push opens the profile, spot or feed it is about, profile and feed links open in the app too (iOS Universal Links), a light haptic tap with the interface sounds, and the Android 13+ themed icon.
+
 ### Added (feed)
 - A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.
 - Tap a spot's name or "Show on map" in the feed: the feed slides away, the map flies to the spot and its place card opens with a "Feed" button that takes you back to the same place in the feed.

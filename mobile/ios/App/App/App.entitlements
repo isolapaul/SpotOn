@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Push notifications (FCM through APNs). Xcode switches it to production for App Store builds. -->
+	<key>aps-environment</key>
+	<string>development</string>
+	<!-- Universal Links: spot, profile and feed links open in the app (/.well-known/apple-app-site-association). -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:spoton.isolapaul.hu</string>
+	</array>
+	<!-- Sign in with Apple (App Store guideline 4.8, next to Google sign-in). -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+</dict>
+</plist>

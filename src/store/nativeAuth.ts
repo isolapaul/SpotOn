@@ -1,0 +1,56 @@
+// Google sign-in inside the Android/iOS app. Google refuses OAuth in embedded WebViews
+// (disallowed_useragent), so the native Google SDK signs in and hands over its ID token; the web SDK
+// then signs in with it, and the app keeps the same single Firebase session as in a browser
+// (FirebaseAuthentication.skipNativeAuth in capacitor.config.ts).
+import { GoogleAuthProvider, OAuthProvider, signInWithCredential, type UserCredential } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { SIGN_IN_CANCELLED } from '@/lib/nativeApp';
+
+/** Resolves with the signed-in credential; rejects with SIGN_IN_CANCELLED when the user closes the picker. */
+export async function signInWithGoogleNative(): Promise<UserCredential> {
+  const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+  let idToken: string | undefined;
+  try {
+    const result = await FirebaseAuthentication.signInWithGoogle({ skipNativeAuth: true });
+    idToken = result.credential?.idToken;
+  } catch (error) {
+    // The plugin reports a closed account picker as an error; the UI shows nothing for it.
+    const message = error instanceof Error ? error.message : String(error);
+    if (/cancel/i.test(message)) throw Object.assign(new Error(message), { code: SIGN_IN_CANCELLED });
+    throw error;
+  }
+  if (!idToken) throw Object.assign(new Error('No Google ID token'), { code: 'auth/internal-error' });
+  return signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+}
+
+/**
+ * Sign in with Apple in the iOS app (App Store guideline 4.8): the system Apple sheet signs in and
+ * hands over its ID token and the nonce it was requested with; the web SDK signs in with them.
+ * Rejects with SIGN_IN_CANCELLED when the user closes the sheet.
+ */
+export async function signInWithAppleNative(): Promise<UserCredential> {
+  const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+  let idToken: string | undefined;
+  let rawNonce: string | undefined;
+  try {
+    const result = await FirebaseAuthentication.signInWithApple({ skipNativeAuth: true });
+    idToken = result.credential?.idToken;
+    rawNonce = result.credential?.nonce;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/cancel|1001/i.test(message)) throw Object.assign(new Error(message), { code: SIGN_IN_CANCELLED });
+    throw error;
+  }
+  if (!idToken) throw Object.assign(new Error('No Apple ID token'), { code: 'auth/internal-error' });
+  return signInWithCredential(auth, new OAuthProvider('apple.com').credential({ idToken, rawNonce }));
+}
+
+/** Signs the native Google SDK out too, so the next sign-in offers the account choice again. */
+export async function signOutNative(): Promise<void> {
+  try {
+    const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+    await FirebaseAuthentication.signOut();
+  } catch (error) {
+    console.error('Native sign-out failed:', error);
+  }
+}

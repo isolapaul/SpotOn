@@ -1,6 +1,6 @@
 # Apple App Store: the path for SpotOn
 
-SpotOn is a PWA. Google Play ships it as a Trusted Web Activity (`docs/deploy.md` §17, `docs/play-store.md`). The App Store has no equivalent: an iOS app needs a native shell (Capacitor is the closest fit) and has to pass guideline 4.2 (more than a wrapped website). This page lists what is already in the repository and what the owner has to decide or do.
+The Android and iOS apps are Capacitor shells around the live site (`capacitor.config.ts`, `mobile/`; build runbook `docs/deploy.md` §17). This page is the App Store checklist: what is in place and what the owner does.
 
 ## Already in the app (both stores)
 
@@ -14,18 +14,14 @@ SpotOn is a PWA. Google Play ships it as a Trusted Web Activity (`docs/deploy.md
 | Sign in with Apple (4.8, required next to Google sign-in) | `signInWithApple` in `useUserStore`; the button shows with `NEXT_PUBLIC_APPLE_SIGN_IN=1` |
 | Notification permission asked after a pre-prompt, never on launch | `NotificationPrompt` |
 
-## Owner steps before an iOS build
+## Native in the iOS app
 
-1. Apple Developer Program membership.
-2. Sign in with Apple: a Services ID and key in the Apple developer account, the Apple provider enabled in Firebase Auth (with the return URL Firebase shows), then build with `NEXT_PUBLIC_APPLE_SIGN_IN=1` (a GitHub repository variable for releases).
-3. Decide on the shell (decision needed, not started): Capacitor with the built app bundled, or loading the live site. A shell that only loads the site risks a 4.2 rejection.
+Native Google sign-in and Sign in with Apple (system sheets), native push (APNs through FCM) whose tap opens the profile, spot or feed it is about, Universal Links for spot, profile and feed links, the share sheet, haptics with the interface sounds, the offline page, no "Add to Home Screen" step in the tour, `PrivacyInfo.xcprivacy`, and purpose strings for location, camera and photos.
 
-## Work the shell needs (not started; each its own branch)
+## Owner steps
 
-- **Sign-in inside the shell:** Google refuses OAuth in an embedded web view (`disallowed_useragent`). Use native sign-in (for example `@capacitor-firebase/authentication`) for Google and Apple, then `signInWithCredential` in the web layer.
-- **Push:** web push does not run in WKWebView. Native push (APNs key uploaded to Firebase Cloud Messaging, a native token registered next to the FID in `usePushNotifications`).
-- **Tour install step:** inside the shell the "Add to Home Screen" step must not show (`lib/onboarding.ts` `isStandaloneLaunch`; check `Capacitor.isNativePlatform()`).
-- **Info.plist purpose strings:** location when in use (the map and "Near me"), photo library and camera (spot photos, profile pictures); `PrivacyInfo.xcprivacy` (UserDefaults; no tracking domains).
-- **App Privacy answers:** e-mail, name (Google/Apple sign-in), user ID, photos, other user content, coarse/precise location (not stored), device ID (push token); none used for tracking.
-- **Age rating:** user-generated content, unrestricted; 16+ as on Play.
-- **Review notes:** a demo account, how to report and block, the 24-hour review promise.
+1. Apple Developer Program membership; the App ID `hu.isolapaul.spoton` with Push Notifications, Sign in with Apple and Associated Domains (automatic signing turns them on).
+2. Firebase: the iOS app and the APNs key (`docs/deploy.md` §17.1); the Apple sign-in provider; then `NEXT_PUBLIC_APPLE_SIGN_IN=1` and a web release.
+3. `APPLE_TEAM_ID` in the server's `.env` (Universal Links, §17.4).
+4. App Store Connect: App Privacy (e-mail, name, user ID, photos, other user content, device ID for push; nothing for tracking), age rating with unrestricted user-generated content (16+ as on Play), a demo account and the moderation note (report, block, 24-hour review) in the review notes.
+5. Guideline 4.2: the app loads the live site; native sign-in, push, links, share and haptics make it more than a website, but a rejection is still possible. If it comes, the answer is to bundle the web build into the app (`webDir`) instead of `server.url`.

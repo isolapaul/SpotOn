@@ -6,13 +6,13 @@ Open work, as of v2.0.2 (2026-09-30). Nothing here is started. Each item becomes
 
 | Item | Notes |
 |---|---|
-| Google Play release | Trusted Web Activity; the repository side is ready (`docs/deploy.md` §17, `docs/play-store.md`). Left: the developer account, the Bubblewrap build, the closed test and the listing. |
+| Google Play release | Capacitor app (`mobile/`); the repository side is ready (`docs/deploy.md` §17, `docs/play-store.md`). Left: the Firebase Android app and `google-services.json`, the upload key, the developer account, the closed test and the listing. |
+| App Store release | Capacitor app (`mobile/ios`, `docs/deploy.md` §17.4). Left: the Apple Developer account, the Firebase iOS app and APNs key, and decisions on Sign in with Apple (guideline 4.8) and minimum functionality (4.2). |
 | Legal pages in English and German | `/privacy` and `/terms` are Hungarian only; English and German users get the Hungarian text. |
 | Accessible labels in all languages | aria-labels and alt texts are English, because the e2e selectors depend on them. |
 | "Special icons" level perk | Level 4 and 5 advertise "Use special icons" (`useCustomIcons`, `perkIcons`), but no such feature exists. Build it or drop the perk text. |
 | Owners deleting their own spots | Only admins can delete a spot. Owners ask by e-mail (the privacy policy says so). |
 | First-run tour copy to confirm | Check the install menu names on real iPhones and Android phones in hu/en/de (`onboardingInstall*`), whether "gyors ellenőrzés" (quick check) fits the real approval times, and whether "Új külsőben a SpotOn" (returning users) should become the neutral "Mi újság a SpotOnon?". |
-| iOS app (App Store) | Needs a native shell (Capacitor is the closest fit) and native sign-in and push; the decisions and steps are in `docs/app-store.md`. |
 | Pinch zoom | The viewport disables zoom (`maximumScale: 1`, `userScalable: false`), which Lighthouse flags (WCAG 1.4.4). Allowing it needs a check on iOS (inputs under 16 px zoom the page on focus) and the map gestures. |
 | Offline data | Firestore runs without a persistent cache, so an offline start shows no spots (the offline page and the "Offline" pill exist). A persistent cache needs a decision on keeping user data on shared devices after sign-out. |
 | Inline links and the 44 px rule | The global minimum touch size also applies to links inside sentences (`LegalNotice` in the sign-in sheet, the tour's sign-up step, TermsPrompt), which spreads the lines apart. Decide whether inline text links get `no-min-size`. |
@@ -26,7 +26,7 @@ Open work, as of v2.0.2 (2026-09-30). Nothing here is started. Each item becomes
 | Orphaned Storage files | Removing a spot, rejecting a photo and an approved photo removal delete their files (item 4). Photos an admin deletes directly in the image manager still leave their files. |
 | Reports about a deleted account | `deleteAccount` removes the reports the user filed, but reports about the user keep the reported text (`preview`) until an admin resolves them. Decide whether to delete or anonymise them at deletion (privacy policy). |
 | Review appends | The rules let a signed-in user append any number of reviews to an approved spot, their own included (no XP, but the average rating and the owner's notifications). One review per user and spot, server-checked, would need a callable. |
-| Legacy push tokens | `functions/src/lib/notify.ts` still sends to `users.fcmTokens` (the deprecated token API) for devices that have not opened v2.1.0 yet; each device drops its token when it registers its FID. Remove the fallback once the logs show `legacyTokens: 0` for a while, then the field (rules, CLAUDE.md data model). |
+| Legacy push tokens | `users.fcmTokens` holds the Android/iOS apps' native tokens **and** the tokens of browsers that have not opened v2.1.0 yet (each browser drops its token when it registers its FID). Never remove the token send path or the field: the apps need them. The `legacyTokens` log count includes app tokens, so it cannot show when browsers are done; separating them needs a design decision (for example a separate field for app tokens). |
 | Legacy user fields | `questProgress` / `questRewards` from the 2026 Valentine event are still on some `users` docs; nothing reads them. |
 | T23 characterisation oracles | `src/lib/__oracles__/legacy.ts` pins the pre-refactor behaviour for a few helpers. They could be replaced by plain unit tests. |
 

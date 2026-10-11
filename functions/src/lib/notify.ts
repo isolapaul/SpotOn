@@ -1,9 +1,10 @@
 /**
- * Push notification helpers. FCM targets each device by its Firebase Installation ID (FID,
- * users/{uid}.fcmFids, registered by the app since v2.1.0). Devices that have not opened v2.1.0
- * yet still have only their old registration token in fcmTokens: those are sent to as well, through
- * the deprecated token API, until the device registers its FID (the app then removes its token, so
- * no device gets a push twice). Never logs FIDs, tokens or payloads, only uids and counts.
+ * Push notification helpers. FCM targets each browser by its Firebase Installation ID
+ * (FID, users/{uid}.fcmFids, registered by the web app since v2.1.0). fcmTokens holds
+ * registration tokens, sent to through the token API: the Android/iOS apps' native
+ * tokens (src/store/nativePush.ts; keep this path), and browsers that have not opened
+ * v2.1.0 yet, until they register their FID (the web app then removes its token, so no
+ * device gets a push twice). Never logs FIDs, tokens or payloads, only uids and counts.
  */
 import {FieldValue} from "firebase-admin/firestore";
 import {BaseMessage, BatchResponse} from "firebase-admin/messaging";
@@ -55,7 +56,7 @@ export async function sendNotificationToUser(
     }
 
     const fids = registrationList(userData.fcmFids);
-    // Devices from before v2.1.0 until they open the app once (transition; see the header).
+    // Native app tokens, and browsers from before v2.1.0 until they open it once (see the header).
     const tokens = registrationList(userData.fcmTokens);
     if (fids.length === 0 && tokens.length === 0) {
       logger.info(`No FCM registrations for user ${userId}`);
@@ -98,7 +99,7 @@ export async function sendNotificationToUser(
       pruned += dead.length;
     }
     if (tokens.length > 0) {
-      // The deprecated token API, on purpose: legacy devices only (see the header).
+      // The token API, on purpose: app tokens and legacy browsers only (see the header).
       const response = await messaging.sendEachForMulticast({...base, tokens});
       responses.push(response);
       const dead = selectTokensToPrune(tokens, response.responses);

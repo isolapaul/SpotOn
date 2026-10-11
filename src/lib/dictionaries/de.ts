@@ -808,6 +808,7 @@ export const de: Dictionary = {
   loadFailed: 'Konnte nicht geladen werden.',
   offlineBanner: 'Offline: Die Karte ist eventuell veraltet',
   authApple: 'Mit Apple fortfahren',
+  notificationsBlockedDescApp: 'Benachrichtigungen sind blockiert. Aktiviere sie in den Telefoneinstellungen für SpotOn.',
 };
 
 export default de;

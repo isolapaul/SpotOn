@@ -7,6 +7,7 @@ import { LogIn, X, Mail, Lock, User } from 'lucide-react';
 import { useState } from 'react';
 import ModalShell, { SAFE_AREA_MARGINS } from './ui/ModalShell';
 import LegalNotice from './legal/LegalNotice';
+import { isSignInCancelled, offersAppleSignIn } from '@/lib/nativeApp';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -51,6 +52,8 @@ export default function AuthModal({ isOpen, onClose, signUpAs }: Readonly<AuthMo
       onClose();
       resetForm();
     } catch (err) {
+      // The app's account picker closed: the sheet stays, without an error.
+      if (isSignInCancelled(err)) return;
       console.error('Google sign-in error:', err);
       setError(t('authErrGoogle'));
     } finally {
@@ -323,7 +326,7 @@ export default function AuthModal({ isOpen, onClose, signUpAs }: Readonly<AuthMo
             </button>
 
             {/* Sign in with Apple (App Store 4.8), when the build enables it */}
-            {APPLE_SIGN_IN && (
+            {offersAppleSignIn(APPLE_SIGN_IN) && (
               <button
                 type="button"
                 onClick={handleGoogleSignIn('apple')}

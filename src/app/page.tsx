@@ -24,6 +24,7 @@ import { useIsClient } from '@/hooks/useIsClient';
 import { useInitialLanguage } from '@/hooks/useInitialLanguage';
 import { useMapThemeAttribute } from '@/hooks/useMapThemeAttribute';
 import { useStandaloneFullHeight } from '@/hooks/useStandaloneFullHeight';
+import { useNativeShell } from '@/hooks/useNativeShell';
 import { useSystemBack } from '@/hooks/useSystemBack';
 import { useRelocateSpot } from '@/hooks/useRelocateSpot';
 import { runViewTransition } from '@/hooks/viewTransition';
@@ -72,6 +73,7 @@ export default function Home() {
   useInitialLanguage();
   useMapThemeAttribute();
   useStandaloneFullHeight();
+  useNativeShell();
   const visibleSpots = useVisibleSpots();
   const { location: userLocation, status: locationStatus } = useUserLocation();
   const { user, needsUsername, setNeedsUsername } = useUserStore();

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { maySound, SOUNDS, type SoundName } from '@/lib/sound';
+import { isNativeApp } from '@/lib/nativeApp';
 
 const TAPS: ReadonlySet<SoundName> = new Set(['like', 'favorite', 'follow']);
 
@@ -22,6 +23,23 @@ export const useSoundStore = create<SoundStore>()(
 );
 
 let context: AudioContext | null = null;
+
+/**
+ * A matching tap of the phone: the Taptic Engine / vibrator through the native Haptics plugin in the
+ * Android/iOS app, navigator.vibrate in Android browsers, nothing elsewhere.
+ */
+function haptic(name: SoundName) {
+  const success = name === 'spotAdded' || name === 'levelUp';
+  if (!TAPS.has(name) && !success) return;
+  if (isNativeApp()) {
+    void import('@capacitor/haptics')
+      .then(({ Haptics, ImpactStyle, NotificationType }) =>
+        success ? Haptics.notification({ type: NotificationType.Success }) : Haptics.impact({ style: ImpactStyle.Light }))
+      .catch(() => undefined);
+    return;
+  }
+  if (TAPS.has(name) && 'vibrate' in navigator) navigator.vibrate?.(8);
+}
 let last = 0;
 
 type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
@@ -70,8 +88,7 @@ export function playSound(name: SoundName): void {
       osc.start(start + n.at);
       osc.stop(start + n.at + n.dur + 0.02);
     }
-    // A light tap for the taps themselves where the device can (Android); nothing elsewhere.
-    if (TAPS.has(name) && 'vibrate' in navigator) navigator.vibrate?.(8);
+    haptic(name);
   } catch (error) {
     console.warn('Sound failed:', error);
   }

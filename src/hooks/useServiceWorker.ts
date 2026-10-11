@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { isNativeApp } from '@/lib/nativeApp';
 
 /**
  * Registers the app's service worker (the FCM worker, which also serves the offline page) once the
@@ -7,7 +8,8 @@ import { useEffect } from 'react';
  */
 export function useServiceWorker(ready: boolean) {
   useEffect(() => {
-    if (!ready || !('serviceWorker' in navigator)) return;
+    // The Android/iOS app has its own offline page and native push (capacitor.config.ts).
+    if (!ready || !('serviceWorker' in navigator) || isNativeApp()) return;
     navigator.serviceWorker.register('/api/firebase-messaging-sw', { scope: '/' }).catch((error) => {
       console.warn('Service worker registration failed:', error);
     });

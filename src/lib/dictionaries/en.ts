@@ -807,6 +807,7 @@ export const en: Dictionary = {
   loadFailed: 'Couldn\'t load this.',
   offlineBanner: 'Offline: the map may be out of date',
   authApple: 'Continue with Apple',
+  notificationsBlockedDescApp: 'Notifications are blocked. Enable them for SpotOn in your phone settings.',
 };
 
 export default en;

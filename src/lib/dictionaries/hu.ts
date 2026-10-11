@@ -806,6 +806,7 @@ export const hu = {
   loadFailed: 'Nem sikerült betölteni.',
   offlineBanner: 'Nincs internet, a térkép elavult lehet',
   authApple: 'Folytatás Apple-fiókkal',
+  notificationsBlockedDescApp: 'Az értesítések blokkolva vannak. Engedélyezd a telefon beállításaiban a SpotOnnál.',
 };
 
 export default hu;
