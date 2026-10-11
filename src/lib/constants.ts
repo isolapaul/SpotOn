@@ -59,6 +59,8 @@ export const DELAYS = {
   approveClose: 1000,
   /** UploadStatus: how long the "uploaded" pill stays. */
   uploadDoneVisible: 2500,
+  /** A finished upload's Live Activity stays in the Dynamic Island / on the lock screen this long. */
+  liveActivityLinger: 8000,
 } as const;
 
 /**

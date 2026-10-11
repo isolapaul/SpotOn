@@ -457,7 +457,7 @@ bash mobile/scripts/ios-firebase-config.sh ~/Downloads/GoogleService-Info.plist 
 npm run cap:ios             # cap sync ios, then opens Xcode
 ```
 
-In Xcode: target App → Signing & Capabilities → pick your team (automatic signing). Push Notifications, Sign in with Apple, Associated Domains (`applinks:spoton.isolapaul.hu`) and Background Modes → Remote notifications come from `App/App.entitlements` and `Info.plist`; automatic signing turns the matching capabilities on for the App ID. The privacy manifest is `App/PrivacyInfo.xcprivacy`. Set the build number (General → Build) higher than the last upload, then Product → Archive → Distribute App → App Store Connect.
+In Xcode: target App → Signing & Capabilities → pick your team (automatic signing). Push Notifications, Sign in with Apple, Associated Domains (`applinks:spoton.isolapaul.hu`) and Background Modes → Remote notifications come from `App/App.entitlements` and `Info.plist`; automatic signing turns the matching capabilities on for the App ID. The Live Activity is the extension target `SpotOnWidgets` (bundle ID `hu.isolapaul.spoton.widgets`, embedded in the app): pick the same team for it; it needs no capability of its own (`NSSupportsLiveActivities` is in the app's `Info.plist`). The privacy manifest is `App/PrivacyInfo.xcprivacy`. Set the build number (General → Build) higher than the last upload, then Product → Archive → Distribute App → App Store Connect.
 
 CI builds an unsigned simulator app (artifact `spoton-ios-simulator`) as a compile check; with the secret `GOOGLE_SERVICE_INFO_PLIST_BASE64` it uses the project's Firebase config.
 

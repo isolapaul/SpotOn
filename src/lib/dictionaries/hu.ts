@@ -807,6 +807,16 @@ export const hu = {
   offlineBanner: 'Nincs internet, a térkép elavult lehet',
   authApple: 'Folytatás Apple-fiókkal',
   notificationsBlockedDescApp: 'Az értesítések blokkolva vannak. Engedélyezd a telefon beállításaiban a SpotOnnál.',
+  activitySpotUploading: 'A helyed feltöltése…',
+  activityPhotosUploading: 'Fotók feltöltése…',
+  activityReviewUploading: 'Értékelés küldése…',
+  activitySpotDone: 'Kész! A helyed beküldve',
+  activityPhotosDone: 'A fotók feltöltve',
+  activityReviewDone: 'Az értékelésed megjelent',
+  activityFailed: 'Nem sikerült, próbáld újra az appban',
+  quickActionAdd: 'Hely hozzáadása',
+  quickActionFeed: 'Hírfolyam',
+  quickActionNearby: 'Közel hozzám',
 };
 
 export default hu;

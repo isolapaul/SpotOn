@@ -76,9 +76,12 @@ export async function uploadSpotImages(
   files: File[],
   userId: string,
   done: Array<UploadedImage | undefined> = [],
+  /** Called with the number of photos up after each one (the progress in the apps' Live Activity). */
+  onProgress?: (uploaded: number) => void,
 ): Promise<UploadedImage[]> {
   await Promise.all(files.map(async (file, i) => {
     done[i] ??= await withTimeout(compressAndUpload(file, userId), UPLOAD_TIMEOUT_MS);
+    onProgress?.(done.filter(Boolean).length);
   }));
   return done as UploadedImage[];
 }

@@ -18,7 +18,38 @@
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		A1C0FFEE0000000000000002 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE0000000000000001 /* GoogleService-Info.plist */; };
 		A1C0FFEE0000000000000005 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE0000000000000004 /* PrivacyInfo.xcprivacy */; };
+		A1C0FFEE0000000000000007 /* SpotOnActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE0000000000000006 /* SpotOnActivityAttributes.swift */; };
+		A1C0FFEE0000000000000008 /* SpotOnActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE0000000000000006 /* SpotOnActivityAttributes.swift */; };
+		A1C0FFEE000000000000000A /* SpotOnNativePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE0000000000000009 /* SpotOnNativePlugin.swift */; };
+		A1C0FFEE000000000000000C /* SpotOnBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE000000000000000B /* SpotOnBridgeViewController.swift */; };
+		A1C0FFEE000000000000000E /* SpotOnWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE000000000000000D /* SpotOnWidgetsBundle.swift */; };
+		A1C0FFEE0000000000000010 /* UploadLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE000000000000000F /* UploadLiveActivity.swift */; };
+		A1C0FFEE000000000000001C /* SpotOnWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A1C0FFEE0000000000000013 /* SpotOnWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A1C0FFEE000000000000001E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1C0FFEE0000000000000014;
+			remoteInfo = SpotOnWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A1C0FFEE000000000000001B /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A1C0FFEE000000000000001C /* SpotOnWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
@@ -35,6 +66,13 @@
 		A1C0FFEE0000000000000001 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		A1C0FFEE0000000000000003 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		A1C0FFEE0000000000000004 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A1C0FFEE0000000000000006 /* SpotOnActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotOnActivityAttributes.swift; sourceTree = "<group>"; };
+		A1C0FFEE0000000000000009 /* SpotOnNativePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotOnNativePlugin.swift; sourceTree = "<group>"; };
+		A1C0FFEE000000000000000B /* SpotOnBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotOnBridgeViewController.swift; sourceTree = "<group>"; };
+		A1C0FFEE000000000000000D /* SpotOnWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotOnWidgetsBundle.swift; sourceTree = "<group>"; };
+		A1C0FFEE000000000000000F /* UploadLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadLiveActivity.swift; sourceTree = "<group>"; };
+		A1C0FFEE0000000000000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1C0FFEE0000000000000013 /* SpotOnWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SpotOnWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,6 +84,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1C0FFEE0000000000000016 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -54,6 +99,7 @@
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
+				A1C0FFEE0000000000000012 /* SpotOnWidgets */,
 				504EC3051FED79650016851F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -62,6 +108,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				A1C0FFEE0000000000000013 /* SpotOnWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +117,9 @@
 			isa = PBXGroup;
 			children = (
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
+				A1C0FFEE000000000000000B /* SpotOnBridgeViewController.swift */,
+				A1C0FFEE0000000000000009 /* SpotOnNativePlugin.swift */,
+				A1C0FFEE0000000000000006 /* SpotOnActivityAttributes.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -85,6 +135,16 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		A1C0FFEE0000000000000012 /* SpotOnWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				A1C0FFEE000000000000000D /* SpotOnWidgetsBundle.swift */,
+				A1C0FFEE000000000000000F /* UploadLiveActivity.swift */,
+				A1C0FFEE0000000000000011 /* Info.plist */,
+			);
+			path = SpotOnWidgets;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -95,10 +155,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				A1C0FFEE000000000000001B /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A1C0FFEE000000000000001F /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -107,6 +169,23 @@
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A1C0FFEE0000000000000014 /* SpotOnWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1C0FFEE0000000000000018 /* Build configuration list for PBXNativeTarget "SpotOnWidgets" */;
+			buildPhases = (
+				A1C0FFEE0000000000000015 /* Sources */,
+				A1C0FFEE0000000000000016 /* Frameworks */,
+				A1C0FFEE0000000000000017 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SpotOnWidgets;
+			productName = SpotOnWidgets;
+			productReference = A1C0FFEE0000000000000013 /* SpotOnWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -121,6 +200,9 @@
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
 						ProvisioningStyle = Automatic;
+					};
+					A1C0FFEE0000000000000014 = {
+						CreatedOnToolsVersion = 16.0;
 					};
 				};
 			};
@@ -141,6 +223,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				A1C0FFEE0000000000000014 /* SpotOnWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -161,6 +244,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1C0FFEE0000000000000017 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -170,10 +260,31 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
+				A1C0FFEE000000000000000C /* SpotOnBridgeViewController.swift in Sources */,
+				A1C0FFEE000000000000000A /* SpotOnNativePlugin.swift in Sources */,
+				A1C0FFEE0000000000000007 /* SpotOnActivityAttributes.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1C0FFEE0000000000000015 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1C0FFEE000000000000000E /* SpotOnWidgetsBundle.swift in Sources */,
+				A1C0FFEE0000000000000010 /* UploadLiveActivity.swift in Sources */,
+				A1C0FFEE0000000000000008 /* SpotOnActivityAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A1C0FFEE000000000000001F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1C0FFEE0000000000000014 /* SpotOnWidgets */;
+			targetProxy = A1C0FFEE000000000000001E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -350,6 +461,53 @@
 			};
 			name = Release;
 		};
+		A1C0FFEE0000000000000019 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SpotOnWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = hu.isolapaul.spoton.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A1C0FFEE000000000000001A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SpotOnWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 2.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = hu.isolapaul.spoton.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -367,6 +525,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1C0FFEE0000000000000018 /* Build configuration list for PBXNativeTarget "SpotOnWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1C0FFEE0000000000000019 /* Debug */,
+				A1C0FFEE000000000000001A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

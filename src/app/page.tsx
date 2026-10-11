@@ -24,6 +24,7 @@ import { useIsClient } from '@/hooks/useIsClient';
 import { useInitialLanguage } from '@/hooks/useInitialLanguage';
 import { useMapThemeAttribute } from '@/hooks/useMapThemeAttribute';
 import { useStandaloneFullHeight } from '@/hooks/useStandaloneFullHeight';
+import { useIosExtras } from '@/hooks/useIosExtras';
 import { useNativeShell } from '@/hooks/useNativeShell';
 import { useSystemBack } from '@/hooks/useSystemBack';
 import { useRelocateSpot } from '@/hooks/useRelocateSpot';
@@ -165,6 +166,7 @@ export default function Home() {
     if (user) startSelectingLocation(useMapThemeStore.getState().theme);
     else openPanel('auth');
   };
+  useIosExtras(isAppReady, handleAddSpotClick);
 
   if (!isClient) return null;
 

@@ -61,6 +61,8 @@
 	</array>
 	<key>FirebaseMessagingAutoInitEnabled</key>
 	<false/>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -99,6 +99,8 @@ capacitor.config.ts, mobile/     The Android/iOS apps (Capacitor): native projec
 src/lib/nativeApp.ts             isNativeApp()/nativePlatform()/appLinkPath(): the app check (Capacitor bridge), no plugin imports
 src/store/nativeAuth.ts, nativePush.ts  Native Google sign-in (ID token → web SDK) and native FCM tokens (users.fcmTokens)
 src/hooks/useNativeShell.ts      Android back button and App Links inside the app; hooks/pushListeners.ts: the push listener singletons
+src/hooks/useIosExtras.ts        iPhone: upload Live Activities (lib/liveActivity) and home-screen quick actions, over store/nativeExtras
+                                 (the app's own SpotOnNative plugin: mobile/ios/App/App/SpotOnNativePlugin.swift; widget extension SpotOnWidgets)
 ```
 
 ### Firestore data model (current)

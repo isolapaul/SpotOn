@@ -40,6 +40,7 @@ describe('constants', () => {
       appReady: 500,
       approveClose: 1000,
       uploadDoneVisible: 2500,
+      liveActivityLinger: 8000,
     });
   });
 

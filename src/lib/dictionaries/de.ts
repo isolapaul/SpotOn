@@ -809,6 +809,16 @@ export const de: Dictionary = {
   offlineBanner: 'Offline: Die Karte ist eventuell veraltet',
   authApple: 'Mit Apple fortfahren',
   notificationsBlockedDescApp: 'Benachrichtigungen sind blockiert. Aktiviere sie in den Telefoneinstellungen für SpotOn.',
+  activitySpotUploading: 'Dein Ort wird hochgeladen…',
+  activityPhotosUploading: 'Fotos werden hochgeladen…',
+  activityReviewUploading: 'Bewertung wird gesendet…',
+  activitySpotDone: 'Fertig! Dein Ort ist eingereicht',
+  activityPhotosDone: 'Fotos hochgeladen',
+  activityReviewDone: 'Deine Bewertung ist online',
+  activityFailed: 'Fehlgeschlagen, versuch es in der App erneut',
+  quickActionAdd: 'Ort hinzufügen',
+  quickActionFeed: 'Feed',
+  quickActionNearby: 'In meiner Nähe',
 };
 
 export default de;

@@ -16,7 +16,7 @@ The Android and iOS apps are their own builds: Capacitor projects that bundle a 
 
 ## Native in the iOS app
 
-Native Google sign-in and Sign in with Apple (system sheets), native push (APNs through FCM) whose tap opens the profile, spot or feed it is about, Universal Links for spot, profile and feed links, the share sheet, haptics with the interface sounds, the offline page, no "Add to Home Screen" step in the tour, `PrivacyInfo.xcprivacy`, and purpose strings for location, camera and photos.
+Native Google sign-in and Sign in with Apple (system sheets), native push (APNs through FCM) whose tap opens the profile, spot or feed it is about, Universal Links for spot, profile and feed links, the share sheet, haptics with the interface sounds, a Live Activity for running uploads (Dynamic Island and lock screen, iOS 16.2+; the `SpotOnWidgets` extension and the app's own `SpotOnNative` plugin), home-screen quick actions (Add a spot, Feed, Near me; long-press the icon), no "Add to Home Screen" step in the tour, `PrivacyInfo.xcprivacy`, and purpose strings for location, camera and photos.
 
 ## Owner steps
 

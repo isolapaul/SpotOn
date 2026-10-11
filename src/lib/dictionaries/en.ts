@@ -808,6 +808,16 @@ export const en: Dictionary = {
   offlineBanner: 'Offline: the map may be out of date',
   authApple: 'Continue with Apple',
   notificationsBlockedDescApp: 'Notifications are blocked. Enable them for SpotOn in your phone settings.',
+  activitySpotUploading: 'Uploading your spot…',
+  activityPhotosUploading: 'Uploading photos…',
+  activityReviewUploading: 'Sending your review…',
+  activitySpotDone: 'Done! Your spot is in',
+  activityPhotosDone: 'Photos uploaded',
+  activityReviewDone: 'Your review is up',
+  activityFailed: 'Didn\'t work, try again in the app',
+  quickActionAdd: 'Add a spot',
+  quickActionFeed: 'Feed',
+  quickActionNearby: 'Near me',
 };
 
 export default en;
