@@ -81,8 +81,8 @@ Status: `[ ]` open, `[x]` done.
   `claimChallengeBadge` callable checks every step on the server.
 
 ## 9. Native in-app review
-- [ ] After the user's spot is approved (the inbox notice arrives), the app asks for a store
-  rating through the native prompt (iOS StoreKit, Android Play In-App Review), at most once in 120
+- [x] After the user's spot is approved (the inbox notice arrives), the app asks for a store
+  rating through the native prompt (iOS StoreKit, Android Play In-App Review, through @capacitor-community/in-app-review 8.0.0), at most once in 120
   days; the system decides whether it shows.
 
 ## Owner steps after the code

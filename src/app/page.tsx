@@ -26,6 +26,7 @@ import { useInitialLanguage } from '@/hooks/useInitialLanguage';
 import { useMapThemeAttribute } from '@/hooks/useMapThemeAttribute';
 import { useStandaloneFullHeight } from '@/hooks/useStandaloneFullHeight';
 import { useIosExtras } from '@/hooks/useIosExtras';
+import { useReviewPrompt } from '@/hooks/useReviewPrompt';
 import UpdateRequired from '@/components/UpdateRequired';
 import { useNativeShell } from '@/hooks/useNativeShell';
 import { useSystemBack } from '@/hooks/useSystemBack';
@@ -79,6 +80,7 @@ export default function Home() {
   useMapThemeAttribute();
   useStandaloneFullHeight();
   useNativeShell(isAppReady);
+  useReviewPrompt();
   const visibleSpots = useVisibleSpots();
   const publicList = useUiStore((s) => s.publicList);
   // Growth plan §5: locked places (config/app.lockEnabled) until the user contributes.
