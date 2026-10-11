@@ -124,6 +124,8 @@ export default function Home() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || e.defaultPrevented || tourRef.current) return;
+      // Not while typing: Escape there must never throw away a draft (a review, a new spot).
+      if ((e.target as Element | null)?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
       if (closeTopOverlay()) return;
       if (hasBackStep(useUiStore.getState())) runViewTransition(useUiStore.getState().goBack);
     };
