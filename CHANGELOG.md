@@ -28,6 +28,8 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 
 - Public lists: switch a list to "Public list" and anyone can find it under Explore → Search → Lists and open it; it also gets its own web page (`/list/<user>/<list>`, with a link preview) that search engines find through the new `/sitemap.xml` (with every approved spot) and `robots.txt`.
 
+- Launch challenge (until 30 June 2027): five easy first steps (share a spot, review someone else's spot, follow someone, collect an "I was here" stamp, save a favourite), shown with their progress in Explore and on the profile. Completing them earns the Founder badge, shown on the profile, and +50 XP.
+
 ### Added (feed)
 - A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.
 - Tap a spot's name or "Show on map" in the feed: the feed slides away, the map flies to the spot and its place card opens with a "Feed" button that takes you back to the same place in the feed.

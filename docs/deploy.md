@@ -343,6 +343,7 @@ Keep a copy of the rules currently in production (Console → Firestore → Rule
 - **Views:** the composite index on `ownerStats` (week + views); functions `recordSpotView` and the scheduled `rollupSpotStats` (daily 4:00 Budapest); rules for `spotStats`, `viewMarks`, `ownerStats` and the admin limit on `viewCount` / `visitCount`.
 - **Visits:** function `markVisited`; rules for `users/{uid}/visits`. Location: the Play Data safety "Approximate/Precise location" is now collected (sent once per check-in to verify the distance, not stored) — update `docs/play-store.md` answers before the release.
 - **Public lists:** two collection-group indexes on `lists` (public + nameLower, public + updatedAt) first; then the rules (public lists readable, the `{path=**}/lists` query rule). `/sitemap.xml` and `robots.txt` come with the web release; submit the sitemap in Google Search Console.
+- **Launch challenge:** function `claimChallengeBadge` (and the changed `syncUserLevel` users). It ends on 2027-06-30; `config/app.launchChallengeEnd` (timestamp) moves the end.
 - **Telemetry:** new callables `logEvents` and `reportClientError` (functions deploy), rules for `stats` and `clientErrors` (super admin read). Play Data safety / App Privacy: "App info and performance: crash logs, diagnostics" and "App activity: app interactions", collected, not linked to the user, not shared (`docs/play-store.md`).
 
 ### 16.1 Release v2.1.0 (one time, in this order)

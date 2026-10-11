@@ -899,6 +899,19 @@ export const de: Dictionary = {
   publicListBy: 'Eine Liste von @{owner}',
   publicListMeta: 'Eine Liste von @{owner} auf SpotOn: {count} Orte, darunter {names}.',
   publicListOpenApp: 'In SpotOn öffnen',
+  challengeSeason: 'Start-Challenge',
+  challengeTitle: 'Werde SpotOn-Gründer',
+  challengeDoneTitle: 'Du bist Gründer!',
+  challengeSpot: 'Teile deinen ersten Ort',
+  challengeReview: 'Bewerte den Ort eines anderen',
+  challengeFollow: 'Folge jemandem',
+  challengeVisit: 'Hol dir einen „Ich war hier“-Stempel',
+  challengeFavorite: 'Speichere einen Ort in deinen Favoriten',
+  challengeReward: 'Belohnung: das Gründer-Abzeichen und +{xp} XP. Nur in der Startsaison.',
+  challengeClaim: 'Abzeichen abholen',
+  challengeClaimed: 'Glückwunsch, du bist Gründer! +{xp} XP',
+  challengeNotYet: 'Noch nicht alle Schritte erledigt. Versuch es in ein paar Minuten erneut.',
+  founderBadge: 'Gründer',
 };
 
 export default de;

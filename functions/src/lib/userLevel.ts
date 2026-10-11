@@ -10,6 +10,7 @@ import {validLevel} from "./levels";
 import {ownerPinFor} from "./pinIcons";
 import {userLevelFields, xpOf} from "./xp";
 import {referralXp} from "./referrals";
+import {badgeXp} from "./challenge";
 
 /** The user's referral standing: invitees, of whom with an approved spot, and whether invited. */
 export async function referralStats(
@@ -52,7 +53,8 @@ export async function syncUserLevel(uid: string): Promise<string> {
   const result = await db.runTransaction(async (tx) => {
     const [userSnap, profileSnap] = await Promise.all([tx.get(userRef), tx.get(profileRef)]);
     if (!userSnap.exists) return null;
-    const fields = userLevelFields(xp, userSnap.get("levelFloor"), null);
+    // The launch challenge's badge (growth plan §8) adds its XP.
+    const fields = userLevelFields(xp + badgeXp(userSnap.get("badges")), userSnap.get("levelFloor"), null);
     let changed = false;
     if (userSnap.get("xp") !== fields.xp || userSnap.get("level") !== fields.level ||
         userSnap.get("levelFloor") !== fields.levelFloor) {

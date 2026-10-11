@@ -4,6 +4,7 @@ import { useMemo, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { X, Flame, Lock, Navigation, Search, Sparkles, Star } from 'lucide-react';
 import { useSpotLock } from '@/hooks/useSpotLock';
+import ChallengeCard from './challenge/ChallengeCard';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
 import { useCategoryOptions, useCategoryText } from '@/hooks/useCategory';
@@ -203,6 +204,8 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
             </button>
           ))}
         </div>
+
+        <div className="mx-4 mt-4 empty:hidden"><ChallengeCard /></div>
 
         {lockedCount > 0 && (
           <div className="mx-4 mt-4 flex items-center gap-3 rounded-[18px] bg-brand-600/12 ring-1 ring-brand-400/25 p-3.5">

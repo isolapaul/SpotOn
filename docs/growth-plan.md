@@ -75,9 +75,9 @@ Status: `[ ]` open, `[x]` done.
 - [x] Explore: "Lists" search over public lists.
 
 ## 8. Launch challenge (season "Launch", until 2027-06-30)
-- [ ] Five easy steps: add a spot, write a review, follow someone, mark a visit, invite a friend
-  (iOS: share a spot instead). Progress on a card in Explore and the profile.
-- [ ] Completing all five: the "Founder" badge (only during the launch season) and +50 XP; the
+- [x] Five easy steps: add a spot, write a review, follow someone, mark a visit, save a favourite (no invite
+  step: App Store 3.2.2). Progress on a card in Explore and the profile.
+- [x] Completing all five: the "Founder" badge (only during the launch season) and +50 XP; the
   `claimChallengeBadge` callable checks every step on the server.
 
 ## 9. Native in-app review

@@ -235,7 +235,7 @@ function Header({ profile, level }: Readonly<{ profile: PublicProfile; level: nu
         <LevelBadge level={level} size={18} />
         <LevelName level={level} />
       </span>
-      <div className="mt-3"><ProfileBadges isAdmin={false} invites={profile.invitesCount ?? 0} /></div>
+      <div className="mt-3"><ProfileBadges isAdmin={false} invites={profile.invitesCount ?? 0} badges={profile.badges} /></div>
       {profile.bio && <p className="mt-3 max-w-sm text-[15px] text-label-secondary whitespace-pre-line wrap-break-word">{profile.bio}</p>}
     </div>
   );

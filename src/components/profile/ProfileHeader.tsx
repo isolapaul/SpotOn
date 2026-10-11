@@ -12,6 +12,7 @@ import { useMyLevelStore } from '@/store/useMyLevelStore';
 import { useState } from 'react';
 import FollowListSheet from './FollowListSheet';
 import InviteSheet from '../invite/InviteSheet';
+import ChallengeCard from '../challenge/ChallengeCard';
 import { Footprints, Gift } from 'lucide-react';
 import VisitsSheet from './VisitsSheet';
 import { useVisitStore } from '@/store/useVisitStore';
@@ -43,6 +44,7 @@ export default function ProfileHeader({
   const followers = useMyLevelStore((s) => s.followers);
   const following = useMyLevelStore((s) => s.following);
   const invites = useMyLevelStore((s) => s.invites);
+  const badges = useMyLevelStore((s) => s.badges);
   const [inviting, setInviting] = useState(false);
   const [stamps, setStamps] = useState(false);
   const visitCount = useVisitStore((s) => s.visits.length);
@@ -60,7 +62,7 @@ export default function ProfileHeader({
             <UsernameEditor username={user.username} />
           </div>
 
-          <ProfileBadges isAdmin={isAdmin} invites={invites} />
+          <ProfileBadges isAdmin={isAdmin} invites={invites} badges={badges} />
 
           <BioEditor bio={user.bio} />
 
@@ -89,6 +91,7 @@ export default function ProfileHeader({
               {t('inviteFriends')}
             </button>
           </div>
+          <div className="mt-3 w-full empty:hidden"><ChallengeCard /></div>
           {inviting && <InviteSheet onClose={() => setInviting(false)} />}
           {stamps && <VisitsSheet onClose={() => setStamps(false)} />}
         </div>

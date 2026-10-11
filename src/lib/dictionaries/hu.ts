@@ -897,6 +897,19 @@ export const hu = {
   publicListBy: '@{owner} listája',
   publicListMeta: '@{owner} listája a SpotOnon: {count} hely, köztük {names}.',
   publicListOpenApp: 'Megnyitás a SpotOnban',
+  challengeSeason: 'Indulási kihívás',
+  challengeTitle: 'Légy a SpotOn alapítója',
+  challengeDoneTitle: 'Alapító vagy!',
+  challengeSpot: 'Rakd ki az első helyed',
+  challengeReview: 'Értékeld valaki más helyét',
+  challengeFollow: 'Kövess be valakit',
+  challengeVisit: 'Gyűjts egy „Itt jártam” pecsétet',
+  challengeFavorite: 'Ments el egy helyet a kedvenceid közé',
+  challengeReward: 'Jutalom: az Alapító jelvény és +{xp} XP. Csak az indulási szezonban szerezhető meg.',
+  challengeClaim: 'Jelvény begyűjtése',
+  challengeClaimed: 'Gratulálunk, Alapító vagy! +{xp} XP',
+  challengeNotYet: 'Még nincs meg minden lépés. Pár perc múlva próbáld újra.',
+  founderBadge: 'Alapító',
 };
 
 export default hu;
