@@ -14,6 +14,8 @@ Releases before the move to the container ran on Vercel and were not tagged; the
 ### Added (growth)
 - The apps can ask for an update: when a build is too old for the server, they show an "Update SpotOn" screen with the store link (`config/app.minVersion`).
 
+- Anonymous usage counters and app error reports (no user, device or IP identifier), with a 7/30-day overview and the latest errors for the super admin in the admin tools; the privacy policy describes them.
+
 ### Added (feed)
 - A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.
 - Tap a spot's name or "Show on map" in the feed: the feed slides away, the map flies to the spot and its place card opens with a "Feed" button that takes you back to the same place in the feed.

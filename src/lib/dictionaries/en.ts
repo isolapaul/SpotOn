@@ -821,6 +821,22 @@ export const en: Dictionary = {
   updateRequiredTitle: 'Update SpotOn',
   updateRequiredText: 'This version is no longer supported. Everything works again with the latest version.',
   updateRequiredButton: 'Update',
+  statsTitle: 'Usage (anonymous)',
+  statsReload: 'Reload',
+  statsEvent: 'Event',
+  stats7Days: '7 days',
+  stats30Days: '30 days',
+  statAppOpen: 'App opens',
+  statSignUp: 'Sign-ups',
+  statFirstSpot: 'First spots',
+  statSpotSubmitted: 'Spots submitted',
+  statReview: 'Reviews',
+  statVisit: 'Visits',
+  statInviteClaimed: 'Joined by invite',
+  statShared: 'Shares',
+  statsOpensByPlatform: 'Opens in 7 days: web {web}, iOS {ios}, Android {android}',
+  statsErrors: 'Latest app errors',
+  statsNoErrors: 'No errors reported.',
 };
 
 export default en;

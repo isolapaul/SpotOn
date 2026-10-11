@@ -12,11 +12,11 @@ Status: `[ ]` open, `[x]` done.
   changes by themselves, so this is the way to retire an old build. The web is always current.
 
 ## 1. Error reporting and analytics (no third party, no consent banner)
-- [ ] **Client errors**: `window.onerror`, `unhandledrejection` and the error boundaries send a
+- [x] **Client errors**: `window.onerror`, `unhandledrejection` and the error boundaries send a
   short report (message, top of the stack, version, platform, path) to the `reportClientError`
   callable. Stored deduplicated in `clientErrors/{hash}` with a count and first/last seen;
   rate-limited; no user id, no free text from users. The super admin sees them in the admin tools.
-- [ ] **Analytics**: anonymous daily counters only (`stats/{yyyy-mm-dd}`: app opens by platform,
+- [x] **Analytics**: anonymous daily counters only (`stats/{yyyy-mm-dd}`: app opens by platform,
   sign-ups, first spots, spots submitted, invites claimed, shares, share cards, visits, challenge
   completions). The `logEvent` callable accepts a fixed list of event names and increments a
   counter; nothing identifies a person, so no consent banner is needed (the privacy policy names

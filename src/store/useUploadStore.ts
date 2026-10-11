@@ -7,7 +7,8 @@ import { uploadErrorKey } from '@/lib/uploadErrors';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useToastStore } from '@/store/useToastStore';
 import { usePushPromptStore } from '@/store/usePushPromptStore';
-import type { NewReview } from '@/store/useSpotStore';
+import { useSpotStore, type NewReview } from '@/store/useSpotStore';
+import { track } from './telemetry';
 import {
   appendReview,
   attachSpotImages,
@@ -51,6 +52,8 @@ interface JobSpec {
   doneKey: TranslationKey;
   /** Generic failure text; a multi-step task may switch it per step. */
   failKey: TranslationKey;
+  /** The user's first spot (telemetry). */
+  firstSpot?: boolean;
 }
 
 interface UploadStore {
@@ -98,6 +101,9 @@ export const useUploadStore = create<UploadStore>((set, get) => {
     task.run().then(
       () => {
         patch(id, { status: 'done', progress: 1 });
+        if (task.spec.kind === 'spot') track('spot_submitted');
+        if (task.spec.firstSpot) track('first_spot');
+        if (task.spec.hasReview) track('review_written');
         playSound('spotAdded');
         useToastStore.getState().showToast(text(task.spec.doneKey), 'success');
         usePushPromptStore.getState().request();
@@ -145,7 +151,10 @@ export const useUploadStore = create<UploadStore>((set, get) => {
       const uploaded: Array<UploadedImage | undefined> = [];
       let attempted = false;
       start(
-        { kind: 'spot', label: fields.name, doneKey: 'spotUploaded', failKey: 'spotUploadFailed' },
+        {
+          kind: 'spot', label: fields.name, doneKey: 'spotUploaded', failKey: 'spotUploadFailed',
+          firstSpot: !useSpotStore.getState().spots.some((s) => s.createdBy === userId),
+        },
         async (progress) => {
           const images = await uploadSpotImages(files, userId, uploaded, (n) => progress(n, files.length));
           const isRetry = attempted;

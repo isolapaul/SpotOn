@@ -115,8 +115,10 @@ Play's definitions: data is **collected** when it leaves the device; it is **sha
 | App activity → Other user-generated content | Yes | No | Optional | App functionality | Spots (name, description, category, the map position the user picks), reviews, favourites, likes, the profile bio, feedback messages |
 | App activity → Other actions | Yes | No | Optional | App functionality | Highlights, image likes, follows and follow requests, profile visibility, notification settings, the people-search counter |
 | Device or other IDs | Yes | No | Optional | App functionality | Push notification token (only when notifications are turned on) |
+| App info and performance → Crash logs, Diagnostics | Yes | No | Required | Analytics | Anonymous app error reports (message, code location, path, platform, version; e-mails and ids removed; not linked to the user) |
+| App activity → App interactions | Yes | No | Required | Analytics | Anonymous daily counters (opens, sign-ups, spots, reviews, shares, invites); not linked to the user |
 
-**Not collected:** location (the device position is used on the device only, for distance and centring; the position of a spot is content the user chooses and is covered above), contacts, calendar, health, financial info, messages between users, audio, files, web browsing, app diagnostics and crash logs, analytics, advertising IDs.
+**Not collected:** location (the device position is used on the device only, for distance and centring; the position of a spot is content the user chooses and is covered above), contacts, calendar, health, financial info, messages between users, audio, files, web browsing, advertising IDs.
 
 **Processed but not a Data safety type:** the server and Cloudflare log IP addresses for security and rate limiting (privacy policy §2, "Technikai adatok"). If Play Console asks, answer as "not used to derive location, not collected for any listed purpose".
 

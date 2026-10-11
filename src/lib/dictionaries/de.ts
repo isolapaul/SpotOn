@@ -822,6 +822,22 @@ export const de: Dictionary = {
   updateRequiredTitle: 'Aktualisiere SpotOn',
   updateRequiredText: 'Diese Version wird nicht mehr unterstützt. Mit der neuesten Version funktioniert wieder alles.',
   updateRequiredButton: 'Aktualisieren',
+  statsTitle: 'Nutzung (anonym)',
+  statsReload: 'Neu laden',
+  statsEvent: 'Ereignis',
+  stats7Days: '7 Tage',
+  stats30Days: '30 Tage',
+  statAppOpen: 'App-Starts',
+  statSignUp: 'Registrierungen',
+  statFirstSpot: 'Erste Orte',
+  statSpotSubmitted: 'Eingereichte Orte',
+  statReview: 'Bewertungen',
+  statVisit: 'Besuche',
+  statInviteClaimed: 'Per Einladung',
+  statShared: 'Geteilt',
+  statsOpensByPlatform: 'Starts in 7 Tagen: Web {web}, iOS {ios}, Android {android}',
+  statsErrors: 'Letzte App-Fehler',
+  statsNoErrors: 'Keine Fehler gemeldet.',
 };
 
 export default de;

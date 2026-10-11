@@ -5,6 +5,7 @@ import { useToastStore } from '@/store/useToastStore';
 import { spotLink } from '@/lib/spotLinks';
 import { isNativeApp } from '@/lib/nativeApp';
 import { useT } from './useT';
+import { track } from '@/store/telemetry';
 
 /** Shares a spot's public link: the system share sheet (native in the app), else the clipboard (with a notice). */
 export function useShareSpot(): (spot: Pick<Spot, 'id' | 'name'>) => Promise<void> {
@@ -17,6 +18,7 @@ export function useShareSpot(): (spot: Pick<Spot, 'id' | 'name'>) => Promise<voi
       try {
         const { Share } = await import('@capacitor/share');
         await Share.share({ title: spot.name, url });
+        track('spot_shared');
         return;
       } catch (error) {
         // Closing the share sheet rejects too: nothing more to do then.
@@ -26,6 +28,7 @@ export function useShareSpot(): (spot: Pick<Spot, 'id' | 'name'>) => Promise<voi
     if (navigator.share) {
       try {
         await navigator.share({ title: spot.name, url });
+        track('spot_shared');
         return;
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') return;

@@ -27,6 +27,7 @@ import { useNotificationStore } from './useNotificationStore';
 import { useFeedStore } from './useFeedStore';
 import { signInWithAppleNative, signInWithGoogleNative, signOutNative } from './nativeAuth';
 import { isNativeApp } from '@/lib/nativeApp';
+import { track } from './telemetry';
 
 export type { User } from '@/lib/mapUserDoc';
 
@@ -243,6 +244,7 @@ async function createUserDoc(firebaseUser: FirebaseUser): Promise<Record<string,
     createdAt: serverTimestamp(),
     lastLoginAt: serverTimestamp(),
   }, { merge: true });
+  track('sign_up');
   return data;
 }
 

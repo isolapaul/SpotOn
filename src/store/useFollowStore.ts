@@ -3,6 +3,7 @@ import { collection, onSnapshot, query, where, type Unsubscribe } from 'firebase
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '@/lib/firebase';
 import { invalidatePublicProfile } from './publicProfiles';
+import { track } from './telemetry';
 
 /** Where the signed-in user stands with someone (item 8). */
 export type FollowState = 'none' | 'requested' | 'following';
@@ -114,6 +115,7 @@ export const useFollowStore = create<FollowStore>((set) => ({
   follow: async (me, uid) => {
     const { state } = (await followCallable({ uid })).data;
     invalidate(me, uid);
+    track('follow');
     return state;
   },
   unfollow: async (me, uid) => {

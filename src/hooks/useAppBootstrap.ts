@@ -13,6 +13,7 @@ import { ensureLanguage, useLanguageStore } from '@/store/useLanguageStore';
 import { detectLanguage } from '@/lib/i18n';
 import { useListStore } from '@/store/useListStore';
 import { DELAYS } from '@/lib/constants';
+import { installTelemetry, track } from '@/store/telemetry';
 
 /**
  * The spots listeners' scope for a user-store state (T30). A persisted user counts only once auth
@@ -117,6 +118,8 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
     initializeSpots();
     useCategoryStore.getState().start();
     useAppConfigStore.getState().start();
+    installTelemetry();
+    track('app_open');
     syncScopes(scope);
 
     // Cleanup

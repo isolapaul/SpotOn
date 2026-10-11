@@ -820,6 +820,22 @@ export const hu = {
   updateRequiredTitle: 'Frissítsd a SpotOnt',
   updateRequiredText: 'Ez a verzió már nem támogatott. A legújabb verzióval minden újra működik.',
   updateRequiredButton: 'Frissítés',
+  statsTitle: 'Használat (névtelen)',
+  statsReload: 'Frissítés',
+  statsEvent: 'Esemény',
+  stats7Days: '7 nap',
+  stats30Days: '30 nap',
+  statAppOpen: 'Megnyitás',
+  statSignUp: 'Regisztráció',
+  statFirstSpot: 'Első hely',
+  statSpotSubmitted: 'Beküldött hely',
+  statReview: 'Értékelés',
+  statVisit: 'Itt jártam',
+  statInviteClaimed: 'Meghívással érkezett',
+  statShared: 'Megosztás',
+  statsOpensByPlatform: 'Megnyitások 7 nap alatt: web {web}, iOS {ios}, Android {android}',
+  statsErrors: 'Legutóbbi hibák az appban',
+  statsNoErrors: 'Nincs bejelentett hiba.',
 };
 
 export default hu;

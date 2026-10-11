@@ -25,3 +25,14 @@ describe('config', () => {
     await assertFails(setDoc(doc(dbAs(env, SUPER), 'config', 'app'), { lockEnabled: true }));
   });
 });
+
+describe('telemetry', () => {
+  it('only the super admin reads stats and client errors; nobody writes them', async () => {
+    for (const col of ['stats', 'clientErrors']) {
+      await assertSucceeds(getDoc(doc(dbAs(env, SUPER), col, 'x')));
+      await assertFails(getDoc(doc(dbAs(env, ALICE), col, 'x')));
+      await assertFails(getDoc(doc(dbAs(env, null), col, 'x')));
+      await assertFails(setDoc(doc(dbAs(env, SUPER), col, 'x'), { a: 1 }));
+    }
+  });
+});

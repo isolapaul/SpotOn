@@ -338,6 +338,7 @@ Keep a copy of the rules currently in production (Console → Firestore → Rule
 - **Rules** after the functions: the new `spotLikes` collection (each user reads their own likes; the new client listens to them) and admins can no longer write `spots.likeCount`.
 - The Terms changed (TERMS_VERSION 2026-10-10): announce it at least 15 days before this release (Terms §10).
 - **Growth plan (`docs/growth-plan.md`):** the rules allow reading `config/app`. To retire an old app build, create or edit `config/app` in the Firebase console: `minVersion` (map: `ios`, `android`, e.g. `"2.2.0"`) and `storeUrl.ios` (the App Store page once it exists; Android falls back to the Play listing). Without the doc nothing is gated.
+- **Telemetry:** new callables `logEvents` and `reportClientError` (functions deploy), rules for `stats` and `clientErrors` (super admin read). Play Data safety / App Privacy: "App info and performance: crash logs, diagnostics" and "App activity: app interactions", collected, not linked to the user, not shared (`docs/play-store.md`).
 
 ### 16.1 Release v2.1.0 (one time, in this order)
 

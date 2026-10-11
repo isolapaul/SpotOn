@@ -350,6 +350,16 @@ service cloud.firestore {
       // Only through the deleteCategory callable, which checks that nothing uses it.
       allow delete: if false;
     }
+    // Anonymous telemetry (growth plan §1): written only by the logEvents / reportClientError
+    // callables, read by the super admin (the admin tools).
+    match /stats/{day} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+    match /clientErrors/{hash} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
     // App-wide switches (growth plan: minimum app versions, locked pins, launch challenge end):
     // public, edited by the owner in the Firebase console only.
     match /config/{id} {
