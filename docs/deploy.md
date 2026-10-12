@@ -80,6 +80,7 @@ One-time settings in the GitHub repository before the first `v*` tag is pushed:
    When Dependabot bumps an action, update this list too.
 5. **After the first tag push:** GitHub → Profile → Packages → `spoton` → Package settings. The package must be **Private**, linked to `isolapaul/SpotOn`, and the repository must have **Actions** access (Manage Actions access), so that `image-rescan` can pull it with its read-only token.
 6. **Workflow artifacts are public for 1 day.** On a public repository, the `release-image` artifact (OCI image + SBOM) of each release run can be downloaded by anyone for 1 day (`retention-days: 1`). This is accepted: it contains only public code and the public `NEXT_PUBLIC_*` values, nothing from `.env`.
+7. **Branch protection on `main`** (Settings → Branches → Add rule, or a branch ruleset): CI runs only on pull requests (`ci.yml`, `mobile.yml`), not again after the merge, so the PR run must test what lands. Turn on "Require a pull request before merging", "Require status checks to pass" with the five `CI` jobs (App verify, Functions build + lint, Firestore/Storage rules tests, E2E, npm audit), and "Require branches to be up to date before merging". Leave the two mobile jobs out of the required list: they skip PRs that change only docs or functions, and a required check that never runs blocks the PR.
 
 ### Optional, later: Dependabot for the compose file
 

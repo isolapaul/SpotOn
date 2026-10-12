@@ -1,15 +1,20 @@
 name: CI
 
+# Runs once per pull request change, on the merge of the PR into its base (what would land on main).
+# No push trigger: a push to a PR branch already triggers `pull_request`, so a push trigger ran every
+# job twice, and a merged PR was tested already. With "Require branches to be up to date before
+# merging" (branch protection on main) the tested merge is exactly what lands. Manual runs: Actions →
+# CI → Run workflow.
 on:
   pull_request:
-  push:
-    branches: [main, 'claude/**']
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# One run per PR: a new push cancels the PR's run still in progress.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
