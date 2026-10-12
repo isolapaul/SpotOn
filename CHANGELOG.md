@@ -3,6 +3,11 @@
 Versions are SpotOn's releases (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and are listed by date.
 
+## v2.2.1 — 2026-10-12
+
+### Security
+- Dependencies: `sharp` 0.35.5 (librsvg CVE-2026-96889) and the patched `source-map-js`, so the weekly release re-scan passes again. No change in the app.
+
 ## v2.2.0 — 2026-10-05
 
 ### Added
