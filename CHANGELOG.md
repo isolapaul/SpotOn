@@ -73,6 +73,11 @@ Releases before the move to the container ran on Vercel and are listed by date.
 ### Added (sounds)
 - Short, quiet sounds when your spot or photos are uploaded, a notification arrives, you like a photo, add a favourite, follow someone or level up. They can be turned off in Settings → Sounds; the iPhone's silent switch mutes them.
 
+## v2.2.1 — 2026-10-12
+
+### Security
+- Dependencies: `sharp` 0.35.5 (librsvg CVE-2026-96889) and the patched `source-map-js`, so the weekly release re-scan passes again. No change in the app.
+
 ## v2.2.0 — 2026-10-05
 
 ### Added
