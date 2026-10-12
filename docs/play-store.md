@@ -36,7 +36,8 @@ Limits: name 30 characters, short description 80, full description 4000.
 > - Explore the map: every pin is a place someone recommends, with photos, a short description and ratings.
 > - Find what is near you: sort by distance or by rating, and filter by category.
 > - Add your own spots: drop a pin, add photos and a few words. Every new spot is checked before it appears on the map.
-> - Rate and review: leave stars and tips for others, and save your favourites.
+> - Rate and review: leave stars and tips for others, reply to reviews, and save your favourites and your own lists.
+> - Follow people: see what others share, and follow the ones whose spots you like.
 > - Level up: the more you share, the higher your level, with new perks along the way.
 > - Get directions: open any spot in your maps app with one tap.
 >
@@ -55,7 +56,8 @@ Limits: name 30 characters, short description 80, full description 4000.
 > - Böngészd a térképet: minden pin egy ajánlott hely, fotókkal, rövid leírással és értékelésekkel.
 > - Találd meg, ami a közeledben van: rendezd távolság vagy értékelés szerint, és szűrj kategóriára.
 > - Oszd meg a saját helyeidet: tegyél le egy pint, adj hozzá fotókat és pár mondatot. Minden új hely ellenőrzés után kerül a térképre.
-> - Értékelj és írj véleményt: adj csillagokat és tippeket másoknak, és mentsd el a kedvenceidet.
+> - Értékelj és írj véleményt: adj csillagokat és tippeket másoknak, válaszolj az értékelésekre, és mentsd el a kedvenceidet és a saját listáidat.
+> - Kövess másokat: nézd meg, mit osztanak meg, és kövesd azokat, akiknek tetszenek a helyeik.
 > - Szintlépés: minél többet osztasz meg, annál magasabb a szinted, közben új lehetőségekkel.
 > - Útvonaltervezés: egy koppintással megnyithatod bármelyik helyet a térképalkalmazásodban.
 >
@@ -74,7 +76,8 @@ Limits: name 30 characters, short description 80, full description 4000.
 > - Entdecke die Karte: Jeder Pin ist ein empfohlener Ort, mit Fotos, einer kurzen Beschreibung und Bewertungen.
 > - Finde, was in deiner Nähe ist: Sortiere nach Entfernung oder Bewertung und filtere nach Kategorie.
 > - Teile deine eigenen Orte: Setze einen Pin, füge Fotos und ein paar Worte hinzu. Jeder neue Ort wird geprüft, bevor er auf der Karte erscheint.
-> - Bewerte und schreibe Tipps: Vergib Sterne, gib anderen Tipps und speichere deine Favoriten.
+> - Bewerte und schreibe Tipps: Vergib Sterne, gib anderen Tipps, antworte auf Bewertungen und speichere deine Favoriten und eigenen Listen.
+> - Folge anderen: Sieh, was andere teilen, und folge denen, deren Orte dir gefallen.
 > - Steige im Level auf: Je mehr du teilst, desto höher dein Level, mit neuen Vorteilen unterwegs.
 > - Route planen: Öffne jeden Ort mit einem Tippen in deiner Karten-App.
 >
@@ -112,9 +115,9 @@ Play's definitions: data is **collected** when it leaves the device; it is **sha
 | Personal info → User IDs | Yes | No | Required | Account management, App functionality | Account id and the public username |
 | Personal info → Name | Yes | No | Optional | Account management | Google sign-in only: the Google account name, used to suggest the first username |
 | Photos and videos → Photos | Yes | No | Optional | App functionality | Spot photos, profile picture and banner, feedback attachments (EXIF location removed) |
-| App activity → Other user-generated content | Yes | No | Optional | App functionality | Spots (name, description, category, the map position the user picks), reviews, favourites, likes, the profile bio, feedback messages |
-| App activity → Other actions | Yes | No | Optional | App functionality | Highlights, image likes, follows and follow requests, profile visibility, notification settings, the people-search counter |
-| Device or other IDs | Yes | No | Optional | App functionality | Push notification token (only when notifications are turned on) |
+| App activity → Other user-generated content | Yes | No | Optional | App functionality | Spots (name, description, category, the map position the user picks), reviews and replies, favourites and spot lists, likes, the profile bio, reports (with their reason), feedback messages |
+| App activity → Other actions | Yes | No | Optional | App functionality | Highlights, image likes, follows and follow requests, blocks, profile visibility, notification settings, the rate-limit counters (search, follows, reports, replies, photos) |
+| Device or other IDs | Yes | No | Optional | App functionality | Push notification registration: a Firebase Installation ID in browsers, the device's push token in the apps (only when notifications are turned on) |
 | App info and performance → Crash logs, Diagnostics | Yes | No | Required | Analytics | Anonymous app error reports (message, code location, path, platform, version; e-mails and ids removed; not linked to the user) |
 | App activity → App interactions | Yes | No | Required | Analytics | Anonymous daily counters (opens, sign-ups, spots, reviews, shares, invites); not linked to the user |
 | Location → Precise location | Yes | No | Optional | App functionality | "I was here": the device position is sent once per check-in to verify the distance to the spot; it is not stored (only the spot and the time) |
@@ -124,7 +127,7 @@ Play's definitions: data is **collected** when it leaves the device; it is **sha
 
 **Processed but not a Data safety type:** the server and Cloudflare log IP addresses for security and rate limiting (privacy policy §2, "Technikai adatok"). If Play Console asks, answer as "not used to derive location, not collected for any listed purpose".
 
-**Change this when:** analytics, crash reporting or ads are added, or a new kind of user data is stored. (Bio, follows and follow requests are covered above since v2.1.0.) Mapbox, which serves the map, receives the IP address and the viewed map area directly from the browser as a service provider; that is not a Data safety type.
+**Change this when:** analytics, crash reporting or ads are added, or a new kind of user data is stored. (Bio, follows and follow requests are covered above since v2.1.0; replies, lists, reports and blocks since v2.2.0.) Mapbox, which serves the map, receives the IP address and the viewed map area directly from the browser as a service provider; that is not a Data safety type.
 
 ## 5. Content rating (IARC questionnaire)
 
