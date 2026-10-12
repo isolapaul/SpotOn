@@ -6,15 +6,12 @@ name: Mobile apps
 # configs in mobile/ci (they start, but Google sign-in and push do not work); without the keystore
 # secrets the release bundle is unsigned.
 
+# Once per pull request change (as CI), on release tags (the store bundles of a release) and by hand.
+# No branch push trigger: it duplicated every PR run.
 on:
   workflow_dispatch:
   push:
-    branches: [main, 'claude/**']
     tags: ['v*']
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - 'functions/**'
   pull_request:
     paths-ignore:
       - 'docs/**'
@@ -41,8 +38,9 @@ env:
   NEXT_PUBLIC_APPLE_SIGN_IN: ${{ vars.NEXT_PUBLIC_APPLE_SIGN_IN }}
   NEXT_TELEMETRY_DISABLED: 1
 
+# One run per PR (a new push cancels the running one); each tag is its own group.
 concurrency:
-  group: mobile-${{ github.ref }}
+  group: mobile-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
