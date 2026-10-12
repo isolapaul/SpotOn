@@ -51,9 +51,10 @@ test('save a spot to a new list, share it on the profile, another user sees it',
   await openApp(page);
   await page.getByRole('button', { name: 'Profile' }).click();
   const favorites = page.getByRole('button', { name: 'Favorites', exact: true });
-  // CI-only failure seen here: print what the screen shows instead of the tab (diagnostic).
-  await favorites.waitFor({ timeout: 20_000 }).catch(async () => {
-    console.log('lists.spec: no Favorites tab; screen:\n', await page.locator('body').ariaSnapshot());
+  // CI-only failure seen here: print what the screen shows instead of the tab (diagnostic). Short
+  // enough to print inside the test timeout.
+  await favorites.waitFor({ timeout: 8_000 }).catch(async () => {
+    console.log('lists.spec: no Favorites tab; screen:\n', await page.locator('body').ariaSnapshot({ timeout: 5_000 }));
   });
   await favorites.click();
   await page.getByRole('button', { name: new RegExp(`^${LIST}`) }).click();
