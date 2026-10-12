@@ -22,7 +22,7 @@ describe('constants', () => {
   });
 
   it('pins the values the call sites used before T23', () => {
-    expect(MAX_UPLOAD_BYTES).toBe(5 * 1024 * 1024);
+    expect(MAX_UPLOAD_BYTES).toBe(30 * 1024 * 1024); // 5 MB before the photo quality change
     expect(FEEDBACK_MAX_FILES).toBe(FEEDBACK_LIMITS.maxAttachments);
     expect(FEEDBACK_MAX_FILES).toBe(3);
     expect(SWIPE_THRESHOLDS).toEqual({ panel: 150, spotDetails: 100, gallery: 50 });

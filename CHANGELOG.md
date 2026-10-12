@@ -3,6 +3,11 @@
 Versions are SpotOn's releases (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and are listed by date.
 
+## Unreleased
+
+### Changed
+- Photos keep their quality: new spot and review photos are stored at up to 2560 px and near-original quality (until now 1280 px and at most 0.3 MB, which shrank and blurred them). Photos up to 30 MB can be picked (was 5 MB); uploading one may take a little longer on a slow connection. Photos uploaded before stay as they are: only their reduced copy was ever stored.
+
 ## v2.3.0 — 2026-10-12
 
 ### Added (apps)

@@ -14,7 +14,7 @@ import {
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
 import { db, functions, storage } from '@/lib/firebase';
-import { UPLOAD_TIMEOUT_MS } from '@/lib/constants';
+import { PHOTO_UPLOAD_TIMEOUT_MS, UPLOAD_TIMEOUT_MS } from '@/lib/constants';
 import { PLACEHOLDER_URL, extForMime } from '@/lib/spotImages';
 import { compressImage } from '@/lib/imageCompression';
 import { MAX_PENDING_PHOTOS_ERROR, MAX_SPOT_IMAGES_ERROR, PHOTO_RATE_LIMIT_ERROR } from '@/lib/uploadErrors';
@@ -80,7 +80,7 @@ export async function uploadSpotImages(
   onProgress?: (uploaded: number) => void,
 ): Promise<UploadedImage[]> {
   await Promise.all(files.map(async (file, i) => {
-    done[i] ??= await withTimeout(compressAndUpload(file, userId), UPLOAD_TIMEOUT_MS);
+    done[i] ??= await withTimeout(compressAndUpload(file, userId), PHOTO_UPLOAD_TIMEOUT_MS);
     onProgress?.(done.filter(Boolean).length);
   }));
   return done as UploadedImage[];
