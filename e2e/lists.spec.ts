@@ -46,8 +46,9 @@ test('save a spot to a new list, share it on the profile, another user sees it',
     return snap.docs.map((d) => [d.get('name'), d.get('spotIds')]);
   }).toEqual([[LIST, [E2E.legacySpot.id]]]);
 
-  // 2. Profile → Favorites: the list card opens the list with the spot; share it
-  await page.goto('/');
+  // 2. Profile → Favorites: the list card opens the list with the spot; share it. One navigation
+  // (openApp): a second one right behind it can interrupt Firebase Auth moving the saved session
+  // between storages at startup, which signed the user out here now and then.
   await openApp(page);
   await page.getByRole('button', { name: 'Profile' }).click();
   const favorites = page.getByRole('button', { name: 'Favorites', exact: true });
