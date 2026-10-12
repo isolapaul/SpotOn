@@ -3,10 +3,13 @@
 Versions are SpotOn's releases (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and are listed by date.
 
-## Unreleased
+## v2.3.1 — 2026-10-12
 
 ### Changed
 - Photos keep their quality: new spot and review photos are stored at up to 2560 px and near-original quality (until now 1280 px and at most 0.3 MB, which shrank and blurred them). Photos up to 30 MB can be picked (was 5 MB); uploading one may take a little longer on a slow connection. Photos uploaded before stay as they are: only their reduced copy was ever stored.
+
+### Fixed
+- The website no longer signs you out at random when a page is reloaded or left while it is still starting: the sign-in is kept in one place from the start instead of being moved between browser storages on every load. Existing sign-ins carry over.
 
 ## v2.3.0 — 2026-10-12
 
@@ -74,7 +77,6 @@ Releases before the move to the container ran on Vercel and are listed by date.
 - Tapping the heart on two spots quickly no longer loses the first favourite until a reload.
 - Signing up with Google through the redirect (blocked pop-ups, home-screen app) asks for a username like the pop-up sign-up.
 - Reply pushes follow the "Reviews and likes" setting instead of "Spot approved".
-- The website no longer signs you out at random when a page is reloaded or left while it is still starting: the sign-in is kept in one place from the start instead of being moved between browser storages on every load. Existing sign-ins carry over.
 
 ### Added (sounds)
 - Short, quiet sounds when your spot or photos are uploaded, a notification arrives, you like a photo, add a favourite, follow someone or level up. They can be turned off in Settings → Sounds; the iPhone's silent switch mutes them.
