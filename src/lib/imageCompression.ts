@@ -5,8 +5,12 @@
 import imageCompression from 'browser-image-compression';
 
 export const COMPRESSION_PRESETS = {
-  /** Spot photos (useSpotStore). */
-  spot: { maxSizeMB: 0.3, maxWidthOrHeight: 1280, useWebWorker: false },
+  /**
+   * Spot and review photos (spotUploads). Close to the original: 2560 px on the long side is sharp
+   * full screen on any phone, quality 0.92 shows no artefacts, and 4.5 MB stays under the Storage
+   * rule's 5 MB. (Until v2.3.0: 1280 px and 0.3 MB, which made the library shrink and blur photos.)
+   */
+  spot: { maxSizeMB: 4.5, maxWidthOrHeight: 2560, initialQuality: 0.92, useWebWorker: false },
   /** Profile picture and banner, second pass in useUserStore. */
   profileStore: { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: false },
   /** Profile picture, first pass in SettingsPanel (kept: removing a pass changes output). */

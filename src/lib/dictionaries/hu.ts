@@ -231,7 +231,7 @@ export const hu = {
   descriptionPlaceholder: 'Írd le, mi teszi különlegessé ezt a helyet...',
   photoOptional: 'Fotó (opcionális)',
   clickToUpload: 'Kattints a feltöltéshez',
-  maxSize: 'Max 5MB',
+  maxSize: 'Max 30MB',
   submit: 'Küldés',
   submitSpot: 'Hely Beküldése',
   compressing: 'Tömörítés és feltöltés...',
@@ -286,7 +286,7 @@ export const hu = {
   mustBeLoggedIn: 'Be kell jelentkezned a hely hozzáadásához',
   pleaseSelectLocation: 'Válassz helyszínt a térképen',
   pleaseEnterName: 'Add meg a hely nevét',
-  imageTooLarge: 'A kép maximum 5MB lehet',
+  imageTooLarge: 'A kép maximum 30MB lehet',
   
   // Actions
   close: 'Bezárás',

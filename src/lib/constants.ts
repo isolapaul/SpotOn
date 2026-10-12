@@ -4,8 +4,11 @@ import { FEEDBACK_LIMITS } from './feedback/validate';
 
 export { MAX_SPOT_IMAGES } from './spotImages';
 
-/** Client-side size cap for a picked image before compression (AddSpotModal, SettingsPanel). */
-export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+/**
+ * Client-side size cap for a picked image before compression (AddSpotModal, SettingsPanel). Phone
+ * photos are often 6-12 MB; compression brings every upload under the Storage rule's 5 MB.
+ */
+export const MAX_UPLOAD_BYTES = 30 * 1024 * 1024;
 
 /** Maximum feedback attachments (the server limit, T14). */
 export const FEEDBACK_MAX_FILES = FEEDBACK_LIMITS.maxAttachments;
@@ -41,6 +44,9 @@ export const PUBLIC_PROFILE_TTL_MS = 5 * 60_000;
  * the review write) before the user gets an error with Retry instead of a stuck state (G4, #8).
  */
 export const UPLOAD_TIMEOUT_MS = 60_000;
+
+/** Deadline for one photo (compression and upload): full-quality photos are a few MB each. */
+export const PHOTO_UPLOAD_TIMEOUT_MS = 180_000;
 
 /** Spots per "load more" batch in the discovery panel. */
 export const DISCOVERY_BATCH_SIZE = 20;
