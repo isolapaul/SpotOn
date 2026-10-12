@@ -74,6 +74,7 @@ Releases before the move to the container ran on Vercel and are listed by date.
 - Tapping the heart on two spots quickly no longer loses the first favourite until a reload.
 - Signing up with Google through the redirect (blocked pop-ups, home-screen app) asks for a username like the pop-up sign-up.
 - Reply pushes follow the "Reviews and likes" setting instead of "Spot approved".
+- The website no longer signs you out at random when a page is reloaded or left while it is still starting: the sign-in is kept in one place from the start instead of being moved between browser storages on every load. Existing sign-ins carry over.
 
 ### Added (sounds)
 - Short, quiet sounds when your spot or photos are uploaded, a notification arrives, you like a photo, add a favourite, follow someone or level up. They can be turned off in Settings → Sounds; the iPhone's silent switch mutes them.

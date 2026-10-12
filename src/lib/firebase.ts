@@ -1,7 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import {
   getAuth, initializeAuth, indexedDBLocalPersistence, GoogleAuthProvider, OAuthProvider, browserLocalPersistence,
-  setPersistence, connectAuthEmulator, type Auth,
+  browserPopupRedirectResolver, connectAuthEmulator, type Auth,
 } from 'firebase/auth';
 import type { FirebaseApp } from 'firebase/app';
 import { isNativeApp } from './nativeApp';
@@ -23,11 +23,22 @@ const firebaseConfig = {
  * Auth inside the Android/iOS app: no pop-up/redirect resolver (sign-in is native there) and IndexedDB
  * persistence. getAuth() would load the authDomain's iframe, which the app's local origin cannot use,
  * and on iOS the first auth state then never arrives.
+ *
+ * On the web the session lives in localStorage (survives reloads, shared by the tabs of one browser;
+ * every device keeps its own session). It is chosen at initialisation: getAuth() starts with IndexedDB
+ * and a later setPersistence() moved the user back on every page start, removing the old copy before
+ * writing the new one, so a page torn down in between lost the session. A user still found only in
+ * IndexedDB (left by that move) is copied to localStorage before the IndexedDB copy is removed.
  */
 function authFor(app: FirebaseApp): Auth {
-  if (!isNativeApp()) return getAuth(app);
+  if (globalThis.window === undefined) return getAuth(app); // server render: the browser persistences throw there
   try {
-    return initializeAuth(app, { persistence: indexedDBLocalPersistence });
+    return isNativeApp()
+      ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
+      : initializeAuth(app, {
+          persistence: [browserLocalPersistence, indexedDBLocalPersistence],
+          popupRedirectResolver: browserPopupRedirectResolver,
+        });
   } catch {
     return getAuth(app); // already initialised (hot reload)
   }
@@ -55,13 +66,6 @@ const initializeFirebase = () => {
 };
 
 const { app, auth, db, storage } = initializeFirebase();
-
-// Explicitly set persistence to browserLocalPersistence
-// This ensures auth state persists across tabs, windows, and page reloads
-// Critical for multi-device support - each device maintains its own independent session
-if (globalThis.window !== undefined && !isNativeApp()) {
-  void setPersistence(auth, browserLocalPersistence);
-}
 
 // Initialize Cloud Functions (europe-west3 region)
 const functions = getFunctions(app, 'europe-west3');
