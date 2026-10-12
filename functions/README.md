@@ -14,7 +14,7 @@ Together with the Firestore/Storage rules (`firestore.rules`, `storage.rules` in
 
 | Function | Trigger type | What it does | Who can call it |
 |---|---|---|---|
-| `onSpotUpdated` | Firestore trigger (`spots/{spotId}` updated) | One trigger for three events: pending → approved tells the creator (inbox + push) and their followers; rejected → pending (resubmitted) notifies all admins; a new review notifies the spot's creator (not for their own review, not from a user they blocked). Replaced `onSpotApproved`, `onSpotResubmitted` and `onReviewAdded` in v2.1.0 (the deploy asks to delete those three: answer yes) | Nobody (Firestore event) |
+| `onSpotUpdated` | Firestore trigger (`spots/{spotId}` updated) | One trigger for three events: pending → approved tells the creator (inbox + push) and their followers; rejected → pending (resubmitted) notifies all admins; a new review notifies the spot's creator (not for their own review, not from a user they blocked). Replaced the earlier `onSpotApproved` and `onReviewAdded` triggers (already deleted in production) | Nobody (Firestore event) |
 | `onSpotEditProposed` | Firestore trigger (`spotEdits/{spotId}` written) | Notifies all admins when an owner's edit proposal starts waiting for review, at most once an hour per spot | Nobody (Firestore event) |
 | `onNewPendingSpot` | Firestore trigger (`spots/{spotId}` created) | Notifies all admins about a new pending spot; an admin's (approved) new spot tells their followers | Nobody (Firestore event) |
 | `syncXp` | Firestore trigger (`spots/{spotId}` written) | Recomputes the XP and level of every user whose XP from the spot changed (`lib/xp.ts`, `lib/userLevel.ts`) and stamps the owner's pin icon on their spots | Nobody (Firestore event) |
@@ -92,7 +92,7 @@ npx firebase emulators:start --only auth,firestore,storage,functions --project d
 ## Deploy
 
 ```bash
-firebase deploy --only functions
+npx firebase deploy --only functions --project <PROJECT_ID>
 ```
 
-Paul only, as a manual step (see [`docs/deploy.md` §16](../docs/deploy.md#16-firebase-deploys-functions-rules-indexes)). Agents never deploy.
+Paul only, as a manual step, from a checkout of the release tag after `npm ci` in the root (see [`docs/deploy.md` §16](../docs/deploy.md#16-firebase-deploys-functions-rules-indexes), also for the order with indexes and rules and for the load timeout on Windows). Agents never deploy.
