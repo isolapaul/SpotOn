@@ -67,6 +67,7 @@
     "firebase-admin": "14.5.0",
     "firebase-tools": "15.32.1",
     "json-ptr": "file:scripts/shims/json-ptr",
+    "node-domexception": "file:scripts/shims/node-domexception",
     "postcss": "^8.4.38",
     "tailwindcss": "4.3.3",
     "tsx": "4.23.15",
@@ -86,7 +87,7 @@
       "uuid": "11.1.1"
     },
     "glob": "13.0.6",
-    "node-domexception": "npm:@nolyfill/domexception@1.0.28",
+    "node-domexception": "$node-domexception",
     "json-ptr": "$json-ptr",
     "eslint": "$eslint"
   }

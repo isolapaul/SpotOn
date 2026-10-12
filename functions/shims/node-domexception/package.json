@@ -1,0 +1,7 @@
+{
+  "name": "node-domexception",
+  "version": "1.0.0-spoton.0",
+  "description": "Local replacement for the deprecated node-domexception: Node's own DOMException (Node 17+), pulled in by fetch-blob.",
+  "license": "MIT",
+  "main": "index.js"
+}
