@@ -48,18 +48,19 @@ export async function removeSpotWithReason(adminUid: string, spotId: string, rea
 }
 
 /**
- * A deleted spot's replies, visits, reports and admin-notice cooldown (they are no use without
+ * A deleted spot's replies, visits, reports, likes and admin-notice cooldown (no use without
  * it), and its id in everyone's lists (it would count towards a list's limit, shown nowhere).
  */
 export async function deleteSpotChildren(spotId: string): Promise<void> {
-  const [replies, visits, reports, lists] = await Promise.all([
+  const [replies, visits, reports, likes, lists] = await Promise.all([
     db.collection("spots").doc(spotId).collection("replies").get(),
     db.collection("visits").where("spotId", "==", spotId).get(),
     db.collection("reports").where("spotId", "==", spotId).get(),
+    db.collection("spotLikes").where("spotId", "==", spotId).select().get(),
     db.collectionGroup("lists").where("spotIds", "array-contains", spotId).select().get(),
   ]);
   const writes: ((batch: WriteBatch) => void)[] = [
-    ...[...replies.docs, ...visits.docs, ...reports.docs].map((d) => (b: WriteBatch) => {
+    ...[replies, visits, reports, likes].flatMap((q) => q.docs).map((d) => (b: WriteBatch) => {
       b.delete(d.ref);
     }),
     ...lists.docs.map((d) => (b: WriteBatch) => {

@@ -45,14 +45,28 @@ export function ListView({ list, spots, onBack, onOpenSpot, editable }: Readonly
   editable: boolean;
 }>) {
   const t = useT();
-  const { setShared, remove, toggleSpot } = useListStore();
+  const { setShared, setPublic, remove, toggleSpot } = useListStore();
   const showToast = useToastStore((s) => s.showToast);
   const [confirm, setConfirm] = useState(false);
   // Optimistic: the switch moves at once, the snapshot confirms it (or a failure puts it back).
   const [shared, setSharedLocal] = useState<boolean | null>(null);
   const isShared = shared ?? list.shared;
+  const [publicLocal, setPublicLocal] = useState<boolean | null>(null);
+  const isPublic = publicLocal ?? list.public;
+  const togglePublic = (next: boolean) => {
+    setPublicLocal(next);
+    if (next) setSharedLocal(true);
+    void setPublic(list.id, next).catch((e) => {
+      console.error('List action failed:', e);
+      showToast(t('genericError'), 'error');
+    }).finally(() => {
+      setPublicLocal(null);
+      setSharedLocal(null);
+    });
+  };
   const toggleShared = (next: boolean) => {
     setSharedLocal(next);
+    if (!next) setPublicLocal(false);
     void setShared(list.id, next).catch((e) => {
       console.error('List action failed:', e);
       showToast(t('genericError'), 'error');
@@ -91,6 +105,24 @@ export function ListView({ list, spots, onBack, onOpenSpot, editable }: Readonly
             className={`no-min-size relative w-[51px] h-[31px] rounded-full shrink-0 transition-colors duration-200 ${isShared ? 'bg-brand-600' : 'bg-white/15'}`}
           >
             <span className={`absolute top-[2px] left-[2px] w-[27px] h-[27px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-ios ${isShared ? 'translate-x-5' : ''}`} />
+          </button>
+        </div>
+      )}
+      {editable && (
+        <div className="flex items-center justify-between gap-3 rounded-r2 bg-surface-1 px-4 py-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-label text-[15px] font-medium">{t('publicListToggle')}</p>
+            <p className="text-label-secondary text-xs mt-0.5">{t('publicListToggleHint')}</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isPublic}
+            aria-label={t('publicListToggle')}
+            onClick={() => togglePublic(!isPublic)}
+            className={`no-min-size relative w-[51px] h-[31px] rounded-full shrink-0 transition-colors duration-200 ${isPublic ? 'bg-brand-600' : 'bg-white/15'}`}
+          >
+            <span className={`absolute top-[2px] left-[2px] w-[27px] h-[27px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-ios ${isPublic ? 'translate-x-5' : ''}`} />
           </button>
         </div>
       )}

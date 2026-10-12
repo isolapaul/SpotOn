@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { playSound } from './useSoundStore';
 import { translate } from '@/lib/i18n';
 import type { TranslationKey } from '@/lib/translations';
 import { DELAYS } from '@/lib/constants';
@@ -6,7 +7,8 @@ import { uploadErrorKey } from '@/lib/uploadErrors';
 import { useLanguageStore } from '@/store/useLanguageStore';
 import { useToastStore } from '@/store/useToastStore';
 import { usePushPromptStore } from '@/store/usePushPromptStore';
-import type { NewReview } from '@/store/useSpotStore';
+import { useSpotStore, type NewReview } from '@/store/useSpotStore';
+import { track } from './telemetry';
 import {
   appendReview,
   attachSpotImages,
@@ -36,6 +38,8 @@ export interface UploadJob {
   /** A review job that carries a review (not photos only). */
   hasReview?: boolean;
   status: 'running' | 'failed' | 'done';
+  /** 0–1 while running: the photos up, the last write still to come (the apps' Live Activity). */
+  progress?: number;
   /** Message key of the last failure. */
   errorKey?: TranslationKey;
 }
@@ -48,6 +52,8 @@ interface JobSpec {
   doneKey: TranslationKey;
   /** Generic failure text; a multi-step task may switch it per step. */
   failKey: TranslationKey;
+  /** The user's first spot (telemetry). */
+  firstSpot?: boolean;
 }
 
 interface UploadStore {
@@ -94,7 +100,11 @@ export const useUploadStore = create<UploadStore>((set, get) => {
     patch(id, { status: 'running', errorKey: undefined });
     task.run().then(
       () => {
-        patch(id, { status: 'done' });
+        patch(id, { status: 'done', progress: 1 });
+        if (task.spec.kind === 'spot') track('spot_submitted');
+        if (task.spec.firstSpot) track('first_spot');
+        if (task.spec.hasReview) track('review_written');
+        playSound('spotAdded');
         useToastStore.getState().showToast(text(task.spec.doneKey), 'success');
         usePushPromptStore.getState().request();
         setTimeout(() => {
@@ -110,10 +120,12 @@ export const useUploadStore = create<UploadStore>((set, get) => {
     );
   };
 
-  const start = (spec: JobSpec, run: () => Promise<void>) => {
+  const start = (spec: JobSpec, run: (progress: (uploaded: number, total: number) => void) => Promise<void>) => {
     seq += 1;
     const id = `upload_${Date.now()}_${seq}`;
-    tasks.set(id, { spec, run });
+    // Photos count as the steps; the final write is one more.
+    const progress = (uploaded: number, total: number) => patch(id, { progress: uploaded / (total + 1) });
+    tasks.set(id, { spec, run: () => run(progress) });
     set((state) => ({
       jobs: [
         ...state.jobs,
@@ -139,9 +151,12 @@ export const useUploadStore = create<UploadStore>((set, get) => {
       const uploaded: Array<UploadedImage | undefined> = [];
       let attempted = false;
       start(
-        { kind: 'spot', label: fields.name, doneKey: 'spotUploaded', failKey: 'spotUploadFailed' },
-        async () => {
-          const images = await uploadSpotImages(files, userId, uploaded);
+        {
+          kind: 'spot', label: fields.name, doneKey: 'spotUploaded', failKey: 'spotUploadFailed',
+          firstSpot: !useSpotStore.getState().spots.some((s) => s.createdBy === userId),
+        },
+        async (progress) => {
+          const images = await uploadSpotImages(files, userId, uploaded, (n) => progress(n, files.length));
           const isRetry = attempted;
           attempted = true;
           await createSpot(spotId, fields, images, primaryIndex, userId, isAdmin, isRetry);
@@ -154,8 +169,8 @@ export const useUploadStore = create<UploadStore>((set, get) => {
       const spec: JobSpec = { kind: 'photos', label: spotName, spotId, doneKey: 'spotPhotosAdded', failKey: 'spotPhotoAddError' };
       start(
         spec,
-        async () => {
-          const urls = (await uploadSpotImages(files, userId, uploaded)).map((u) => u.url);
+        async (progress) => {
+          const urls = (await uploadSpotImages(files, userId, uploaded, (n) => progress(n, files.length))).map((u) => u.url);
           if (await attachSpotImages(spotId, urls)) spec.doneKey = 'photosSentForReview';
         },
       );
@@ -173,11 +188,11 @@ export const useUploadStore = create<UploadStore>((set, get) => {
         doneKey: stored && files.length > 0 ? 'reviewAndPhotosAdded' : stored ? 'reviewAdded' : 'spotPhotosAdded',
         failKey: stored ? 'reviewError' : 'spotPhotoAddError',
       };
-      start(spec, async () => {
+      start(spec, async (progress) => {
         // The failure text follows the step that failed.
         if (!photosAttached) {
           spec.failKey = 'spotPhotoAddError';
-          const urls = (await uploadSpotImages(files, userId, uploaded)).map((u) => u.url);
+          const urls = (await uploadSpotImages(files, userId, uploaded, (n) => progress(n, files.length))).map((u) => u.url);
           // Photos that wait for an admin say so (item 4).
           if (await attachSpotImages(spotId, urls)) spec.doneKey = stored ? 'reviewAddedPhotosForReview' : 'photosSentForReview';
           photosAttached = true;

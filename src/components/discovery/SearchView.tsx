@@ -1,20 +1,22 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Lock, MapPin, Search, UserRound } from 'lucide-react';
+import { ListChecks, MapPin, Search, UserRound } from 'lucide-react';
+import ListSearchResults from './ListSearchResults';
 import { useT } from '@/hooks/useT';
 import { useOpenProfile } from '@/hooks/useOpenProfile';
 import { useUserStore } from '@/store/useUserStore';
 import { useUiStore } from '@/store/useUiStore';
 import { useFollowStore, type PersonResult } from '@/store/useFollowStore';
+import PersonRow from '../profile/PersonRow';
 import { useDiscoveryStore } from '@/store/useDiscoveryStore';
 import type { Spot } from '@/store/useSpotStore';
-import { getLevelInfo } from '@/lib/levelUtils';
 import { matchesSpotQuery, MIN_SEARCH_LENGTH, SPOT_SEARCH_LIMIT } from '@/lib/search';
-import LevelBadge from '@/components/ui/LevelBadge';
 import SpotRow from './SpotRow';
+import { isRateLimited } from '@/lib/callableErrors';
 
-type Mode = 'spots' | 'people';
+type Mode = 'spots' | 'people' | 'lists';
+const MODES: readonly Mode[] = ['spots', 'people', 'lists'];
 type PeopleState = { q: string; results: PersonResult[] | null; error: 'rate' | 'failed' | null };
 
 interface SearchViewProps {
@@ -25,7 +27,8 @@ interface SearchViewProps {
 
 /**
  * Explore search (item 8): Spots (the loaded approved spots, by name) | People (usernames by
- * prefix on the server, signed in only, 2+ characters, 10 results).
+ * prefix on the server, signed in only, 2+ characters, 10 results) | Lists (public lists, growth
+ * plan §7).
  */
 export default function SearchView({ spots, rowProps, onCancel }: Readonly<SearchViewProps>) {
   const t = useT();
@@ -56,7 +59,7 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
         .then((results) => live && setPeople({ q, results, error: null }))
         .catch((error: { details?: unknown; message?: string }) => {
           if (!live) return;
-          setPeople({ q, results: null, error: error?.message === 'SEARCH_RATE_LIMIT' ? 'rate' : 'failed' });
+          setPeople({ q, results: null, error: isRateLimited(error) ? 'rate' : 'failed' });
         });
     }, 300);
     return () => {
@@ -83,7 +86,7 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
     if (!signedIn) {
       return (
         <Empty text={t('signInToSearchPeople')}>
-          <button type="button" onClick={() => useUiStore.getState().openPanel('auth')} className="mt-3 px-5 h-10 rounded-full bg-brand-600 text-white font-semibold">
+          <button type="button" onClick={() => useUiStore.getState().openAuth()} className="mt-3 px-5 h-10 rounded-full bg-brand-600 text-white font-semibold">
             {t('signIn')}
           </button>
         </Empty>
@@ -112,7 +115,7 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label={t('search')}
-            placeholder={mode === 'spots' ? t('searchSpotsPlaceholder') : t('searchPeoplePlaceholder')}
+            placeholder={t(mode === 'spots' ? 'searchSpotsPlaceholder' : mode === 'people' ? 'searchPeoplePlaceholder' : 'searchListsPlaceholder')}
             className="flex-1 min-w-0 bg-transparent text-label placeholder:text-label-tertiary focus:outline-hidden text-[16px]"
           />
         </label>
@@ -122,19 +125,20 @@ export default function SearchView({ spots, rowProps, onCancel }: Readonly<Searc
       </div>
 
       <div className="px-5 mt-3">
-        <div role="radiogroup" aria-label={t('search')} className="relative grid grid-cols-2 p-0.5 rounded-[10px] bg-white/8">
+        <div role="radiogroup" aria-label={t('search')} className="relative grid grid-cols-3 p-0.5 rounded-[10px] bg-white/8">
           <span
             aria-hidden="true"
-            className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-r1 bg-white/16 shadow-xs transition-transform duration-350 ease-ios"
-            style={{ transform: mode === 'spots' ? 'translateX(0)' : 'translateX(100%)' }}
+            className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(33.333%-1.333px)] rounded-r1 bg-white/16 shadow-xs transition-transform duration-350 ease-ios"
+            style={{ transform: `translateX(${MODES.indexOf(mode) * 100}%)` }}
           />
           {segment('spots', t('spots'), MapPin)}
           {segment('people', t('people'), UserRound)}
+          {segment('lists', t('lists'), ListChecks)}
         </div>
       </div>
 
       <div key={mode} className="px-4 mt-4">
-        {mode === 'people' ? peopleBody() : !ready ? (
+        {mode === 'lists' ? <ListSearchResults query={query} /> : mode === 'people' ? peopleBody() : !ready ? (
           <Empty text={t('searchMinChars', { count: MIN_SEARCH_LENGTH })} />
         ) : spotResults.length ? (
           <div className="rounded-[18px] bg-surface-1 overflow-hidden divide-y divide-white/6">
@@ -154,38 +158,5 @@ function Empty({ text, children }: Readonly<{ text: string; children?: React.Rea
       <p className="text-label-secondary">{text}</p>
       {children}
     </div>
-  );
-}
-
-function PersonRow({ person, index, onOpen }: Readonly<{ person: PersonResult; index: number; onOpen: () => void }>) {
-  const t = useT();
-  const level = person.level ?? 1;
-  const [failed, setFailed] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="no-min-size w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/4 motion-safe:animate-item-in"
-      style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
-    >
-      <span aria-hidden="true" className="w-11 h-11 rounded-full overflow-hidden grid place-items-center bg-brand-600 text-white font-semibold shrink-0">
-        {person.profilePictureURL && !failed ? (
-          // eslint-disable-next-line @next/next/no-img-element -- user-hosted avatar URLs (any origin)
-          <img src={person.profilePictureURL} alt="" className="w-full h-full object-cover" onError={() => setFailed(true)} />
-        ) : (
-          person.username.charAt(0).toUpperCase()
-        )}
-      </span>
-      <span className="flex-1 min-w-0">
-        <span className="flex items-center gap-1.5 text-label font-semibold text-[16px]">
-          <span className="truncate">{person.username}</span>
-          {person.isPrivate && <Lock className="w-3.5 h-3.5 text-label-tertiary shrink-0" aria-label={t('privateProfile')} />}
-        </span>
-        <span className="flex items-center gap-1 text-[13px] text-label-secondary">
-          <LevelBadge level={level} size={14} />
-          {t(getLevelInfo(level).nameKey)}
-        </span>
-      </span>
-    </button>
   );
 }

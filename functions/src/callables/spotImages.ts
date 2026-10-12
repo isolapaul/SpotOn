@@ -87,6 +87,8 @@ export const toggleImageLike = onCall(async (request) => {
 
     const result = await db.runTransaction(async (tx) => {
       const spot = await readableSpot(await tx.get(spotRef), uid);
+      // Each like rewrites the spot (every viewer re-reads it): rate limited like spot likes.
+      const count = await checkRate(tx, uid, "like");
       const images = currentImages(spot, rawSpotId, Timestamp.now());
       let toggled;
       try {
@@ -97,6 +99,7 @@ export const toggleImageLike = onCall(async (request) => {
         }
         throw error;
       }
+      count();
       tx.update(spotRef, {spotImages: toggled.images});
       return {liked: toggled.liked, likes: toggled.likes};
     });

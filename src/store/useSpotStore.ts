@@ -1,3 +1,4 @@
+import { callableReason } from '@/lib/callableErrors';
 import { create } from 'zustand';
 import {
   doc,
@@ -77,6 +78,11 @@ export interface Spot {
   updatedAt?: DateInput;
   reviews?: Review[];
   averageRating?: number;
+  /** How many people like the spot (the feed's thumb); server-written by setSpotLike. */
+  likeCount?: number;
+  /** Growth plan §3/§4: views and "I was here" visits, rolled up from spotStats once a day. */
+  viewCount?: number;
+  visitCount?: number;
   /** The owner's special pin icon (item 6), server-written; normalise before use. */
   ownerPin?: string;
   highlighted?: {
@@ -100,6 +106,7 @@ interface SpotStore {
   /** Stops every spots listener and clears the spots (unmount, T21). */
   stopSpots: () => void;
   toggleSpotImageLike: (spotId: string, imageId: string) => Promise<void>;
+
   approveSpot: (spotId: string) => Promise<void>;
   /** Direct field edits: admins on any spot, owners on a spot under review or rejected (the rules). */
   updateSpotFields: (spotId: string, fields: SpotFieldsPatch) => Promise<void>;
@@ -109,6 +116,7 @@ interface SpotStore {
 
 // Callables (T10, region europe-west3 via `functions`)
 const toggleImageLikeCallable = httpsCallable<{ spotId: string; imageId: string }, unknown>(functions, 'toggleImageLike');
+
 /** approveSpot refused: the owner changed the spot after the admin saw it (shown as its own message). */
 export const SPOT_CHANGED_ERROR = 'SPOT_CHANGED';
 
@@ -147,7 +155,7 @@ export const useSpotStore = create<SpotStore>((set, get) => ({
       try {
         await approveSpotCallable({ spotId, seenAt });
       } catch (error) {
-        if (error instanceof Error && error.message === SPOT_CHANGED_ERROR) throw new Error(SPOT_CHANGED_ERROR);
+        if (callableReason(error) === SPOT_CHANGED_ERROR) throw new Error(SPOT_CHANGED_ERROR);
         throw error;
       }
       updateSpotInState(set, spotId, (spot) => ({ ...spot, status: 'approved' as const }));

@@ -1,6 +1,6 @@
 # Google Play: listing, Data safety and content rating
 
-Everything Play Console asks for, drafted from the code. The Android app itself (Trusted Web Activity, Bubblewrap, signing, asset links) is in [`deploy.md` §17](deploy.md#17-android-app-trusted-web-activity).
+Everything Play Console asks for, drafted from the code. The Android app itself (Capacitor shell, Firebase setup, signing, asset links) is in [`deploy.md` §17](deploy.md#17-android-and-ios-apps-capacitor).
 
 **Revisit this page when a feature changes what the app collects** (for example profiles, bio and follows): the Data safety answers must match the app, and Google can reject or remove an app whose answers are wrong.
 
@@ -41,7 +41,7 @@ Limits: name 30 characters, short description 80, full description 4000.
 > - Level up: the more you share, the higher your level, with new perks along the way.
 > - Get directions: open any spot in your maps app with one tap.
 >
-> Your privacy: your location stays on your device and is only used to show what is near you. Location data is removed from the photos you upload. No ads, no tracking.
+> Your privacy: your location stays on your device and is only used to show what is near you (and, when you tap "I was here", to check once that you are at the spot). Location data is removed from the photos you upload. No ads, no tracking.
 >
 > SpotOn is free and available in English, Hungarian and German.
 
@@ -61,7 +61,7 @@ Limits: name 30 characters, short description 80, full description 4000.
 > - Szintlépés: minél többet osztasz meg, annál magasabb a szinted, közben új lehetőségekkel.
 > - Útvonaltervezés: egy koppintással megnyithatod bármelyik helyet a térképalkalmazásodban.
 >
-> Adatvédelem: a helyzeted a készülékeden marad, és csak arra használjuk, hogy megmutassuk, mi van a közeledben. A feltöltött fotókból eltávolítjuk a helyadatokat. Nincs reklám, nincs követés.
+> Adatvédelem: a helyzeted a készülékeden marad, és csak arra használjuk, hogy megmutassuk, mi van a közeledben (és ha megnyomod az „Itt jártam” gombot, egyszer ellenőrizzük vele, hogy a helyszínen vagy). A feltöltött fotókból eltávolítjuk a helyadatokat. Nincs reklám, nincs követés.
 >
 > A SpotOn ingyenes, és magyarul, angolul és németül is elérhető.
 
@@ -81,7 +81,7 @@ Limits: name 30 characters, short description 80, full description 4000.
 > - Steige im Level auf: Je mehr du teilst, desto höher dein Level, mit neuen Vorteilen unterwegs.
 > - Route planen: Öffne jeden Ort mit einem Tippen in deiner Karten-App.
 >
-> Deine Privatsphäre: Dein Standort bleibt auf deinem Gerät und wird nur genutzt, um zu zeigen, was in deiner Nähe ist. Aus hochgeladenen Fotos werden die Standortdaten entfernt. Keine Werbung, kein Tracking.
+> Deine Privatsphäre: Dein Standort bleibt auf deinem Gerät und wird nur genutzt, um zu zeigen, was in deiner Nähe ist (und, wenn du auf „Ich war hier“ tippst, einmal, um zu prüfen, dass du dort bist). Aus hochgeladenen Fotos werden die Standortdaten entfernt. Keine Werbung, kein Tracking.
 >
 > SpotOn ist kostenlos und auf Deutsch, Englisch und Ungarisch verfügbar.
 
@@ -113,12 +113,17 @@ Play's definitions: data is **collected** when it leaves the device; it is **sha
 |---|---|---|---|---|---|
 | Personal info → Email address | Yes | No | Required | Account management, App functionality | Sign-in (Firebase Auth) |
 | Personal info → User IDs | Yes | No | Required | Account management, App functionality | Account id and the public username |
+| Personal info → Name | Yes | No | Optional | Account management | Google sign-in only: the Google account name, used to suggest the first username |
 | Photos and videos → Photos | Yes | No | Optional | App functionality | Spot photos, profile picture and banner, feedback attachments (EXIF location removed) |
 | App activity → Other user-generated content | Yes | No | Optional | App functionality | Spots (name, description, category, the map position the user picks), reviews and replies, favourites and spot lists, likes, the profile bio, reports (with their reason), feedback messages |
 | App activity → Other actions | Yes | No | Optional | App functionality | Highlights, image likes, follows and follow requests, blocks, profile visibility, notification settings, the rate-limit counters (search, follows, reports, replies, photos) |
-| Device or other IDs | Yes | No | Optional | App functionality | Push notification registration, a Firebase Installation ID (only when notifications are turned on) |
+| Device or other IDs | Yes | No | Optional | App functionality | Push notification registration: a Firebase Installation ID in browsers, the device's push token in the apps (only when notifications are turned on) |
+| App info and performance → Crash logs, Diagnostics | Yes | No | Required | Analytics | Anonymous app error reports (message, code location, path, platform, version; e-mails and ids removed; not linked to the user) |
+| App activity → App interactions | Yes | No | Required | Analytics | Anonymous daily counters (opens, sign-ups, spots, reviews, shares, invites); not linked to the user |
+| Location → Precise location | Yes | No | Optional | App functionality | "I was here": the device position is sent once per check-in to verify the distance to the spot; it is not stored (only the spot and the time) |
 
-**Not collected:** location (the device position is used on the device only, for distance and centring; the position of a spot is content the user chooses and is covered above), contacts, calendar, health, financial info, messages between users, audio, files, web browsing, app diagnostics and crash logs, analytics, advertising IDs.
+
+**Not collected:** location for any other purpose (distance and centring stay on the device; the position of a spot is content the user chooses and is covered above), contacts, calendar, health, financial info, messages between users, audio, files, web browsing, advertising IDs.
 
 **Processed but not a Data safety type:** the server and Cloudflare log IP addresses for security and rate limiting (privacy policy §2, "Technikai adatok"). If Play Console asks, answer as "not used to derive location, not collected for any listed purpose".
 

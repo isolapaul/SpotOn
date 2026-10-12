@@ -334,6 +334,21 @@ Order, when a release needs several of them:
 
 Keep a copy of the rules currently in production (Console → Firestore → Rules) before replacing them, so a bad deploy can be reverted by pasting them back.
 
+### 16.0 Next release (feed): what it needs
+
+- **Indexes first:** two new composite indexes on `follows` (target / follower + createdAt) for the newest-first follower lists; wait until they are enabled.
+- **Functions:** new `getFollowList`, `setSpotLike`, `getSpotLikers`, `weeklyFeedDigest`; changed `followUser`, `onSpotFavorited`, `deleteAccount`, `removeSpot` children, `syncXp`, `toggleImageLike` and the push helpers. `weeklyFeedDigest` is a scheduled function: the first deploy enables Cloud Scheduler for the project (the CLI asks; it needs the Blaze plan, which the project already has for functions).
+- **Rules** after the functions: the new `spotLikes` collection (each user reads their own likes; the new client listens to them) and admins can no longer write `spots.likeCount`.
+- The Terms changed (TERMS_VERSION 2026-10-10): announce it at least 15 days before this release (Terms §10).
+- **Growth plan (`docs/growth-plan.md`):** the rules allow reading `config/app`. To retire an old app build, create or edit `config/app` in the Firebase console: `minVersion` (map: `ios`, `android`, e.g. `"2.2.0"`) and `storeUrl.ios` (the App Store page once it exists; Android falls back to the Play listing). Without the doc nothing is gated.
+- **Locked pins (growth plan §5):** off by default. Turn on with `config/app.lockEnabled: true` once a city has enough spots; `lockOpenCount` (number, default 30) sets how many of the most popular places stay open for everyone.
+- **Referrals:** the new composite index on `referrals` (referrer + createdAt) first; then the functions (`claimReferral`, changed `syncXp`, `syncUserLevel` users, `deleteAccount`, inbox type `invite_joined`); then the rules (`referrals`). Invite links (`/i/<username>`) open the apps: the iOS association file lists `/i/*` (served by the new web release).
+- **Views:** the composite index on `ownerStats` (week + views); functions `recordSpotView` and the scheduled `rollupSpotStats` (daily 4:00 Budapest); rules for `spotStats`, `viewMarks`, `ownerStats` and the admin limit on `viewCount` / `visitCount`.
+- **Visits:** function `markVisited`; rules for `users/{uid}/visits`. Location: the Play Data safety "Approximate/Precise location" is now collected (sent once per check-in to verify the distance, not stored) — update `docs/play-store.md` answers before the release.
+- **Public lists:** two collection-group indexes on `lists` (public + nameLower, public + updatedAt) first; then the rules (public lists readable, the `{path=**}/lists` query rule). `/sitemap.xml` and `robots.txt` come with the web release; submit the sitemap in Google Search Console.
+- **Launch challenge:** function `claimChallengeBadge` (and the changed `syncUserLevel` users). It ends on 2027-06-30; `config/app.launchChallengeEnd` (timestamp) moves the end.
+- **Telemetry:** new callables `logEvents` and `reportClientError` (functions deploy), rules for `stats` and `clientErrors` (super admin read). Play Data safety / App Privacy: "App info and performance: crash logs, diagnostics" and "App activity: app interactions", collected, not linked to the user, not shared (`docs/play-store.md`).
+
 ### 16.1 One-time steps already done
 
 Kept so that the history of the production project is clear; none of them is to be repeated.
@@ -344,64 +359,72 @@ Kept so that the history of the production project is clear; none of them is to 
 
 A release that needs new one-time steps lists them here, in order, before it is tagged.
 
-## 17. Android app (Trusted Web Activity)
+## 17. Android and iOS apps (Capacitor)
 
-The Play app is a Trusted Web Activity: a thin Android shell that opens https://spoton.isolapaul.hu full screen in Chrome. It is built with [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) on the laptop from the live web manifest; the web app itself is unchanged. Listing, Data safety and content rating: [`play-store.md`](play-store.md).
+The store apps are their own builds: [Capacitor](https://capacitorjs.com) projects (`capacitor.config.ts`, `mobile/android`, `mobile/ios`) that bundle a static export of the web app (`npm run build:app` → `out-app/`, `NEXT_PUBLIC_APP_BUILD=1` in `next.config.mjs`). The app starts without the network and does not depend on the server, except for `/api/feedback` on the live site (CORS for the apps' origins). Web-only files carry a `.web` extension (`route.web.ts`, `page.web.tsx`, `proxy.web.ts`) and are not in the app. A web change reaches the apps with their next store release. Native code covers:
 
-Package name: **`hu.isolapaul.spoton`** (permanent; Play never allows it to change).
-
-**Order:** the release with the Play changes (manifest `id`, maskable icons, `/.well-known/assetlinks.json`, `/account-deletion`) must be live before `bubblewrap init`, because Bubblewrap reads the live manifest.
-
-### 17.1 One-time setup (💻 laptop, Git Bash)
-
-```bash
-npm i -g @bubblewrap/cli                 # changes the laptop: installs the CLI (never with sudo)
-mkdir -p ~/spoton-android && cd ~/spoton-android
-bubblewrap init --manifest=https://spoton.isolapaul.hu/manifest.json
-```
-
-The first run offers to download a JDK and the Android command-line tools: answer yes (they go into `~/.bubblewrap`). Then answer the questions:
-
-| Question | Answer |
+| Feature | How |
 |---|---|
-| Domain | `spoton.isolapaul.hu` |
-| URL path | `/` |
-| Application name | `SpotOn` |
-| Short name (launcher) | `SpotOn` |
-| Application ID | `hu.isolapaul.spoton` |
-| Starting version code | `1` |
-| Display mode | `standalone` |
-| Orientation | `portrait` |
-| Status bar colour | `#0E1013` |
-| Splash screen colour | `#0E1013` |
-| Icon URL | `https://spoton.isolapaul.hu/icon-512x512.png` |
-| Maskable icon URL | `https://spoton.isolapaul.hu/icon-maskable-512x512.png` |
-| Monochrome icon URL | leave empty |
-| Shortcuts | No |
-| Play Billing | No |
-| Geolocation delegation | No (Chrome asks for the location permission itself, as on the web) |
-| Key store location | the default (`./android.keystore`) |
-| Key name | `android` |
-| Create a new key | Yes: your name, organisational unit and organisation (`SpotOn` for both is fine), country `HU`, then two passwords |
+| Google sign-in | The native Google SDK (Google refuses OAuth in WebViews); the web SDK signs in with its ID token (`src/store/nativeAuth.ts`). |
+| Push | Native FCM; the device token goes into `users/{uid}.fcmTokens`, which the functions already send to (`src/store/nativePush.ts`). |
+| Android back, spot links, sharing | `src/hooks/useNativeShell.ts` (App Links), `useShareSpot` (system share sheet). |
+| Offline start | The app itself is bundled; data needs the network (Firestore). |
+| Maps | `NEXT_PUBLIC_MAPBOX_TOKEN_APP`: a second public Mapbox token without the site URL restriction (the app runs on `capacitor://localhost` / `https://localhost`), as a repository variable. |
 
-The **upload key** (`android.keystore` and its two passwords) signs every build you upload. Keep it outside the repository, back it up (for example in your password manager), and never commit it. If it is lost, the upload key can be reset through Play support, because Google keeps the real app signing key (Play App Signing).
+Package name / bundle ID: **`hu.isolapaul.spoton`** (permanent; the stores never allow it to change). Listing, Data safety and content rating: [`play-store.md`](play-store.md).
 
-### 17.2 Build and upload (💻 laptop)
+FCM auto-init is off until the user turns notifications on (Data safety, `play-store.md`). The plugin turns it on for good at that point; a token FCM issues later, after sign-out, is never stored for anyone (`src/store/nativePush.ts`).
+
+**Every app release is a new build** (the web code is inside it). Installed app versions keep talking to the same Firebase project, so callables and rules must stay compatible with the app versions still in use (as with the web, CLAUDE.md rule 6), and `/api/feedback` must keep its CORS.
+
+### 17.1 Firebase (🌐 Firebase console, one time)
+
+1. Project settings → Your apps → **Add app → Android**: package `hu.isolapaul.spoton`. Add the **SHA-1 and SHA-256** fingerprints of the upload key (§17.2, `keytool -list -v -keystore upload.keystore`) and, after the first Play upload, of the *App signing key* (Play Console → App integrity). Google sign-in only works for builds signed with a listed key. Download `google-services.json` to `mobile/android/app/` (git-ignored; never commit it).
+2. **Add app → Apple**: bundle ID `hu.isolapaul.spoton`. Download `GoogleService-Info.plist` and install it on the Mac with `bash mobile/scripts/ios-firebase-config.sh ~/Downloads/GoogleService-Info.plist` (copies it into the Xcode project, git-ignored, and writes the Google sign-in URL scheme into `Info.plist`; do not commit that `Info.plist` change).
+3. Project settings → Cloud Messaging → Apple app configuration: upload an **APNs auth key** (.p8, from developer.apple.com → Keys, with "Apple Push Notifications service") with its Key ID and Team ID.
+4. Authentication → Settings → Authorized domains: no change (the app runs on `spoton.isolapaul.hu`). The Google provider is already on.
+
+### 17.2 Android build (💻 laptop: Android Studio, which brings its own JDK and SDK)
 
 ```bash
-cd ~/spoton-android
-bubblewrap build        # changes local files: asks for the two key passwords, writes app-release-bundle.aab and app-release-signed.apk
+npm ci
+npx cap sync android        # changes generated files under mobile/android (git-ignored)
 ```
 
-Upload `app-release-bundle.aab` in Play Console → Test and release → Testing → Internal testing (or Closed testing) → Create new release. Accept **Play App Signing** when asked.
+Upload key, once (the passwords and the file stay outside git; back them up, e.g. in the password manager):
 
-For every later version: `bubblewrap update` (raises the version code; add `--appVersionName=2.2.1` to set the visible version), then `bubblewrap build` and upload the new `.aab`. A web-only release needs no new Android build: the app always shows the live site.
+```bash
+keytool -genkeypair -v -keystore ~/spoton-upload.keystore -alias upload -keyalg RSA -keysize 2048 -validity 10000
+```
+
+`mobile/android/keystore.properties` (git-ignored):
+
+```properties
+storeFile=/home/<you>/spoton-upload.keystore
+storePassword=...
+keyAlias=upload
+keyPassword=...
+```
+
+Build (the visible version is `package.json`'s; raise the version code on every upload):
+
+```bash
+cd mobile/android
+./gradlew bundleRelease -PversionCode=2     # → app/build/outputs/bundle/release/app-release.aab
+./gradlew assembleDebug                     # → app/build/outputs/apk/debug/app-debug.apk (adb install …)
+```
+
+`npm run cap:android` opens the project in Android Studio instead. Upload the `.aab` in Play Console → Test and release → Testing → Internal testing (or Closed testing) → Create new release, and accept **Play App Signing**.
+
+CI (`.github/workflows/mobile.yml`) builds the same on every change to the native shell and keeps the APK and bundle as the run's artifact `spoton-android`. With these repository secrets the bundle is uploadable as is: `GOOGLE_SERVICES_JSON_BASE64` (`base64 -w0 google-services.json`), `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`; its version code is the run number. Without them it uses the demo Firebase config in `mobile/ci` (the app starts, sign-in and push do not work) and the bundle is unsigned.
+
+For a test against a local server: `CAP_SERVER_URL=http://10.0.2.2:3000 npx cap sync android` (the Android emulator's address of the laptop); run `npx cap sync android` again before a release build.
 
 ### 17.3 Digital Asset Links (🌐 Play Console, then 🖥️ server)
 
-Without asset links the app still opens, but as a Custom Tab with a URL bar. The server publishes them from the runtime setting `ANDROID_CERT_SHA256`, so no new image is needed.
+Asset links let spot links (`https://spoton.isolapaul.hu/spot/…`) open in the app (Android App Links). The server publishes them from the runtime setting `ANDROID_CERT_SHA256`, so no new image is needed.
 
-1. 🌐 Play Console → your app → Test and release → App integrity → App signing: copy the **SHA-256 certificate fingerprint** of the *App signing key certificate* (`AB:CD:…`, 32 pairs). To also allow the APK you sideload from `bubblewrap build`, copy the *Upload key certificate* fingerprint as well.
+1. 🌐 Play Console → your app → Test and release → App integrity → App signing: copy the **SHA-256 certificate fingerprint** of the *App signing key certificate* (`AB:CD:…`, 32 pairs). To also allow builds you install yourself, copy the *Upload key certificate* fingerprint as well.
 2. 🖥️ Add it to `/srv/docker/spoton/.env` (changes the server config; comma-separated when there are two):
 
    ```bash
@@ -417,11 +440,36 @@ Without asset links the app still opens, but as a Custom Tab with a URL bar. The
 
    It must show `hu.isolapaul.spoton` and your fingerprint(s). An empty `[]` means the setting is missing or malformed. Google's own check: 🌐 `https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://spoton.isolapaul.hu&relation=delegate_permission/common.handle_all_urls`.
 
-### 17.4 Check on a phone (📱 Android, after installing from the internal or closed test)
+### 17.4 iOS build (💻 Mac with Xcode 16.3 or later, Apple Developer Program membership)
 
-- [ ] The app opens full screen, without a URL bar (asset links work).
-- [ ] Google sign-in works (through the `/__/auth` proxy) and you return to the app signed in; e-mail sign-in works.
-- [ ] Turn on notifications in Settings; approve a test spot from another account: the push arrives, and tapping it opens the app.
+```bash
+npm ci
+bash mobile/scripts/ios-firebase-config.sh ~/Downloads/GoogleService-Info.plist   # §17.1, once per checkout
+npm run cap:ios             # cap sync ios, then opens Xcode
+```
+
+In Xcode: target App → Signing & Capabilities → pick your team (automatic signing). Push Notifications, Sign in with Apple, Associated Domains (`applinks:spoton.isolapaul.hu`) and Background Modes → Remote notifications come from `App/App.entitlements` and `Info.plist`; automatic signing turns the matching capabilities on for the App ID. The Live Activity is the extension target `SpotOnWidgets` (bundle ID `hu.isolapaul.spoton.widgets`, embedded in the app): pick the same team for it; it needs no capability of its own (`NSSupportsLiveActivities` is in the app's `Info.plist`). The privacy manifest is `App/PrivacyInfo.xcprivacy`. Set the build number (General → Build) higher than the last upload, then Product → Archive → Distribute App → App Store Connect.
+
+CI builds an unsigned simulator app (artifact `spoton-ios-simulator`) as a compile check; with the secret `GOOGLE_SERVICE_INFO_PLIST_BASE64` it uses the project's Firebase config.
+
+**Before submitting to the App Store, decide:**
+- *Guideline 4.8:* an app that offers Google sign-in must also offer *Sign in with Apple*. It is built (the system Apple sheet in the iOS app, a pop-up in browsers; never in the Android app): enable the Apple provider in Firebase Auth (for the iOS app the bundle ID is enough; for browsers also a Services ID, key and the return URL Firebase shows), then set the GitHub repository variable `NEXT_PUBLIC_APPLE_SIGN_IN=1` and release the web app.
+- *Guideline 4.2 (minimum functionality):* the app is its own build (bundled, works without the server), with native sign-in, push, haptics, the Dynamic Island (Live Activities), home-screen quick actions and the share sheet.
+
+**Universal Links** (spot, profile and feed links open the iOS app): add `APPLE_TEAM_ID=<your 10-character Team ID>` to `/srv/docker/spoton/.env` and `docker compose up -d` (no new image); `https://spoton.isolapaul.hu/.well-known/apple-app-site-association` must then list `<TEAMID>.hu.isolapaul.spoton`. Apple caches it; a reinstall picks up a change.
+
+### 17.5 Check on a phone (📱 Android, after installing from the internal or closed test; same on iPhone)
+
+- [ ] The app opens full screen with the splash on the dark background; the map runs under the status bar without covering controls.
+- [ ] Google sign-in opens the system account picker and you return signed in; e-mail sign-in works; sign-out, then Google sign-in offers the account choice again.
+- [ ] Turn on notifications in Settings (the system dialog asks once); approve a test spot from another account: the push arrives with the SpotOn icon, and tapping it opens the app. With the app open, the message lands in the notification centre.
 - [ ] Location: "my location" asks for the permission once and centres the map.
-- [ ] The Android back gesture behaves as expected.
+- [ ] Add a spot with a photo from the gallery and one taken with the camera.
+- [ ] The Android back gesture closes panels step by step and, on the bare map, sends the app to the background.
+- [ ] Tap a push (new follower, a followed person's spot, the weekly digest): the app opens on that profile, spot or the feed.
+- [ ] Like a spot or add a favourite: a light tap (haptics) with the sound; turn Sounds off in Settings and both stop.
+- [ ] iPhone: Sign in with Apple (after the provider is on) returns signed in; Android 13+: the themed icon shows the white pin.
+- [ ] Share a spot: the system share sheet opens. Tap a shared spot link in another app: SpotOn opens on that spot (after §17.3).
+- [ ] Airplane mode, then start the app: the offline page shows; "Try again" works once back online.
+- [ ] The first-run tour has no install step.
 - [ ] https://spoton.isolapaul.hu/account-deletion opens in a normal browser without the first-run tour.

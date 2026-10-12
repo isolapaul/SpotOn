@@ -9,10 +9,27 @@ import {DELETED_OWNER} from "./accountDeletion";
 import {validLevel} from "./levels";
 import {ownerPinFor} from "./pinIcons";
 import {userLevelFields, xpOf} from "./xp";
+import {referralXp} from "./referrals";
+import {badgeXp} from "./challenge";
+
+/** The user's referral standing: invitees, of whom with an approved spot, and whether invited. */
+export async function referralStats(
+  uid: string,
+): Promise<{invites: number; withSpot: number; invited: boolean}> {
+  const referrals = db.collection("referrals");
+  const [all, withSpot, own] = await Promise.all([
+    referrals.where("referrer", "==", uid).count().get(),
+    referrals.where("referrer", "==", uid).where("spotApproved", "==", true).count().get(),
+    referrals.doc(uid).get(),
+  ]);
+  return {invites: all.data().count, withSpot: withSpot.data().count, invited: own.exists};
+}
 
 /**
  * Recomputes one user's XP from every spot they earn it from (own spots and spots listing them in
- * `contributors`) and stores it, then puts the pin icon their level allows on each own spot.
+ * `contributors`) and from the referral program, and stores it (publicProfiles also gets the
+ * invitee count, `invitesCount`, for the invite badges), then puts the pin icon their level
+ * allows on each own spot.
  * The spots are read outside a transaction: XP is a pure function of them, and any spot write
  * that lands meanwhile runs syncXp again, so the last run stores the right total. Only the
  * users/publicProfiles write is transactional (the stored floor); own spots get `ownerPin` in
@@ -23,17 +40,21 @@ export async function syncUserLevel(uid: string): Promise<string> {
   if (!uid || uid === DELETED_OWNER) return "skipped";
   const userRef = db.collection("users").doc(uid);
   const profileRef = db.collection("publicProfiles").doc(uid);
-  const [ownSnap, contributedSnap] = await Promise.all([
+  const [ownSnap, contributedSnap, referral] = await Promise.all([
     db.collection("spots").where("createdBy", "==", uid).get(),
     db.collection("spots").where("contributors", "array-contains", uid).get(),
+    referralStats(uid),
   ]);
   const spots = new Map([...ownSnap.docs, ...contributedSnap.docs].map((d) => [d.id, d.data()]));
-  const xp = xpOf(uid, spots.values());
+  // Spots plus the referral program (growth plan §2).
+  const xp = xpOf(uid, spots.values()) +
+    referralXp(referral.invites, referral.withSpot, referral.invited);
 
   const result = await db.runTransaction(async (tx) => {
     const [userSnap, profileSnap] = await Promise.all([tx.get(userRef), tx.get(profileRef)]);
     if (!userSnap.exists) return null;
-    const fields = userLevelFields(xp, userSnap.get("levelFloor"), null);
+    // The launch challenge's badge (growth plan §8) adds its XP.
+    const fields = userLevelFields(xp + badgeXp(userSnap.get("badges")), userSnap.get("levelFloor"), null);
     let changed = false;
     if (userSnap.get("xp") !== fields.xp || userSnap.get("level") !== fields.level ||
         userSnap.get("levelFloor") !== fields.levelFloor) {
@@ -41,8 +62,9 @@ export async function syncUserLevel(uid: string): Promise<string> {
       changed = true;
     }
     if (!profileSnap.exists || profileSnap.get("xp") !== fields.xp ||
-        profileSnap.get("level") !== fields.level) {
-      const mirror = {xp: fields.xp, level: fields.level};
+        profileSnap.get("level") !== fields.level ||
+        (profileSnap.get("invitesCount") ?? 0) !== referral.invites) {
+      const mirror = {xp: fields.xp, level: fields.level, invitesCount: referral.invites};
       tx.set(profileRef, {...mirror, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
       changed = true;
     }

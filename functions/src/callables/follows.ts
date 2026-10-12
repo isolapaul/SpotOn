@@ -26,7 +26,7 @@ import {notifyInbox} from "../lib/inbox";
 import {checkRate} from "../lib/rateLimit";
 
 const SEARCH_LIMIT = 10;
-/** A private user hears about one requester at most once a day (request/cancel loops). */
+/** A user hears about one requester or new follower at most once a day (request/cancel loops). */
 const REQUEST_NOTICE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 function requireUid(request: CallableRequest): string {
@@ -107,6 +107,9 @@ async function usernameOf(uid: string): Promise<string> {
   const name = (await profileRef(uid).get()).get("username");
   return typeof name === "string" ? name : "";
 }
+
+/** followUser's transaction result: "sent"/"followed" also notify the target. */
+type FollowOutcome = FollowState | "sent" | "sentQuiet" | "followed";
 
 /** Runs a callable body with one log line: {uid, target, outcome}. */
 async function logged<T>(
@@ -189,7 +192,7 @@ export const followUser = onCall(async (request) => {
   const uid = requireUid(request);
   const target = requireTarget(request, uid);
   return logged("followUser", uid, target, async () => {
-    const state = await db.runTransaction(async (tx): Promise<FollowState | "sent" | "sentQuiet"> => {
+    const state = await db.runTransaction(async (tx): Promise<FollowOutcome> => {
       const blocks = await blockedInTx(tx, uid, target);
       if (blocks.byB) throw new HttpsError("not-found", "Profile not found");
       if (blocks.byA) throw new HttpsError("failed-precondition", "UNBLOCK_FIRST");
@@ -217,12 +220,17 @@ export const followUser = onCall(async (request) => {
       }
       if (pending.exists) tx.delete(pending.ref);
       createFollow(tx, uid, target, {[uid]: true, [target]: true});
-      return "following";
+      // The target hears about a new follower once a day per pair (follow/unfollow loops).
+      const last = notice.get("at");
+      const now = Date.now();
+      if (typeof last === "number" && now - last < REQUEST_NOTICE_COOLDOWN_MS) return "following";
+      tx.set(noticeRef(uid, target), {requester: uid, target, at: now});
+      return "followed";
     });
-    if (state === "sent") {
-      await notifyInbox({uid: target, type: "follow_request", spotId: "", spotName: "",
-        actorUid: uid, actorName: await usernameOf(uid)});
-      return {state: "requested"};
+    if (state === "sent" || state === "followed") {
+      await notifyInbox({uid: target, type: state === "sent" ? "follow_request" : "new_follower",
+        spotId: "", spotName: "", actorUid: uid, actorName: await usernameOf(uid)});
+      return {state: state === "sent" ? "requested" : "following"};
     }
     return {state: state === "sentQuiet" ? "requested" : state};
   });

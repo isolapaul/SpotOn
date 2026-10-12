@@ -11,9 +11,9 @@ export interface SpotPreview {
   rating: number | null;
 }
 
-type Value = { stringValue?: string; integerValue?: string; doubleValue?: number; arrayValue?: { values?: Value[] }; mapValue?: { fields?: Record<string, Value> } };
+export type Value = { stringValue?: string; booleanValue?: boolean; integerValue?: string; doubleValue?: number; arrayValue?: { values?: Value[] }; mapValue?: { fields?: Record<string, Value> } };
 
-function str(v: Value | undefined): string {
+export function str(v: Value | undefined): string {
   return typeof v?.stringValue === 'string' ? v.stringValue : '';
 }
 
@@ -22,14 +22,23 @@ function num(v: Value | undefined): number | null {
   return typeof v?.doubleValue === 'number' ? v.doubleValue : null;
 }
 
-function documentUrl(spotId: string): string | null {
+/**
+ * A Firestore REST address under the database's documents (`path` already encoded), with the
+ * public API key: the emulator (local and e2e runs) when the server has one, else Firestore.
+ * `verb` is a method suffix such as ":runQuery". Null without a project.
+ */
+export function firestoreRestUrl(path: string, verb = ''): string | null {
   const project = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   if (!project) return null;
-  // The emulator (local and e2e runs) when the server has one, else Firestore.
   const emulator = process.env.NEXT_PUBLIC_USE_EMULATORS === '1' ? process.env.FIRESTORE_EMULATOR_HOST || '127.0.0.1:8080' : '';
   const host = emulator ? `http://${emulator}` : 'https://firestore.googleapis.com';
   const key = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-  return `${host}/v1/projects/${project}/databases/(default)/documents/spots/${encodeURIComponent(spotId)}${key ? `?key=${encodeURIComponent(key)}` : ''}`;
+  const base = `${host}/v1/projects/${project}/databases/(default)/documents${path ? `/${path}` : ''}${verb}`;
+  return `${base}${key ? `?key=${encodeURIComponent(key)}` : ''}`;
+}
+
+function documentUrl(spotId: string): string | null {
+  return firestoreRestUrl(`spots/${encodeURIComponent(spotId)}`);
 }
 
 /** Parses a Firestore REST document into a preview (approved only). */

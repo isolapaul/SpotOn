@@ -41,13 +41,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Nonce CSP (T32): render per request, so Next can put src/proxy.ts's fresh nonce on its scripts.
-  await connection();
+  // Nonce CSP (T32): render per request, so Next can put src/proxy.web.ts's fresh nonce on its scripts.
+  // The app build is a static export (no per-request rendering, no proxy).
+  if (process.env.NEXT_PUBLIC_APP_BUILD !== '1') await connection();
   return (
     <html lang="en">
       <head>
         <link rel="icon" href="/icon-192x192.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className="font-sans">
         {children}

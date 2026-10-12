@@ -9,7 +9,7 @@ Open work is in `docs/BACKLOG.md`; releases and server operations are in `docs/d
 
 A mobile-first PWA for discovering and sharing places ("spots") on a map.
 Users sign in (Google or email), add spots with photos, review, favourite, and level up.
-Admins approve pending spots. UI languages: Hungarian (default), English, German. A Google Play release is planned.
+Admins approve pending spots. UI languages: Hungarian (default), English, German. Android and iOS apps (Capacitor projects that bundle their own static build of the web app, `npm run build:app`, `mobile/`) are prepared for Google Play and the App Store.
 
 **Production:** https://spoton.isolapaul.hu, a hardened Docker container on Paul's home server, reached through a dashboard-managed Cloudflare Tunnel (`cloudflared` on the external docker network `edge`).
 Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only shows the move notice and later redirects (`docs/deploy.md` §15) until it is deleted.
@@ -24,6 +24,7 @@ Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only 
 | State | Zustand 5 (`src/store/*`, several persisted to localStorage) |
 | Backend (BaaS) | Firebase: Auth, Firestore, Storage, Cloud Messaging (web push) |
 | Server code | Cloud Functions v2 in `functions/` (region `europe-west3`) |
+| Mobile apps | Capacitor 8 (`capacitor.config.ts`, `mobile/android`, `mobile/ios`): bundles the static app export (`out-app/`, `output: 'export'` when `NEXT_PUBLIC_APP_BUILD=1`); web-only files are `*.web.ts(x)`; native plugins always behind `isNativeApp()`, app-only code behind `APP_BUILD` (`lib/constants`) |
 | Next API routes | `/api/feedback` (nodemailer → SMTP), `/api/firebase-messaging-sw` (generated FCM service worker), `/api/health` (container healthcheck) |
 
 ## 3. Repository map
@@ -43,6 +44,7 @@ src/components/                  All UI (panels, modals, map)
 src/components/profile/**        Profile panel: header, tabs, admin tools; components/ProfilePanel.tsx re-exports it
 src/components/spot-details/**   Spot details: hero, actions, gallery, reviews, edit/admin parts; components/SpotDetailsPanel.tsx re-exports it
 src/components/discovery/**      Explore list parts (featured spot, rows)
+src/components/feed/**           The following feed (FeedPanel, FeedCard + header/media, comments sheet, states); hooks/useFeed + lib/feed compose it
 src/components/map/**            Map chrome: MapControls stack, MapStylePopover, PlaceCard
 src/components/legal/**          LegalPage, the sign-in acceptance notice, the one-time TermsPrompt
 src/components/ui/               Shared primitives: PanelShell, ModalShell, Button/CloseButton, StarRating, CategoryIcon, LevelBadge, LevelRing, PerkIcon, RichText
@@ -56,6 +58,9 @@ src/store/useUploadStore.ts      Background uploads of new spots, photos and rev
 src/store/useLocationStore.ts    Location status + sessionStorage cache; the only geolocation caller
 src/store/useOnboardingStore.ts  Tour completion (versioned `spoton-onboarding`), pending username, location answer, install offer; selectTourBlocking
 src/store/useDiscoveryStore.ts   Explore's sort, filter, batch and scroll, kept while it is closed
+src/store/useFeedStore.ts        The feed's last visit (persisted, the launcher's dot), page count and scroll
+src/store/useLikeStore.ts        The own spot likes (spotLikes listener) and the setSpotLike / getSpotLikers callables
+src/store/useSoundStore.ts       Interface sounds (on/off persisted per device) and playSound(), WebAudio over the lib/sound recipes
 src/store/use*Store.ts           language (selected language only), map theme, notifications, push prompt, toast (forwards to notifications), ui
 src/hooks/useAppBootstrap.ts     Loading orchestration: auth + spots listeners, map ready, app-ready delays
 src/hooks/useSheetDrag.ts, useCardDrag.ts  Vertical sheet / place-card gestures (thresholds in lib/sheetGesture)
@@ -69,7 +74,7 @@ src/hooks/useUsernameHint.ts, useStepSwipe.ts, useFocusTrap.ts, useReducedMotion
 src/hooks/useVisibleSpots.ts     Map spots filtered by role (admins: all, others: approved + own)
 src/hooks/useT.ts                useT() translation hook, over src/lib/i18n.ts
 src/lib/firebase.ts              Firebase client init (auth, db, storage, functions)
-src/lib/translations.ts          hu/en/de dictionaries (TranslationKey type)
+src/lib/translations.ts          TranslationKey and Dictionary types over lib/dictionaries/{hu,en,de}.ts (hu bundled; en/de load on demand via useLanguageStore.ensureLanguage; tests use translations.all.ts)
 src/lib/i18n.ts                  Pure translate()/interpolate()/splitBold()/splitSlots() and the Language type
 src/lib/csp.mjs                  CSP builder shared by src/proxy.ts (pages) and next.config.mjs (/api/*)
 src/lib/levelUtils.ts, levelTheme.ts  XP level thresholds and rewards (parity with functions/src/lib/levels.ts), perks, badge colours, level-up rule
@@ -90,6 +95,14 @@ scripts/store/                   Store graphics and screenshots (`npm run store:
 deploy/, Dockerfile, docker/     Server compose file, update script, image and healthcheck
 docs/deploy.md, docs/BACKLOG.md  Release and server runbook (Android app: §17); open work
 docs/play-store.md               Play listing texts, Data safety and content rating answers
+docs/app-store.md                The Apple App Store path: what is in place, owner steps, the native shell work
+capacitor.config.ts, mobile/     The Android/iOS apps (Capacitor): native projects bundling out-app/ (npm run build:app), icon script, CI demo
+                                 Firebase configs (mobile/ci); built by .github/workflows/mobile.yml; runbook docs/deploy.md §17
+src/lib/nativeApp.ts             isNativeApp()/nativePlatform()/appLinkPath(): the app check (Capacitor bridge), no plugin imports
+src/store/nativeAuth.ts, nativePush.ts  Native Google sign-in (ID token → web SDK) and native FCM tokens (users.fcmTokens)
+src/hooks/useNativeShell.ts      Android back button and App Links inside the app; hooks/pushListeners.ts: the push listener singletons
+src/hooks/useIosExtras.ts        iPhone: upload Live Activities (lib/liveActivity) and home-screen quick actions, over store/nativeExtras
+                                 (the app's own SpotOnNative plugin: mobile/ios/App/App/SpotOnNativePlugin.swift; widget extension SpotOnWidgets)
 ```
 
 ### Firestore data model (current)
@@ -97,11 +110,11 @@ docs/play-store.md               Play listing texts, Data safety and content rat
   status ('pending'|'approved'|'rejected'), rejection{reason,at} (rejected only), createdAt, imageUrls[], spotImages[{id,url,addedBy,addedAt,likes,likedBy[]}],
   primaryImageIndex, **reviews[] embedded array**, highlighted[], isHighlighted, updatedAt (owner edits and photo additions; approveSpot's
   version check), approvedAt (set by approveSpot), contributors[] (server: reviewers and photo adders other than the creator, for XP),
-  ownerPin (server: the owner's pin icon from level 4).
+  ownerPin (server: the owner's pin icon from level 4), likeCount (server: spot likes, the `setSpotLike` callable).
   Legacy spots may have only `imageUrls` (no `spotImages`), a singular legacy `imageUrl` field, and reviews that contain `userEmail`/`userSpotsCount` — **all code must keep reading legacy shapes.**
   Spots of deleted accounts have `createdBy: "deleted-user"` and no createdByName/createdByPhoto.
   Status changes and deletes go only through the moderation callables (`approveSpot`, `rejectSpot`, `removeSpot`); admins may still edit fields and photos directly.
-- `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmFids[] (push registrations, Firebase Installation IDs), fcmTokens[] (legacy push tokens), language,
+- `users/{uid}`: profile, savedSpots[], highlightedSpots[], customNameColor/Font, fcmFids[] (browsers), fcmTokens[] (native app tokens and pre-v2.1.0 web tokens; never drop the field), language,
   notificationsEnabled, notificationSettings, spotsCount (server-maintained, all statuses),
   xp, level, levelFloor (server: XP levels, the floor set once by scripts/migrate-xp.ts), pinIcon,
   termsVersion + termsAcceptedAt (accepted Terms/Privacy version, A1; lib/terms),
@@ -109,14 +122,21 @@ docs/play-store.md               Play listing texts, Data safety and content rat
 - `publicProfiles/{uid}`: server-maintained public mirror of a user (username, profilePictureURL,
   customNameColor/Font, isAdmin, spotsCount, xp, level, bio, isPrivate, followersCount, followingCount); public `get`, no client writes.
 - `usernames/{name}`: `{uid}` registry, written only by the `claimUsername` callable (the `searchUsers` callable reads it by prefix).
-- Item 8: `users/{uid}.bio` (≤150), `.profilePrivate`, `.showSaved` (client-written); `publicProfiles` mirrors `bio`, `isPrivate` and holds `followersCount`/`followingCount`. `follows/{follower}_{target}` and `followRequests/{requester}_{target}` are written only by the follow callables and read by their two sides; `rateLimits/{uid}` is server-only (per-action windows: search, follow, report, reply, photo; `functions/src/lib/rateLimit.ts`), and so is `followNotices/{requester}_{target}` (a private user hears about one requester at most once a day). `adminNotices/edit_{spotId}` (server-only) limits admin pings for edit proposals to one an hour. A private profile hides only the lists on the profile page (`getProfile`), never the spots on the map.
+- Item 8: `users/{uid}.bio` (≤150), `.profilePrivate`, `.showSaved` (client-written); `publicProfiles` mirrors `bio`, `isPrivate` and holds `followersCount`/`followingCount`. `follows/{follower}_{target}` and `followRequests/{requester}_{target}` are written only by the follow callables and read by their two sides; `rateLimits/{uid}` is server-only (per-action windows: search, follow, report, reply, photo; `functions/src/lib/rateLimit.ts`), and so is `followNotices/{requester}_{target}` (a private user hears about one requester at most once a day). `adminNotices/edit_{spotId}` (server-only) limits admin pings for edit proposals to one an hour; `favoriteNotices/{favoriter}_{spotId}` (server-only) limits favourite pushes to one a day per person and spot. A private profile hides only the lists on the profile page (`getProfile`) and its followers / following lists (`getFollowList`), never the spots on the map. The client listens to its own `follows` (follower == me) for the feed.
+- `spotLikes/{spotId}_{uid}`: {spotId, uid, createdAt}, one per like, written only by `setSpotLike` (likeCount moves with it), read only by the liker (the client listens to its own); who liked a spot comes from `getSpotLikers` (blocks filtered both ways). Removing a spot and `deleteAccount` delete them.
+- `config/app` (growth plan, `docs/growth-plan.md`): minVersion{ios,android}, storeUrl{ios,android}, lockEnabled, lockOpenCount (locked pins, `lib/spotLock` / `hooks/useSpotLock`), launchChallengeEnd — public read, no client writes (the owner edits it in the Firebase console); `lib/appConfig` parses it, `useAppConfigStore` listens.
+- `stats/{yyyy-mm-dd}` ({event}.{platform} counters) and `clientErrors/{hash}` (cleaned error reports with count, first/last seen): anonymous telemetry, written only by the `logEvents` / `reportClientError` callables, read by the super admin (client: `store/telemetry` `track()` / `reportError()`).
+- `referrals/{inviteeUid}` (growth plan §2): referrer, invitee, createdAt, spotApproved — written only by `claimReferral` and `syncXp` (first approved spot), read by the two sides; `users.referredBy` (server-only), `publicProfiles.invitesCount` (badges 3/5/10). Referral XP joins the spot XP in `syncUserLevel` (`functions/src/lib/referrals.ts`, client `lib/referral.ts`). `deleteAccount` removes the own referral and anonymises the ones naming the user as inviter.
+- `spotStats/{spotId}` (viewCount, visitCount, dirty; public get), `viewMarks/{spotId}_{uid}` (day), `ownerStats/{uid}` (week, views): views and visits (growth plan §3/§4), written only by `recordSpotView` / `markVisited`; `rollupSpotStats` (daily) copies the counters onto `spots.viewCount` / `visitCount`, so a view never rewrites the spot doc the map listens to. Counter-only spot writes are ignored by the spot triggers (`onlyCountersChanged`). Popularity: `lib/popularity`.
+- `users/{uid}/visits/{spotId}` (spotId, spotName, visitedAt): "I was here" stamps, written only by `markVisited` (device position within 300 m, 30 an hour), read only by the owner; the public count is `spotStats.visitCount`. `deleteAccount` removes them.
+- `users.badges` / `publicProfiles.badges` (growth plan §8): earned badges (`founder`), written only by `claimChallengeBadge` (checks the five steps on the server during the season, `config/app.launchChallengeEnd` or 2027-06-30); the badge's XP joins `syncUserLevel`.
 - `admins/{uid}`: email, username, photoURL, addedAt, addedBy, role ('super' | 'admin').
 - `categories/{id}` (item 7): name (Hungarian), nameEn?, nameDe? (fall back to name), icon (one of `src/lib/categoryIcons.ts`; legacy docs may hold an emoji), createdAt, updatedAt. Written by the super admin (rules); deleted only by the `deleteCategory` callable while unused. A spot's `category` is a built-in id or such a doc id (rules `validCategory`); unknown ids show as 'other'.
 - `spotEdits/{spotId}` (item 4): the owner's proposed edit of an approved spot, at most one per spot: spotId, spotName, ownerId, status ('pending'|'rejected'), proposed{name?, description?, category?, location?, removeImageUrls?, primaryImageUrl?}, rejection{reason,at}, createdAt. Reviewed with `reviewSpotEdit`.
 - `photoSubmissions/{id}` (item 4): a photo waiting for an admin: spotId, spotName, uploader, url, status, createdAt. Written only by `addSpotImages`, resolved by `reviewPhotoSubmission`.
-- `users/{uid}/inbox/{id}`: notices for the user (type, spotId, spotName, reason?, actorUid?/actorName? for follow news and replies, read, createdAt): moderation decisions and removals, follow requests/accepts, followed users' new spots, replies. Written only by Cloud Functions (at most 50 kept), the notification centre shows them; each type's push follows its own setting (`settingsKeyOf`). `deleteAccount` removes the notices that name the deleted user.
+- `users/{uid}/inbox/{id}`: notices for the user (type, spotId, spotName, reason?, actorUid?/actorName? for follow news and replies, read, createdAt): moderation decisions and removals, follow requests/accepts, new followers (`new_follower`, once a day per pair via `followNotices`), followed users' new spots, replies. Written only by Cloud Functions (at most 50 kept), the notification centre shows them; each type's push follows its own setting (`settingsKeyOf`). `deleteAccount` removes the notices that name the deleted user.
 - `spots/{id}/replies/{id}`: reviewId, userId, text (≤500), createdAt, editedAt? — replies and questions under reviews; created by the `addReply` callable (the review must exist, no block, rate limit), edited and deleted by the author (rules), admins remove through reports. Reviews may carry `editedAt` (the `editReview` callable).
-- `users/{uid}/lists/{id}`: name (≤50), spotIds (≤200), shared, createdAt, updatedAt — the user's spot lists, owner-only (rules; at most 30 in the UI). `getProfile` returns the shared ones to visitors who may view the profile; `deleteAccount` removes them, and removing a spot takes its id out of every list. Spots carry `approvedAt` (set by `approveSpot`; older spots fall back to `createdAt` for Explore's "New this week").
+- `users/{uid}/lists/{id}`: name (≤50), nameLower, spotIds (≤200), shared, public?, createdAt, updatedAt — the user's spot lists, owner-only (rules; at most 30 in the UI); a `public` list (growth plan §7, implies shared, needs nameLower) is readable by anyone and found by a collection-group query (Explore's list search, `/list/<uid>/<id>` web page, `/sitemap.xml`). `getProfile` returns the shared ones to visitors who may view the profile; `deleteAccount` removes them, and removing a spot takes its id out of every list. Spots carry `approvedAt` (set by `approveSpot`; older spots fall back to `createdAt` for Explore's "New this week").
 - `reports/{reporter}_{key}` (one per person and thing, `key` = hash of kind/spot/target): written by `reportContent`, read by admins, resolved by `resolveReport`. `blocks/{blocker}_{blocked}`: written by `blockUser`/`unblockUser`, read by the blocker.
 - Storage: `spot-images/{uid}/…` (new uploads; legacy flat `spot-images/…` stays readable),
   `spot-images/deleted-user/…` (kept photos of deleted accounts), `profile-pictures/{uid}/…`, `profile-banners/{uid}/…`.
@@ -130,7 +150,10 @@ npm run verify              # typecheck + lint + unit tests + next build (gate f
 npm run verify:fn           # functions build + lint + unit tests (gate when functions/ changed)
 npm run test:rules          # Firestore/Storage rules tests on the emulator (Java 21 required)
 npm run test:e2e            # Playwright vs the emulator-seeded build (PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers)
+npm run build:app           # the apps' static export (out-app/); cap:sync / cap:android / cap:ios run it first
+npm run cap:sync            # build:app + copy into the native projects (needs no SDK)
 ```
+The native builds need the Android SDK / Xcode, which the Claude Code sandbox cannot download (dl.google.com is blocked); `.github/workflows/mobile.yml` builds them.
 `next build` needs Firebase config. Without a `.env.local`, export non-secret demo values first:
 `export NEXT_PUBLIC_FIREBASE_API_KEY=demo-key NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=demo-spoton.firebaseapp.com NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-spoton NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=demo-spoton.appspot.com NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=0 NEXT_PUBLIC_FIREBASE_APP_ID=demo-app NEXT_PUBLIC_FIREBASE_VAPID_KEY=demo`.
 A single e2e spec runs via `npm --prefix functions run build && npx firebase emulators:exec --only auth,firestore,storage,functions --project demo-spoton "npx tsx scripts/seed-emulator.ts && npx playwright test e2e/<file>"` (`npm run test:e2e -- <file>` does not work).
@@ -144,10 +167,14 @@ In the Claude Code sandbox, the functions emulator cannot register Firestore tri
 | `NEXT_PUBLIC_USE_EMULATORS` | build time, tests only | `lib/firebase.ts` |
 | `NEXT_PUBLIC_MOVED_TO` | build time, Vercel only (T19) | domain-move banner |
 | `NEXT_PUBLIC_CONTROLLER_NAME`, `NEXT_PUBLIC_CONTACT_EMAIL` | build time (required by the container build) | legal pages `/privacy`, `/terms` (A1) |
+| `NEXT_PUBLIC_APPLE_SIGN_IN` | build time, optional (`1` shows Sign in with Apple; set only after the provider is enabled in Firebase Auth, `docs/app-store.md`) | `components/AuthModal.tsx` via `lib/constants` |
+| `NEXT_PUBLIC_APP_BUILD` | build time, set by `npm run build:app` only | `next.config.mjs` (static export), `lib/constants` `APP_BUILD` / `apiUrl()` |
+| `NEXT_PUBLIC_MAPBOX_TOKEN_APP` | build time, app build (repository variable; a public token without the URL restriction) | `components/MapView.tsx` in the apps |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | build time, required for releases (public `pk.` token, URL-restricted) | `components/MapView.tsx` via `lib/mapStyles` |
 | `NEXT_PUBLIC_SITE_URL` | build time, optional (default `https://spoton.isolapaul.hu`) | base URL of the share-link previews (`src/app/spot/[id]`) |
 | `SMTP_HOST/PORT/USER/PASS`, `FEEDBACK_RECIPIENT` | runtime (container `.env`) | `/api/feedback` |
 | `ANDROID_CERT_SHA256` | runtime (container `.env`), optional | `/.well-known/assetlinks.json` (docs/deploy.md §17.3) |
+| `APPLE_TEAM_ID` | runtime (container `.env`), optional | `/.well-known/apple-app-site-association` (iOS Universal Links, docs/deploy.md §17.4) |
 
 Build-time values live as GitHub repository variables (release builds) and in Vercel's settings; changing one needs a new release.
 Never commit `.env*` files — sole exception: `functions/.env.demo-spoton` (emulator-only, non-secret params such as `APP_URL`, whitelisted in `.gitignore`). Never hardcode personal emails, keys or tokens.
@@ -172,7 +199,7 @@ Never commit `.env*` files — sole exception: `functions/.env.demo-spoton` (emu
 - **Layers:** `components/` render only → `hooks/` compose data + UI state → `store/` app state + Firebase side effects → `lib/` pure functions (unit-tested, no React, no Firebase).
 - Components do **not** import `firebase/*` directly; go through a store action or a hook.
 - No new file over ~300 lines; extract sub-components/hooks instead.
-- One way to translate: `useT()` (React) or `translate()` from `lib/i18n` (non-React code). No hardcoded user-visible strings — add keys to all three languages in `lib/translations.ts`. No emoji in interface text.
+- One way to translate: `useT()` (React) or `translate()` from `lib/i18n` (non-React code). No hardcoded user-visible strings — add keys to all three files in `lib/dictionaries/` (a missing English or German key is a type error). No emoji in interface text.
 - Shared primitives (`components/ui/`): `PanelShell`, `ModalShell`, `Button`/`CloseButton`, `StarRating`, `CategoryIcon`, `LevelBadge`; sheet gestures via `useSheetDrag` / `useCardDrag`. Don't hand-roll new overlays.
 - Constants (limits, thresholds, categories, z-index) live in `lib/` — no magic numbers in JSX.
 - Tailwind classes must be static strings (the scanner cannot see `replace()`-built class names). The app's plain CSS in globals.css lives in `@layer utilities` (as it came after the utilities under v3); the `.mapboxgl-*` overrides stay unlayered, because mapbox-gl.css is unlayered and would win over any layer. Children of `space-y-*` should not carry their own vertical margins (v4 puts the space as margin-bottom); use `flex flex-col gap-*` there. Buttons with custom layouts need `no-min-size` (the global button rule centres content and sets a minimum size).

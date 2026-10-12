@@ -9,6 +9,7 @@ import {db} from "./app";
 import {NotificationSettingsKey, sendNotificationToAdmins, sendNotificationToUser} from "./notify";
 import {TKey} from "./i18n";
 import {DELETED_OWNER} from "./accountDeletion";
+import {inboxLinkPath} from "./inboxLinks";
 
 export const INBOX_LIMIT = 50;
 
@@ -25,7 +26,9 @@ export type InboxType =
   | "review_reply"
   | "follow_request"
   | "follow_accepted"
-  | "followed_spot";
+  | "followed_spot"
+  | "new_follower"
+  | "invite_joined";
 
 /** Push texts per inbox kind (lib/i18n keys; the body takes the spot name, then the reason). */
 const PUSH: Record<InboxType, {title: TKey; body: TKey}> = {
@@ -41,14 +44,22 @@ const PUSH: Record<InboxType, {title: TKey; body: TKey}> = {
   follow_request: {title: "followRequest", body: "followRequestBody"},
   follow_accepted: {title: "followAccepted", body: "followAcceptedBody"},
   followed_spot: {title: "followedSpot", body: "followedSpotBody"},
+  new_follower: {title: "newFollower", body: "newFollowerBody"},
+  invite_joined: {title: "inviteJoined", body: "inviteJoinedBody"},
 };
 
-const FOLLOW_TYPES: readonly InboxType[] = ["follow_request", "follow_accepted", "followed_spot"];
+const FOLLOW_TYPES: readonly InboxType[] = [
+  "follow_request", "follow_accepted", "followed_spot", "new_follower", "invite_joined",
+];
 /** Kinds whose push names the other user first, then the spot. */
 const ACTOR_SPOT_TYPES: readonly InboxType[] = ["followed_spot", "review_reply"];
 
-/** Moderation decisions follow the "spot status" setting; follow news "follows" (item 8). */
+/**
+ * Moderation decisions follow the "spot status" setting, follow news "follows" (item 8) and
+ * replies the "reviews and likes" one (they are about reviews).
+ */
 function settingsKeyOf(type: InboxType): NotificationSettingsKey {
+  if (type === "review_reply") return "spotReviewed";
   return FOLLOW_TYPES.includes(type) ? "follows" : "spotApproved";
 }
 
@@ -108,7 +119,7 @@ export async function notifyInbox(notice: InboxNotice): Promise<void> {
     });
     await trimInbox(uid);
     await sendNotificationToUser(uid, PUSH[type].title, PUSH[type].body, pushParams(notice),
-      {type, spotId, spotName, inbox: "1"}, settingsKeyOf(type));
+      {type, spotId, spotName, inbox: "1", link: inboxLinkPath(notice)}, settingsKeyOf(type));
   } catch (error) {
     logger.error("notifyInbox failed", {uid, type, spotId, error: String(error)});
   }

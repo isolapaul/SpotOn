@@ -3,7 +3,7 @@ rules_version = '2';
 // SpotOn Firestore rules (T12). The real authorization boundary: UI checks are UX only.
 // Server-only data (publicProfiles, usernames, admins, users.{username, customName*, highlightedSpots,
 // quest*, spotsCount, xp, level, levelFloor, pinIcon}, spots.{highlighted, isHighlighted,
-// contributors, ownerPin, spotImages likes/additions}) is written by Cloud Functions through the
+// contributors, ownerPin, likeCount, spotLikes, spotImages likes/additions}) is written by Cloud Functions through the
 // Admin SDK, which bypasses these rules.
 // Rules do not filter queries: every client query must be provably allowed (T30 spots), or it fails
 // for everyone.
@@ -127,7 +127,7 @@ service cloud.firestore {
         && (!ak.hasAny(['rejection']) || (d.status == 'pending' && !('rejection' in d)));
     }
     function isAdminEdit() {
-      return isAdmin() && !changed().hasAny(['status', 'rejection', 'createdBy', 'contributors', 'ownerPin']);
+      return isAdmin() && !changed().hasAny(['status', 'rejection', 'createdBy', 'contributors', 'ownerPin', 'likedBy', 'likeCount', 'viewCount', 'visitCount']);
     }
     match /spots/{spotId} {
       // Replies to reviews (questions and answers): created only by the addReply callable (it checks
@@ -217,12 +217,18 @@ service cloud.firestore {
 
       // The user's own spot lists; the profile shows the shared ones through getProfile.
       match /lists/{listId} {
+        // public (growth plan §7): anyone may read it; it must be shown on the profile too and carry
+        // its search key (nameLower).
         function validList(d) {
-          return d.keys().hasOnly(['name', 'spotIds', 'shared', 'createdAt', 'updatedAt'])
+          return d.keys().hasOnly(['name', 'nameLower', 'spotIds', 'shared', 'public', 'createdAt', 'updatedAt'])
             && isStr(d.name, 1, 50) && isStr(d.name.trim(), 1, 50) && d.spotIds is list && d.spotIds.size() <= 200
-            && d.shared is bool && d.updatedAt == request.time;
+            && d.shared is bool && d.updatedAt == request.time
+            && (!('nameLower' in d) || d.nameLower == d.name.trim().lower())
+            && (!('public' in d) || (d.public is bool
+                && (d.public == false || (d.shared == true && d.get('nameLower', '') == d.name.trim().lower()))));
         }
-        allow read, delete: if isSelf(userId);
+        allow get: if isSelf(userId) || resource.data.get('public', false) == true;
+        allow list, delete: if isSelf(userId);
         allow create: if isSelf(userId) && validList(request.resource.data) && request.resource.data.createdAt == request.time;
         allow update: if isSelf(userId) && validList(request.resource.data) && !changed().hasAny(['createdAt']);
       }
@@ -270,6 +276,16 @@ service cloud.firestore {
       allow write: if false;
     }
     // The in-app inbox: written by Cloud Functions; its owner reads it, marks items read, clears them.
+    // Public lists (growth plan §7): found by anyone through a collection-group query on public.
+    match /{path=**}/lists/{listId} {
+      allow list: if resource.data.get('public', false) == true;
+    }
+    // "I was here" (growth plan §4): written only by markVisited; where someone has been is
+    // private, so only the owner reads it.
+    match /users/{userId}/visits/{spotId} {
+      allow read: if isSelf(userId);
+      allow write: if false;
+    }
     match /users/{userId}/inbox/{itemId} {
       allow get, list: if isSelf(userId);
       allow update: if isSelf(userId) && changed().hasOnly(['read']) && request.resource.data.read is bool;
@@ -298,6 +314,14 @@ service cloud.firestore {
     match /followRequests/{id} {
       allow get, list: if signedIn()
         && (resource.data.requester == request.auth.uid || resource.data.target == request.auth.uid);
+      allow write: if false;
+    }
+
+    // ---------- spot likes ----------
+    // One doc per like, written only by setSpotLike; each liker reads only their own (the feed's
+    // liked state). Who liked a spot is served by getSpotLikers, which filters blocks both ways.
+    match /spotLikes/{id} {
+      allow get, list: if signedIn() && resource.data.uid == request.auth.uid;
       allow write: if false;
     }
 
@@ -341,6 +365,38 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
       // Only through the deleteCategory callable, which checks that nothing uses it.
       allow delete: if false;
+    }
+    // Anonymous telemetry (growth plan §1): written only by the logEvents / reportClientError
+    // callables, read by the super admin (the admin tools).
+    match /stats/{day} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+    match /clientErrors/{hash} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+    // Referral program (growth plan §2): written only by claimReferral and the XP trigger; the
+    // inviter and the invitee read their own.
+    match /referrals/{inviteeId} {
+      allow get, list: if signedIn()
+        && (resource.data.referrer == request.auth.uid || inviteeId == request.auth.uid);
+      allow write: if false;
+    }
+    // Views and visits (growth plan §3, §4): counters written only by the callables; the counts are
+    // public (the details show them). The per-person marks and the owners' weekly views are
+    // server-only.
+    match /spotStats/{spotId} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+    match /viewMarks/{id}  { allow read, write: if false; }
+    match /ownerStats/{uid} { allow read, write: if false; }
+    // App-wide switches (growth plan: minimum app versions, locked pins, launch challenge end):
+    // public, edited by the owner in the Firebase console only.
+    match /config/{id} {
+      allow read: if true;
+      allow write: if false;
     }
     // everything else (incl. legacy favorites, reviews, notifications): denied (no match)
   }

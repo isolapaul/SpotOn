@@ -1,11 +1,18 @@
+import { readFileSync } from 'node:fs';
 import { buildCsp } from './src/lib/csp.mjs';
+
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 const isDev = process.env.NODE_ENV !== 'production';
 const useEmulators = process.env.NEXT_PUBLIC_USE_EMULATORS === '1';
+// The Android/iOS app build (`npm run build:app`): the same app as a static export, bundled into the
+// native shells (capacitor.config.ts webDir). Server-only files carry a `.web` extension
+// (route.web.ts, page.web.tsx, proxy.web.ts) and exist only in the web build.
+const appBuild = process.env.NEXT_PUBLIC_APP_BUILD === '1';
 
 // Content-Security-Policy (T15; nonce-based page policy T32). headers()/rewrites() are evaluated at build
 // time, so every env var read here is a build-time input. Pages get a per-request nonce policy from
-// src/proxy.ts; only /api/* keeps the static policy here (see src/lib/csp.mjs).
+// src/proxy.web.ts; only /api/* keeps the static policy here (see src/lib/csp.mjs).
 
 const HSTS = { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' };
 const NOSNIFF = { key: 'X-Content-Type-Options', value: 'nosniff' };
@@ -14,25 +21,32 @@ const REFERRER = { key: 'Referrer-Policy', value: 'strict-origin-when-cross-orig
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Web: the route handlers, the proxy and the server-rendered link pages are `.web.*` files.
+  pageExtensions: appBuild ? ['tsx', 'ts'] : ['tsx', 'ts', 'web.tsx', 'web.ts'],
   poweredByHeader: false,
   // `next dev` would otherwise append its managed "nextjs-agent-rules" block to CLAUDE.md whenever it
   // detects an AI coding agent; CLAUDE.md is maintained by hand (official opt-out, Next 16).
   agentRules: false,
-  // Self-contained server bundle for the Docker image (T16).
-  output: 'standalone',
+  // Self-contained server bundle for the Docker image (T16); static files for the apps.
+  output: appBuild ? 'export' : 'standalone',
+  // The app's local web server serves folders: /privacy/ → privacy/index.html.
+  ...(appBuild ? { trailingSlash: true } : {}),
   // Images are unoptimized; keep libvips out of the image (SEC-07).
   outputFileTracingExcludes: { '*': ['node_modules/sharp/**', 'node_modules/@img/**'] },
   // Keep them as real node_modules packages in the standalone output, so Trivy and the SBOM see them (T18).
   serverExternalPackages: ['nodemailer', 'jose'],
   // Separate output dir for emulator/E2E builds so they never overwrite a real .next build.
-  distDir: process.env.NEXT_DIST_DIR || '.next',
+  distDir: appBuild ? 'out-app' : (process.env.NEXT_DIST_DIR || '.next'),
   // Always inline a definite value so production bundles constant-fold the emulator branch away.
   env: {
     NEXT_PUBLIC_USE_EMULATORS: useEmulators ? '1' : '0',
     NEXT_PUBLIC_MOVED_TO: process.env.NEXT_PUBLIC_MOVED_TO ?? '',
+    NEXT_PUBLIC_APP_BUILD: appBuild ? '1' : '0',
+    // The build's version (package.json): the apps' minimum-version check (config/app).
+    NEXT_PUBLIC_APP_VERSION: version,
   },
   images: {
-    unoptimized: process.env.NODE_ENV === 'production',
+    unoptimized: process.env.NODE_ENV === 'production' || appBuild,
     remotePatterns: [
       {
         protocol: "https",
@@ -44,14 +58,18 @@ const nextConfig = {
       },
     ],
   },
-  async headers() {
+  // A static export has no server: no headers or rewrites (the app's API calls go to the live site).
+  ...(appBuild ? {} : { headers, rewrites }),
+};
+
+async function headers() {
     return [
       {
         // Everything except the proxied Firebase auth paths: the SDK embeds /__/auth/iframe and the
         // handler page runs Firebase's own scripts, so our CSP / X-Frame-Options must never apply there.
         // (Next 16.3.6 sends no headers() entries on external-rewrite responses anyway; this exclusion
         // is defence in depth for future versions.) No CSP here since T32: pages get a per-request nonce
-        // policy from src/proxy.ts, and /api/* gets the static one below.
+        // policy from src/proxy.web.ts, and /api/* gets the static one below.
         source: '/:path((?!__/auth(?:/|$)|__/firebase/init\\.json$).*)',
         headers: [
           NOSNIFF,
@@ -77,8 +95,9 @@ const nextConfig = {
         headers: [HSTS, NOSNIFF, REFERRER],
       },
     ];
-  },
-  // Firebase auth proxy ("redirect best practices", option 3): /__/auth/* and /__/firebase/init.json are
+}
+
+// Firebase auth proxy ("redirect best practices", option 3): /__/auth/* and /__/firebase/init.json are
   // proxied transparently (not redirected) to <project>.firebaseapp.com, so authDomain can be the app's
   // own host and signInWithRedirect works in browsers that block third-party storage (D6).
   // - In production, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN must equal the serving host (spoton.isolapaul.hu;
@@ -86,7 +105,7 @@ const nextConfig = {
   // - On Vercel it stays <project>.firebaseapp.com until Stage B (the proxy is then simply unused).
   // - src/lib/firebase.ts needs no change: it already reads authDomain from the env.
   // Disabled in emulator builds (the Auth emulator serves its own handler).
-  async rewrites() {
+async function rewrites() {
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
     if (!projectId || useEmulators) return [];
     const upstream = `https://${projectId}.firebaseapp.com`;
@@ -94,8 +113,7 @@ const nextConfig = {
       { source: '/__/auth/:path*', destination: `${upstream}/__/auth/:path*` },
       { source: '/__/firebase/init.json', destination: `${upstream}/__/firebase/init.json` },
     ];
-  },
-  // Service worker is now served from API route at /api/firebase-messaging-sw
-};
+}
+// Service worker is now served from API route at /api/firebase-messaging-sw
 
 export default nextConfig;

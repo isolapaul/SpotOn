@@ -2,6 +2,8 @@ node_modules
 # Next build dirs: .next (default) and .next-e2e (NEXT_DIST_DIR for emulator/E2E builds)
 .next*/
 out
+# The app build's static export (npm run build:app, bundled by Capacitor)
+out-app/
 dist
 build
 # Env files: never committed, except the non-secret deploy template and the

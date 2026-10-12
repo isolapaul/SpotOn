@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { InboxType } from '@/lib/inbox';
 
 export interface Notification {
   id: string;
@@ -8,6 +9,8 @@ export interface Notification {
   timestamp: number;
   read: boolean;
   type: 'spot_approved' | 'moderation_declined' | 'new_review' | 'new_like' | 'new_pending_spot' | 'general' | 'success' | 'error' | 'info' | 'warning' | 'system';
+  /** Server inbox items only (never stored locally): what a tap opens and the item's own look. */
+  inbox?: { type: InboxType; spotId: string; actorUid?: string };
 }
 
 interface NotificationStore {

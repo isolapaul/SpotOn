@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { spotIdFromPath, spotLink } from './spotLinks';
+import { spotIdFromPath, spotLink, userIdFromPath } from './spotLinks';
 import { previewFromDocument } from './spotPreview';
 
 describe('spot links', () => {
@@ -23,5 +23,21 @@ describe('spot links', () => {
       imageUrls: { arrayValue: { values: [{ stringValue: '/p.jpg' }, { stringValue: 'https://x/a.jpg' }, { stringValue: 'https://x/b.jpg' }] } },
       primaryImageIndex: { integerValue: '2' } } };
     expect(previewFromDocument('s', three)?.imageUrl).toBe('https://x/b.jpg');
+  });
+});
+
+describe('userIdFromPath', () => {
+  it('reads a profile link', () => {
+    expect(userIdFromPath('/user/abc123')).toBe('abc123');
+    expect(userIdFromPath('/user/abc%20d/')).toBe('abc d');
+    expect(userIdFromPath('/user/')).toBeNull();
+    expect(userIdFromPath('/user/%E0%A4%A')).toBeNull();
+    expect(userIdFromPath('/spot/abc')).toBeNull();
+  });
+});
+
+describe('spotIdFromPath with a malformed escape', () => {
+  it('is no link instead of throwing', () => {
+    expect(spotIdFromPath('/spot/%E0%A4%A')).toBeNull();
   });
 });

@@ -3,6 +3,76 @@
 Versions are SpotOn's releases (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and are listed by date.
 
+## Unreleased
+
+### Added (apps)
+- SpotOn as an Android and iOS app, each its own build with the app bundled inside (it opens without waiting for the website), adding what a browser tab cannot: Google sign-in with the phone's account picker, push notifications, the system share sheet, the Android back button and spot links that open in the app. The first-run tour skips its install step in the app.
+- In the apps: Sign in with Apple on iPhone (when enabled), tapping a push opens the profile, spot or feed it is about, profile and feed links open in the app too (iOS Universal Links), a light haptic tap with the interface sounds, and the Android 13+ themed icon.
+- On iPhone: a running upload (a new spot, photos or a review) shows its progress in the Dynamic Island and on the lock screen, and stays there a few seconds with the result; long-press the app icon for Add a spot, Feed and Near me.
+- In the apps: after your spot is approved, the app may ask for a store rating with the system's own prompt (at most every 120 days; the system decides whether it shows).
+- The apps move a little livelier than the website: buttons give under the finger, sheets rise with a spring, the start screen's mark grows into the map, and a new spot lands with a small confetti burst.
+
+### Added (growth)
+- The apps can ask for an update: when a build is too old for the server, they show an "Update SpotOn" screen with the store link (`config/app.minVersion`).
+
+- Anonymous usage counters and app error reports (no user, device or IP identifier), with a 7/30-day overview and the latest errors for the super admin in the admin tools; the privacy policy describes them.
+
+- Invite friends: everyone has a personal link (`/i/<username>`, also opens the apps). A friend who signs up with it, or names you under "Who invited you?" within a week, earns you +10 XP and themselves +10 XP; their first approved spot earns you +20 XP more. Bronze, silver and gold Ambassador badges at 3, 5 and 10 friends, shown on the profile; the invite sheet shows the 1-3-5-10 steps and who joined. You hear about every friend who joins (in the app and as a push, with the "Follows" setting).
+
+- Views: opening a spot's details counts a view (once a day per person; the owner's own views do not count), shown quietly next to the rating. Explore gets a "Popular" order (views, likes, reviews and visits). Owners whose spots were viewed at least 3 times hear about it in the Monday digest.
+
+- "I was here": at a spot (within 300 m of it), one tap on its page collects a stamp; the page shows how many people were there, and the profile's stamp collection lists every place you visited. Where you have been stays private.
+
+- Hidden places (off until switched on in `config/app.lockEnabled`): every pin stays on the map, but until you share your first spot (or, on the web and Android, a friend joins with your invite) most places show only their category and distance, with a blurred photo; the most popular places, your own, the ones of people you follow and anything opened from a link stay open. Explore says how many places are waiting.
+
+- Share as image: a spot's "More" menu makes a clean story card (1080×1920: the photo, the name, the category, the rating and the link) and shares it through the share sheet, or downloads it where sharing images is not supported.
+
+- Public lists: switch a list to "Public list" and anyone can find it under Explore → Search → Lists and open it; it also gets its own web page (`/list/<user>/<list>`, with a link preview) that search engines find through the new `/sitemap.xml` (with every approved spot) and `robots.txt`.
+
+- Launch challenge (until 30 June 2027): five easy first steps (share a spot, review someone else's spot, follow someone, collect an "I was here" stamp, save a favourite), shown with their progress in Explore and on the profile. Completing them earns the Founder badge, shown on the profile, and +50 XP.
+
+### Added (feed)
+- A feed of the people you follow: the newest spots they shared, each with who shared it, when, the photos (swipe through them), the description and the rating. Below them come earlier spots from the community, so the feed is never empty, with a "People to follow" row.
+- Tap a spot's name or "Show on map" in the feed: the feed slides away, the map flies to the spot and its place card opens with a "Feed" button that takes you back to the same place in the feed.
+- From a feed card you can like the spot (or double-tap its photo), see who liked it (people you blocked, or who blocked you, are left out), read and write reviews, share the spot and add it to your favourites; tap the poster to open their profile. Likes also show on the spot's page.
+- "Near me" in the feed shows only spots within 25 km.
+- Your own new spots show in the feed too, marked "You shared this".
+- The next cards' photos load ahead, so scrolling the feed does not wait for them.
+- A weekly push on Monday mornings: how many new spots the people you follow shared that week (turn it off with the "Follows" notification setting); tapping it opens the feed.
+- The feed button in the bottom bar lights up when people you follow shared something new since your last visit; new posts arriving while you scroll show a "new spots" button.
+
+### Added (people)
+- Tap the followers or following count on a profile (yours or anyone's you can see) to see who follows them and whom they follow, with a name filter and a Follow button.
+- When someone follows you, you get a notification in the app and a push (at most once a day per person; it follows the "Follows" notification setting).
+- A notice that arrives while the app is open drops in at the top for a few seconds; tapping it, or the notice in the notification centre, opens that person's profile or flies to the spot.
+- Tapping a push opens what it is about: a new follower's or follow request's profile, or the spot (profile links: `/user/<id>`).
+
+### Added (app store readiness)
+- The Terms now say plainly that abusive users and objectionable content are not tolerated, how to report and block in the app, and that reports are reviewed within 24 hours; everyone accepts the updated Terms once.
+- A report button on every feed card; Privacy Policy and Terms links at the bottom of Explore, also while signed out.
+- An offline page instead of the browser's error page when the app is opened without internet, and friendly error and "page not found" screens.
+- The page language follows the chosen app language (screen readers, translation prompts).
+
+### Changed
+- The Android back gesture and Escape close the sheet on top first (reviews, likers, followers, the photo viewer) instead of the whole panel under it, and focus moves into the sheet and back.
+- A notice banner stays while you touch it; an "Offline" pill shows while there is no connection.
+- Slightly brighter secondary text for better contrast; the panels and the English and German texts load in their own parts (only the chosen language is downloaded), so the app starts faster.
+- Android 13+ themed (monochrome) app icon and a proper 180 px home-screen icon for iPhones.
+- Sign in with Apple is ready for the iOS app (off until it is set up; `docs/app-store.md`).
+- Signing in from a panel (the feed, a profile, a spot's reviews) returns you to it instead of the map.
+
+### Fixed
+- A shared spot link with a broken escape (`/spot/%E0%A4%A`) no longer breaks the page.
+- Someone adding your spot to their favourites over and over no longer sends you a push each time (at most one a day per person and spot), and people you blocked send none.
+- Users without a username can delete their account again: the confirmation now asks for the e-mail address, as the server expects (it asked for "user").
+- Signing out clears this device's notification list, so the next account does not see it.
+- Tapping the heart on two spots quickly no longer loses the first favourite until a reload.
+- Signing up with Google through the redirect (blocked pop-ups, home-screen app) asks for a username like the pop-up sign-up.
+- Reply pushes follow the "Reviews and likes" setting instead of "Spot approved".
+
+### Added (sounds)
+- Short, quiet sounds when your spot or photos are uploaded, a notification arrives, you like a photo, add a favourite, follow someone or level up. They can be turned off in Settings → Sounds; the iPhone's silent switch mutes them.
+
 ## v2.2.1 — 2026-10-12
 
 ### Security

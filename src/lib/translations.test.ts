@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { translations } from './translations';
+import { translations } from './translations.all';
 
 describe('translations', () => {
   const huKeys = Object.keys(translations.hu).sort();

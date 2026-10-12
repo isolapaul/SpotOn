@@ -40,6 +40,7 @@ describe('constants', () => {
       appReady: 500,
       approveClose: 1000,
       uploadDoneVisible: 2500,
+      liveActivityLinger: 8000,
     });
   });
 
@@ -73,7 +74,7 @@ describe('Z scale', () => {
     expect(Z).toEqual({
       mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-1000', dock: 'z-50', prompt: 'z-50', placeCard: 'z-55',
       panel: 'z-60', panelInnerBackdrop: 'z-40', panelInnerSheet: 'z-50', panelModal: 'z-70',
-      gallery: 'z-100', floatingButton: 'z-1500', onboarding: 'z-1900', modal: 'z-2000', usernameSetup: 'z-3500',
+      gallery: 'z-100', floatingButton: 'z-1500', onboarding: 'z-1900', modal: 'z-2000', liveNotice: 'z-2500', usernameSetup: 'z-3500',
       blocking: 'z-9999',
     });
   });

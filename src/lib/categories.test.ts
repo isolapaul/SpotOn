@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { CATEGORIES, CATEGORY_LABEL_KEY, categoryOptions, customCategoryName, parseCustomCategory, resolveCategory } from './categories';
 import { CATEGORY_GLYPHS } from './categoryGlyphs';
 import { CATEGORY_ICON_GLYPHS, CATEGORY_ICON_IDS, CATEGORY_ICON_LABELS } from './categoryIcons';
-import { translations } from './translations';
+import { translations } from './translations.all';
 
 const IDS = ['scenic', 'smoke-spot', 'viewpoint', 'hiking', 'random', 'date-spot', 'park', 'part', 'other'] as const;
 

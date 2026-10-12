@@ -2,7 +2,9 @@
 
 import { useMemo, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { X, Navigation, Search, Sparkles, Star } from 'lucide-react';
+import { X, Flame, Lock, Navigation, Search, Sparkles, Star } from 'lucide-react';
+import { useSpotLock } from '@/hooks/useSpotLock';
+import ChallengeCard from './challenge/ChallengeCard';
 import { useSpotStore } from '@/store/useSpotStore';
 import { useT } from '@/hooks/useT';
 import { useCategoryOptions, useCategoryText } from '@/hooks/useCategory';
@@ -17,12 +19,19 @@ import PanelShell from './ui/PanelShell';
 import FeaturedSpot from './discovery/FeaturedSpot';
 import SpotRow from './discovery/SpotRow';
 import SearchView from './discovery/SearchView';
+import LegalLinks from './legal/LegalLinks';
+import { popularity } from '@/lib/popularity';
+
+/** The segmented sort's order (the thumb slides by its index). */
+const SORT_ORDER: readonly DiscoverySort[] = ['nearest', 'best-rated', 'popular'];
 
 interface DiscoveryPanelProps {
   isOpen: boolean;
   onClose: () => void;
   userLocation: { lat: number; lng: number } | null;
   onSpotSelect: (spot: Spot) => void;
+  /** Growth plan §5: the unlock banner's "Add a spot". */
+  onAddSpot?: () => void;
 }
 
 const chipClass = (active: boolean) =>
@@ -30,7 +39,8 @@ const chipClass = (active: boolean) =>
    transition-colors duration-200 active:scale-95 ${active ? 'bg-brand-600 text-white' : 'bg-white/8 text-label-secondary'}`;
 
 /** Explore (design phase 3): large title, segmented sort, category chips, a featured spot and a grouped list. */
-export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSelect }: Readonly<DiscoveryPanelProps>) {
+export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSelect, onAddSpot }: Readonly<DiscoveryPanelProps>) {
+  const { isLocked } = useSpotLock();
   const { spots } = useSpotStore();
   const t = useT();
   const categories = useCategoryOptions();
@@ -63,18 +73,23 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
     [spots, now],
   );
 
-  // Approved only, the category filter, then the chosen order.
+  // Approved only, the category filter, then the chosen order. Locked places (growth plan §5) are
+  // counted for the unlock banner instead of listed.
+  const lockedCount = useMemo(() => spots.filter((spot) => spot.status === 'approved' && isLocked(spot)
+    && (!filterCategory || spot.category === filterCategory)).length, [spots, isLocked, filterCategory]);
   const sortedSpots = useMemo(() => {
-    const filtered = spots.filter((spot) => spot.status === 'approved'
+    const filtered = spots.filter((spot) => spot.status === 'approved' && !isLocked(spot)
       && (!filterCategory || spot.category === filterCategory)
       && (!onlyNew || newIds.has(spot.id)));
     if (sortBy === 'nearest' && userLocation) {
       filtered.sort((a, b) => (getDistance(a) ?? Infinity) - (getDistance(b) ?? Infinity));
+    } else if (sortBy === 'popular') {
+      filtered.sort((a, b) => popularity(b) - popularity(a));
     } else {
       filtered.sort((a, b) => averageRating(b.reviews) - averageRating(a.reviews));
     }
     return filtered;
-  }, [spots, filterCategory, onlyNew, newIds, sortBy, userLocation, getDistance]);
+  }, [spots, filterCategory, onlyNew, newIds, sortBy, userLocation, getDistance, isLocked]);
 
   const displayedSpots = useMemo(() => sortedSpots.slice(0, visibleCount), [sortedSpots, visibleCount]);
   const hasMore = visibleCount < sortedSpots.length;
@@ -142,16 +157,17 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
 
         {/* Segmented sort */}
         <div className="px-5 mt-4">
-          <div role="radiogroup" className="relative grid grid-cols-2 p-0.5 rounded-[10px] bg-white/8">
+          <div role="radiogroup" className="relative grid grid-cols-3 p-0.5 rounded-[10px] bg-white/8">
             <span
               aria-hidden="true"
-              className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-r1 bg-white/16 shadow-xs transition-transform duration-350 ease-ios"
-              style={{ transform: sortBy === 'nearest' ? 'translateX(0)' : 'translateX(100%)' }}
+              className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(33.333%-1.333px)] rounded-r1 bg-white/16 shadow-xs transition-transform duration-350 ease-ios"
+              style={{ transform: `translateX(${SORT_ORDER.indexOf(sortBy) * 100}%)` }}
             />
             {(
               [
                 { id: 'nearest', label: t('nearestToMe'), Icon: Navigation, disabled: !userLocation },
                 { id: 'best-rated', label: t('bestRated'), Icon: Star, disabled: false },
+                { id: 'popular', label: t('sortPopular'), Icon: Flame, disabled: false },
               ] as const
             ).map(({ id, label, Icon, disabled }) => (
               <button
@@ -189,6 +205,22 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
           ))}
         </div>
 
+        <div className="mx-4 mt-4 empty:hidden"><ChallengeCard /></div>
+
+        {lockedCount > 0 && (
+          <div className="mx-4 mt-4 flex items-center gap-3 rounded-[18px] bg-brand-600/12 ring-1 ring-brand-400/25 p-3.5">
+            <span className="w-10 h-10 shrink-0 rounded-full grid place-items-center bg-brand-500/20 text-brand-300">
+              <Lock className="w-5 h-5" aria-hidden="true" />
+            </span>
+            <p className="flex-1 min-w-0 text-[14px] text-label">{t('lockedBanner', { count: lockedCount })}</p>
+            {onAddSpot && (
+              <button type="button" onClick={onAddSpot} className="shrink-0 h-9 px-3.5 rounded-full bg-brand-600 text-white text-[13px] font-semibold">
+                {t('lockedAddSpot')}
+              </button>
+            )}
+          </div>
+        )}
+
         {displayedSpots.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
             <span className="w-16 h-16 rounded-2xl grid place-items-center bg-brand-500/15 text-brand-400 mb-4">
@@ -219,6 +251,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
             )}
           </div>
         )}
+        <LegalLinks className="mt-6" />
         </>
         )}
       </div>

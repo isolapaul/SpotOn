@@ -6,6 +6,7 @@
 import { arrayRemove, arrayUnion, doc, updateDoc } from 'firebase/firestore';
 import { getMessaging, isSupported, onRegistered, register, unregister, type Messaging } from 'firebase/messaging';
 import { app, db } from '@/lib/firebase';
+import { forgetNativeDevice } from './nativePush';
 
 const FID_KEY = 'spoton-fcm-fid';
 /** Before v2.1.0: the device's FCM registration token. */
@@ -65,10 +66,13 @@ export async function saveDeviceFid(uid: string, fid: string, extra: Record<stri
 }
 
 /**
- * Sign-out and account deletion: removes this device's FID (and a legacy token) from the user,
+ * Sign-out and account deletion: removes this device's FID (and a legacy token, or the native app's
+ * token) from the user,
  * then unregisters the device from FCM. Never prompts; failures are logged.
  */
 export async function forgetDevice(uid: string | null): Promise<void> {
+  // The Android/iOS app registers natively instead (nativePush.ts); a no-op in browsers.
+  await forgetNativeDevice(uid);
   const fid = rememberedFid();
   const legacy = rememberedLegacyToken();
   if (uid && (fid || legacy)) {

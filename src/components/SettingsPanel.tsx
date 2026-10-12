@@ -15,6 +15,7 @@ import { useUserLocation } from '@/hooks/useUserLocation';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
 import AccountSection from './settings/AccountSection';
 import PrivacySection from './settings/PrivacySection';
+import SoundSection from './settings/SoundSection';
 import { deletionConfirmWord } from '@/lib/accountDeletion';
 
 interface SettingsPanelProps {
@@ -305,6 +306,9 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
               {t('notificationSettingsButton')}
             </button>
           </div>
+
+          {/* Interface sounds */}
+          <SoundSection />
 
           {/* Location Permission */}
           <div className="rounded-[18px] bg-surface-1 p-5">

@@ -1,4 +1,4 @@
-import { translations, type TranslationKey } from './translations';
+import { hu, type Dictionary, type TranslationKey } from './translations';
 
 /** UI languages. `null` in the language store means "not chosen yet" (first visit). */
 export type Language = 'hu' | 'en' | 'de';
@@ -19,9 +19,25 @@ export function interpolate(s: string, vars?: TranslationVars): string {
   return out;
 }
 
-/** Translated text for `key` in `lang`, with vars applied; the key itself when the text is missing. */
+/** The dictionaries in memory: Hungarian always; English and German once loaded (registerDictionary). */
+const dictionaries: Partial<Record<Language, Dictionary>> = { hu };
+
+/** Makes a loaded dictionary available to translate() (store/useLanguageStore loads them). */
+export function registerDictionary(lang: Language, dictionary: Dictionary): void {
+  dictionaries[lang] = dictionary;
+}
+
+/** Whether `lang`'s texts are in memory (Hungarian always is). */
+export function hasDictionary(lang: Language): boolean {
+  return dictionaries[lang] !== undefined;
+}
+
+/**
+ * Translated text for `key` in `lang`, with vars applied. While `lang`'s dictionary is still
+ * loading, the Hungarian text stands in; the key itself when the text is missing everywhere.
+ */
 export function translate(lang: Language, key: TranslationKey, vars?: TranslationVars): string {
-  const text: string | undefined = translations[lang]?.[key];
+  const text: string | undefined = dictionaries[lang]?.[key] ?? hu[key];
   return interpolate(text || key, vars);
 }
 

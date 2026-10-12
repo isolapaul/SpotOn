@@ -32,7 +32,9 @@ storage.rules
 vercel.json
 **/*.log
 # Admin/seed scripts import dirs excluded above (functions, e2e) and are not needed in the image; keep only
-# the build-time env check and the service worker bundler (`prebuild` runs it before `next build`).
+# the build-time env check, the service worker bundler (`prebuild` runs it before `next build`) and the
+# local package stand-ins under scripts/shims (package.json links them; `npm ci` needs them).
 scripts
 !scripts/check-public-env.mjs
 !scripts/build-sw.mjs
+!scripts/shims

@@ -2,6 +2,7 @@
 // T26: module-level cache (PUBLIC_PROFILE_TTL_MS) plus in-flight de-duplication, so concurrent
 // callers share one getDoc and a profile is read at most once per TTL. Public data only (the
 // same for every viewer), so the cache never needs clearing on sign-in/out.
+import { badgesOf } from '@/lib/challenge';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { PUBLIC_PROFILE_TTL_MS } from '@/lib/constants';
@@ -21,6 +22,10 @@ export interface PublicProfile {
   isPrivate?: boolean;
   followersCount?: number;
   followingCount?: number;
+  /** Growth plan §2: how many people joined with this user's invite (the invite badges). */
+  invitesCount?: number;
+  /** Growth plan §8: earned badges ("founder"). */
+  badges?: string[];
 }
 
 interface CacheEntry {
@@ -55,6 +60,8 @@ async function readPublicProfile(uid: string): Promise<PublicProfile | null> {
   if (typeof data.followersCount === 'number') profile.followersCount = Math.max(0, data.followersCount);
   if (typeof data.followingCount === 'number') profile.followingCount = Math.max(0, data.followingCount);
   if (typeof data.isAdmin === 'boolean') profile.isAdmin = data.isAdmin;
+  if (typeof data.invitesCount === 'number') profile.invitesCount = Math.max(0, data.invitesCount);
+  if (Array.isArray(data.badges)) profile.badges = badgesOf(data.badges);
   return profile;
 }
 

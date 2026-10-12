@@ -4,6 +4,8 @@ import { Check, CircleAlert, Loader2, RotateCw, X } from 'lucide-react';
 import { useUploadStore, type UploadJob } from '@/store/useUploadStore';
 import { useT } from '@/hooks/useT';
 import { Z } from '@/lib/constants';
+import { isNativeApp } from '@/lib/nativeApp';
+import ConfettiBurst from '@/components/ui/ConfettiBurst';
 
 /** The job the pill shows: a failure first (it needs the user), then running, then just done. */
 function pick(jobs: UploadJob[]): UploadJob | undefined {
@@ -45,7 +47,11 @@ export default function UploadStatus() {
         key={`${job.id}-${job.status}`}
         className="pointer-events-auto max-w-full flex items-center gap-2.5 pl-3.5 pr-2 min-h-[44px] py-1.5 rounded-full material-sheet shadow-float motion-safe:animate-toast-in"
       >
-        <span className="shrink-0">{icon}</span>
+        <span className="relative shrink-0">
+          {icon}
+          {/* The apps celebrate a new spot with a little burst. */}
+          {job.status === 'done' && job.kind === 'spot' && isNativeApp() && <ConfettiBurst />}
+        </span>
         <span className={`text-sm text-white/90 ${job.status === 'failed' ? 'line-clamp-2' : 'truncate'}`}>{label}</span>
         {job.status === 'failed' ? (
           <>

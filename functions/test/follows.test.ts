@@ -1,6 +1,7 @@
 import {describe, expect, it} from "vitest";
 import {canViewProfile, followId, isUid, nextRateWindow, normalizeQuery} from "../src/lib/follows";
 import {buildPublicProfile} from "../src/lib/profiles";
+import {listedPeople} from "../src/lib/followLists";
 
 describe("follows helpers", () => {
   it("ids and uids", () => {
@@ -31,5 +32,20 @@ describe("follows helpers", () => {
     expect(p.bio).toHaveLength(150);
     expect(p.isPrivate).toBe(true);
     expect(buildPublicProfile({username: "a", bio: "  "}, {isAdmin: false})).toMatchObject({bio: null, isPrivate: false});
+  });
+});
+
+describe("follow lists", () => {
+  it("keeps existing profiles with a username, in order, with the shown fields", () => {
+    const rows = listedPeople([
+      {id: "b", exists: true, data: {username: "bea", profilePictureURL: "https://x/p.jpg", level: 3, isPrivate: true}},
+      {id: "gone", exists: false, data: undefined},
+      {id: "noname", exists: true, data: {username: ""}},
+      {id: "a", exists: true, data: {username: "adam", level: "7"}},
+    ]);
+    expect(rows).toEqual([
+      {uid: "b", username: "bea", profilePictureURL: "https://x/p.jpg", level: 3, isPrivate: true},
+      {uid: "a", username: "adam", profilePictureURL: null, level: null, isPrivate: false},
+    ]);
   });
 });

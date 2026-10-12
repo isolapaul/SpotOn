@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useUiStore } from '@/store/useUiStore';
 import { useToastStore } from '@/store/useToastStore';
-import { spotIdFromPath } from '@/lib/spotLinks';
+import { spotIdFromPath, userIdFromPath } from '@/lib/spotLinks';
 import { useT } from './useT';
+import { invitePathCode } from '@/lib/referral';
+import { openInvite } from './appPaths';
 
 /** How long a link waits for its spot (signed-in users' own pending spots load after sign-in). */
 const WAIT_MS = 6000;
@@ -18,10 +20,34 @@ export function useSpotLink(isAppReady: boolean, visibleIds: ReadonlySet<string>
   const t = useT();
   // The linked id, read once from the first address.
   const [linked] = useState(() => spotIdFromPath(pathname));
+  // A profile link (/user/<uid>, from a follow push) opens that profile instead.
+  const [linkedUser] = useState(() => userIdFromPath(pathname));
+  // An invite link (/i/<username>, growth plan §2): remembered for "Who invited you?".
+  const [invite] = useState(() => invitePathCode(pathname ?? ''));
+  // The feed link (/feed, from the weekly digest push) opens the feed.
+  const [linkedFeed] = useState(() => /^\/feed\/?$/.test(pathname ?? ''));
   const visibleRef = useRef(visibleIds);
   useEffect(() => {
     visibleRef.current = visibleIds;
   }, [visibleIds]);
+
+  useEffect(() => {
+    if (!invite || !isAppReady) return;
+    globalThis.history.replaceState(globalThis.history.state, '', '/');
+    openInvite(invite);
+  }, [isAppReady, invite]);
+
+  useEffect(() => {
+    if (!linkedFeed || !isAppReady) return;
+    globalThis.history.replaceState(globalThis.history.state, '', '/');
+    useUiStore.getState().openPanel('feed');
+  }, [isAppReady, linkedFeed]);
+
+  useEffect(() => {
+    if (!linkedUser || !isAppReady) return;
+    globalThis.history.replaceState(globalThis.history.state, '', '/');
+    useUiStore.getState().openUserProfile(linkedUser);
+  }, [isAppReady, linkedUser]);
 
   useEffect(() => {
     if (!linked || !isAppReady) return;

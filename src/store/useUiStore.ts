@@ -3,10 +3,10 @@ import { useMapThemeStore, type MapTheme } from './useMapThemeStore';
 
 /** The one panel or modal page.tsx shows over the map (T29). Opening one replaces the other. */
 export type UserPanel = { type: 'user'; uid: string };
-export type ActivePanel = 'none' | 'auth' | 'addSpot' | 'profile' | 'discovery' | { type: 'spot'; spotId: string } | UserPanel;
+export type ActivePanel = 'none' | 'auth' | 'addSpot' | 'profile' | 'discovery' | 'feed' | { type: 'spot'; spotId: string } | UserPanel;
 
 /** Where "back" from a spot returns to: the list it was opened from (item 8: someone's profile too). */
-export type ReturnTarget = 'profile' | 'discovery' | UserPanel;
+export type ReturnTarget = 'profile' | 'discovery' | 'feed' | UserPanel;
 
 export function isSpotPanel(p: ActivePanel): p is { type: 'spot'; spotId: string } {
   return typeof p === 'object' && p !== null && p.type === 'spot';
@@ -26,6 +26,10 @@ interface UiStore {
   /** Replaces whatever is open. Only the details of the previewed spot keep the way back. */
   openPanel: (p: ActivePanel) => void;
   closePanel: () => void;
+  /** The sign-in sheet over whatever is open; closing it returns there (the feed, a profile, a spot). */
+  openAuth: () => void;
+  /** The panel the sign-in sheet was opened from. */
+  authReturn: ActivePanel | null;
   /** Closes only while that spot is still the open panel (late effects never close another panel). */
   closeSpotPanel: (spotId: string) => void;
   /** Remembers the theme, switches to satellite and starts picking. */
@@ -51,12 +55,17 @@ interface UiStore {
   /** The map flies to this spot; each request has a new `seq`. */
   focusRequest: { spotId: string; seq: number } | null;
   /**
-   * Opens a spot from a list. From the profile: the profile closes, the map flies to the spot and
+   * Opens a spot from a list. From the profile or the feed: the panel closes, the map flies to the spot and
    * its place card opens on arrival (arriveAtSpot). From Explore: the details open over it.
    */
   openSpotFromList: (spotId: string, from: ReturnTarget) => void;
   /** A shared link (/spot/<id>): the map flies to the spot and its card opens (no way back). */
   openSpotLink: (spotId: string) => void;
+  /** Growth plan §7: the public list open in its sheet (from search or a /list link). */
+  publicList: { uid: string; listId: string } | null;
+  openPublicList: (list: { uid: string; listId: string } | null) => void;
+  /** Spots opened from a link or a notice this session: never locked (growth plan §5). */
+  linkedSpotIds: readonly string[];
   /** The map reached the focused spot: show its card, unless something else was opened meanwhile. */
   arriveAtSpot: (spotId: string) => void;
   /** Closing the details: back to Explore when opened from there, else the map stays at the spot. */
@@ -64,7 +73,7 @@ interface UiStore {
   /** Back (the back buttons and the system back): one step up, else close what is open. */
   goBack: () => void;
 
-  /** Item 8: someone's profile page; closing it returns to where it was opened (a spot, Explore). */
+  /** Item 8: someone's profile page; closing it returns to where it was opened (a spot, Explore, the feed). */
   userFrom: ActivePanel | null;
   openUserProfile: (uid: string) => void;
   closeUserProfile: () => void;
@@ -93,7 +102,16 @@ export const useUiStore = create<UiStore>((set, get) => ({
     const keepsWayBack = isSpotPanel(p) && p.spotId === previewSpotId;
     set({ activePanel: p, previewSpotId: null, returnTo: keepsWayBack ? returnTo : null, ...(keepsWayBack ? {} : { userFrom: null }) });
   },
-  closePanel: () => set({ activePanel: 'none', returnTo: null }),
+  closePanel: () => {
+    const { activePanel, authReturn } = get();
+    if (activePanel === 'auth' && authReturn) return set({ activePanel: authReturn, authReturn: null });
+    set({ activePanel: 'none', returnTo: null, authReturn: null });
+  },
+  authReturn: null,
+  openAuth: () => {
+    const { activePanel } = get();
+    set({ activePanel: 'auth', authReturn: activePanel === 'none' || activePanel === 'auth' ? null : activePanel });
+  },
   closeSpotPanel: (spotId) => {
     const p = get().activePanel;
     if (isSpotPanel(p) && p.spotId === spotId) set({ activePanel: 'none', returnTo: null });
@@ -126,7 +144,9 @@ export const useUiStore = create<UiStore>((set, get) => ({
   userFrom: null,
   openUserProfile: (uid) => {
     const { activePanel } = get();
-    const from = isSpotPanel(activePanel) || activePanel === 'discovery' ? activePanel : null;
+    const from = isSpotPanel(activePanel) || activePanel === 'discovery' || activePanel === 'feed' || activePanel === 'profile'
+      ? activePanel
+      : null;
     set({ activePanel: { type: 'user', uid }, userFrom: from, previewSpotId: null, returnTo: null });
   },
   closeUserProfile: () => set({ activePanel: get().userFrom ?? 'none', userFrom: null, returnTo: null }),
@@ -138,9 +158,16 @@ export const useUiStore = create<UiStore>((set, get) => ({
     const seq = (get().focusRequest?.seq ?? 0) + 1;
     set({ activePanel: 'none', previewSpotId: null, returnTo: from, focusRequest: { spotId, seq } });
   },
+  publicList: null,
+  openPublicList: (publicList) => set({ publicList }),
+  linkedSpotIds: [],
   openSpotLink: (spotId) => {
     const seq = (get().focusRequest?.seq ?? 0) + 1;
-    set({ activePanel: 'none', previewSpotId: null, returnTo: null, focusRequest: { spotId, seq } });
+    const linked = get().linkedSpotIds;
+    set({
+      activePanel: 'none', previewSpotId: null, returnTo: null, focusRequest: { spotId, seq },
+      linkedSpotIds: linked.includes(spotId) ? linked : [...linked, spotId],
+    });
   },
   arriveAtSpot: (spotId) => {
     const { focusRequest, activePanel, returnTo } = get();
@@ -167,6 +194,7 @@ export const useUiStore = create<UiStore>((set, get) => ({
   goBack: () => {
     const s = get();
     if (s.activePanel === 'addSpot') return s.closeAddSpot();
+    if (s.activePanel === 'auth') return s.closePanel();
     if (s.activePanel === 'none' && s.previewSpotId === null && s.selectingLocation) return s.cancelSelectingLocation();
     if (isUserPanel(s.activePanel)) return s.closeUserProfile();
     const onSpot = isSpotPanel(s.activePanel) || s.previewSpotId !== null;

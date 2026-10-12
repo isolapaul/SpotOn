@@ -10,6 +10,8 @@ export interface NotificationSettings {
 export interface User {
   uid: string;
   username: string; // Only username, no separate display name
+  /** The doc has no username (shown as "user"): account deletion then asks for the e-mail, as the server does. */
+  usernameMissing?: true;
   email: string;
   photoURL?: string;
   profilePictureURL?: string;
@@ -25,6 +27,7 @@ export interface User {
   bio?: string; // Item 8: up to BIO_MAX characters
   profilePrivate?: boolean; // Item 8: only accepted followers see the profile's lists
   showSaved?: boolean; // Item 8: saved spots shown on the profile (default hidden)
+  referredBy?: string; // Growth plan §2: the inviter's uid (server-written by claimReferral)
 }
 
 export interface AuthInfo {
@@ -57,6 +60,7 @@ export function mapUserDoc(uid: string, authInfo: AuthInfo, data: Record<string,
   const user: User = {
     uid,
     username: str(data.username) || 'user',
+    ...(str(data.username) ? {} : { usernameMissing: true as const }),
     email: authInfo.email || '',
     photoURL: authInfo.photoURL || str(data.photoURL) || '',
     profilePictureURL: str(data.profilePictureURL) || str(data.photoURL) || authInfo.photoURL || '',
@@ -76,6 +80,7 @@ export function mapUserDoc(uid: string, authInfo: AuthInfo, data: Record<string,
   if (typeof data.bio === 'string' && data.bio) user.bio = data.bio;
   if (data.profilePrivate === true) user.profilePrivate = true;
   if (data.showSaved === true) user.showSaved = true;
+  if (typeof data.referredBy === 'string' && data.referredBy) user.referredBy = data.referredBy;
 
   const spotsCount = data.spotsCount;
   if (typeof spotsCount === 'number' && Number.isInteger(spotsCount) && spotsCount >= 0) {

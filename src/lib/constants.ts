@@ -59,6 +59,8 @@ export const DELAYS = {
   approveClose: 1000,
   /** UploadStatus: how long the "uploaded" pill stays. */
   uploadDoneVisible: 2500,
+  /** A finished upload's Live Activity stays in the Dynamic Island / on the lock screen this long. */
+  liveActivityLinger: 8000,
 } as const;
 
 /**
@@ -73,9 +75,26 @@ export const DELAYS = {
 export const Z = {
   mapBase: 'z-0', mapOverlay: 'z-10', mapInner: 'z-1000', dock: 'z-50', prompt: 'z-50', placeCard: 'z-55',
   panel: 'z-60', panelInnerBackdrop: 'z-40', panelInnerSheet: 'z-50', panelModal: 'z-70',
-  gallery: 'z-100', floatingButton: 'z-1500', onboarding: 'z-1900', modal: 'z-2000', usernameSetup: 'z-3500',
+  gallery: 'z-100', floatingButton: 'z-1500', onboarding: 'z-1900', modal: 'z-2000', liveNotice: 'z-2500', usernameSetup: 'z-3500',
   blocking: 'z-9999',
 } as const;
 
 /** Z keys that live inside another layer's stacking context (see Z). */
 export const NESTED_Z_LAYERS: ReadonlyArray<keyof typeof Z> = ['mapInner', 'panelInnerBackdrop', 'panelInnerSheet'];
+
+/** Sign in with Apple is offered (build-time; enable once the provider is set up in Firebase Auth). */
+export const APPLE_SIGN_IN = process.env.NEXT_PUBLIC_APPLE_SIGN_IN === '1';
+
+/** The Android/iOS app build: the bundled static export (next.config.mjs, `npm run build:app`). */
+export const APP_BUILD = process.env.NEXT_PUBLIC_APP_BUILD === '1';
+
+/** This build's version (package.json), for the apps' update check (lib/appConfig). */
+export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0';
+
+/** The public site: shared links and the server API point here (the app runs on a local origin). */
+export const SITE_URL = 'https://spoton.isolapaul.hu';
+
+/** An API route's address: relative on the site, absolute (the live site) in the app build. */
+export function apiUrl(path: string): string {
+  return APP_BUILD ? `${SITE_URL}${path}` : path;
+}

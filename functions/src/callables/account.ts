@@ -23,7 +23,9 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import {auth, db} from "../lib/app";
 import {parseStorageDownloadUrl} from "../lib/spotImages";
+import {syncUserLevel} from "../lib/userLevel";
 import {
+  DELETED_OWNER,
   DeletionRefusal,
   orphanedUploads,
   planSpotCleanup,
@@ -192,16 +194,26 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
 
   // 4b. Follows (item 8), after the users doc is gone (the follow callables read both users docs
   // in their transactions, so no new edge or counter can appear): both directions (the other
-  // side's count drops, only for an edge that still exists), requests, request-notice cooldowns,
-  // rate limits.
-  const [following, followers, sent, received, noticesSent, noticesReceived] = await Promise.all([
-    db.collection("follows").where("follower", "==", uid).get(),
-    db.collection("follows").where("target", "==", uid).get(),
-    db.collection("followRequests").where("requester", "==", uid).get(),
-    db.collection("followRequests").where("target", "==", uid).get(),
-    db.collection("followNotices").where("requester", "==", uid).get(),
-    db.collection("followNotices").where("target", "==", uid).get(),
-  ]);
+  // side's count drops, only for an edge that still exists), requests, request-notice and
+  // favourite-notice cooldowns, rate limits.
+  const [following, followers, sent, received, noticesSent, noticesReceived, favNotices] =
+    await Promise.all([
+      db.collection("follows").where("follower", "==", uid).get(),
+      db.collection("follows").where("target", "==", uid).get(),
+      db.collection("followRequests").where("requester", "==", uid).get(),
+      db.collection("followRequests").where("target", "==", uid).get(),
+      db.collection("followNotices").where("requester", "==", uid).get(),
+      db.collection("followNotices").where("target", "==", uid).get(),
+      db.collection("favoriteNotices").where("favoriter", "==", uid).get(),
+    ]);
+  // The user's spot likes: each goes with its count, in one transaction per like.
+  const likes = await db.collection("spotLikes").where("uid", "==", uid).get();
+  await Promise.all(likes.docs.map((d) => db.runTransaction(async (tx) => {
+    if (!(await tx.get(d.ref)).exists) return;
+    tx.delete(d.ref);
+    const spotRef = db.collection("spots").doc(String(d.get("spotId")));
+    if ((await tx.get(spotRef)).exists) tx.update(spotRef, {likeCount: FieldValue.increment(-1)});
+  })));
   const counters = db.collection("publicProfiles");
   const dropEdge = (ref: DocumentReference, other: string, field: string) =>
     db.runTransaction(async (tx) => {
@@ -212,10 +224,40 @@ export const deleteAccount = onCall({timeoutSeconds: 300}, async (request) => {
   await Promise.all([
     ...following.docs.map((d) => dropEdge(d.ref, String(d.get("target")), "followersCount")),
     ...followers.docs.map((d) => dropEdge(d.ref, String(d.get("follower")), "followingCount")),
-    ...[...sent.docs, ...received.docs, ...noticesSent.docs, ...noticesReceived.docs]
-      .map((d) => d.ref.delete()),
+    ...[sent, received, noticesSent, noticesReceived, favNotices]
+      .flatMap((q) => q.docs).map((d) => d.ref.delete()),
     db.collection("rateLimits").doc(uid).delete(),
   ]);
+
+  // 4b2. Referrals (growth plan §2): the user's own referral goes (their inviter's XP is
+  // recomputed); the referrals of the people they invited keep their invitees' XP but no longer
+  // name them (DELETED_OWNER).
+  const [ownReferral, invitedByThem] = await Promise.all([
+    db.collection("referrals").doc(uid).get(),
+    db.collection("referrals").where("referrer", "==", uid).get(),
+  ]);
+  await Promise.all(invitedByThem.docs.map((d) => d.ref.update({referrer: DELETED_OWNER})));
+  if (ownReferral.exists) {
+    await ownReferral.ref.delete();
+    const inviter = ownReferral.get("referrer");
+    if (typeof inviter === "string" && inviter !== DELETED_OWNER) await syncUserLevel(inviter);
+  }
+
+  // 4b3. Views (growth plan §3): the user's daily view marks and their weekly owner stats.
+  const marks = await db.collection("viewMarks").where("uid", "==", uid).select().get();
+  for (let i = 0; i < marks.docs.length; i += 400) {
+    const batch = db.batch();
+    marks.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+  await db.collection("ownerStats").doc(uid).delete();
+  // "I was here" (growth plan §4): where the user has been.
+  const visits = await db.collection("users").doc(uid).collection("visits").select().get();
+  for (let i = 0; i < visits.docs.length; i += 400) {
+    const batch = db.batch();
+    visits.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
 
   // 4c. Blocks either way, reports the user filed, their replies and other people's replies to
   // their (removed) reviews, and the notices in other users' inboxes that name them (follow

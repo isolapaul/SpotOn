@@ -7,8 +7,8 @@ const REFUSAL_KEYS: Readonly<Record<string, TranslationKey>> = {
 };
 
 /** What the user types to confirm deletion: username, else e-mail, else "delete" (as the server checks). */
-export function deletionConfirmWord(user: { username?: string | null; email?: string | null }): string {
-  return user.username || user.email || 'delete';
+export function deletionConfirmWord(user: { username?: string | null; email?: string | null; usernameMissing?: true }): string {
+  return (!user.usernameMissing && user.username) || user.email || 'delete';
 }
 
 /** The message key for a failed deleteAccount call (server `details.reason`, else generic). */

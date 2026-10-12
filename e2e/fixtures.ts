@@ -6,6 +6,8 @@ export const E2E = {
   superAdmin: { uid: 'e2e-super', email: 'super@spoton.test', username: 'e2e_super' },
   // T11a: dedicated to profile-admin.spec.ts username changes (no other spec may use it).
   rename: { uid: 'e2e-rename', email: 'rename@spoton.test', username: 'e2e_rename' },
+  // Growth plan §2: a new account dedicated to invites.spec.ts (it names e2e_user as its inviter).
+  invitee: { uid: 'e2e-invitee', email: 'invitee@spoton.test', username: 'e2e_invitee' },
   legacySpot: {
     id: 'e2e-legacy-spot', name: 'E2E Legacy Spot', category: 'viewpoint',
     reviewComment: 'E2E legacy review comment',

@@ -50,7 +50,13 @@ test('save a spot to a new list, share it on the profile, another user sees it',
   await page.goto('/');
   await openApp(page);
   await page.getByRole('button', { name: 'Profile' }).click();
-  await page.getByRole('button', { name: 'Favorites', exact: true }).click();
+  const favorites = page.getByRole('button', { name: 'Favorites', exact: true });
+  // CI-only failure seen here: print what the screen shows instead of the tab (diagnostic). Short
+  // enough to print inside the test timeout.
+  await favorites.waitFor({ timeout: 8_000 }).catch(async () => {
+    console.log('lists.spec: no Favorites tab; screen:\n', await page.locator('body').ariaSnapshot({ timeout: 5_000 }));
+  });
+  await favorites.click();
   await page.getByRole('button', { name: new RegExp(`^${LIST}`) }).click();
   await expect(page.getByRole('heading', { name: LIST })).toBeVisible();
   await expect(spotCard(page, E2E.legacySpot.name)).toBeVisible();

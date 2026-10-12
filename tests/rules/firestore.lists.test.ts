@@ -1,6 +1,6 @@
 // Spot lists: users/{uid}/lists, owner-only; the profile shows shared ones through getProfile.
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { addDoc, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc, type Firestore } from 'firebase/firestore';
+import { addDoc, arrayUnion, collection, collectionGroup, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where, type Firestore } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 import { ALICE, BOB, SPOT_APPROVED, T0, dbAs, seed, setupEnv } from './helpers';
 
@@ -47,5 +47,29 @@ describe('lists', () => {
     await assertSucceeds(updateDoc(ref(ALICE), { spotIds: arrayUnion(SPOT_APPROVED), shared: false, updatedAt: serverTimestamp() }));
     await assertSucceeds(updateDoc(ref(ALICE), { name: 'Golden hour', updatedAt: serverTimestamp() }));
     await assertSucceeds(deleteDoc(ref(ALICE)));
+  });
+});
+
+describe('public lists (growth plan §7)', () => {
+  const publicList = { name: 'Best Views', nameLower: 'best views', spotIds: [], shared: true, public: true, createdAt: T0, updatedAt: T0 };
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore() as unknown as Firestore, 'users', ALICE, 'lists', 'pub'), publicList);
+    });
+  });
+  it('anyone reads a public list and finds it by a collection-group query', async () => {
+    await assertSucceeds(getDoc(doc(dbAs(env, null), 'users', ALICE, 'lists', 'pub')));
+    await assertSucceeds(getDoc(doc(dbAs(env, BOB), 'users', ALICE, 'lists', 'pub')));
+    await assertSucceeds(getDocs(query(collectionGroup(dbAs(env, null), 'lists'), where('public', '==', true))));
+    await assertFails(getDocs(collectionGroup(dbAs(env, null), 'lists')));
+    // A shared (profile) list stays private.
+    await assertFails(getDoc(doc(dbAs(env, BOB), 'users', ALICE, 'lists', 'l1')));
+  });
+  it('a public list must be on the profile and carry its search key', async () => {
+    const ref = doc(dbAs(env, ALICE), 'users', ALICE, 'lists', 'l1');
+    await assertSucceeds(updateDoc(ref, { public: true, nameLower: 'sunsets', updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(ref, { shared: false, public: true, updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(ref, { nameLower: 'something else', updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(doc(dbAs(env, BOB), 'users', ALICE, 'lists', 'pub'), { name: 'Hijacked', nameLower: 'hijacked', updatedAt: serverTimestamp() }));
   });
 });

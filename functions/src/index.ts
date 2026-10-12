@@ -13,7 +13,16 @@ export {
   getProfile, followUser, unfollowUser, respondFollowRequest, removeFollower, searchUsers,
   blockUser, unblockUser,
 } from "./callables/follows";
+export {getFollowList} from "./callables/followLists";
+export {setSpotLike, getSpotLikers} from "./callables/spotLikes";
+export {weeklyFeedDigest} from "./triggers/digest";
 export {approveSpot, rejectSpot, removeSpot, reviewSpotEdit, reviewPhotoSubmission} from "./callables/moderation";
 export {reportContent, resolveReport} from "./callables/reports";
 export {editReview, deleteReview, addReply} from "./callables/reviews";
 export {onReplyCreated} from "./triggers/replies";
+export {logEvents, reportClientError} from "./callables/telemetry";
+export {claimReferral} from "./callables/referrals";
+export {recordSpotView} from "./callables/spotViews";
+export {markVisited} from "./callables/visits";
+export {claimChallengeBadge} from "./callables/challenge";
+export {rollupSpotStats} from "./triggers/spotStats";

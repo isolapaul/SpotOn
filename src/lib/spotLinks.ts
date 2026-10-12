@@ -14,6 +14,25 @@ export function spotLink(origin: string, spotId: string): string {
 export function spotIdFromPath(pathname: string | null | undefined): string | null {
   const m = /^\/spot\/([^/]+)\/?$/.exec(pathname ?? '');
   if (!m) return null;
-  const id = decodeURIComponent(m[1]);
+  // A malformed escape (/spot/%E0%A4%A) is no link, not a crash of the whole page.
+  let id: string;
+  try {
+    id = decodeURIComponent(m[1]);
+  } catch {
+    return null;
+  }
   return isValidSpotIdClient(id) ? id : null;
+}
+
+/** The uid of a /user/<uid> path (a profile link from a push), else null. */
+export function userIdFromPath(pathname: string | null | undefined): string | null {
+  const m = /^\/user\/([^/]+)\/?$/.exec(pathname ?? '');
+  if (!m) return null;
+  let id: string;
+  try {
+    id = decodeURIComponent(m[1]);
+  } catch {
+    return null;
+  }
+  return id.length <= 128 && isValidSpotIdClient(id) ? id : null;
 }

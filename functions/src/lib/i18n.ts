@@ -206,6 +206,60 @@ export const translations = {
     en: (user: TParam, spotName: TParam) => `${user}: "${spotName}"`,
     de: (user: TParam, spotName: TParam) => `${user}: "${spotName}"`,
   },
+  newFollower: {
+    hu: "Új követő",
+    en: "New follower",
+    de: "Neuer Follower",
+  },
+  newFollowerBody: {
+    hu: (user: TParam) => `${user} bekövetett`,
+    en: (user: TParam) => `${user} started following you`,
+    de: (user: TParam) => `${user} folgt dir jetzt`,
+  },
+  // Referral program (growth plan §2): (the new user's name).
+  inviteJoined: {
+    hu: "Valaki a meghívásodra jött",
+    en: "A friend joined with your invite",
+    de: "Jemand ist deiner Einladung gefolgt",
+  },
+  inviteJoinedBody: {
+    hu: (user: TParam) => `${user} regisztrált a meghívásodra. Ez XP-t ért!`,
+    en: (user: TParam) => `${user} signed up with your invite. That earned you XP!`,
+    de: (user: TParam) => `${user} hat sich mit deiner Einladung registriert. Das bringt dir XP!`,
+  },
+  // Growth plan §3: (views last week).
+  weeklyViews: {
+    hu: "Népszerűek a helyeid",
+    en: "Your spots are popular",
+    de: "Deine Orte sind beliebt",
+  },
+  weeklyViewsBody: {
+    hu: (n: TParam) => `A helyeidet a múlt héten ${n} alkalommal nézték meg.`,
+    en: (n: TParam) => `Your spots were viewed ${n} times last week.`,
+    de: (n: TParam) => `Deine Orte wurden letzte Woche ${n}-mal angesehen.`,
+  },
+  // Weekly feed digest: (first name, how many others, how many spots).
+  weeklyDigest: {
+    hu: "Heti összefoglaló",
+    en: "Your week on SpotOn",
+    de: "Deine Woche auf SpotOn",
+  },
+  weeklyDigestBody: {
+    hu: (name: TParam, others: TParam, count: TParam) => Number(others) > 0 ?
+      `${name} és még ${others} ember ${count} új helyet osztott meg a héten` :
+      `${name} ${count} új helyet osztott meg a héten`,
+    en: (name: TParam, others: TParam, count: TParam) => Number(others) > 0 ?
+      `${name} and ${others} more shared ${count} new spots this week` :
+      `${name} shared ${count} new ${Number(count) === 1 ? "spot" : "spots"} this week`,
+    de: (name: TParam, others: TParam, count: TParam) => Number(others) > 0 ?
+      `${name} und ${others} weitere haben diese Woche ${count} neue Orte geteilt` :
+      `${name} hat diese Woche ${count} ${Number(count) === 1 ? "neuen Ort" : "neue Orte"} geteilt`,
+  },
+  weeklyDigestBodyNoName: {
+    hu: (count: TParam) => `${count} új hely azoktól, akiket követsz`,
+    en: (count: TParam) => `${count} new ${Number(count) === 1 ? "spot" : "spots"} from people you follow`,
+    de: (count: TParam) => `${count} ${Number(count) === 1 ? "neuer Ort" : "neue Orte"} von Leuten, denen du folgst`,
+  },
 } satisfies Record<string, Record<Lang, Template>>;
 
 export type TKey = keyof typeof translations;

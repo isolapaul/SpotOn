@@ -1,27 +1,17 @@
 import { useCallback } from 'react';
+import { APP_BUILD, SITE_URL } from '@/lib/constants';
 import type { Spot } from '@/store/useSpotStore';
-import { useToastStore } from '@/store/useToastStore';
 import { spotLink } from '@/lib/spotLinks';
 import { useT } from './useT';
+import { track } from '@/store/telemetry';
+import { shareLink } from './shareLink';
 
-/** Shares a spot's public link: the system share sheet, else the clipboard (with a notice). */
+/** Shares a spot's public link: the system share sheet (native in the app), else the clipboard (with a notice). */
 export function useShareSpot(): (spot: Pick<Spot, 'id' | 'name'>) => Promise<void> {
   const t = useT();
   return useCallback(async (spot) => {
-    const url = spotLink(globalThis.location.origin, spot.id);
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: spot.name, url });
-        return;
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      useToastStore.getState().showToast(t('linkCopied'), 'success');
-    } catch {
-      useToastStore.getState().showToast(url, 'info');
-    }
+    // The public address (inside the app the page runs on a local origin).
+    const url = spotLink(APP_BUILD ? SITE_URL : globalThis.location.origin, spot.id);
+    if (await shareLink({ title: spot.name, url }, t('linkCopied')) === 'shared') track('spot_shared');
   }, [t]);
 }

@@ -24,7 +24,10 @@ Together with the Firestore/Storage rules (`firestore.rules`, `storage.rules` in
 | `syncAdminFlag` | Firestore trigger (`admins/{uid}` written) | Keeps `publicProfiles/{uid}.isAdmin` in line with `admins/{uid}` | Nobody (Firestore event) |
 | `highlightSpot` | Callable | Highlights one of the caller's approved spots for 7 days, within the caller's level allowance | Signed-in users (own, approved spots) |
 | `unhighlightSpot` | Callable | Removes the caller's highlight from a spot | Signed-in users |
-| `toggleImageLike` | Callable | Likes or unlikes one image of a spot, in a transaction | Signed-in users |
+| `toggleImageLike` | Callable | Likes or unlikes one image of a spot, in a transaction (no longer used by the app; kept so the deployed function stays); at most 120 an hour | Signed-in users |
+| `setSpotLike` | Callable | Sets the caller's like of an approved spot (`spotLikes/{spotId}_{uid}` and `spots.likeCount`, one transaction; idempotent); at most 120 changes an hour, shared with photo likes | Signed-in users |
+| `getSpotLikers` | Callable | Who liked an approved spot, newest first (at most 200), without people either side blocked; at most 30 calls a minute | Signed-in users |
+| `weeklyFeedDigest` | Scheduled (Mondays 9:00, Europe/Budapest) | Pushes "N new spots from people you follow this week" to everyone whose followed people shared approved spots in the past 7 days (the "Follows" setting; opens `/feed`) | Nobody (schedule) |
 | `addSpotImages` | Callable | Adds already uploaded images (the caller's own `spot-images/{uid}/…` objects) to a spot, up to 20 images. Admins and the owner of a spot under review add them directly; everyone else's become `photoSubmissions` for an admin (item 4), at most 5 waiting per user and spot and 20 submissions an hour per user | Signed-in users |
 | `approveSpot` | Callable | Approves the version of a pending spot the admin saw (`seenAt`; refused with `SPOT_CHANGED` if the owner edited it since), stamps `approvedAt`; `onSpotUpdated` then tells the owner | Admins |
 | `rejectSpot` | Callable | Rejects a pending spot with a reason (1–500 characters, stored on the spot for its owner) and tells the owner | Admins |
@@ -45,7 +48,8 @@ Together with the Firestore/Storage rules (`firestore.rules`, `storage.rules` in
 | `removeAdmin` | Callable | Deletes an `admins/{uid}` document (a super admin cannot be removed) | Super admin only |
 | `deleteCategory` | Callable | Deletes a category only while no spot and no waiting edit uses it | Super admin only |
 | `getProfile` | Callable | What a visitor may see of a profile: approved spot ids, saved spot ids if shared, the lists shown on the profile; private profiles only for accepted followers; the caller's follow state | Anyone |
-| `followUser` | Callable | Follows a public profile, or sends a follow request to a private one (inbox + push, at most once a day per pair); at most 60 an hour | Signed-in users |
+| `followUser` | Callable | Follows a public profile (the target gets a "new follower" inbox item + push) or sends a follow request to a private one (inbox + push); either notice at most once a day per pair; at most 60 follows an hour | Signed-in users |
+| `getFollowList` | Callable | Someone's followers or the people they follow (newest first, at most 200), with the profile page's visibility (private: only the owner and accepted followers) and without people either side blocked; at most 30 calls a minute | Signed-in users |
 | `unfollowUser` | Callable | Unfollows, or cancels the caller's request | Signed-in users |
 | `respondFollowRequest` | Callable | Accepts or declines a request to the caller (accept: inbox + push to the requester) | Signed-in users |
 | `removeFollower` | Callable | Removes someone who follows the caller | Signed-in users |
@@ -60,7 +64,7 @@ The super admin is the `admins/{uid}` document with `role: 'super'`. It exists a
 
 ## Inbox
 
-Moderation decisions, removals, follow news (requests, accepts, followed users' new spots) and replies reach the user twice: a push (each type follows its own notification setting, `settingsKeyOf` in `lib/inbox.ts`) and an item in `users/{uid}/inbox` (type, spot id and name, the reason, the other user for follow news and replies; at most 50 kept). The app shows the inbox in its notification centre, so a reason stays readable after the push and on every device.
+Moderation decisions, removals, follow news (requests, accepts, new followers, followed users' new spots) and replies reach the user twice: a push (each type follows its own notification setting, `settingsKeyOf` in `lib/inbox.ts`) and an item in `users/{uid}/inbox` (type, spot id and name, the reason, the other user for follow news and replies; at most 50 kept). The app shows the inbox in its notification centre, so a reason stays readable after the push and on every device.
 
 ## Parameters
 

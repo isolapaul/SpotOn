@@ -26,6 +26,7 @@ export function useNotificationFeed() {
       timestamp: item.createdAt,
       read: item.read,
       type: isApproval(item.type) ? 'spot_approved' : 'moderation_declined',
+      inbox: { type: item.type, spotId: item.spotId, ...(item.actorUid ? { actorUid: item.actorUid } : {}) },
     }));
     return [...fromInbox, ...local.notifications].sort((a, b) => b.timestamp - a.timestamp);
   }, [inbox.items, local.notifications, t]);

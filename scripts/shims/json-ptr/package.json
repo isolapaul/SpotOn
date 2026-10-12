@@ -1,0 +1,7 @@
+{
+  "name": "json-ptr",
+  "version": "3.1.1-spoton.0",
+  "description": "Local replacement for the withdrawn json-ptr package: the three functions firebase-tools' exegesis uses (JSON Pointer, RFC 6901).",
+  "license": "MIT",
+  "main": "index.js"
+}

@@ -42,7 +42,7 @@ async function seed(): Promise<void> {
     termsVersion: TERMS_VERSION, // A1: accepted, so the one-time terms prompt never shows
   });
 
-  for (const account of [E2E.user, E2E.admin, E2E.superAdmin, E2E.level5, E2E.rename]) {
+  for (const account of [E2E.user, E2E.admin, E2E.superAdmin, E2E.level5, E2E.rename, E2E.invitee]) {
     await auth.createUser({ uid: account.uid, email: account.email, password: E2E.password });
     await db.doc(`users/${account.uid}`).set(userDoc(account.uid, account.username, account.email));
     // The username registry (claimUsername's), which the people search reads (item 8).

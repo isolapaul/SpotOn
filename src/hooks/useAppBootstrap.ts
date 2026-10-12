@@ -5,10 +5,16 @@ import { useModerationStore } from '@/store/useModerationStore';
 import { useInboxStore } from '@/store/useInboxStore';
 import { useMyLevelStore } from '@/store/useMyLevelStore';
 import { useCategoryStore } from '@/store/useCategoryStore';
+import { useAppConfigStore } from '@/store/useAppConfigStore';
+import { useVisitStore } from '@/store/useVisitStore';
 import { useFollowStore } from '@/store/useFollowStore';
 import { useSafetyStore } from '@/store/useSafetyStore';
+import { useLikeStore } from '@/store/useLikeStore';
+import { ensureLanguage, useLanguageStore } from '@/store/useLanguageStore';
+import { detectLanguage } from '@/lib/i18n';
 import { useListStore } from '@/store/useListStore';
 import { DELAYS } from '@/lib/constants';
+import { installTelemetry, track } from '@/store/telemetry';
 
 /**
  * The spots listeners' scope for a user-store state (T30). A persisted user counts only once auth
@@ -31,6 +37,8 @@ function syncScopes(scope: SpotScope) {
   useFollowStore.getState().sync(scope.uid);
   useSafetyStore.getState().sync(scope.uid);
   useListStore.getState().sync(scope.uid);
+  useLikeStore.getState().sync(scope.uid);
+  useVisitStore.getState().listen(scope.uid);
 }
 
 /**
@@ -78,8 +86,11 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
     let cancelled = false;
 
     // Initialize Firebase auth listener
+    // The chosen (or, on a first visit, the browser's) language's texts load with it, so the app
+    // never shows Hungarian first to an English or German user (lib/translations).
     const initializeAuth = async () => {
-      await useUserStore.getState().initAuth();
+      const lang = useLanguageStore.getState().language ?? detectLanguage(globalThis.navigator?.languages);
+      await Promise.all([useUserStore.getState().initAuth(), ensureLanguage(lang)]);
       setLoadingStates(prev => ({ ...prev, auth: true }));
     };
 
@@ -108,6 +119,9 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
     initializeAuth();
     initializeSpots();
     useCategoryStore.getState().start();
+    useAppConfigStore.getState().start();
+    installTelemetry();
+    track('app_open');
     syncScopes(scope);
 
     // Cleanup
@@ -118,6 +132,7 @@ export function useAppBootstrap(): { isAppReady: boolean; onMapLoad: () => void 
       // Clean up all spots listeners (read from the store at cleanup time)
       useSpotStore.getState().stopSpots();
       useCategoryStore.getState().stop();
+      useAppConfigStore.getState().stop();
       syncScopes({ uid: null, isAdmin: false });
     };
   }, []);

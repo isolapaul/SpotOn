@@ -18,6 +18,7 @@ import { formatDistance, haversineKm } from '@/lib/geo';
 import { getPreviewImageUrl, imageFallbacks, isImageUnoptimized, PLACEHOLDER_URL, sortSpotImagesByLikes } from '@/lib/spotImages';
 import CategoryIcon from '@/components/ui/CategoryIcon';
 import StarRating from '@/components/ui/StarRating';
+import { callableReason } from '@/lib/callableErrors';
 
 interface PlaceCardContentProps {
   spot: Spot;
@@ -80,7 +81,7 @@ export default function PlaceCardContent({ spot, userLocation, onClose, onDetail
       onClose();
     } catch (error) {
       console.error('Failed to approve spot:', error);
-      showToast(t(error instanceof Error && error.message === SPOT_CHANGED_ERROR ? 'spotChangedReview' : 'approveError'), 'error');
+      showToast(t(callableReason(error) === SPOT_CHANGED_ERROR ? 'spotChangedReview' : 'approveError'), 'error');
     } finally {
       setApproving(false);
     }

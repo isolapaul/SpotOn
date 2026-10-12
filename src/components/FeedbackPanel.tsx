@@ -1,5 +1,6 @@
 "use client";
 
+import { apiUrl } from '@/lib/constants';
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
 import { X, Camera, Send, MessageSquareText } from 'lucide-react';
@@ -63,7 +64,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      const res = await fetch('/api/feedback', {
+      const res = await fetch(apiUrl('/api/feedback'), {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),

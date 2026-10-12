@@ -19,7 +19,7 @@ import {
   shouldAutoRequestLocation,
   stepCopy,
 } from './onboarding';
-import { translations } from './translations';
+import { translations } from './translations.all';
 
 describe('onboardingSteps', () => {
   const ctx = { signedIn: false, standalone: false, movedDomain: false };

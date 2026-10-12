@@ -9,11 +9,17 @@ import {nextRateWindow} from "./follows";
 
 export const RATE_LIMITS = {
   search: {windowMs: 60_000, max: 20},
+  // Followers / following lists (getFollowList).
+  followList: {windowMs: 60_000, max: 30},
+  // Spot likes (setSpotLike) and photo likes (toggleImageLike).
+  like: {windowMs: 60 * 60_000, max: 120},
   follow: {windowMs: 60 * 60_000, max: 60},
   report: {windowMs: 60 * 60_000, max: 20},
   reply: {windowMs: 60 * 60_000, max: 30},
   // Photo submissions for review: each call pings the admins.
   photo: {windowMs: 60 * 60_000, max: 20},
+  // "I was here" (markVisited).
+  visit: {windowMs: 60 * 60_000, max: 30},
 } as const;
 
 export type RateAction = keyof typeof RATE_LIMITS;

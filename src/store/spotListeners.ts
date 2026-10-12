@@ -69,7 +69,13 @@ function startScope(
     (snapshot) => {
       if (slots[name] !== slot) return; // stopped meanwhile
       const first = slot.spots === null;
-      slot.spots = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Spot);
+      // Unchanged spots keep their object, so memoised views (feed cards) skip them on a snapshot.
+      const changed = typeof snapshot.docChanges === 'function'
+        ? new Set(snapshot.docChanges().map((c) => c.doc.id))
+        : null;
+      const previous = new Map((slot.spots ?? []).map((s) => [s.id, s]));
+      slot.spots = snapshot.docs.map((d) =>
+        (changed && !changed.has(d.id) ? previous.get(d.id) : undefined) ?? ({ id: d.id, ...d.data() } as Spot));
       // `admin` supersedes `own` only once it has data, so the switch never empties anything.
       if (name === 'admin' && first) stopScope('own');
       recompute(set, name === 'approved' ? { isLoading: false, error: null } : {});

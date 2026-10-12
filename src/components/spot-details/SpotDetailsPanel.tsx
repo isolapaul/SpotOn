@@ -26,6 +26,8 @@ import SpotActions from './SpotActions';
 import ReviewsSection from './ReviewsSection';
 import { useSpotEdit } from './useSpotEdit';
 import { useSpotHighlight } from './useSpotHighlight';
+import { useSpotCounts } from '@/hooks/useSpotCounts';
+import VisitCard from './VisitCard';
 
 /** Scroll distance (px) after which the compact title bar shows: about the hero's height. */
 const COMPACT_AFTER = 300;
@@ -56,6 +58,7 @@ export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<Spo
   const isAdmin = useIsAdmin();
   const t = useT();
   const edit = useSpotEdit(spot);
+  const { counts, bumpVisit } = useSpotCounts(spot?.id ?? null, spot?.status === 'approved');
 
   // The spot whose gallery is open. Dropped during render when another spot (or none) is shown
   // (BUG-26), so a gallery never carries over to the next spot.
@@ -128,8 +131,10 @@ export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<Spo
               canEdit={canEdit}
               edit={edit}
               isHighlightedByUser={highlight.isHighlightedByUser}
+              views={counts?.views}
             />
             <SpotActions spot={spot} navigationUrl={navigationUrl} highlight={highlight} />
+            <VisitCard spot={spot} visits={counts?.visits} onVisited={bumpVisit} />
           </div>
 
           {/* Description / Edit form */}

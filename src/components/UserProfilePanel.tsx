@@ -12,17 +12,20 @@ import ProfileSpotCard from './profile/ProfileSpotCard';
 import FollowButton from './profile/FollowButton';
 import ProfileStats from './profile/ProfileStats';
 import ProfileMenu from './profile/ProfileMenu';
+import FollowListSheet from './profile/FollowListSheet';
+import { playSound } from '@/store/useSoundStore';
 import { useT } from '@/hooks/useT';
 import { useCategoryLabel } from '@/hooks/useCategory';
 import { useSpotStore, type Spot } from '@/store/useSpotStore';
 import { useUserStore } from '@/store/useUserStore';
 import { useUiStore } from '@/store/useUiStore';
 import { useToastStore } from '@/store/useToastStore';
-import { useFollowStore, type ProfileView } from '@/store/useFollowStore';
+import { useFollowStore, type FollowListKind, type ProfileView } from '@/store/useFollowStore';
 import { fetchPublicProfile, type PublicProfile } from '@/store/publicProfiles';
 import { getLevelInfo, getUserNameColor, profileLevel } from '@/lib/levelUtils';
 import { resolveNameFontClass } from '@/lib/nameStyle';
 import { averageRating } from '@/lib/rating';
+import ProfileBadges from './profile/ProfileBadges';
 
 interface UserProfilePanelProps {
   /** The profile shown; null closes the panel. */
@@ -46,7 +49,7 @@ export default function UserProfilePanel({ uid, onClose, onOpenSpot }: Readonly<
 function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClose: () => void; onOpenSpot: (id: string) => void }>) {
   const t = useT();
   const me = useUserStore((s) => s.user?.uid ?? null);
-  const openAuth = () => useUiStore.getState().openPanel('auth');
+  const openAuth = () => useUiStore.getState().openAuth();
   const showToast = useToastStore((s) => s.showToast);
   const follows = useFollowStore();
   const spots = useSpotStore((s) => s.spots);
@@ -55,6 +58,7 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
   const [version, setVersion] = useState(0);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>('spots');
+  const [followList, setFollowList] = useState<FollowListKind | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -80,7 +84,7 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
   const ownSpots = pick(view?.spotIds);
   const savedSpots = view?.savedSpotIds ? pick(view.savedSpotIds) : null;
   const list = tab === 'saved' && savedSpots ? savedSpots : ownSpots;
-  const lists: SpotListType[] = (view?.lists ?? []).map((l) => ({ ...l, shared: true, updatedAt: 0 }));
+  const lists: SpotListType[] = (view?.lists ?? []).map((l) => ({ ...l, shared: true, public: false, updatedAt: 0 }));
   const [openList, setOpenList] = useState<string | null>(null);
   const shownList = tab === 'lists' ? lists.find((l) => l.id === openList) : undefined;
   const tabs: Tab[] = ['spots', ...(savedSpots ? ['saved' as const] : []), ...(lists.length ? ['lists' as const] : [])];
@@ -127,7 +131,15 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
         ) : (
           <div className="px-5 motion-safe:animate-item-in">
             <Header profile={profile} level={level} />
-            <ProfileStats spots={view?.spotIds?.length ?? null} followers={profile.followersCount ?? 0} following={profile.followingCount ?? 0} className="mx-auto mt-5" />
+            <ProfileStats
+              spots={view?.spotIds?.length ?? null}
+              followers={profile.followersCount ?? 0}
+              following={profile.followingCount ?? 0}
+              className="mx-auto mt-5"
+              // Who follows whom: for the people who may see the profile (signed out: sign in first).
+              onOpenList={view?.canView ? (kind) => (me ? setFollowList(kind) : openAuth()) : undefined}
+            />
+            {followList && <FollowListSheet uid={uid} initial={followList} onClose={() => setFollowList(null)} />}
 
             {view?.blocked ? (
               <p className="mt-6 text-center text-label-secondary text-sm">{t('youBlockedThem')}</p>
@@ -137,7 +149,10 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
                   relation={view.relation}
                   isPrivate={profile.isPrivate === true}
                   busy={busy}
-                  onFollow={() => act((m) => follows.follow(m, uid))}
+                  onFollow={() => act(async (m) => {
+                    await follows.follow(m, uid);
+                    playSound('follow');
+                  })}
                   onUnfollow={() => act((m) => follows.unfollow(m, uid))}
                 />
                 {view.followsYou && (
@@ -220,6 +235,7 @@ function Header({ profile, level }: Readonly<{ profile: PublicProfile; level: nu
         <LevelBadge level={level} size={18} />
         <LevelName level={level} />
       </span>
+      <div className="mt-3"><ProfileBadges isAdmin={false} invites={profile.invitesCount ?? 0} badges={profile.badges} /></div>
       {profile.bio && <p className="mt-3 max-w-sm text-[15px] text-label-secondary whitespace-pre-line wrap-break-word">{profile.bio}</p>}
     </div>
   );

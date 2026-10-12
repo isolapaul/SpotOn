@@ -24,7 +24,10 @@ import {
 
 // Build-time, public: a Mapbox access token restricted to the app's URL. Without it the map is a
 // plain background in the theme's colour (local builds, e2e), and Mapbox is never called.
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN?.trim() || undefined;
+// The apps have their own token (NEXT_PUBLIC_MAPBOX_TOKEN_APP): the web token is restricted to the
+// site's URL, and the bundled app runs on a local origin.
+const MAPBOX_TOKEN = (process.env.NEXT_PUBLIC_APP_BUILD === '1' && process.env.NEXT_PUBLIC_MAPBOX_TOKEN_APP?.trim())
+  || process.env.NEXT_PUBLIC_MAPBOX_TOKEN?.trim() || undefined;
 
 interface MapViewProps {
   isAddingSpot?: boolean;
@@ -45,6 +48,8 @@ interface MapViewProps {
   focusRequest?: { spotId: string; seq: number } | null;
   /** The map reached the focused spot. */
   onSpotArrive?: (spotId: string) => void;
+  /** Growth plan §5: locked places keep their pin, dimmed and without their name. */
+  lockedIds?: ReadonlySet<string>;
 }
 
 /** The pin's tip is the spot's coordinate (PIN_ANCHOR inside the 44×54 pin box). */
@@ -110,6 +115,7 @@ export default function MapView({
   onMapClick,
   focusRequest = null,
   onSpotArrive,
+  lockedIds,
 }: Readonly<MapViewProps>) {
   const theme = useMapThemeStore((s) => s.theme);
   const t = useT();
@@ -209,8 +215,12 @@ export default function MapView({
         entry.el.innerHTML = buildPinHtml(look);
         entry.key = key;
       }
-      entry.el.title = spot.name;
-      entry.el.setAttribute('aria-label', spot.name);
+      const locked = lockedIds?.has(spot.id) ?? false;
+      const label = locked ? t('lockedTitle') : spot.name;
+      entry.el.title = label;
+      entry.el.setAttribute('aria-label', label);
+      if (locked) entry.el.dataset.locked = 'true';
+      else delete entry.el.dataset.locked;
       entry.el.style.zIndex = spot.id === selectedSpotId ? '3' : highlighted ? '2' : '1';
       const pin = entry.el.querySelector<HTMLElement>('.spot-pin');
       if (pin) {
@@ -223,7 +233,7 @@ export default function MapView({
       entry.marker.remove();
       markers.current.delete(id);
     }
-  }, [map, shownSpots, customIcons, selectedSpotId, nowIso]);
+  }, [map, shownSpots, customIcons, selectedSpotId, nowIso, lockedIds, t]);
 
   // A map going away (unmount, or a rebuilt map): drop its markers, so the new map gets its own.
   useEffect(() => {

@@ -3,7 +3,8 @@ import {
   addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, onSnapshot, serverTimestamp, updateDoc, type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { parseList, sortLists, type SpotList } from '@/lib/lists';
+import { listNameKey, parseList, sortLists, type SpotList } from '@/lib/lists';
+import { track } from './telemetry';
 
 interface ListStore {
   lists: SpotList[];
@@ -11,6 +12,8 @@ interface ListStore {
   create: (name: string, firstSpotId?: string) => Promise<void>;
   rename: (id: string, name: string) => Promise<void>;
   setShared: (id: string, shared: boolean) => Promise<void>;
+  /** Growth plan §7: public (searchable, on the web); public lists are also shown on the profile. */
+  setPublic: (id: string, isPublic: boolean) => Promise<void>;
   remove: (id: string) => Promise<void>;
   toggleSpot: (id: string, spotId: string, add: boolean) => Promise<void>;
 }
@@ -37,14 +40,23 @@ export const useListStore = create<ListStore>((set) => ({
   create: async (name, firstSpotId) => {
     if (!listening) throw new Error('NOT_AUTHENTICATED');
     await addDoc(collection(db, 'users', listening.uid, 'lists'), {
-      name: name.trim(), spotIds: firstSpotId ? [firstSpotId] : [], shared: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+      name: name.trim(), nameLower: listNameKey(name), spotIds: firstSpotId ? [firstSpotId] : [], shared: false,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
     });
   },
   rename: async (id, name) => {
-    await updateDoc(ref(id), { name: name.trim(), updatedAt: serverTimestamp() });
+    await updateDoc(ref(id), { name: name.trim(), nameLower: listNameKey(name), updatedAt: serverTimestamp() });
   },
   setShared: async (id, shared) => {
-    await updateDoc(ref(id), { shared, updatedAt: serverTimestamp() });
+    // A list that is no longer on the profile is not public either.
+    await updateDoc(ref(id), { shared, ...(shared ? {} : { public: false }), updatedAt: serverTimestamp() });
+  },
+  setPublic: async (id, isPublic) => {
+    const list = useListStore.getState().lists.find((l) => l.id === id);
+    await updateDoc(ref(id), {
+      public: isPublic, ...(isPublic ? { shared: true } : {}), ...(list ? { nameLower: listNameKey(list.name) } : {}), updatedAt: serverTimestamp(),
+    });
+    if (isPublic) track('list_shared');
   },
   remove: async (id) => {
     await deleteDoc(ref(id));

@@ -5,7 +5,7 @@ import type { LegalDocument } from './types';
 export const TERMS_EN: LegalDocument = {
   lang: 'en',
   title: 'Terms of Use',
-  updated: 'Last updated: 30 September 2026',
+  updated: 'Last updated: 10 October 2026',
   intro: [
     'This is an English translation for convenience; the Hungarian version is authoritative.',
     'These terms apply to the use of SpotOn (https://spoton.isolapaul.hu). The Privacy Policy describes how your personal data is processed.',
@@ -49,7 +49,8 @@ export const TERMS_EN: LegalDocument = {
           'a spot that identifies another person\'s home, without their consent;',
           'private property, closed-off or life-threatening places, where visiting the place is unlawful or dangerous;',
           'advertising, unsolicited messages, false or misleading information;',
-          'content that infringes someone else\'s copyright or other rights.',
+          'content that infringes someone else\'s copyright or other rights;',
+          'harassing, threatening, bullying or impersonating other users.',
         ],
         'You are responsible for the consent of the people shown in your photos (section 2:48 of the Hungarian Civil Code).',
         'By uploading, you grant the provider a free, non-exclusive licence, unlimited in time and territory, to reproduce the content within SpotOn (store it, including with hosting and infrastructure providers), to communicate it to the public (make it available on demand), and to adapt it as far as needed for operation (resizing, compression). The licence survives the deletion of your account for the spots and photos that remain after deletion; these are then shown without naming the author, which you agree to. We also remove such content on request. Your reviews and the photos you added to other people\'s spots are deleted with your account (details in the Privacy Policy).',
@@ -58,7 +59,7 @@ export const TERMS_EN: LegalDocument = {
     {
       heading: '5. Moderation',
       blocks: [
-        'The provider and the admins may approve submitted spots, changes and photos or reject them with a reason, and may delete content that breaches these terms without prior notice, with a reason. You can fix and resubmit a rejected spot. For repeated or serious breaches the account may be suspended or deleted. We notify you of a rejection, the removal of content or the suspension of your account – unless the law forbids it – with the reason, in the app\'s notification centre and as a push notification; the notice stays in the notification centre until you clear it. You can object to the decision at {email}; the objection is reviewed by a person within 30 days. If you see unlawful content, report it through the feedback feature or by e-mail.',
+        'The provider and the admins may approve submitted spots, changes and photos or reject them with a reason, and may delete content that breaches these terms without prior notice, with a reason. You can fix and resubmit a rejected spot. For repeated or serious breaches the account may be suspended or deleted. We notify you of a rejection, the removal of content or the suspension of your account – unless the law forbids it – with the reason, in the app\'s notification centre and as a push notification; the notice stays in the notification centre until you clear it. You can object to the decision at {email}; the objection is reviewed by a person within 30 days. There is zero tolerance for objectionable content and abusive users. If you see such content, use Report on the spot, photo, review, reply or profile in the app (or write to {email}); you can also block a user, after which neither of you sees the other. We review reports within 24 hours and remove the content or suspend the account where needed.',
       ],
     },
     {
