@@ -64,7 +64,7 @@ Check that the package is **Private**: GitHub → Profile → Packages → `spot
 
 One-time settings in the GitHub repository before the first `v*` tag is pushed:
 
-1. **Repository variables:** the 7 `NEXT_PUBLIC_FIREBASE_*` values above. Without them `release.yml` fails at the build step.
+1. **Repository variables:** all the `NEXT_PUBLIC_*` values above, as **Variables** (not secrets, not environment variables). Without them `release.yml` fails at the build step (`missing public env: …`).
 2. **Tag ruleset:** Settings → Rules → Rulesets → New tag ruleset, target `v*`. Restrict creations, updates and deletions, with only Paul on the bypass list. Why: the cosign signature proves only that `release.yml` ran for that tag, not who pushed the tag. Anyone who can push a `v*` tag can get a signed release that `update.sh` accepts.
 3. **Issues enabled** (Settings → General → Features): the weekly `image-rescan` workflow opens `image-cve` issues.
 4. **Allowed actions**, only if Settings → Actions → General is set to "Allow select actions": tick "Allow actions created by GitHub" (covers `actions/*`, including the nested `actions/cache` and `actions/checkout`), and allow these pinned commits:
@@ -160,7 +160,7 @@ The copied `docker-compose.yml` still contains the placeholder `v0.0.0@sha256:00
 
 ```bash
 cd /srv/docker/spoton
-./update.sh v2.1.0                           # tag from the release / Dependabot PR
+./update.sh v2.2.0                           # tag from the release / Dependabot PR
 ```
 
 A release starts when a `vX.Y.Z` tag is pushed on the commit to release; the release workflow then builds, scans, signs and publishes the image.
@@ -316,11 +316,14 @@ Cloud Functions, Firestore/Storage rules and indexes are deployed by hand from a
 
 ```bash
 git checkout vX.Y.Z
+npm ci                                                                 # the Firebase CLI and tsx are root devDependencies
 npm --prefix functions ci && npm --prefix functions run build
 npx firebase deploy --only functions --project <PROJECT_ID>            # or functions:<name> for one function
 npx firebase deploy --only firestore:indexes --project <PROJECT_ID>    # wait until they show "Enabled"
 npx firebase deploy --only firestore:rules,storage --project <PROJECT_ID>
 ```
+
+If the functions deploy stops with `User code failed to load. Cannot determine backend specification. Timeout after 10000`, the machine took longer than the CLI's 10 seconds to load the functions (common on Windows, where the virus scanner checks `node_modules`). Nothing was deployed; run it again with more time, in seconds: `FUNCTIONS_DISCOVERY_TIMEOUT=60 npx firebase deploy --only functions --project <PROJECT_ID>`.
 
 Order, when a release needs several of them:
 
@@ -331,35 +334,15 @@ Order, when a release needs several of them:
 
 Keep a copy of the rules currently in production (Console → Firestore → Rules) before replacing them, so a bad deploy can be reverted by pasting them back.
 
-### 16.1 Release v2.1.0 (one time, in this order)
+### 16.1 One-time steps already done
 
-v2.1.0 needs a new build variable, new indexes, new and removed functions, a one-time data migration and new rules.
-Do the steps one after another, without a long pause between 4 and 7: until the migration runs, levels are not stored, and until the rules are deployed, the new app cannot save push registrations, bios or lists.
+Kept so that the history of the production project is clear; none of them is to be repeated.
 
-1. **Before tagging:** create the repository variable `NEXT_PUBLIC_MAPBOX_TOKEN` (§3). The release build refuses to start without it.
-2. **Terms (A1):** the new terms version (`TERMS_VERSION` 2026-09-30) asks everyone to accept again. Terms §8 promises an e-mail announcement 15 days before changes take effect: send it before the release.
-3. Push the tag `v2.1.0` and wait for the release workflow (§7).
-4. Indexes, then functions, from a checkout of the tag (§16):
-   ```bash
-   npx firebase deploy --only firestore:indexes --project <PROJECT_ID>   # wait until all show "Enabled"
-   npx firebase deploy --only functions --project <PROJECT_ID>
-   ```
-   The CLI asks whether to delete `onSpotApproved` and `onReviewAdded`: answer **yes**. They are merged into `onSpotUpdated`; left running, they would send every approval and review notification twice.
-5. XP migration (item 5), right after the functions deploy. It needs Application Default Credentials for the project (`gcloud auth application-default login`). Dry run first, read the plan (look for users whose level floor is unexpectedly high), then apply:
-   ```bash
-   npm ci
-   npx tsx scripts/migrate-xp.ts --project <PROJECT_ID>            # dry run: prints the plan
-   npx tsx scripts/migrate-xp.ts --project <PROJECT_ID> --apply    # writes it
-   ```
-   Running it again later only fixes differences.
-6. Server: `./update.sh v2.1.0` (§7).
-7. Rules, right after the client is live (they allow less for the old client):
-   ```bash
-   npx firebase deploy --only firestore:rules --project <PROJECT_ID>
-   ```
-   `storage.rules` did not change in this release.
-8. Post-deploy checks (§13). In addition: the map shows the Mapbox styles in all five themes; an admin approves a test spot (the owner gets the inbox note and one push); a follow, a reply and a list save work.
+- `onSpotApproved` and `onReviewAdded` were deleted at the functions deploy; `onSpotUpdated` does their work.
+- The XP migration (`scripts/migrate-xp.ts --apply`) stored every user's XP, level and level floor; `syncXp` keeps them current. Running it again only fixes differences.
+- The repository variable `NEXT_PUBLIC_MAPBOX_TOKEN` exists; `NEXT_PUBLIC_CARTO_API_KEY` is no longer used and can be deleted.
 
+A release that needs new one-time steps lists them here, in order, before it is tagged.
 
 ## 17. Android app (Trusted Web Activity)
 
@@ -412,7 +395,7 @@ bubblewrap build        # changes local files: asks for the two key passwords, w
 
 Upload `app-release-bundle.aab` in Play Console → Test and release → Testing → Internal testing (or Closed testing) → Create new release. Accept **Play App Signing** when asked.
 
-For every later version: `bubblewrap update` (raises the version code; add `--appVersionName=2.1.1` to set the visible version), then `bubblewrap build` and upload the new `.aab`. A web-only release needs no new Android build: the app always shows the live site.
+For every later version: `bubblewrap update` (raises the version code; add `--appVersionName=2.2.1` to set the visible version), then `bubblewrap build` and upload the new `.aab`. A web-only release needs no new Android build: the app always shows the live site.
 
 ### 17.3 Digital Asset Links (🌐 Play Console, then 🖥️ server)
 
