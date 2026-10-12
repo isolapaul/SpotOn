@@ -232,7 +232,7 @@ export const de: Dictionary = {
   descriptionPlaceholder: 'Beschreiben Sie, was diesen Ort besonders macht...',
   photoOptional: 'Foto (Optional)',
   clickToUpload: 'Klicken Sie zum Hochladen',
-  maxSize: 'Max 5MB',
+  maxSize: 'Max 30MB',
   submit: 'Absenden',
   submitSpot: 'Ort einreichen',
   compressing: 'Komprimieren und Hochladen...',
@@ -287,7 +287,7 @@ export const de: Dictionary = {
   mustBeLoggedIn: 'Sie müssen angemeldet sein, um einen Ort hinzuzufügen',
   pleaseSelectLocation: 'Bitte wählen Sie einen Standort auf der Karte',
   pleaseEnterName: 'Bitte geben Sie einen Namen für den Ort ein',
-  imageTooLarge: 'Bild muss kleiner als 5MB sein',
+  imageTooLarge: 'Bild muss kleiner als 30MB sein',
   
   // Actions
   close: 'Schließen',

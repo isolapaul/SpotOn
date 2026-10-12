@@ -232,7 +232,7 @@ export const en: Dictionary = {
   descriptionPlaceholder: 'Describe what makes this spot special...',
   photoOptional: 'Photo (Optional)',
   clickToUpload: 'Click to upload image',
-  maxSize: 'Max 5MB',
+  maxSize: 'Max 30MB',
   submit: 'Submit',
   submitSpot: 'Submit Spot',
   compressing: 'Compressing & Uploading...',
@@ -287,7 +287,7 @@ export const en: Dictionary = {
   mustBeLoggedIn: 'You must be logged in to add a spot',
   pleaseSelectLocation: 'Please select a location on the map',
   pleaseEnterName: 'Please enter a name for the spot',
-  imageTooLarge: 'Image must be less than 5MB',
+  imageTooLarge: 'Image must be less than 30MB',
   
   // Actions
   close: 'Close',
