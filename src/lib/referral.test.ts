@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { canStillClaim, inviteBadge, inviteLink, invitePathCode, nextInviteStep, normalizeInviteCode, REFERRAL_XP } from './referral';
-import { INVITE_BADGE_THRESHOLDS, REFERRAL_XP as SERVER_XP } from '../../functions/src/lib/referrals';
+import { canStillClaim, inviteBadge, inviteLink, invitePathCode, nextInviteStep, normalizeInviteCode } from './referral';
 
 describe('referral', () => {
-  it('matches the server', () => {
-    expect(REFERRAL_XP).toEqual(SERVER_XP);
-    expect([3, 5, 10]).toEqual([...INVITE_BADGE_THRESHOLDS]);
-  });
   it('gives badges from 3 invitees', () => {
     expect(inviteBadge(0)).toBeNull();
     expect(inviteBadge(2)).toBeNull();

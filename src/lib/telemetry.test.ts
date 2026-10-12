@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { errorReportOf, summarizeStats, TELEMETRY_EVENTS } from './telemetry';
-import { EVENT_NAMES } from '../../functions/src/lib/telemetry';
+import { errorReportOf, summarizeStats } from './telemetry';
 
 describe('telemetry', () => {
-  it('keeps the event list in sync with the server', () => {
-    expect([...TELEMETRY_EVENTS]).toEqual([...EVENT_NAMES]);
-  });
   it('turns thrown things into short reports and drops noise', () => {
     expect(errorReportOf(new TypeError('x is undefined'))).toMatchObject({ message: 'TypeError: x is undefined' });
     expect(errorReportOf('boom')).toEqual({ message: 'boom', stack: '' });

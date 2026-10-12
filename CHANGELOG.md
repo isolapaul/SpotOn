@@ -3,7 +3,7 @@
 Versions are SpotOn's releases (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and are listed by date.
 
-## Unreleased
+## v2.3.0 — 2026-10-12
 
 ### Added (apps)
 - SpotOn as an Android and iOS app, each its own build with the app bundled inside (it opens without waiting for the website), adding what a browser tab cannot: Google sign-in with the phone's account picker, push notifications, the system share sheet, the Android back button and spot links that open in the app. The first-run tour skips its install step in the app.
