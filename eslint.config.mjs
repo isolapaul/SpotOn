@@ -12,6 +12,10 @@ export default defineConfig([
     'postcss.config.cjs', // CommonJS config; not covered by the Next/react-hooks plugin globs
   ]),
   {
+    // eslint-plugin-react's "detect" calls context.getFilename(), which ESLint 10 removed.
+    settings: { react: { version: '19.3' } },
+  },
+  {
     files: ['**/*.{js,jsx,mjs,ts,tsx,mts,cts}'],
     rules: {
       'react-hooks/rules-of-hooks': 'error',
