@@ -40,7 +40,7 @@
     "@capacitor/ios": "8.5.2",
     "@capacitor/share": "8.0.3",
     "browser-image-compression": "^2.0.2",
-    "firebase": "12.19.0",
+    "firebase": "13.0.0",
     "jose": "6.2.12",
     "lucide-react": "1.50.0",
     "mapbox-gl": "3.32.0",
