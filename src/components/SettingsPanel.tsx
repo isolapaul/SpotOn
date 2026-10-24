@@ -127,7 +127,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
         type="button"
         className={`fixed inset-0 bg-black/60 backdrop-blur-xs ${Z.panelInnerBackdrop} transition-opacity cursor-default`}
         onClick={onClose}
-        aria-label="Close settings"
+        aria-label={t('closeSettings')}
       />
       
       {/* Settings Panel */}
@@ -208,7 +208,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
                 {user.profileBannerURL ? (
                   <Image
                     src={user.profileBannerURL}
-                    alt="Banner"
+                    alt={t('bannerAlt')}
                     fill
                     sizes="(max-width: 768px) 100vw, 600px"
                     className="object-cover"

@@ -97,7 +97,7 @@ export default function FeedbackPanel({ open, onClose }: Props) {
       variant="slate"
       z="modal"
       onBackdropClick={onClose}
-      backdropLabel="Close feedback"
+      backdropLabel={t('closeFeedback')}
       align="start"
       outerClassName=""
       outerStyle={{

@@ -132,7 +132,7 @@ export default function NameCustomizer({ user }: Readonly<NameCustomizerProps>) 
             {(user.profilePictureURL || user.photoURL) && (
               <Image
                 src={user.profilePictureURL || user.photoURL || ''}
-                alt="Preview"
+                alt={t('previewAlt')}
                 fill
                 sizes="48px"
                 className="object-cover"

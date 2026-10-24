@@ -53,7 +53,7 @@ export default function DeleteAccountModal({ confirmWord, onClose, onDeleted }: 
       variant="slate"
       z="modal"
       onBackdropClick={isDeleting ? undefined : onClose}
-      backdropLabel="Close"
+      backdropLabel={t('close')}
       panelClassName="w-[90%] max-w-md p-6"
     >
       <div className="flex items-start gap-3 mb-4">

@@ -119,7 +119,7 @@ export default function AuthModal({ isOpen, onClose, signUpAs }: Readonly<AuthMo
       variant="glass"
       z="modal"
       onBackdropClick={onClose}
-      backdropLabel="Close authentication modal"
+      backdropLabel={t('closeAuthModal')}
       panelClassName="max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-8"
       panelStyle={SAFE_AREA_MARGINS}
     >
@@ -130,7 +130,7 @@ export default function AuthModal({ isOpen, onClose, signUpAs }: Readonly<AuthMo
             resetForm();
           }}
           className="no-min-size absolute top-3 right-3 w-11 h-11 grid place-items-center rounded-full touch-manipulation"
-          aria-label="Close"
+          aria-label={t('close')}
         >
           <span className="w-[30px] h-[30px] rounded-full grid place-items-center bg-white/10">
             <X className="w-4 h-4 text-label-secondary" strokeWidth={2.5} />

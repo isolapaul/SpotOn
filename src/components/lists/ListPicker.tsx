@@ -31,7 +31,7 @@ export default function ListPicker({ spotId, onClose }: Readonly<{ spotId: strin
   };
 
   return createPortal(
-    <ModalShell variant="slate" z="modal" onBackdropClick={onClose} backdropLabel="Close" panelClassName="w-[92%] max-w-md p-5">
+    <ModalShell variant="slate" z="modal" onBackdropClick={onClose} backdropLabel={t('close')} panelClassName="w-[92%] max-w-md p-5">
       <div role="dialog" aria-modal="true" aria-labelledby="list-picker-title">
         <h3 id="list-picker-title" className="text-label text-[20px] font-bold mb-3">{t('saveToList')}</h3>
         {lists.length > 0 && (

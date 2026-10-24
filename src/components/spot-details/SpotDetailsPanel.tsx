@@ -95,7 +95,7 @@ export default function SpotDetailsPanel({ spotId, onClose, back }: Readonly<Spo
   return (
     <PanelShell
       onClose={onClose}
-      backdropLabel="Close spot details"
+      backdropLabel={t('closeSpotDetails')}
       variant="slate"
       overlays={
         <Gallery urls={allGalleryImages} open={galleryOpen} startIndex={0} onClose={closeGallery} alt={spot.name} spotId={spot.status === 'approved' && !isOwner ? spot.id : undefined} />

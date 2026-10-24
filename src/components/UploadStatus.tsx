@@ -65,7 +65,7 @@ export default function UploadStatus() {
             <button
               onClick={() => dismiss(job.id)}
               className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 active:scale-90 transition touch-manipulation"
-              aria-label="Dismiss"
+              aria-label={t('dismiss')}
             >
               <X className="w-4 h-4 text-white/60" strokeWidth={2.5} />
             </button>

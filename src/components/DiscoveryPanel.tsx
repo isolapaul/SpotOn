@@ -112,7 +112,7 @@ export default function DiscoveryPanel({ isOpen, onClose, userLocation, onSpotSe
   });
 
   return (
-    <PanelShell onClose={onClose} backdropLabel="Close discovery panel" variant="surface">
+    <PanelShell onClose={onClose} backdropLabel={t('closeDiscovery')} variant="surface">
       <div
         ref={scrollRef}
         onScroll={(e) => rememberScroll(e.currentTarget.scrollTop)}

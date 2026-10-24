@@ -59,7 +59,7 @@ export default function PhotoPicker({ previews, primaryIndex, onPick, onRemove, 
               }`}
             >
               {/* A local data: URL preview: nothing to optimise */}
-              <Image src={preview} alt={`Preview ${index + 1}`} fill unoptimized sizes="33vw" className="object-cover" />
+              <Image src={preview} alt={t('previewNumber', { n: index + 1 })} fill unoptimized sizes="33vw" className="object-cover" />
               {index === primaryIndex && (
                 <div className="absolute top-1 left-1 bg-primary-500 text-white text-xs px-2 py-1 rounded-sm">
                   {t('primaryBadge')}

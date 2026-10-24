@@ -3,6 +3,11 @@
 Versions are SpotOn's releases (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and are listed by date.
 
+## Unreleased
+
+### Changed
+- Screen readers read the controls in the chosen language: the close buttons, photo and image descriptions and the other hidden button labels were English in every language until now; they are now Hungarian, English or German like the rest of the app.
+
 ## v2.3.1 — 2026-10-12
 
 ### Changed

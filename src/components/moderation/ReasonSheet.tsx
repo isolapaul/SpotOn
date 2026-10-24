@@ -51,7 +51,7 @@ export default function ReasonSheet({ title, confirmLabel, onConfirm, onClose }:
       variant="slate"
       z="modal"
       onBackdropClick={busy ? undefined : onClose}
-      backdropLabel="Close"
+      backdropLabel={t('close')}
       panelClassName="w-[92%] max-w-md p-5"
     >
       <div role="dialog" aria-modal="true" aria-labelledby="moderation-reason-title">

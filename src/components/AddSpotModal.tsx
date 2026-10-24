@@ -66,7 +66,7 @@ export default function AddSpotModal({ isOpen, onClose, selectedLocation }: Read
       variant="glass"
       z="panel"
       onBackdropClick={handleClose}
-      backdropLabel="Close add spot modal"
+      backdropLabel={t('closeAddSpot')}
       panelClassName="max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scrollbar p-6"
       panelStyle={SAFE_AREA_MARGINS}
     >

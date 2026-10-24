@@ -66,7 +66,7 @@ export default function AdminList() {
                 onClick={() => handleRemoveAdmin(admin.id, admin.name)}
                 className="p-2 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30
                   hover:bg-red-500/30 active:scale-95 transition-all duration-200 shrink-0"
-                aria-label="Remove admin"
+                aria-label={t('removeAdmin')}
               >
                 <Trash2 className="w-4 h-4" />
               </button>

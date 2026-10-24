@@ -6,6 +6,7 @@ import { useSpotStore } from '@/store/useSpotStore';
 import { useModerationStore } from '@/store/useModerationStore';
 import { useIsAdmin, useIsSuperAdmin } from '@/hooks/useIsAdmin';
 import { useMyLevel } from '@/hooks/useMyLevel';
+import { useT } from '@/hooks/useT';
 import SettingsPanel from '../SettingsPanel';
 import PanelShell from '../ui/PanelShell';
 import ProfileBanner from './ProfileBanner';
@@ -25,6 +26,7 @@ interface ProfilePanelProps {
 }
 
 export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<ProfilePanelProps>) {
+  const t = useT();
   const user = useUserStore((s) => s.user);
   const spots = useSpotStore((s) => s.spots);
   // Edits and photos waiting for review count toward the admin's badge too (item 4).
@@ -57,7 +59,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenSpot }: Readonly<P
   return (
     <PanelShell
       onClose={onClose}
-      backdropLabel="Close profile panel"
+      backdropLabel={t('closeProfilePanel')}
       variant="surface"
       overlays={
         <>
