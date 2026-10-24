@@ -54,6 +54,7 @@ src/store/useInboxStore.ts       The server inbox listener (users/{uid}/inbox), 
 src/store/useSpotStore.ts        Spot scopes (startSpots / syncSpotScopes / stopSpots) + all spot mutations; admin state lives in useUserStore (isAdmin / isSuperAdmin, from admins/{uid})
 src/store/spotListeners.ts       The approved / own / admin spot listeners behind the scopes (T30), merged by lib/mergeSpots
 src/store/useUserStore.ts        Auth flows, user doc, terms acceptance, admins, username, profile images, highlights, account deletion
+                                 (the store composes store/userAuthActions, userProfileActions, userAdmin; userAccount: new-user setup; userErrors, userStoreTypes)
 src/store/useUploadStore.ts      Background uploads of new spots, photos and reviews (G4)
 src/store/useLocationStore.ts    Location status + sessionStorage cache; the only geolocation caller
 src/store/useOnboardingStore.ts  Tour completion (versioned `spoton-onboarding`), pending username, location answer, install offer; selectTourBlocking
