@@ -1,28 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { formatDistance, haversineKm } from './geo';
-import { discoveryCalculateDistance } from './__oracles__/legacy';
 
-// [lat1, lng1, lat2, lng2]
-const SAMPLES: Array<[string, [number, number, number, number]]> = [
-  ['equal points', [47.4979, 19.0402, 47.4979, 19.0402]],
-  ['origin to itself', [0, 0, 0, 0]],
-  ['Budapest → Vienna', [47.4979, 19.0402, 48.2082, 16.3738]],
-  ['Vienna → Budapest', [48.2082, 16.3738, 47.4979, 19.0402]],
-  ['antipodes (0,0)↔(0,180)', [0, 0, 0, 180]],
-  ['antipodes (pole to pole)', [90, 0, -90, 0]],
-  ['antipodes Budapest', [47.4979, 19.0402, -47.4979, -160.9598]],
-  ['negative lat/lng', [-33.8688, 151.2093, -22.9068, -43.1729]],
-  ['negative lat/lng (small)', [-1.5, -2.25, -1.4999, -2.2501]],
-  ['lng wrap +180 → -180', [10, 179.9, 10, -179.9]],
-  ['lng wrap -180 → +180', [-10, -179.99, -10, 179.99]],
-  ['exactly ±180', [0, 180, 0, -180]],
-  ['across the equator', [1e-9, 0, -1e-9, 0]],
-  ['long distance', [64.1466, -21.9426, -41.2865, 174.7762]],
+// [lat1, lng1, lat2, lng2], km (the values of the pre-T23 DiscoveryPanel.calculateDistance)
+const SAMPLES: Array<[string, [number, number, number, number], number]> = [
+  ['equal points', [47.4979, 19.0402, 47.4979, 19.0402], 0],
+  ['origin to itself', [0, 0, 0, 0], 0],
+  ['Budapest → Vienna', [47.4979, 19.0402, 48.2082, 16.3738], 214.04428171108447],
+  ['Vienna → Budapest', [48.2082, 16.3738, 47.4979, 19.0402], 214.04428171108447],
+  ['antipodes (0,0)↔(0,180)', [0, 0, 0, 180], 20015.086796020572],
+  ['antipodes (pole to pole)', [90, 0, -90, 0], 20015.086796020572],
+  ['antipodes Budapest', [47.4979, 19.0402, -47.4979, -160.9598], 20015.086796020572],
+  ['negative lat/lng', [-33.8688, 151.2093, -22.9068, -43.1729], 13521.033220889633],
+  ['negative lat/lng (small)', [-1.5, -2.25, -1.4999, -2.2501], 0.01572264340305789],
+  ['lng wrap +180 → -180', [10, 179.9, 10, -179.9], 21.901124835754715],
+  ['lng wrap -180 → +180', [-10, -179.99, -10, 179.99], 2.1901125167642497],
+  ['exactly ±180', [0, 180, 0, -180], 1.5604449514735574e-12],
+  ['across the equator', [1e-9, 0, -1e-9, 0], 2.2238985328911746e-7],
+  ['long distance', [64.1466, -21.9426, -41.2865, 174.7762], 17254.83221978623],
 ];
 
-describe('haversineKm (characterisation vs DiscoveryPanel.calculateDistance)', () => {
-  it.each(SAMPLES)('%s: bit-identical', (_name, [lat1, lng1, lat2, lng2]) => {
-    expect(haversineKm(lat1, lng1, lat2, lng2)).toBe(discoveryCalculateDistance(lat1, lng1, lat2, lng2));
+describe('haversineKm', () => {
+  it.each(SAMPLES)('%s', (_name, [lat1, lng1, lat2, lng2], km) => {
+    expect(haversineKm(lat1, lng1, lat2, lng2)).toBe(km);
   });
 
   it('sanity: equal points are 0 km, Budapest–Vienna ≈ 214 km', () => {
