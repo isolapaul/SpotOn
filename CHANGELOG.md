@@ -3,6 +3,11 @@
 Versions are SpotOn's releases (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and are listed by date.
 
+## Unreleased
+
+### Fixed
+- Your location works again in browsers that block site data (or in private modes that do): the map now centres on you, distances show, and "I was here" no longer waits forever. Only the short-lived location cache is skipped there.
+
 ## v2.3.1 — 2026-10-12
 
 ### Changed

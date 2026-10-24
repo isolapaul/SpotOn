@@ -157,3 +157,36 @@ describe('request (manual)', () => {
     expect(storage.size).toBe(0);
   });
 });
+
+describe('without usable sessionStorage (site data blocked, private modes)', () => {
+  function stubThrowingStorage() {
+    const blocked = () => {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    };
+    vi.stubGlobal('sessionStorage', { getItem: blocked, setItem: blocked, removeItem: blocked });
+  }
+
+  it('the automatic request still asks for and keeps the location', () => {
+    stubThrowingStorage();
+    state().requestAutomatic();
+    expect(state().status).toBe('pending');
+    succeed(0, 1, 2);
+    expect(state()).toMatchObject({ status: 'granted', location: { lat: 1, lng: 2 } });
+  });
+
+  it('a manual request still resolves and keeps the location ("I was here" waits for it)', async () => {
+    stubThrowingStorage();
+    const result = state().request();
+    succeed(0, 3, 4);
+    await expect(result).resolves.toBe('granted');
+    expect(state()).toMatchObject({ status: 'granted', location: { lat: 3, lng: 4 } });
+  });
+
+  it('a damaged cache entry counts as no cache', () => {
+    storage.set('userLocation', '{not json');
+    storage.set('userLocationTime', String(Date.now()));
+    state().requestAutomatic();
+    expect(state().status).toBe('pending');
+    expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+  });
+});
