@@ -47,6 +47,7 @@ src/components/discovery/**      Explore list parts (featured spot, rows)
 src/components/feed/**           The following feed (FeedPanel, FeedCard + header/media, comments sheet, states); hooks/useFeed + lib/feed compose it
 src/components/map/**            Map chrome: MapControls stack, MapStylePopover, PlaceCard
 src/components/legal/**          LegalPage, the sign-in acceptance notice, the one-time TermsPrompt
+src/components/auth/**           The sign-in sheet's parts (AuthModal composes them): provider buttons, e-mail form; error messages in lib/authErrors
 src/components/ui/               Shared primitives: PanelShell, ModalShell, Button/CloseButton, StarRating, CategoryIcon, LevelBadge, LevelRing, PerkIcon, RichText
 src/components/onboarding/**     First-run tour (lazy chunk): OnboardingFlow (dialog, steps, swipes, keys), MapScene + Scene* (demo map, pins, chrome), steps/*, *.module.css (its motion)
 src/store/useModerationStore.ts  Moderation (item 4): own edit proposals, the admin edit/photo queues, the moderation callables
