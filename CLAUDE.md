@@ -63,6 +63,7 @@ src/store/useLikeStore.ts        The own spot likes (spotLikes listener) and the
 src/store/useSoundStore.ts       Interface sounds (on/off persisted per device) and playSound(), WebAudio over the lib/sound recipes
 src/store/use*Store.ts           language (selected language only), map theme, notifications, push prompt, toast (forwards to notifications), ui
 src/hooks/useAppBootstrap.ts     Loading orchestration: auth + spots listeners, map ready, app-ready delays
+src/hooks/map/**                 MapView's Mapbox hooks: map instance (token, fallback), camera (locate, spot focus), clusters, spot pins, point markers
 src/hooks/useSheetDrag.ts, useCardDrag.ts  Vertical sheet / place-card gestures (thresholds in lib/sheetGesture)
 src/hooks/useStandaloneFullHeight.ts  iOS standalone full-height fix (lib/appViewport)
 src/hooks/viewTransition.ts      runViewTransition for sheet and photo-morph transitions
