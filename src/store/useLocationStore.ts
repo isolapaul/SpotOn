@@ -20,21 +20,31 @@ interface LocationStore {
   request: () => Promise<RequestResult>;
 }
 
-// sessionStorage cache shared with earlier builds (same keys as the pre-T29 MapView cache).
+// sessionStorage cache shared with earlier builds (same keys as the pre-T29 MapView cache). Every
+// access is in try/catch: blocked site data or a private mode makes storage throw, and the location
+// must still work, only without the cache.
 const CACHE_KEY = 'userLocation';
 const CACHE_TIME_KEY = 'userLocationTime';
 
 function readCache(): LatLng | null {
-  const cachedLocation = sessionStorage.getItem(CACHE_KEY);
-  const cachedTime = sessionStorage.getItem(CACHE_TIME_KEY);
-  if (!cachedLocation || !cachedTime) return null;
-  const age = Date.now() - Number.parseInt(cachedTime, 10);
-  return age < LOCATION_CACHE_MAX_AGE_MS ? (JSON.parse(cachedLocation) as LatLng) : null;
+  try {
+    const cachedLocation = sessionStorage.getItem(CACHE_KEY);
+    const cachedTime = sessionStorage.getItem(CACHE_TIME_KEY);
+    if (!cachedLocation || !cachedTime) return null;
+    const age = Date.now() - Number.parseInt(cachedTime, 10);
+    return age < LOCATION_CACHE_MAX_AGE_MS ? (JSON.parse(cachedLocation) as LatLng) : null;
+  } catch {
+    return null;
+  }
 }
 
 function writeCache(loc: LatLng) {
-  sessionStorage.setItem(CACHE_KEY, JSON.stringify(loc));
-  sessionStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(loc));
+    sessionStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+  } catch {
+    // No cache: the next page load asks the browser again.
+  }
 }
 
 function toLatLng(position: GeolocationPosition): LatLng {
