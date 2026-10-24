@@ -7,7 +7,7 @@ import { useToastStore } from '@/store/useToastStore';
 import { playSound } from '@/store/useSoundStore';
 import { useT } from './useT';
 import { actionErrorKey } from '@/lib/callableErrors';
-import { spotLikeState } from '@/lib/spotLikes';
+import { liveLikeTap, spotLikeState, type LikeTap } from '@/lib/spotLikes';
 
 /**
  * Liking a spot (the setSpotLike callable) with an optimistic count: the tap shows at once, the
@@ -18,13 +18,16 @@ export function useSpotLike(spot: Pick<Spot, 'id' | 'likeCount' | 'status'>) {
   const t = useT();
   const uid = useUserStore((s) => s.user?.uid ?? null);
   const stored = useLikeStore((s) => s.liked.has(spot.id));
-  const [tap, setTap] = useState<{ liked: boolean; on: boolean } | null>(null);
-  const state = spotLikeState(spot.likeCount, stored, tap);
+  const [tap, setTap] = useState<LikeTap | null>(null);
+  // A spent tap is dropped (adjusting state while rendering), so it can never apply again.
+  const live = liveLikeTap(tap, spot.id, stored);
+  if (tap && !live) setTap(null);
+  const state = spotLikeState(spot.likeCount, stored, live);
 
   const set = async (next: boolean) => {
     if (!uid) return useUiStore.getState().openAuth();
     if (next === state.liked || spot.status !== 'approved') return;
-    setTap({ liked: next, on: stored });
+    setTap({ spotId: spot.id, liked: next, on: stored });
     if (next) playSound('like');
     try {
       await useLikeStore.getState().setLike(spot.id, next);

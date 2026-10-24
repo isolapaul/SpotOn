@@ -3,6 +3,11 @@
 Versions are SpotOn's releases (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and are listed by date.
 
+## Unreleased
+
+### Fixed
+- A spot's like button no longer shows an old like again: after a like was undone on another device, or when the spot page switched to another spot, it could show the spot as liked with one like too many until the page was reopened.
+
 ## v2.3.1 — 2026-10-12
 
 ### Changed
