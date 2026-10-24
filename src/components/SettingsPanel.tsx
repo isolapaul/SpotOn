@@ -130,7 +130,7 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
         type="button"
         className={`fixed inset-0 bg-black/60 backdrop-blur-xs ${Z.panelInnerBackdrop} transition-opacity cursor-default`}
         onClick={onClose}
-        aria-label="Close settings"
+        aria-label={t('closeSettings')}
       />
       
       {/* Settings Panel */}

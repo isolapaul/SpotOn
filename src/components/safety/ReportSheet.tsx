@@ -57,7 +57,7 @@ export default function ReportSheet({ target, onClose }: Readonly<{ target: Repo
   };
 
   return createPortal(
-    <ModalShell variant="slate" z="modal" onBackdropClick={busy ? undefined : onClose} backdropLabel="Close" panelClassName="w-[92%] max-w-md p-5">
+    <ModalShell variant="slate" z="modal" onBackdropClick={busy ? undefined : onClose} backdropLabel={t('close')} panelClassName="w-[92%] max-w-md p-5">
       <div role="dialog" aria-modal="true" aria-labelledby="report-title">
         <h3 id="report-title" className="text-label text-[20px] font-bold">{t('reportTitle')}</h3>
         <p className="text-label-secondary text-[14px] mt-1 mb-3">{t('reportHint')}</p>

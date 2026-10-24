@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { X } from 'lucide-react';
 import { useHorizontalSwipe } from '@/hooks/useHorizontalSwipe';
+import { useT } from '@/hooks/useT';
 import { SWIPE_THRESHOLDS, Z } from '@/lib/constants';
 import ReportButton from '../safety/ReportButton';
 
@@ -28,6 +29,7 @@ export default function Gallery({ urls, open, startIndex, onClose, alt, spotId }
 }
 
 function GalleryView({ urls, startIndex, onClose, alt, spotId }: Readonly<Omit<GalleryProps, 'open'>>) {
+  const t = useT();
   const count = urls.length;
   const [current, setCurrent] = useState(startIndex);
   // The URL list is live (it can shrink while open): never index past its end.
@@ -94,7 +96,7 @@ function GalleryView({ urls, startIndex, onClose, alt, spotId }: Readonly<Omit<G
           transition: swipe.dragging ? 'none' : 'transform 0.2s ease-out',
         }}
       >
-        <Image src={urls[index]} alt={`${alt} - Image ${index + 1}`} fill sizes="100vw" className="object-contain" priority draggable={false} />
+        <Image src={urls[index]} alt={t('galleryImageAlt', { name: alt, n: index + 1 })} fill sizes="100vw" className="object-contain" priority draggable={false} />
       </div>
 
       {count > 1 && (
@@ -104,7 +106,7 @@ function GalleryView({ urls, startIndex, onClose, alt, spotId }: Readonly<Omit<G
               key={i}
               onClick={() => setCurrent(i)}
               className={`h-2 rounded-full transition-all touch-manipulation ${i === index ? 'bg-white w-6' : 'bg-white/40 w-2'}`}
-              aria-label={`Go to image ${i + 1}`}
+              aria-label={t('goToImage', { n: i + 1 })}
             />
           ))}
         </div>

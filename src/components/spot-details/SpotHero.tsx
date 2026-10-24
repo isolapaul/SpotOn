@@ -105,7 +105,7 @@ export default function SpotHero({ spot, heroImageUrl, fallbackUrls, imageCount,
         onClick={handleClose}
         className="no-min-size absolute left-3 w-11 h-11 grid place-items-center rounded-full touch-manipulation active:scale-90 transition-transform"
         style={{ top: 'calc(env(safe-area-inset-top, 0px) + 6px)' }}
-        aria-label="Close"
+        aria-label={t('close')}
         aria-hidden={closeHidden || undefined}
         tabIndex={closeHidden ? -1 : undefined}
       >

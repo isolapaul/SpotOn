@@ -89,7 +89,7 @@ export default function ImageManager({ spot, imageCount, route }: Readonly<Image
         <div className="mt-3 grid grid-cols-3 gap-2">
           {getManagedImages(spot).map(({ url, index }, position) => (
             <div key={url} className="relative group rounded-xl overflow-hidden aspect-square">
-              <Image src={url} alt={`Image ${position + 1}`} fill sizes="120px" className="object-cover" />
+              <Image src={url} alt={t('imageNumber', { n: position + 1 })} fill sizes="120px" className="object-cover" />
               {index !== undefined && (spot.primaryImageIndex || 0) === index && (
                 <div className="absolute top-1 left-1 bg-primary-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">★</div>
               )}

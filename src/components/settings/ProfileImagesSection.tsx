@@ -84,7 +84,7 @@ export default function ProfileImagesSection({
             {user.profileBannerURL ? (
               <Image
                 src={user.profileBannerURL}
-                alt="Banner"
+                alt={t('bannerAlt')}
                 fill
                 sizes="(max-width: 768px) 100vw, 600px"
                 className="object-cover"

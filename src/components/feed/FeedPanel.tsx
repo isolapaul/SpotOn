@@ -144,7 +144,7 @@ function Feed({ onClose, userLocation, onShowOnMap }: Readonly<Omit<FeedPanelPro
   return (
     <PanelShell
       onClose={onClose}
-      backdropLabel="Close feed"
+      backdropLabel={t('closeFeed')}
       variant="surface"
       overlays={commentsSpot && <FeedComments key={commentsSpot.id} spot={commentsSpot} onClose={() => setCommentsFor(null)} />}
     >

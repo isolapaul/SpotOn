@@ -100,7 +100,7 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
       <div className="flex items-center gap-3 mb-3">
         {(user.profilePictureURL || user.photoURL) && (
           <div className="relative w-10 h-10 rounded-full overflow-hidden">
-            <Image src={user.profilePictureURL || user.photoURL || ''} alt={user.username || 'User'} fill sizes="40px" className="object-cover" />
+            <Image src={user.profilePictureURL || user.photoURL || ''} alt={user.username || t('userAlt')} fill sizes="40px" className="object-cover" />
           </div>
         )}
         <div>
@@ -123,12 +123,12 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
         <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
           {photos.map(({ preview: src }, i) => (
             <div key={src} className="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden motion-safe:animate-item-in">
-              <Image src={src} alt={`Photo ${i + 1}`} fill sizes="64px" unoptimized className="object-cover" />
+              <Image src={src} alt={t('photoNumber', { n: i + 1 })} fill sizes="64px" unoptimized className="object-cover" />
               <button
                 type="button"
                 onClick={() => removePhoto(src)}
                 className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center"
-                aria-label={`Remove photo ${i + 1}`}
+                aria-label={t('removePhotoNumber', { n: i + 1 })}
               >
                 <X className="w-3 h-3 text-white" strokeWidth={3} />
               </button>
@@ -143,7 +143,7 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
           onClick={() => photoInputRef.current?.click()}
           disabled={isUploading}
           className="relative shrink-0 w-12 rounded-xl bg-white/10 text-white border border-white/20 hover:bg-white/20 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center"
-          aria-label="Attach photos"
+          aria-label={t('attachPhotos')}
           title={t('addPhotos')}
         >
           <ImagePlus className="w-5 h-5" />

@@ -68,7 +68,7 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
       align="start"
       justify="end"
       onBackdropClick={close}
-      backdropLabel="Close notifications"
+      backdropLabel={t('closeNotifications')}
       outerClassName="pl-3"
       outerStyle={{
         paddingTop: 'calc(env(safe-area-inset-top) + 8px)',
@@ -93,7 +93,7 @@ export default function NotificationSheet({ onClose }: Readonly<NotificationShee
           onClick={close}
           className="shrink-0 w-11 h-11 -mr-1.5 rounded-full flex items-center justify-center
             hover:bg-white/10 active:scale-90 transition touch-manipulation"
-          aria-label="Close"
+          aria-label={t('close')}
         >
           <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
             <X className="w-4 h-4 text-white/80" strokeWidth={2.5} />

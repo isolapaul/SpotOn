@@ -38,7 +38,7 @@ export default function LevelInfoModal({ levelInfo, xp, onClose }: Readonly<Leve
         type="button"
         className="absolute inset-0 bg-black/80 backdrop-blur-xs"
         onClick={onClose}
-        aria-label="Close level info"
+        aria-label={t('closeLevelInfo')}
       />
 
       <div className="relative max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-surface-2 ring-1 ring-white/10 shadow-sheet p-6 rounded-r4 animate-scale-in">

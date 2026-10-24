@@ -108,7 +108,7 @@ function UserProfile({ uid, onClose, onOpenSpot }: Readonly<{ uid: string; onClo
   const name = profile?.username ?? '';
 
   return (
-    <PanelShell onClose={onClose} backdropLabel="Close user profile" variant="surface">
+    <PanelShell onClose={onClose} backdropLabel={t('closeUserProfile')} variant="surface">
       <div className="flex-1 overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}>
         <div className="flex justify-end px-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}>
           {profile && view && me && me !== uid && (
