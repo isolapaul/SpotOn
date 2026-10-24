@@ -67,6 +67,7 @@ src/hooks/useSheetDrag.ts, useCardDrag.ts  Vertical sheet / place-card gestures 
 src/hooks/useStandaloneFullHeight.ts  iOS standalone full-height fix (lib/appViewport)
 src/hooks/viewTransition.ts      runViewTransition for sheet and photo-morph transitions
 src/hooks/useSystemBack.ts       The system back steps back in the app (one same-URL history entry while anything is open)
+src/hooks/useAppBack.ts          The app's back action (open sheet first, then the panel), on Escape and the system back
 src/hooks/usePushNotifications.ts FCM permission/token handling
 src/hooks/useUserLocation.ts     The user's location (one automatic request + manual request), from useLocationStore; no automatic request while the tour is due/open or after its "Not now"
 src/hooks/useOnboardingGate.ts   When the tour shows (page.tsx) and the early beforeinstallprompt capture; usePendingUsernameClaim claims the tour's name after Google sign-up
