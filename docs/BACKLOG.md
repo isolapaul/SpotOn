@@ -41,7 +41,6 @@ Open questions for the owner: tags stay manual (recommended) or a release on eve
 | Review appends | The rules let a signed-in user append any number of reviews to an approved spot, their own included (no XP, but the average rating and the owner's notifications). One review per user and spot, server-checked, would need a callable. |
 | Legacy push tokens | `users.fcmTokens` holds the Android/iOS apps' native tokens **and** the tokens of browsers that have not opened v2.2.0 yet (each browser drops its token when it registers its FID). Never remove the token send path or the field: the apps need them. The `legacyTokens` log count includes app tokens, so it cannot show when browsers are done; separating them needs a design decision (for example a separate field for app tokens). |
 | Legacy user fields | `questProgress` / `questRewards` from the 2026 Valentine event are still on some `users` docs; nothing reads them. |
-| T23 characterisation oracles | `src/lib/__oracles__/legacy.ts` pins the pre-refactor behaviour for a few helpers. They could be replaced by plain unit tests. |
 
 ## Operations
 

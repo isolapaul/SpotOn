@@ -10,6 +10,7 @@ import NotificationPrompt from '@/components/NotificationPrompt';
 import UploadStatus from '@/components/UploadStatus';
 import MapControls from '@/components/map/MapControls';
 import PlaceCard from '@/components/map/PlaceCard';
+import EmptyMapNotice from '@/components/map/EmptyMapNotice';
 import LevelUpCelebration from '@/components/LevelUpCelebration';
 import UsernameSetupModal from '@/components/UsernameSetupModal';
 import TermsPrompt from '@/components/legal/TermsPrompt';
@@ -18,7 +19,7 @@ import MovedBanner from '@/components/MovedBanner';
 import { useShallow } from 'zustand/react/shallow';
 import { useUserStore } from '@/store/useUserStore';
 import { useMapThemeStore } from '@/store/useMapThemeStore';
-import { hasBackStep, isSpotPanel, isUserPanel, useUiStore, type ReturnTarget } from '@/store/useUiStore';
+import { isSpotPanel, isUserPanel, useUiStore, type ReturnTarget } from '@/store/useUiStore';
 import { useT } from '@/hooks/useT';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 import { useIsClient } from '@/hooks/useIsClient';
@@ -29,7 +30,7 @@ import { useIosExtras } from '@/hooks/useIosExtras';
 import { useReviewPrompt } from '@/hooks/useReviewPrompt';
 import UpdateRequired from '@/components/UpdateRequired';
 import { useNativeShell } from '@/hooks/useNativeShell';
-import { useSystemBack } from '@/hooks/useSystemBack';
+import { useAppBack } from '@/hooks/useAppBack';
 import { useRelocateSpot } from '@/hooks/useRelocateSpot';
 import { runViewTransition } from '@/hooks/viewTransition';
 import { useVisibleSpots } from '@/hooks/useVisibleSpots';
@@ -42,8 +43,7 @@ import { usePendingUsernameClaim } from '@/hooks/usePendingUsernameClaim';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
 import { ensureLanguage, useLanguageStore } from '@/store/useLanguageStore';
 import { detectLanguage } from '@/lib/i18n';
-import { useEffect, useMemo, useRef } from 'react';
-import { closeTopOverlay, useOverlayStore } from '@/store/useOverlayStore';
+import { useMemo } from 'react';
 import { DEFAULT_MAP_CENTER, Z } from '@/lib/constants';
 import { useSpotLock } from '@/hooks/useSpotLock';
 import PublicListSheet from '@/components/lists/PublicListSheet';
@@ -103,12 +103,11 @@ export default function Home() {
   const locateRequest = useUiStore((s) => s.locateRequest);
   const returnTo = useUiStore((s) => s.returnTo);
   const focusRequest = useUiStore((s) => s.focusRequest);
-  const canGoBack = useUiStore(hasBackStep);
   const { openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot } =
     useUiStore(useShallow(({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot }) =>
       ({ openPanel, closePanel, startSelectingLocation, cancelSelectingLocation, selectLocation, closeAddSpot, onMapClick, previewSpot })));
-  const { openSpotFromList, arriveAtSpot, closeSpot, goBack, finishRelocating } = useUiStore(useShallow(
-    ({ openSpotFromList, arriveAtSpot, closeSpot, goBack, finishRelocating }) => ({ openSpotFromList, arriveAtSpot, closeSpot, goBack, finishRelocating })));
+  const { openSpotFromList, arriveAtSpot, closeSpot, finishRelocating } = useUiStore(useShallow(
+    ({ openSpotFromList, arriveAtSpot, closeSpot, finishRelocating }) => ({ openSpotFromList, arriveAtSpot, closeSpot, finishRelocating })));
   const relocatingSpotId = useUiStore((s) => s.relocatingSpotId);
   const relocateSpot = useRelocateSpot();
 
@@ -129,30 +128,8 @@ export default function Home() {
   const openSheet = (p: Parameters<typeof openPanel>[0]) => runViewTransition(() => openPanel(p));
   const closeSheet = () => runViewTransition(closePanel);
   const openFromList = (spotId: string, from: ReturnTarget) => runViewTransition(() => openSpotFromList(spotId, from));
-  // A sheet over a panel (comments, likers, follower lists) closes first, then the panel steps back.
-  const overlays = useOverlayStore((s) => s.stack.length);
-  const back = () => {
-    if (closeTopOverlay()) return;
-    runViewTransition(goBack);
-  };
-  // Escape does what the system back does (keyboards, ChromeOS, desktop); the tour has its own keys.
-  const tourRef = useRef(showTour);
-  useEffect(() => {
-    tourRef.current = showTour;
-  }, [showTour]);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || tourRef.current) return;
-      // Not while typing: Escape there must never throw away a draft (a review, a new spot).
-      if ((e.target as Element | null)?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
-      if (closeTopOverlay()) return;
-      if (hasBackStep(useUiStore.getState())) runViewTransition(useUiStore.getState().goBack);
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
-  // The system back steps back in the app (Android back gesture, browser Back) while anything is open.
-  useSystemBack(canGoBack || overlays > 0, `${JSON.stringify(activePanel)}|${previewSpotId}|${overlays}`, back);
+  // Back: an open sheet first, then the panel steps back (also Escape and the system back).
+  const back = useAppBack(showTour);
   // The way back to the list a spot was opened from (the details, and the place card for the profile).
   const backToList = returnTo
     ? {
@@ -273,18 +250,7 @@ export default function Home() {
         lockedIds={lockedIds}
       />
       {/* Empty state (shares the top-left slot with the move banner) */}
-      {visibleSpots.length === 0 && !selectingLocation && !movedBannerVisible && (
-        <div
-          className="material-chrome absolute z-10 rounded-2xl px-4 py-3 animate-fade-in pointer-events-none"
-          style={{
-            top: 'calc(env(safe-area-inset-top) + 8px)',
-            left: 'max(12px, calc(env(safe-area-inset-left) + 8px))',
-            right: 'calc(max(12px, calc(env(safe-area-inset-right) + 8px)) + 52px)',
-          }}
-        >
-          <p className="text-chrome-ink text-[15px] leading-snug">{t('noSpotsFound')}</p>
-        </div>
-      )}
+      {visibleSpots.length === 0 && !selectingLocation && !movedBannerVisible && <EmptyMapNotice />}
       {/* Place card (design 1E) */}
       <PlaceCard
         spot={previewedSpot}

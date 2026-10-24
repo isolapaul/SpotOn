@@ -47,6 +47,7 @@ src/components/discovery/**      Explore list parts (featured spot, rows)
 src/components/feed/**           The following feed (FeedPanel, FeedCard + header/media, comments sheet, states); hooks/useFeed + lib/feed compose it
 src/components/map/**            Map chrome: MapControls stack, MapStylePopover, PlaceCard
 src/components/legal/**          LegalPage, the sign-in acceptance notice, the one-time TermsPrompt
+src/components/auth/**           The sign-in sheet's parts (AuthModal composes them): provider buttons, e-mail form; error messages in lib/authErrors
 src/components/ui/               Shared primitives: PanelShell, ModalShell, Button/CloseButton, StarRating, CategoryIcon, LevelBadge, LevelRing, PerkIcon, RichText
 src/components/onboarding/**     First-run tour (lazy chunk): OnboardingFlow (dialog, steps, swipes, keys), MapScene + Scene* (demo map, pins, chrome), steps/*, *.module.css (its motion)
 src/store/useModerationStore.ts  Moderation (item 4): own edit proposals, the admin edit/photo queues, the moderation callables
@@ -54,6 +55,7 @@ src/store/useInboxStore.ts       The server inbox listener (users/{uid}/inbox), 
 src/store/useSpotStore.ts        Spot scopes (startSpots / syncSpotScopes / stopSpots) + all spot mutations; admin state lives in useUserStore (isAdmin / isSuperAdmin, from admins/{uid})
 src/store/spotListeners.ts       The approved / own / admin spot listeners behind the scopes (T30), merged by lib/mergeSpots
 src/store/useUserStore.ts        Auth flows, user doc, terms acceptance, admins, username, profile images, highlights, account deletion
+                                 (the store composes store/userAuthActions, userProfileActions, userAdmin; userAccount: new-user setup; userErrors, userStoreTypes)
 src/store/useUploadStore.ts      Background uploads of new spots, photos and reviews (G4)
 src/store/useLocationStore.ts    Location status + sessionStorage cache; the only geolocation caller
 src/store/useOnboardingStore.ts  Tour completion (versioned `spoton-onboarding`), pending username, location answer, install offer; selectTourBlocking
@@ -68,6 +70,7 @@ src/hooks/useSheetDrag.ts, useCardDrag.ts  Vertical sheet / place-card gestures 
 src/hooks/useStandaloneFullHeight.ts  iOS standalone full-height fix (lib/appViewport)
 src/hooks/viewTransition.ts      runViewTransition for sheet and photo-morph transitions
 src/hooks/useSystemBack.ts       The system back steps back in the app (one same-URL history entry while anything is open)
+src/hooks/useAppBack.ts          The app's back action (open sheet first, then the panel), on Escape and the system back
 src/hooks/usePushNotifications.ts FCM permission/token handling
 src/hooks/useUserLocation.ts     The user's location (one automatic request + manual request), from useLocationStore; no automatic request while the tour is due/open or after its "Not now"
 src/hooks/useOnboardingGate.ts   When the tour shows (page.tsx) and the early beforeinstallprompt capture; usePendingUsernameClaim claims the tour's name after Google sign-up
