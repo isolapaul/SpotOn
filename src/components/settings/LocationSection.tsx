@@ -28,5 +28,6 @@ export default function LocationSection({ isRequesting, onRequest }: Readonly<Lo
         <MapPin className="w-5 h-5" />
         {isRequesting ? t('locationRequesting') : t('requestLocationPermission')}
       </button>
-    </div>  );
+    </div>
+  );
 }
