@@ -17,7 +17,6 @@ import {
   removeImage,
   sortSpotImagesByLikes,
 } from './spotImages';
-import * as oracle from './__oracles__/legacy';
 
 describe('constants', () => {
   it('match the server (T10) and D12', () => {
@@ -144,7 +143,8 @@ describe('extForMime', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// T23 characterisation: URL expressions, like-sorts and the gallery vs the pre-T23 call sites.
+// URL expressions, like-sorts and the gallery. The expected values are the pre-T23 call sites'
+// results (characterised in T23), legacy quirks included.
 // ---------------------------------------------------------------------------------------------
 type Millis = { toMillis: () => number };
 const ts = (ms: number): Millis => ({ toMillis: () => ms });
@@ -159,25 +159,72 @@ type SampleSpot = {
   imageUrl?: string;
 };
 
-const SPOTS: Array<[string, SampleSpot]> = [
-  ['empty object', { id: 'e' }],
-  ['legacy with only imageUrl', { id: 'l1', imageUrl: '/legacy.jpg' }],
-  ['legacy imageUrl and empty imageUrls', { id: 'l2', imageUrls: [], imageUrl: '/legacy.jpg' }],
-  ['legacy imageUrl and imageUrls', { id: 'l3', imageUrls: ['/a.jpg'], imageUrl: '/legacy.jpg' }],
-  ['imageUrls [placeholder]', { id: 'p1', imageUrls: [PLACEHOLDER_URL] }],
-  ['imageUrls [placeholder] + spotImages placeholder', {
-    id: 'p2', imageUrls: [PLACEHOLDER_URL], spotImages: [img('i0', PLACEHOLDER_URL, 0, ts(1))],
+type Expected = {
+  /** getThumbnailUrl */
+  thumb: string;
+  /** isImageUnoptimized */
+  unoptimized: boolean;
+  /** ids of sortSpotImagesByLikes(getSpotImages(spot), 'missingAsZero') */
+  details: string[];
+  /** getHeroImageUrl with that order */
+  hero: string;
+  /** getGalleryUrls with that order */
+  gallery: string[];
+  /** ids of sortSpotImagesByLikes(spot.spotImages || [], 'bothRequired') */
+  info: string[];
+  /** getPreviewImageUrl with that order */
+  preview: string;
+};
+
+const P = PLACEHOLDER_URL;
+
+const SPOTS: Array<[string, SampleSpot, Expected]> = [
+  ['empty object', { id: 'e' }, {
+    thumb: P, unoptimized: true, details: [], hero: P, gallery: [], info: [], preview: P,
   }],
-  ['imageUrls []', { id: 'z', imageUrls: [] }],
-  ['primaryImageIndex in range', { id: 'pi1', imageUrls: ['/a.jpg', '/b.jpg', '/c.jpg'], primaryImageIndex: 2 }],
-  ['primaryImageIndex out of range', { id: 'pi2', imageUrls: ['/a.jpg', '/b.jpg'], primaryImageIndex: 5 }],
-  ['primaryImageIndex negative', { id: 'pi3', imageUrls: ['/a.jpg', '/b.jpg'], primaryImageIndex: -1 }],
-  ['primary entry is an empty string', { id: 'pi4', imageUrls: ['/a.jpg', ''], primaryImageIndex: 1 }],
+  ['legacy with only imageUrl', { id: 'l1', imageUrl: '/legacy.jpg' }, {
+    thumb: '/legacy.jpg', unoptimized: false, details: [], hero: P, gallery: [], info: [], preview: '/legacy.jpg',
+  }],
+  ['legacy imageUrl and empty imageUrls', { id: 'l2', imageUrls: [], imageUrl: '/legacy.jpg' }, {
+    thumb: '/legacy.jpg', unoptimized: false, details: [], hero: P, gallery: [], info: [], preview: '/legacy.jpg',
+  }],
+  ['legacy imageUrl and imageUrls', { id: 'l3', imageUrls: ['/a.jpg'], imageUrl: '/legacy.jpg' }, {
+    thumb: '/a.jpg', unoptimized: false, details: ['l3_0'], hero: '/a.jpg', gallery: ['/a.jpg'], info: [], preview: '/a.jpg',
+  }],
+  ['imageUrls [placeholder]', { id: 'p1', imageUrls: [P] }, {
+    thumb: P, unoptimized: false, details: [], hero: P, gallery: [], info: [], preview: P,
+  }],
+  ['imageUrls [placeholder] + spotImages placeholder', {
+    id: 'p2', imageUrls: [P], spotImages: [img('i0', P, 0, ts(1))],
+  }, {
+    thumb: P, unoptimized: false, details: [], hero: P, gallery: [], info: [], preview: P,
+  }],
+  ['imageUrls []', { id: 'z', imageUrls: [] }, {
+    thumb: P, unoptimized: false, details: [], hero: P, gallery: [], info: [], preview: P,
+  }],
+  ['primaryImageIndex in range', { id: 'pi1', imageUrls: ['/a.jpg', '/b.jpg', '/c.jpg'], primaryImageIndex: 2 }, {
+    thumb: '/c.jpg', unoptimized: false, details: ['pi1_0', 'pi1_1', 'pi1_2'], hero: '/c.jpg',
+    gallery: ['/a.jpg', '/b.jpg', '/c.jpg'], info: [], preview: '/c.jpg',
+  }],
+  ['primaryImageIndex out of range', { id: 'pi2', imageUrls: ['/a.jpg', '/b.jpg'], primaryImageIndex: 5 }, {
+    thumb: '/a.jpg', unoptimized: false, details: ['pi2_0', 'pi2_1'], hero: '/a.jpg', gallery: ['/a.jpg', '/b.jpg'], info: [], preview: '/a.jpg',
+  }],
+  ['primaryImageIndex negative', { id: 'pi3', imageUrls: ['/a.jpg', '/b.jpg'], primaryImageIndex: -1 }, {
+    thumb: '/a.jpg', unoptimized: false, details: ['pi3_0', 'pi3_1'], hero: '/a.jpg', gallery: ['/a.jpg', '/b.jpg'], info: [], preview: '/a.jpg',
+  }],
+  ['primary entry is an empty string', { id: 'pi4', imageUrls: ['/a.jpg', ''], primaryImageIndex: 1 }, {
+    thumb: '/a.jpg', unoptimized: false, details: ['pi4_0', 'pi4_1'], hero: '/a.jpg', gallery: ['/a.jpg', ''], info: [], preview: '/a.jpg',
+  }],
   ['spotImages only', {
     id: 's1', spotImages: [img('a', '/a.jpg', 1, ts(10)), img('b', '/b.jpg', 3, ts(5)), img('c', '/c.jpg', 2, ts(20))],
+  }, {
+    thumb: P, unoptimized: true, details: ['b', 'c', 'a'], hero: '/b.jpg', gallery: ['/b.jpg', '/c.jpg', '/a.jpg'],
+    info: ['b', 'c', 'a'], preview: '/b.jpg',
   }],
   ['spotImages only + legacy imageUrl', {
     id: 's2', imageUrl: '/legacy.jpg', spotImages: [img('a', '/a.jpg', 0, ts(1))],
+  }, {
+    thumb: '/legacy.jpg', unoptimized: false, details: ['a'], hero: '/a.jpg', gallery: ['/a.jpg'], info: ['a'], preview: '/a.jpg',
   }],
   ['mixed addedAt (Timestamp-like, missing, null, 0, no toMillis)', {
     id: 'm1',
@@ -191,18 +238,27 @@ const SPOTS: Array<[string, SampleSpot]> = [
       img('f', '/f.jpg', 1, ts(100)),
       img('g', '/g.jpg', 1, ts(200)),
     ],
+  }, {
+    thumb: '/u1.jpg', unoptimized: false, details: ['a', 'g', 'f', 'b', 'c', 'd', 'e'], hero: '/u1.jpg',
+    gallery: ['/a.jpg', '/g.jpg', '/f.jpg', '/b.jpg', '/c.jpg', '/d.jpg', '/e.jpg', '/u1.jpg'],
+    info: ['a', 'b', 'c', 'd', 'e', 'g', 'f'], preview: '/a.jpg',
   }],
   ['equal likes, equal timestamps', {
     id: 'eq', spotImages: [img('a', '/a.jpg', 2, ts(7)), img('b', '/b.jpg', 2, ts(7)), img('c', '/c.jpg', 2, ts(7))],
+  }, {
+    thumb: P, unoptimized: true, details: ['a', 'b', 'c'], hero: '/a.jpg', gallery: ['/a.jpg', '/b.jpg', '/c.jpg'],
+    info: ['a', 'b', 'c'], preview: '/a.jpg',
   }],
   ['placeholder inside spotImages', {
     id: 'ph',
-    imageUrls: [PLACEHOLDER_URL, '/a.jpg'],
-    spotImages: [img('p', PLACEHOLDER_URL, 9, ts(999)), img('a', '/a.jpg', 1, ts(1))],
+    imageUrls: [P, '/a.jpg'],
+    spotImages: [img('p', P, 9, ts(999)), img('a', '/a.jpg', 1, ts(1))],
+  }, {
+    thumb: P, unoptimized: false, details: ['a'], hero: P, gallery: ['/a.jpg'], info: ['a'], preview: '/a.jpg',
   }],
   ['duplicate urls across both arrays and within', {
     id: 'dup',
-    imageUrls: ['/a.jpg', '/x.jpg', '/a.jpg', PLACEHOLDER_URL, '/y.jpg', '/x.jpg'],
+    imageUrls: ['/a.jpg', '/x.jpg', '/a.jpg', P, '/y.jpg', '/x.jpg'],
     primaryImageIndex: 1,
     spotImages: [
       img('1', '/a.jpg', 0, ts(1)),
@@ -210,64 +266,73 @@ const SPOTS: Array<[string, SampleSpot]> = [
       img('3', '/b.jpg', 4, ts(3)),
       img('4', '/y.jpg', 1),
     ],
+  }, {
+    thumb: '/x.jpg', unoptimized: false, details: ['3', '2', '4', '1'], hero: '/x.jpg',
+    gallery: ['/b.jpg', '/y.jpg', '/a.jpg', '/x.jpg'], info: ['3', '2', '4', '1'], preview: '/b.jpg',
   }],
   ['legacy imageUrls only (materialised by getSpotImages)', {
-    id: 'lg', imageUrls: ['/a.jpg', '/b.jpg', PLACEHOLDER_URL], primaryImageIndex: 1,
+    id: 'lg', imageUrls: ['/a.jpg', '/b.jpg', P], primaryImageIndex: 1,
+  }, {
+    thumb: '/b.jpg', unoptimized: false, details: ['lg_0', 'lg_1'], hero: '/b.jpg', gallery: ['/a.jpg', '/b.jpg'], info: [], preview: '/b.jpg',
   }],
 ];
 
-describe('image URL helpers (characterisation)', () => {
-  it.each(SPOTS)('getThumbnailUrl: %s', (_name, spot) => {
-    expect(getThumbnailUrl(spot)).toBe(oracle.thumbnailSrc(spot));
+describe('image URL helpers', () => {
+  it.each(SPOTS)('getThumbnailUrl: %s', (_name, spot, expected) => {
+    expect(getThumbnailUrl(spot)).toBe(expected.thumb);
   });
 
-  it.each(SPOTS)('isImageUnoptimized: %s', (_name, spot) => {
-    expect(isImageUnoptimized(spot)).toBe(oracle.unoptimizedProp(spot));
+  it.each(SPOTS)('isImageUnoptimized: %s', (_name, spot, expected) => {
+    expect(isImageUnoptimized(spot)).toBe(expected.unoptimized);
   });
 
-  it.each(SPOTS)('details sort + hero + gallery: %s', (_name, spot) => {
+  it.each(SPOTS)('details sort + hero + gallery: %s', (_name, spot, expected) => {
     const input = getSpotImages(spot);
     const before = [...input];
-    const oldSorted = oracle.detailsSortedSpotImages([...input]);
-    const newSorted = sortSpotImagesByLikes(input, 'missingAsZero');
+    const sorted = sortSpotImagesByLikes(input, 'missingAsZero');
 
-    expect(newSorted).toEqual(oldSorted);
-    newSorted.forEach((image, i) => expect(image).toBe(oldSorted[i]));
+    expect(sorted.map((image) => image.id)).toEqual(expected.details);
+    sorted.forEach((image) => expect(input).toContain(image));
     expect(input).toEqual(before);
     input.forEach((image, i) => expect(image).toBe(before[i]));
 
-    expect(getHeroImageUrl(spot, newSorted)).toBe(oracle.detailsHeroImageUrl(spot, oldSorted));
-    expect(getGalleryUrls(spot, newSorted)).toEqual(oracle.detailsAllGalleryImages(spot, oldSorted));
-    expect(getGalleryUrls(spot)).toEqual(oracle.detailsAllGalleryImages(spot, oldSorted));
+    expect(getHeroImageUrl(spot, sorted)).toBe(expected.hero);
+    expect(getGalleryUrls(spot, sorted)).toEqual(expected.gallery);
+    expect(getGalleryUrls(spot)).toEqual(expected.gallery);
   });
 
-  it.each(SPOTS)('info window sort + preview: %s', (_name, spot) => {
+  it.each(SPOTS)('info window sort + preview: %s', (_name, spot, expected) => {
     const input = spot.spotImages || [];
     const before = [...input];
-    const oldSorted = oracle.infoWindowSortedSpotImages(spot);
-    const newSorted = sortSpotImagesByLikes(input, 'bothRequired');
+    const sorted = sortSpotImagesByLikes(input, 'bothRequired');
 
-    expect(newSorted).toEqual(oldSorted);
-    newSorted.forEach((image, i) => expect(image).toBe(oldSorted[i]));
+    expect(sorted.map((image) => image.id)).toEqual(expected.info);
+    sorted.forEach((image) => expect(input).toContain(image));
     expect(input).toEqual(before);
-    expect(getPreviewImageUrl(spot, newSorted)).toBe(oracle.infoWindowPreviewImageUrl(spot, oldSorted));
+    expect(getPreviewImageUrl(spot, sorted)).toBe(expected.preview);
   });
 
   // 'bothRequired' is not transitive for mixed timestamps, so the result depends on the input
-  // order: feed every permutation to both implementations.
+  // order: every permutation must sort exactly like Array.prototype.sort with the documented comparator.
   const permutations = <T,>(items: T[]): T[][] =>
     items.length <= 1 ? [items] : items.flatMap((x, i) => permutations([...items.slice(0, i), ...items.slice(i + 1)]).map((rest) => [x, ...rest]));
   const MIXED = [img('a', '/a.jpg', 1, ts(300)), img('b', '/b.jpg', 1), img('c', '/c.jpg', 1, null), img('d', '/d.jpg', 2, ts(5)), img('e', '/e.jpg', 1, ts(100))];
+  const millis = (image: SpotImage) => (image.addedAt as Millis | null | undefined)?.toMillis?.();
+  const bothRequired = (a: SpotImage, b: SpotImage) => {
+    if (b.likes !== a.likes) return b.likes - a.likes;
+    const aMillis = millis(a);
+    const bMillis = millis(b);
+    return aMillis && bMillis ? bMillis - aMillis : 0;
+  };
 
-  it('both tie-breaks match their oracle for every input order of mixed timestamps', () => {
+  it('both tie-breaks hold for every input order of mixed timestamps', () => {
     for (const order of permutations(MIXED)) {
-      const spot = { id: 'perm', spotImages: order };
       expect(sortSpotImagesByLikes(order, 'bothRequired').map((i) => i.id)).toEqual(
-        oracle.infoWindowSortedSpotImages(spot).map((i) => i.id),
+        [...order].sort(bothRequired).map((i) => i.id),
       );
-      expect(sortSpotImagesByLikes(order, 'missingAsZero').map((i) => i.id)).toEqual(
-        oracle.detailsSortedSpotImages([...order]).map((i) => i.id),
-      );
+      // 'missingAsZero' is a total order: most likes, then newest, untimed last in input order.
+      const untimed = order.filter((i) => i.id === 'b' || i.id === 'c').map((i) => i.id);
+      expect(sortSpotImagesByLikes(order, 'missingAsZero').map((i) => i.id)).toEqual(['d', 'a', 'e', ...untimed]);
     }
   });
 

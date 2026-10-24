@@ -5,18 +5,21 @@ const libMock = vi.hoisted(() => vi.fn(async (file: File) => file));
 vi.mock('browser-image-compression', () => ({ default: libMock }));
 
 import { COMPRESSION_PRESETS, compressImage } from './imageCompression';
-import * as oracle from './__oracles__/legacy';
-
-/** Spot photos since v2.3.x: near the original (the legacy oracle holds the old 1280 px / 0.3 MB). */
+/** Spot photos since v2.3.1: near the original (until then 1280 px / 0.3 MB). */
 const SPOT_OPTIONS = { maxSizeMB: 4.5, maxWidthOrHeight: 2560, initialQuality: 0.92, useWebWorker: false };
+/** The options each call site passed before T23 moved them here (useWebWorker: false since T14). */
+const PROFILE_STORE_OPTIONS = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: false };
+const SETTINGS_PROFILE_PICTURE_OPTIONS = { maxSizeMB: 1, maxWidthOrHeight: 800, useWebWorker: false };
+const SETTINGS_BANNER_OPTIONS = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: false };
+const FEEDBACK_OPTIONS = { maxSizeMB: 1, maxWidthOrHeight: 1600, useWebWorker: false };
 
 describe('COMPRESSION_PRESETS (characterisation: options per call site)', () => {
   it.each([
     ['spot', SPOT_OPTIONS],
-    ['profileStore', oracle.compressProfileImageOptions],
-    ['settingsProfilePicture', oracle.settingsProfilePictureOptions],
-    ['settingsBanner', oracle.settingsBannerOptions],
-    ['feedback', oracle.feedbackOptions],
+    ['profileStore', PROFILE_STORE_OPTIONS],
+    ['settingsProfilePicture', SETTINGS_PROFILE_PICTURE_OPTIONS],
+    ['settingsBanner', SETTINGS_BANNER_OPTIONS],
+    ['feedback', FEEDBACK_OPTIONS],
   ] as const)('%s', (preset, expected) => {
     expect(COMPRESSION_PRESETS[preset]).toEqual(expected);
     expect(Object.keys(COMPRESSION_PRESETS[preset])).toEqual(Object.keys(expected));
@@ -41,7 +44,7 @@ describe('compressImage', () => {
   it('adds fileType for the JPEG retry, as the stores did', async () => {
     await compressImage(file, 'profileStore', 'image/jpeg');
     const [, options] = libMock.mock.calls[0] as unknown as [File, object];
-    expect(options).toEqual({ ...oracle.compressProfileImageOptions, fileType: 'image/jpeg' });
+    expect(options).toEqual({ ...PROFILE_STORE_OPTIONS, fileType: 'image/jpeg' });
   });
 
   it('returns the library result', async () => {
