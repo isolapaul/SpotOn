@@ -934,6 +934,7 @@ export const de: Dictionary = {
   closeUserProfile: 'Benutzerprofil schließen',
   closeFeed: 'Feed schließen',
   closeDiscovery: 'Entdecken schließen',
+  userAlt: 'Benutzer',
 };
 
 export default de;

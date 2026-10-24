@@ -933,6 +933,7 @@ export const en: Dictionary = {
   closeUserProfile: 'Close user profile',
   closeFeed: 'Close feed',
   closeDiscovery: 'Close discovery panel',
+  userAlt: 'User',
 };
 
 export default en;

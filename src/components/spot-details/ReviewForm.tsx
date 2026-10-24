@@ -100,7 +100,7 @@ export default function ReviewForm({ spot, user }: Readonly<ReviewFormProps>) {
       <div className="flex items-center gap-3 mb-3">
         {(user.profilePictureURL || user.photoURL) && (
           <div className="relative w-10 h-10 rounded-full overflow-hidden">
-            <Image src={user.profilePictureURL || user.photoURL || ''} alt={user.username || 'User'} fill sizes="40px" className="object-cover" />
+            <Image src={user.profilePictureURL || user.photoURL || ''} alt={user.username || t('userAlt')} fill sizes="40px" className="object-cover" />
           </div>
         )}
         <div>

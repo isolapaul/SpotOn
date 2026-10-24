@@ -911,7 +911,7 @@ export const hu = {
   challengeNotYet: 'Még nincs meg minden lépés. Pár perc múlva próbáld újra.',
   founderBadge: 'Alapító',
   // Screen reader labels (aria-label, alt, backdrop labels)
-  closeAddSpot: 'Új hely ablak bezárása',
+  closeAddSpot: 'Új hely hozzáadásának bezárása',
   closeSettings: 'Beállítások bezárása',
   bannerAlt: 'Borítókép',
   closeSpotDetails: 'Hely részleteinek bezárása',
@@ -932,6 +932,7 @@ export const hu = {
   closeUserProfile: 'Felhasználói profil bezárása',
   closeFeed: 'Hírfolyam bezárása',
   closeDiscovery: 'Felfedezés bezárása',
+  userAlt: 'Felhasználó',
 };
 
 export default hu;
