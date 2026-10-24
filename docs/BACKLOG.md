@@ -10,7 +10,7 @@ Goal: pushing a `vX.Y.Z` tag stays the only manual step; the server update and t
 |---|---|
 | Server update | A systemd timer on the server (`deploy/auto-update.sh`) checks for a newer `vX.Y.Z` every few minutes and runs `update.sh` with it, so the cosign checks, the backup and the healthcheck stay as they are. Pull only: GitHub gets no access to the server. A failed tag is not retried. |
 | Firebase deploys | A job in `release.yml`, authenticated with Workload Identity Federation (no key file; only `release.yml` on `v*` tags). It deploys only what changed since the previous tag: indexes and functions before the image is published, rules after the live site reports the new version. |
-| Live version | `/api/health` returns the running version (`{"status":"ok","version":"vX.Y.Z"}`), so the rules job knows when the new client is live. |
+| Live version | Done: `/api/health` returns the running version (`{"status":"ok","version":"vX.Y.Z"}`, `dev` outside a release image), so the rules job can tell when the new client is live. |
 | Approval gate | A GitHub Environment `production` asks Paul to approve when a deploy would delete a function, or when the release has a `deploy/releases/vX.Y.Z.md` file with manual steps (migrations, new variables). |
 | Not automated | Rollback (`docs/deploy.md` §11) and the Android build. |
 

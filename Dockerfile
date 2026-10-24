@@ -50,6 +50,8 @@ LABEL org.opencontainers.image.source="https://github.com/isolapaul/SpotOn" \
 USER 0:0
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
+# The release tag, reported by /api/health ("dev" for local builds).
+ENV APP_VERSION=$VERSION
 # Files stay root-owned and world-readable: immutable for runtime uid 65532 (image default) or 1000 (compose).
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
