@@ -84,6 +84,14 @@ test('legal pages are readable without the first-run tour', async ({ page }) => 
   await page.getByRole('link', { name: 'Magyar változat' }).click();
   await expect(page.getByRole('heading', { name: 'Adatvédelmi tájékoztató' })).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'A SpotOn bemutatója' })).toHaveCount(0);
+  // The German translations, linked from the Hungarian page, link the other two languages.
+  await page.getByRole('link', { name: 'Deutsch' }).click();
+  await expect(page.getByRole('heading', { name: '4. Löschen deines Kontos' })).toBeVisible();
+  await expect(page.getByText('maßgeblich ist die ungarische Fassung')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'English' })).toHaveAttribute('href', '/privacy/en');
+  await page.goto('/terms/de');
+  await expect(page.getByRole('heading', { name: 'Nutzungsbedingungen' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Magyar változat' })).toHaveAttribute('href', '/terms');
 });
 
 test('the sign-in sheet links the terms and the privacy policy (sign-in-wrap)', async ({ page }) => {

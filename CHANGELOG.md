@@ -3,6 +3,11 @@
 Versions are SpotOn's releases (`vX.Y.Z`, see `docs/deploy.md`).
 Releases before the move to the container ran on Vercel and are listed by date.
 
+## Unreleased
+
+### Added
+- The Privacy Policy and the Terms of Use in German (`/privacy/de`, `/terms/de`): German users now get them in German instead of English, and every legal page links the other two languages. The Hungarian version stays authoritative.
+
 ## v2.3.1 — 2026-10-12
 
 ### Changed

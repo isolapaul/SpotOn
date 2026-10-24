@@ -32,7 +32,7 @@ Firebase is the backend. The old Vercel address (`spot-on-rho.vercel.app`) only 
 ```
 src/app/page.tsx                 Orchestrator: wires useUiStore (activePanel, location selection, returnTo/focusRequest navigation), useAppBootstrap, useVisibleSpots and useUserLocation to the panels and the map
 src/app/layout.tsx               Metadata, viewport
-src/app/privacy, src/app/terms   Legal pages (A1) in Hungarian and English (/privacy/en, /terms/en), rendered by components/legal/LegalPage from src/content/legal/*.{hu,en}.ts
+src/app/privacy, src/app/terms   Legal pages (A1) in Hungarian, English and German (/privacy/en, /terms/de, …), rendered by components/legal/LegalPage from src/content/legal/*.{hu,en,de}.ts
 src/app/spot/[id]                Shared spot link: the app (hooks/useSpotLink opens the spot) with an Open Graph preview of approved spots (lib/spotPreview)
 src/app/account-deletion         Public account deletion page for Google Play (components/legal/AccountDeletionPage)
 src/app/.well-known/assetlinks.json  Digital Asset Links for the Android app (runtime ANDROID_CERT_SHA256, lib/assetLinks)
