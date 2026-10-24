@@ -9,10 +9,9 @@ export {syncPublicProfile, syncSpotsCount, syncAdminFlag} from "./triggers/profi
 export {claimUsername, updateNameStyle, updatePinIcon} from "./callables/profile";
 export {deleteAccount} from "./callables/account";
 export {deleteCategory} from "./callables/categories";
-export {
-  getProfile, followUser, unfollowUser, respondFollowRequest, removeFollower, searchUsers,
-  blockUser, unblockUser,
-} from "./callables/follows";
+export {followUser, unfollowUser, respondFollowRequest, removeFollower} from "./callables/follows";
+export {getProfile, searchUsers} from "./callables/people";
+export {blockUser, unblockUser} from "./callables/blocks";
 export {getFollowList} from "./callables/followLists";
 export {setSpotLike, getSpotLikers} from "./callables/spotLikes";
 export {weeklyFeedDigest} from "./triggers/digest";

@@ -1,20 +1,21 @@
 'use client';
 
 import { useUserStore } from '@/store/useUserStore';
-import { useLanguageStore } from '@/store/useLanguageStore';
 import { useT } from '@/hooks/useT';
 import { useToastStore } from '@/store/useToastStore';
-import { X, Camera, Image as ImageIcon, LogOut, Globe, Bell, BellOff, MapPin, Check } from 'lucide-react';
-import { useState, useRef } from 'react';
-import Image from 'next/image';
+import { X, LogOut } from 'lucide-react';
+import { useState } from 'react';
 import { compressImage } from '@/lib/imageCompression';
 import { MAX_UPLOAD_BYTES, Z } from '@/lib/constants';
-import { LANGUAGE_NAMES, translate, type Language } from '@/lib/i18n';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
 import AccountSection from './settings/AccountSection';
+import LanguageSection from './settings/LanguageSection';
+import LocationSection from './settings/LocationSection';
+import NotificationsSection from './settings/NotificationsSection';
 import PrivacySection from './settings/PrivacySection';
+import ProfileImagesSection from './settings/ProfileImagesSection';
 import SoundSection from './settings/SoundSection';
 import { deletionConfirmWord } from '@/lib/accountDeletion';
 
@@ -23,23 +24,19 @@ interface SettingsPanelProps {
   onClose: () => void;
 }
 
-// Each language in its own name (no flag emoji, owner decision).
-
 export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPanelProps>) {
   const { user, signOut, updateProfilePicture, updateProfileBanner } = useUserStore();
-  const { language, setLanguage } = useLanguageStore();
   const t = useT();
   const { showToast } = useToastStore();
   const { isPermissionGranted, isLoading: isNotificationLoading, requestPermission, disableNotifications } = usePushNotifications();
   const { request: requestLocation } = useUserLocation();
   
+  // Kept here (not in the sections): this panel stays mounted while closed, so an upload or a
+  // location request that is still running shows again when the settings reopen.
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
-  
-  const pictureInputRef = useRef<HTMLInputElement>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen || !user) return null;
 
@@ -99,20 +96,26 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
     }
   };
 
-  const handleLanguageChange = (newLanguage: string) => {
-    setLanguage(newLanguage as Language);
-    let langName = 'Magyar';
-    if (newLanguage === 'en') langName = 'English';
-    else if (newLanguage === 'de') langName = 'Deutsch';
-    // Toast in the newly chosen language (the render-time t still has the old one).
-    showToast(translate(newLanguage as Language, 'languageChanged', { language: langName }), 'success');
-  };
-
   const handleNotificationToggle = async () => {
     if (isPermissionGranted) {
       showToast(t('notificationsAlreadyEnabled'), 'info');
     } else {
       await requestPermission();
+    }
+  };
+
+  const handleLocationRequest = async () => {
+    // Unsupported: silent, as before (no spinner, no toast)
+    if (!navigator.geolocation) return;
+    setIsRequestingLocation(true);
+    const result = await requestLocation();
+    setIsRequestingLocation(false);
+    if (result === 'granted') {
+      showToast(t('locationSuccess'), 'success');
+      // Force page reload so the map re-pans to the new (now cached) location
+      globalThis.location.reload();
+    } else if (result === 'denied') {
+      showToast(t('locationDenied'), 'error');
     }
   };
 
@@ -151,195 +154,30 @@ export default function SettingsPanel({ isOpen, onClose }: Readonly<SettingsPane
 
         {/* Content */}
         <div className="px-4 pt-2 pb-10 space-y-4">
-          {/* Profile Picture Section */}
-          <div className="rounded-[18px] bg-surface-1 p-5">
-            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-label-tertiary mb-3 flex items-center gap-2">
-              <Camera className="w-5 h-5" />
-              {t('changeProfilePicture')}
-            </h3>
-            
-            <div className="flex items-center gap-4">
-              <div className="relative w-20 h-20 rounded-full overflow-hidden ring-4 ring-brand-500/30">
-                {user.profilePictureURL || user.photoURL ? (
-                  <Image
-                    src={user.profilePictureURL || user.photoURL || ''}
-                    alt={user.username}
-                    fill
-                    sizes="80px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-brand-600 flex items-center justify-center">
-                    <span className="text-white text-2xl font-bold">
-                      {user.username?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  </div>
-                )}
-              </div>
-              
-              <button
-                onClick={() => pictureInputRef.current?.click()}
-                disabled={isUploadingPicture}
-                className="flex-1 py-2.5 px-4 bg-brand-600 text-white rounded-xl font-semibold
-                  active:bg-brand-700 transition-all duration-200 active:scale-95 disabled:opacity-50"
-              >
-                {isUploadingPicture ? t('uploadingImage') : t('uploadPicture')}
-              </button>
-            </div>
-            
-            <input
-              ref={pictureInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleProfilePictureUpload}
-              className="hidden"
-            />
-          </div>
+          <ProfileImagesSection
+            user={user}
+            isUploadingPicture={isUploadingPicture}
+            isUploadingBanner={isUploadingBanner}
+            onPictureChange={handleProfilePictureUpload}
+            onBannerChange={handleProfileBannerUpload}
+          />
 
-          {/* Profile Banner Section */}
-          <div className="rounded-[18px] bg-surface-1 p-5">
-            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-label-tertiary mb-3 flex items-center gap-2">
-              <ImageIcon className="w-5 h-5" />
-              {t('changeProfileBanner')}
-            </h3>
-            
-            <div className="space-y-3">
-              <div className="relative w-full h-24 rounded-xl overflow-hidden ring-1 ring-white/10">
-                {user.profileBannerURL ? (
-                  <Image
-                    src={user.profileBannerURL}
-                    alt="Banner"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 600px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-surface-2 flex items-center justify-center">
-                    <ImageIcon className="w-8 h-8 text-white/40" />
-                  </div>
-                )}
-              </div>
-              
-              <button
-                onClick={() => bannerInputRef.current?.click()}
-                disabled={isUploadingBanner}
-                className="w-full py-2.5 px-4 bg-brand-600 text-white rounded-xl font-semibold
-                  active:bg-brand-700 transition-all duration-200 active:scale-95 disabled:opacity-50"
-              >
-                {isUploadingBanner ? t('uploadingImage') : t('uploadBanner')}
-              </button>
-            </div>
-            
-            <input
-              ref={bannerInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleProfileBannerUpload}
-              className="hidden"
-            />
-          </div>
-
-          {/* Language Selection */}
-          <div className="rounded-[18px] bg-surface-1 p-5">
-            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-label-tertiary mb-3 flex items-center gap-2">
-              <Globe className="w-5 h-5" />
-              {t('languageSelection')}
-            </h3>
-            
-            <div className="flex flex-col gap-2">
-              {['hu', 'en', 'de'].map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => handleLanguageChange(lang)}
-                  className={`no-min-size w-full text-left py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
-                    language === lang
-                      ? 'bg-white/8 text-label'
-                      : 'bg-transparent text-label-secondary active:bg-white/6'
-                  }`}
-                >
-                  <span className="flex items-center justify-between">
-                    <span>{LANGUAGE_NAMES[lang as 'hu' | 'en' | 'de']}</span>
-                    {language === lang && <Check className="w-5 h-5 text-brand-400" strokeWidth={2.5} aria-hidden="true" />}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+          <LanguageSection />
 
           {/* Profile visibility (item 8) */}
           <PrivacySection user={user} />
 
-          {/* Notifications */}
-          <div className="rounded-[18px] bg-surface-1 p-5">
-            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-label-tertiary mb-3 flex items-center gap-2">
-              {isPermissionGranted ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
-              {t('notificationsHeader')}
-            </h3>
-            
-            <button
-              onClick={handleNotificationToggle}
-              className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                isPermissionGranted
-                  ? 'bg-green-600/20 text-green-400 border border-green-500/30'
-                  : 'bg-brand-600 text-white active:bg-brand-700'
-              }`}
-            >
-              {isPermissionGranted ? (
-                <>
-                  <Bell className="w-5 h-5" />
-                  {t('enabled')}
-                </>
-              ) : (
-                <>
-                  <BellOff className="w-5 h-5" />
-                  {t('enableAction')}
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={() => setShowNotificationSettings(true)}
-              disabled={isNotificationLoading}
-              className="mt-3 w-full py-2.5 px-4 rounded-xl bg-white/8 text-label font-medium text-sm
-                active:bg-white/12 transition-colors disabled:opacity-50"
-            >
-              {t('notificationSettingsButton')}
-            </button>
-          </div>
+          <NotificationsSection
+            isPermissionGranted={isPermissionGranted}
+            isLoading={isNotificationLoading}
+            onToggle={handleNotificationToggle}
+            onOpenSettings={() => setShowNotificationSettings(true)}
+          />
 
           {/* Interface sounds */}
           <SoundSection />
 
-          {/* Location Permission */}
-          <div className="rounded-[18px] bg-surface-1 p-5">
-            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-label-tertiary mb-3 flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              {t('locationHeader')}
-            </h3>
-            
-            <button
-              onClick={async () => {
-                // Unsupported: silent, as before (no spinner, no toast)
-                if (!navigator.geolocation) return;
-                setIsRequestingLocation(true);
-                const result = await requestLocation();
-                setIsRequestingLocation(false);
-                if (result === 'granted') {
-                  showToast(t('locationSuccess'), 'success');
-                  // Force page reload so the map re-pans to the new (now cached) location
-                  globalThis.location.reload();
-                } else if (result === 'denied') {
-                  showToast(t('locationDenied'), 'error');
-                }
-              }}
-              disabled={isRequestingLocation}
-              className="w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2
-                bg-brand-600 text-white active:bg-brand-700 disabled:opacity-50"
-            >
-              <MapPin className="w-5 h-5" />
-              {isRequestingLocation ? t('locationRequesting') : t('requestLocationPermission')}
-            </button>
-          </div>
+          <LocationSection isRequesting={isRequestingLocation} onRequest={handleLocationRequest} />
 
           {/* Account: legal documents and deletion (A1, A2) */}
           <AccountSection confirmWord={deletionConfirmWord(user)} />
