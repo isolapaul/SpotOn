@@ -18,8 +18,6 @@ export default defineConfig({
         'src/lib/firebase.ts',
         // Pure data (hu/en/de dictionaries): no logic; key parity is checked by translations.test.ts.
         'src/lib/translations.ts',
-        // Pre-T23 implementations kept only as test oracles.
-        'src/lib/__oracles__/**',
         '**/*.test.ts', // test files themselves are not measured
       ],
       thresholds: { lines: 90, statements: 90, functions: 90, branches: 90 },
