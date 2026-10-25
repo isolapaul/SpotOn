@@ -22,7 +22,6 @@ Open questions for the owner: tags stay manual (recommended) or a release on eve
 |---|---|
 | Google Play release | Capacitor app (`mobile/`); the repository side is ready (`docs/deploy.md` §17, `docs/play-store.md`). Left: the Firebase Android app and `google-services.json`, the upload key, the developer account, the closed test and the listing. |
 | App Store release | Capacitor app (`mobile/ios`, `docs/deploy.md` §17.4). Left: the Apple Developer account, the Firebase iOS app and APNs key, and decisions on Sign in with Apple (guideline 4.8) and minimum functionality (4.2). |
-| Legal pages in German | `/privacy` and `/terms` exist in Hungarian and English (`/privacy/en`, `/terms/en`); German users get the English text. |
 | Accessible labels in all languages | aria-labels and alt texts are English, because the e2e selectors depend on them. |
 | Owners deleting their own spots | Only admins can delete a spot. Owners ask by e-mail (the privacy policy says so). |
 | First-run tour copy to confirm | Check the install menu names on real iPhones and Android phones in hu/en/de (`onboardingInstall*`), whether "gyors ellenőrzés" (quick check) fits the real approval times, and whether "Új külsőben a SpotOn" (returning users) should become the neutral "Mi újság a SpotOnon?". |

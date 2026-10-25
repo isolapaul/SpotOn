@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import type { LegalBlock, LegalDocument } from '@/content/legal/types';
+import type { LegalBlock, LegalDocument, LegalLanguage } from '@/content/legal/types';
 import { fillLegalText } from '@/lib/legal';
 
 // Build-time public values (A1); the same for everyone, so no secret is involved.
@@ -24,9 +24,12 @@ function Block({ block }: Readonly<{ block: LegalBlock }>) {
 
 /**
  * A legal document page (privacy policy, terms). The body is fixed for the map, so this scrolls
- * itself. `other`: the same document in the other language (Hungarian is authoritative, item 9).
+ * itself. `others`: the same document in the other languages (Hungarian is authoritative, item 9).
  */
-export default function LegalPage({ doc, other }: Readonly<{ doc: LegalDocument; other?: { href: string; label: string } }>) {
+export default function LegalPage({ doc, others = [] }: Readonly<{
+  doc: LegalDocument;
+  others?: readonly { href: string; label: string; lang: LegalLanguage }[];
+}>) {
   return (
     <div className="fixed inset-0 overflow-y-auto bg-slate-950 text-white/80">
       <article lang={doc.lang ?? 'hu'} className="max-w-2xl mx-auto px-5 py-8" style={{ paddingTop: 'calc(2rem + env(safe-area-inset-top))' }}>
@@ -35,10 +38,14 @@ export default function LegalPage({ doc, other }: Readonly<{ doc: LegalDocument;
             <ArrowLeft className="w-4 h-4" />
             SpotOn
           </Link>
-          {other && (
-            <Link href={other.href} hrefLang={other.href.endsWith('/en') ? 'en' : 'hu'} className="text-sky-400 hover:text-sky-300 text-sm font-medium">
-              {other.label}
-            </Link>
+          {others.length > 0 && (
+            <div className="flex items-center gap-4">
+              {others.map((other) => (
+                <Link key={other.href} href={other.href} hrefLang={other.lang} className="text-sky-400 hover:text-sky-300 text-sm font-medium">
+                  {other.label}
+                </Link>
+              ))}
+            </div>
           )}
         </div>
         <h1 className="text-white text-3xl font-bold tracking-tight mb-1">{doc.title}</h1>
