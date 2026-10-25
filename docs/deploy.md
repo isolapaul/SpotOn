@@ -183,7 +183,7 @@ If `update.sh` itself changes in a release, copy the new version to the server f
 ```bash
 docker inspect --format '{{.State.Health.Status}}' spoton      # healthy (within ~60 s)
 docker logs --tail 100 spoton
-docker exec spoton /nodejs/bin/node -e 'fetch("http://127.0.0.1:3000/api/health").then(async r=>console.log(r.status,await r.text()))'   # optional probe: 200 {"status":"ok"}
+docker exec spoton /nodejs/bin/node -e 'fetch("http://127.0.0.1:3000/api/health").then(async r=>console.log(r.status,await r.text()))'   # optional probe: 200 {"status":"ok","version":"vX.Y.Z"}
 ```
 
 ## 9. Cloudflare Zero Trust

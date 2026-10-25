@@ -38,7 +38,7 @@ src/app/account-deletion         Public account deletion page for Google Play (c
 src/app/.well-known/assetlinks.json  Digital Asset Links for the Android app (runtime ANDROID_CERT_SHA256, lib/assetLinks)
 src/app/api/feedback/route.ts    Feedback email endpoint (SMTP)
 src/app/api/firebase-messaging-sw/route.ts  FCM service worker (generated from NEXT_PUBLIC_* config)
-src/app/api/health/route.ts      Liveness endpoint for the container healthcheck (docker/healthcheck.mjs)
+src/app/api/health/route.ts      Liveness endpoint for the container healthcheck (docker/healthcheck.mjs) and the running release (lib/appVersion)
 src/proxy.ts                     Per-request nonce CSP for pages (T32); policy built by src/lib/csp.mjs
 src/components/                  All UI (panels, modals, map)
 src/components/profile/**        Profile panel: header, tabs, admin tools; components/ProfilePanel.tsx re-exports it
