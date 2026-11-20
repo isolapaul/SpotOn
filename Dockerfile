@@ -2,13 +2,13 @@
 # Base images (D17): Debian 13 in both stages, pinned by digest (Dependabot updates the FROM lines).
 # NEXT_PUBLIC_* are build args (D16); no secrets or SMTP_* here — those are runtime env only.
 
-FROM node:24-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66 AS deps
+FROM node:24-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0 AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY scripts/shims ./scripts/shims
 RUN npm ci --ignore-scripts --no-audit --no-fund
 
-FROM node:24-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66 AS builder
+FROM node:24-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0 AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_FIREBASE_API_KEY
@@ -37,7 +37,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN node scripts/check-public-env.mjs --production && npm run build
 
-FROM gcr.io/distroless/nodejs24-debian13:nonroot@sha256:59c479c9b8c123e66047315c968aa2d35e31ae5149c856e4110a79c8b3563f0b AS runtime
+FROM gcr.io/distroless/nodejs24-debian13:nonroot@sha256:6abfcb367ebc291572c774c1592a986be2ab26a2486f73093401327495a5962a AS runtime
 ARG VERSION=dev
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.source="https://github.com/isolapaul/SpotOn" \
